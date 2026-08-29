@@ -1,0 +1,2805 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" content="#050505"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="MANA 28"/>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="apple-touch-icon" href="icon-192.svg"/>
+  <title>Mana Movement Training v4.3.2</title>
+  <style>
+    :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    a{color:inherit}.wrap{max-width:520px;margin:auto;min-height:100vh;padding:calc(env(safe-area-inset-top) + 18px) 18px calc(90px + env(safe-area-inset-bottom))}
+    .brand{display:flex;align-items:center;gap:14px;margin:6px 0 28px}.mark{width:52px;height:52px;border:2px solid var(--gold);display:grid;place-items:center;color:var(--gold2);font:700 36px Georgia,serif}
+    .brand h1{font-size:20px;letter-spacing:.26em;margin:0}.brand small{display:block;color:var(--gold2);letter-spacing:.25em;margin-top:5px}
+    .card{background:linear-gradient(145deg,#121212,#090909);border:1px solid #292310;border-radius:26px;padding:22px;margin:14px 0;box-shadow:0 16px 40px #0007}
+    .hero h2{font-size:42px;line-height:.95;margin:10px 0}.gold{color:var(--gold2)} .muted{color:var(--muted)}
+    input,select,textarea{width:100%;padding:15px 14px;border-radius:14px;border:1px solid #333;background:#0a0a0a;color:white;font-size:16px;margin:7px 0 14px}
+    label{font-size:13px;color:#cfcfcf}.btn{width:100%;padding:15px 16px;border-radius:16px;border:0;font-weight:800;font-size:16px;margin-top:7px;cursor:pointer}
+    .primary{background:linear-gradient(135deg,var(--gold2),#b78c2d);color:#080808}.secondary{background:#171717;color:white;border:1px solid #383838}
+    .linkbtn{background:none;border:0;color:var(--gold2);padding:12px;font-size:14px}
+    .tabs{display:flex;gap:8px;margin:12px 0}.tabs button{flex:1;border:1px solid #333;background:#111;color:#bbb;padding:11px;border-radius:14px}.tabs .active{color:#111;background:var(--gold2);border-color:var(--gold2);font-weight:800}
+    .hide{display:none!important}.row{display:flex;justify-content:space-between;align-items:center;gap:14px}.pill{padding:7px 11px;border-radius:999px;border:1px solid #3c3420;color:var(--gold2);font-size:12px}
+    .progress{height:11px;background:#262626;border-radius:999px;overflow:hidden}.progress span{display:block;height:100%;background:linear-gradient(90deg,#b88628,var(--gold2))}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.metric{background:#0c0c0c;border:1px solid #292929;border-radius:18px;padding:16px}.metric strong{font-size:28px;display:block;color:var(--gold2)}
+    .day{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #242424}.check{width:34px;height:34px;border-radius:50%;border:1px solid #555;background:#111;color:#999}.check.done{background:var(--gold2);color:#111;border-color:var(--gold2);font-weight:900}
+    .nav{position:fixed;z-index:9999;left:0;right:0;bottom:0;background:#050505eF;border-top:1px solid #272727;padding:10px max(12px,env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom));display:flex;justify-content:center;backdrop-filter:blur(16px)}
+    .navin{width:min(520px,100%);display:flex;justify-content:space-around}.nav button{background:none;border:0;color:#888;font-size:12px;min-width:60px;min-height:56px;padding:8px 6px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;cursor:pointer}.nav button.active{color:var(--gold2);font-weight:800}.nav button:active{transform:scale(.96)}
+    button,.btn{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+    .avatar{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#1c1c1c;border:1px solid #444;color:var(--gold2);font-weight:800}
+    .client{padding:14px 0;border-bottom:1px solid #242424}.tiny{font-size:12px}.notice{border-left:3px solid var(--gold);padding:10px 12px;background:#17130a;border-radius:8px;color:#e8d58f;font-size:13px}
+  
+    .trend-chart{min-height:150px;margin-top:12px}
+    .spark-wrap{position:relative;height:150px;border:1px solid #2b2b2b;border-radius:18px;padding:14px;background:linear-gradient(180deg,#111,#0c0c0c)}
+    .spark-svg{width:100%;height:100%;overflow:visible}
+    .spark-line{fill:none;stroke:var(--gold2);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+    .spark-dot{fill:var(--gold2)}
+    .spark-labels{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:#888}
+    .history-row{padding:13px 0;border-bottom:1px solid #2b2b2b}
+    .history-row:last-child{border-bottom:0}
+
+
+    /* v3.5.2: client tabs live inside .wrap; compact top spacing */
+    #clientProgramsView,#clientFuelView,#clientProgressView,#clientProfileView{padding-top:0}
+
+
+    /* v3.6 interactive MANA 28 day view */
+    .program-day{cursor:pointer}
+    .program-day:active{transform:scale(.995)}
+    .day-modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;
+      align-items:flex-end;justify-content:center;z-index:12000;padding:18px
+    }
+    .day-modal-backdrop.show{display:flex}
+    .day-modal{
+      width:min(720px,100%);max-height:calc(100dvh - 54px);overflow:auto;
+      background:#0d0d0d;border:1px solid rgba(230,198,77,.28);
+      border-radius:28px;padding:26px;padding-bottom:calc(34px + env(safe-area-inset-bottom));box-shadow:0 28px 80px rgba(0,0,0,.55)
+    }
+    .day-modal-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}
+    .day-modal-close{
+      width:44px;height:44px;border-radius:50%;border:1px solid #3a3a3a;
+      background:#181818;color:#fff;font-size:24px;line-height:1
+    }
+    .day-chip{
+      display:inline-flex;border:1px solid rgba(230,198,77,.32);border-radius:999px;
+      padding:8px 14px;color:#f0d968;font-size:14px;letter-spacing:.04em
+    }
+    .day-modal h2{font-size:32px;margin:14px 0 8px}
+    .day-sub{color:#aaa;font-size:18px;margin-bottom:22px}
+    .day-block{
+      border:1px solid #2d2d2d;background:#111;border-radius:22px;padding:20px;margin-top:14px
+    }
+    .day-block h3{margin:0 0 12px;font-size:20px}
+    .day-task{padding:12px 0;border-top:1px solid #292929}
+    .day-task:first-of-type{border-top:0}
+    .day-task strong{display:block;font-size:18px}
+    .day-task span{color:#aaa}
+    .day-complete-btn{
+      width:100%;margin-top:20px;padding:18px;border-radius:18px;border:0;
+      background:linear-gradient(90deg,#f6dc70,#c99f2f);color:#111;font-weight:800;font-size:19px
+    }
+    .day-complete-btn[disabled]{opacity:.55}
+
+
+    .mana-day-row{cursor:pointer;-webkit-tap-highlight-color:rgba(246,220,112,.12)}
+    .mana-day-row:active{opacity:.72}
+
+
+    /* v3.6.2 iPhone modal/footer fix */
+    .day-complete-btn{min-height:60px;margin-bottom:8px}
+    body:has(.day-modal-backdrop.show) .nav{visibility:hidden}
+
+
+    /* v3.6.3 clearer MANA 28 day states */
+    .mana-day-row{position:relative;transition:background .18s ease,opacity .18s ease}
+    .mana-current-day{
+      background:linear-gradient(90deg,rgba(246,220,112,.055),rgba(246,220,112,.012)) !important;
+      border-radius:16px !important;
+      padding-left:14px !important;
+      padding-right:14px !important;
+      box-shadow:
+        inset 2px 0 0 rgba(240,217,104,.85),
+        inset 0 0 0 1px rgba(240,217,104,.20);
+    }
+    .mana-current-day strong{color:#f5f5f5}
+    .mana-current-day [data-day-status]{
+      font-weight:800;
+      color:#f0d968;
+      letter-spacing:.01em;
+    }
+    .mana-complete-day{opacity:.94}
+
+
+    /* v3.7 Strength logging */
+    .strength-load-box{
+      margin-top:12px;
+      display:flex;
+      align-items:center;
+      gap:12px;
+      padding:11px 12px;
+      border:1px solid #2c2c2c;
+      background:#0b0b0b;
+      border-radius:14px;
+    }
+    .strength-load-box label{
+      flex:1;
+      margin:0;
+      color:#aaa;
+      font-size:14px;
+    }
+    .strength-load-input{
+      width:112px !important;
+      min-width:112px;
+      margin:0 !important;
+      padding:11px 12px !important;
+      text-align:right;
+      border-radius:12px !important;
+      font-size:17px !important;
+    }
+    .strength-load-unit{
+      color:#f0d968;
+      font-weight:700;
+      font-size:15px;
+    }
+    .save-strength-btn{
+      width:100%;
+      margin-top:18px;
+      min-height:56px;
+      border-radius:16px;
+      border:1px solid rgba(240,217,104,.35);
+      background:#171717;
+      color:#f0d968;
+      font-weight:800;
+      font-size:17px;
+    }
+    .strength-log-status{
+      min-height:24px;
+      margin-top:12px;
+      color:#aaa;
+      font-size:14px;
+    }
+    .strength-coach-day{
+      padding:15px 0;
+      border-bottom:1px solid #292929;
+    }
+    .strength-coach-day:last-child{border-bottom:0}
+    .strength-coach-row{
+      display:flex;
+      justify-content:space-between;
+      gap:20px;
+      padding:8px 0 0;
+      color:#aaa;
+      font-size:15px;
+    }
+
+
+    /* v3.8 Coach strength progression */
+    .strength-progress-card{
+      padding:18px 0;
+      border-bottom:1px solid #292929;
+    }
+    .strength-progress-card:last-child{border-bottom:0}
+    .strength-progress-head{align-items:flex-start}
+    .strength-progress-latest{
+      text-align:right;
+      min-width:92px;
+    }
+    .strength-progress-latest strong{
+      display:block;
+      font-size:22px;
+      line-height:1.05;
+    }
+    .strength-progress-latest span{
+      display:block;
+      margin-top:4px;
+    }
+    .strength-progress-track{
+      display:flex;
+      gap:8px;
+      overflow-x:auto;
+      padding-top:14px;
+      padding-bottom:4px;
+      -webkit-overflow-scrolling:touch;
+      scrollbar-width:none;
+    }
+    .strength-progress-track::-webkit-scrollbar{display:none}
+    .strength-progress-chip{
+      flex:0 0 auto;
+      min-width:86px;
+      border:1px solid #2d2d2d;
+      background:#0b0b0b;
+      border-radius:14px;
+      padding:10px 12px;
+    }
+    .strength-progress-chip span{
+      display:block;
+      color:#8f8f8f;
+      font-size:12px;
+      margin-bottom:4px;
+    }
+    .strength-progress-chip strong{
+      color:#f0d968;
+      font-size:15px;
+    }
+
+
+    /* v3.9 compact Coach strength trend graphs */
+    .strength-spark-wrap{
+      margin-top:14px;
+      padding-top:12px;
+      border-top:1px solid #222;
+    }
+    .strength-spark{
+      display:block;
+      width:100%;
+      height:74px;
+      overflow:visible;
+      margin-top:4px;
+    }
+    .spark-base{
+      stroke:#252525;
+      stroke-width:1;
+    }
+    .spark-line{
+      fill:none;
+      stroke:#f0d968;
+      stroke-width:3;
+      stroke-linecap:round;
+      stroke-linejoin:round;
+    }
+    .spark-dot{
+      fill:#f0d968;
+      stroke:#0b0b0b;
+      stroke-width:2;
+    }
+
+
+    /* v4.0 Coach summary dashboard */
+    .coach-summary-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+      margin-top:14px;
+    }
+    .coach-summary-stat{
+      min-height:132px;
+      padding:16px;
+      border:1px solid #2b2b2b;
+      border-radius:18px;
+      background:#0b0b0b;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+    }
+    .coach-summary-label{
+      color:#8f8f8f;
+      font-size:12px;
+      line-height:1.25;
+      margin-bottom:10px;
+    }
+    .coach-summary-stat strong{
+      color:#f3f3f3;
+      font-size:16px;
+      line-height:1.2;
+      word-break:break-word;
+    }
+    .coach-summary-number{
+      font-size:28px !important;
+      line-height:1 !important;
+    }
+    .coach-summary-value{
+      margin-top:8px;
+      color:#a9a9a9;
+      font-size:13px;
+    }
+    .coach-summary-note{
+      margin-top:14px;
+      padding:14px 15px;
+      border:1px solid rgba(240,217,104,.18);
+      border-radius:15px;
+      background:linear-gradient(90deg,rgba(240,217,104,.04),rgba(240,217,104,.01));
+    }
+    .coach-summary-note strong{
+      display:block;
+      color:#f0d968;
+      font-size:13px;
+      margin-bottom:4px;
+    }
+    .coach-summary-note span{
+      color:#8f8f8f;
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    @media (max-width:520px){
+      .coach-summary-grid{grid-template-columns:1fr 1fr}
+      .coach-summary-stat{min-height:124px;padding:14px}
+    }
+
+
+    /* v4.1 Client report */
+    body.report-open{overflow:hidden}
+    .report-modal{
+      position:fixed; inset:0; z-index:9999;
+      background:rgba(0,0,0,.86);
+      overflow:auto;
+      padding:20px 0 70px;
+    }
+    .report-shell{
+      width:min(900px,calc(100% - 24px));
+      margin:0 auto;
+      background:#080808;
+      border:1px solid rgba(240,217,104,.22);
+      border-radius:28px;
+      padding:24px;
+      color:#f4f4f4;
+    }
+    .report-actions{
+      display:flex; justify-content:space-between; gap:12px;
+      position:sticky; top:0; z-index:2;
+      padding-bottom:16px;
+      background:linear-gradient(#080808 75%,transparent);
+    }
+    .report-brand{
+      display:flex; justify-content:space-between; gap:20px; align-items:flex-start;
+      padding:10px 0 24px; border-bottom:1px solid #292929;
+    }
+    .report-kicker{color:#f0d968;font-size:12px;letter-spacing:.14em;margin-bottom:8px}
+    .report-brand h1{font-size:34px;margin:0 0 6px}
+    .report-grid{display:grid;gap:12px}
+    .report-grid.four{grid-template-columns:repeat(4,1fr);margin-top:20px}
+    .report-grid.two{grid-template-columns:repeat(2,1fr)}
+    .report-stat,.report-highlight,.report-habit,.report-note-box{
+      background:#0d0d0d;border:1px solid #2b2b2b;border-radius:18px;padding:16px;
+    }
+    .report-stat span{display:block;color:#919191;font-size:12px;margin-bottom:8px}
+    .report-stat strong{font-size:24px;color:#f0d968}
+    .report-highlight strong{display:block;font-size:17px;margin:6px 0}
+    .report-wide{grid-column:1/-1}
+    .return-bar{
+      position:sticky;top:0;z-index:999;
+      display:flex;justify-content:flex-start;
+      padding:12px 0 16px;
+      background:#fff;
+    }
+    .return-bar button{
+      border:1px solid #9a7600;
+      background:#111;
+      color:#f3d76b;
+      border-radius:999px;
+      padding:12px 18px;
+      font-size:16px;
+      font-weight:700;
+      cursor:pointer;
+    }
+
+    .report-section{margin-top:26px}
+    .report-section h2{font-size:22px;margin:0 0 12px}
+    .report-bar{height:10px;background:#252525;border-radius:999px;overflow:hidden;margin:12px 0 8px}
+    .report-bar span{display:block;height:100%;background:linear-gradient(90deg,#f6de74,#b89029)}
+    .report-note-box{white-space:pre-wrap;line-height:1.5}
+    @media(max-width:700px){
+      .report-shell{width:calc(100% - 16px);padding:18px;border-radius:22px}
+      .report-grid.four{grid-template-columns:1fr 1fr}
+      .report-grid.two{grid-template-columns:1fr}
+      .report-brand{flex-direction:column}
+    }
+    @media print{
+      body *{visibility:hidden!important}
+      #clientReportModal,#clientReportModal *{visibility:visible!important}
+      #clientReportModal{
+        display:block!important;position:absolute!important;inset:0!important;
+        background:white!important;padding:0!important;overflow:visible!important;
+      }
+      .report-shell{
+        width:100%!important;margin:0!important;border:0!important;border-radius:0!important;
+        background:white!important;color:#111!important;padding:12mm!important;
+      }
+      .no-print{display:none!important}
+      .report-stat,.report-highlight,.report-habit,.report-note-box{
+        background:white!important;color:#111!important;border-color:#ccc!important;
+      }
+      .report-stat span,.muted{color:#666!important}
+      .report-stat strong,.gold,.report-kicker{color:#9a7600!important}
+      .report-bar{background:#ddd!important}
+      .report-bar span{background:#9a7600!important}
+      @page{size:A4;margin:8mm}
+    }
+
+
+    /* v4.2 Compact Client Report PDF */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 8mm;
+      }
+
+      html, body {
+        width: 210mm !important;
+        background: #fff !important;
+      }
+
+      #clientReportModal {
+        position: absolute !important;
+        inset: 0 !important;
+        display: block !important;
+        width: 100% !important;
+        min-height: auto !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+
+      .report-shell {
+        width: 100% !important;
+        max-width: none !important;
+        min-height: auto !important;
+        padding: 7mm !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #fff !important;
+        color: #111 !important;
+      }
+
+      .report-brand {
+        padding: 0 0 4mm !important;
+        margin: 0 0 4mm !important;
+        gap: 4mm !important;
+        border-bottom: 1px solid #bbb !important;
+        page-break-after: avoid !important;
+        break-after: avoid-page !important;
+      }
+
+      .report-kicker {
+        font-size: 8pt !important;
+        letter-spacing: .10em !important;
+        margin-bottom: 1mm !important;
+      }
+
+      .report-brand h1 {
+        font-size: 20pt !important;
+        line-height: 1.05 !important;
+        margin: 0 0 1mm !important;
+      }
+
+      .report-brand .muted {
+        font-size: 9pt !important;
+        margin: 0 !important;
+      }
+
+      .report-brand .pill,
+      .report-badge {
+        padding: 1.8mm 3mm !important;
+        font-size: 7.5pt !important;
+      }
+
+      .report-grid {
+        gap: 2.5mm !important;
+      }
+
+      .report-grid.four,
+      .report-grid-4 {
+        grid-template-columns: repeat(4, 1fr) !important;
+        margin-top: 3mm !important;
+      }
+
+      .report-grid.two,
+      .report-grid-2 {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      .report-stat,
+      .report-highlight,
+      .report-habit,
+      .report-note-box {
+        padding: 3mm !important;
+        border-radius: 3mm !important;
+        min-height: auto !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      .report-stat span,
+      .report-highlight span {
+        font-size: 7.5pt !important;
+        margin-bottom: 1mm !important;
+      }
+
+      .report-stat strong {
+        font-size: 13pt !important;
+        line-height: 1.05 !important;
+      }
+
+      .report-highlight strong {
+        font-size: 10.5pt !important;
+        line-height: 1.1 !important;
+        margin: 1mm 0 !important;
+      }
+
+      .report-highlight div,
+      .report-highlight em {
+        font-size: 8pt !important;
+      }
+
+      .report-section {
+        margin-top: 5mm !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+      }
+
+      .report-section h2 {
+        font-size: 14pt !important;
+        line-height: 1.05 !important;
+        margin: 0 0 2.5mm !important;
+        page-break-after: avoid !important;
+        break-after: avoid-page !important;
+      }
+
+      .report-section .tiny,
+      .report-section .muted {
+        font-size: 7.5pt !important;
+      }
+
+      .report-habit {
+        padding: 3mm !important;
+      }
+
+      .report-bar {
+        height: 2mm !important;
+        margin: 2mm 0 1.5mm !important;
+      }
+
+      .report-note-box {
+        font-size: 8.5pt !important;
+        line-height: 1.3 !important;
+        white-space: pre-wrap !important;
+      }
+
+      /* Reduce overly generous app typography inside the report */
+      .client-report-content,
+      #clientReportContent {
+        padding: 0 !important;
+      }
+
+      #reportStrengthHighlights .report-highlight,
+      #reportCheckinSummary .report-stat,
+      #reportCheckinSummary .report-highlight {
+        min-height: 0 !important;
+      }
+
+      /* Keep key blocks together but allow the full report to flow across pages */
+      .report-brand,
+      .report-grid.four,
+      .report-grid-4,
+      #reportHabitSummary,
+      #reportCoachNotes {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+
+      /* Avoid huge whitespace caused by inherited mobile/card dimensions */
+      .card,
+      .panel,
+      section,
+      article {
+        min-height: 0 !important;
+      }
+
+      .no-print,
+      .report-actions {
+        display: none !important;
+      }
+    }
+
+
+    /* v4.2.1 iPhone/Safari PDF blank-page fix */
+    @media print {
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+      }
+
+      /* Remove the entire app from print flow rather than only hiding it */
+      body > * {
+        display: none !important;
+      }
+
+      body > #clientReportModal {
+        display: block !important;
+      }
+
+      #clientReportModal {
+        position: static !important;
+        inset: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+
+      #clientReportModal.hide {
+        display: block !important;
+      }
+
+      .report-shell {
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      /* Prevent fixed/sticky elements from creating phantom print pages */
+      #clientReportModal *,
+      .report-shell * {
+        position: static !important;
+        max-height: none !important;
+      }
+
+      .report-actions,
+      .no-print {
+        display: none !important;
+      }
+
+      /* Restore layout roles that must remain grid/flex after position reset */
+      .report-brand {
+        display: flex !important;
+      }
+
+      .report-grid {
+        display: grid !important;
+      }
+
+      .report-grid.four,
+      .report-grid-4 {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+
+      .report-grid.two,
+      .report-grid-2 {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      /* Keep report from reserving extra viewport-sized areas */
+      .report-section,
+      .report-stat,
+      .report-highlight,
+      .report-habit,
+      .report-note-box,
+      .client-report-content,
+      #clientReportContent {
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+      }
+    }
+
+
+    /* v4.2.2 iPhone/Safari single-page content fix */
+    @media print {
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        background: #fff !important;
+      }
+
+      /* Undo the v4.2.1 blanket body-child removal */
+      body > * {
+        display: initial !important;
+      }
+
+      /* Hide known app UI containers, but leave the report modal itself printable */
+      #authView,
+      #coachView,
+      #clientView,
+      #bottomNav,
+      nav,
+      header,
+      .bottom-nav,
+      .app-nav,
+      .no-print,
+      .report-actions {
+        display: none !important;
+      }
+
+      #clientReportModal {
+        display: block !important;
+        visibility: visible !important;
+        position: static !important;
+        inset: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #fff !important;
+      }
+
+      #clientReportModal *,
+      .report-shell,
+      .report-shell * {
+        visibility: visible !important;
+      }
+
+      #clientReportModal.hide {
+        display: block !important;
+      }
+
+      .report-shell {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        margin: 0 !important;
+        padding: 7mm !important;
+        box-sizing: border-box !important;
+        background: #fff !important;
+        color: #111 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+      }
+
+      .report-brand {
+        display: flex !important;
+      }
+
+      .report-grid {
+        display: grid !important;
+      }
+
+      .report-grid.four,
+      .report-grid-4 {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+
+      .report-grid.two,
+      .report-grid-2 {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+
+      .report-section,
+      .report-stat,
+      .report-highlight,
+      .report-habit,
+      .report-note-box,
+      .client-report-content,
+      #clientReportContent {
+        display: block;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+      }
+
+      /* Restore grid items where needed */
+      #reportStrengthHighlights,
+      #reportCheckinSummary {
+        display: grid !important;
+      }
+    }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand"><div class="mark">M</div><div><h1>MANA MOVEMENT</h1><small>TRAINING • MOVE WITH PURPOSE</small></div></header>
+
+  <section id="authView">
+    <div class="card hero">
+      <span class="pill">MANA MOVEMENT TRAINING • V4.3.2</span>
+      <h2>Your training.<br><span class="gold">One home.</span></h2>
+      <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
+    </div>
+    <div class="card">
+      <div class="tabs"><button id="loginTab" class="active">Log in</button><button id="signupTab">Create account</button></div>
+      <form id="loginForm" autocomplete="on">
+        <label>Email</label><input id="loginEmail" name="email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="username" required placeholder="you@example.com">
+        <label>Password</label><input id="loginPassword" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="••••••••">
+        <button class="btn primary">Log in to Mana Movement</button>
+        <p class="tiny muted" style="margin-top:10px">This device can keep you signed in securely. Passwords stay with your browser/password manager.</p>
+      </form>
+      <form id="signupForm" class="hide" autocomplete="on">
+        <label>First name</label><input id="firstName" name="given-name" autocomplete="given-name" required placeholder="First name">
+        <label>Email</label><input id="signupEmail" name="signup-email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="email" required placeholder="you@example.com">
+        <label>Password</label><input id="signupPassword" name="new-password" type="password" autocomplete="new-password" required minlength="6" placeholder="At least 6 characters">
+        <label>Program start date</label><input id="startDate" type="date" required>
+        <button class="btn primary">Create my account</button>
+      </form>
+      <p id="authMsg" class="tiny muted"></p>
+      <button id="forgotPasswordBtn" type="button" class="linkbtn">Forgot password?</button>
+      <div id="resetPasswordPanel" class="hide" style="margin-top:18px">
+        <label>New password</label>
+        <input id="newPasswordInput" name="reset-password" type="password" autocomplete="new-password" placeholder="Choose a new password">
+        <button id="saveNewPasswordBtn" type="button" class="btn secondary" style="margin-top:12px">Save new password</button>
+        <p id="resetPasswordMsg" class="tiny muted"></p>
+      </div>
+      <p class="tiny muted" style="margin-top:16px">MANA 28 is your first program inside Mana Movement Training.</p>
+    </div>
+    
+  </section>
+
+
+  <section id="coachClientDetailView" class="hide">
+    <div class="row">
+      <button id="backToCoachClients" class="btn secondary" style="width:auto;padding:12px 16px">← Back</button>
+      <span class="pill">CLIENT DETAIL</span>
+    </div>
+
+    <div class="row" style="margin-top:18px">
+      <div>
+        <h2 id="detailClientName">Client</h2>
+        <p class="muted">MANA 28</p>
+      </div>
+      <div class="avatar" id="detailClientAvatar">C</div>
+    </div>
+
+    <div class="grid">
+      <div class="metric"><span class="tiny muted">Current day</span><strong id="detailCurrentDay">1 / 28</strong><span class="tiny">MANA 28</span></div>
+      <div class="metric"><span class="tiny muted">Days complete</span><strong id="detailDaysComplete">0</strong><span class="tiny">sessions</span></div>
+      <div class="metric"><span class="tiny muted">Habits</span><strong id="detailHabitPercent">0%</strong><span class="tiny">adherence</span></div>
+      <div class="metric"><span class="tiny muted">Check-ins</span><strong id="detailCheckinCount">0</strong><span class="tiny">submitted</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Latest check-in</h3>
+      <div id="detailLatestCheckin"><p class="muted">No check-ins yet.</p></div>
+    </div>
+
+    <div class="card">
+      <h3>Check-in history</h3>
+      <div id="detailCheckinHistory"><p class="muted">No check-ins yet.</p></div>
+    </div>
+
+
+    <div class="card">
+      <div class="row"><h3>Weight trend</h3><span class="pill">LIVE</span></div>
+      <div id="weightTrendChart" class="trend-chart"><p class="muted">Not enough data yet.</p></div>
+    </div>
+
+    <div class="card">
+      <div class="row"><h3>Energy trend</h3><span class="pill">LIVE</span></div>
+      <div id="energyTrendChart" class="trend-chart"><p class="muted">Not enough data yet.</p></div>
+    </div>
+
+    <div class="card">
+      <h3>Workout history</h3>
+      <div id="detailWorkoutHistory"><p class="muted">No completed sessions yet.</p></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div>
+          <h3>Client report</h3>
+          <p class="tiny muted">Attendance, habits, check-ins, strength and coach notes.</p>
+        </div>
+        <span class="pill">NEW</span>
+      </div>
+      <button id="openClientReportBtn" class="btn secondary" type="button">Open client report</button>
+    </div>
+
+    <div class="card">
+      <div class="row"><h3>Coach summary</h3><span class="pill">LIVE</span></div>
+      <div id="detailCoachSummary"><p class="muted">Loading coaching summary…</p></div>
+    </div>
+
+    <div class="card">
+      <div class="row"><h3>Strength progression</h3><span class="pill">LIVE</span></div>
+      <div id="detailStrengthLogs"><p class="muted">No weights logged yet.</p></div>
+    </div>
+
+    <div class="card">
+      <h3>Habit history</h3>
+      <div id="detailHabitHistory"><p class="muted">No habit data yet.</p></div>
+    </div>
+
+    <div class="card">
+      <div class="row"><h3>Coach actions</h3><span class="pill">CLIENT</span></div>
+      <button id="requestCheckinBtn" class="btn">Request a check-in</button>
+      <p id="requestCheckinStatus" class="tiny muted"></p>
+    </div>
+
+    <div class="card">
+      <h3>Coach notes</h3>
+      <textarea id="coachNoteDraft" rows="4" placeholder="Private coach note for this client…"></textarea>
+      <button id="saveCoachNote" class="btn secondary">Save coach note</button>
+      <p id="coachNoteStatus" class="tiny muted"></p>
+    </div>
+  </section>
+
+
+  <div id="clientReportModal" class="report-modal hide">
+    <div class="report-shell">
+      <div class="report-actions no-print">
+        <button id="closeClientReportBtn" class="btn secondary" type="button">Close</button>
+        <button id="printClientReportBtn" class="btn" type="button">Print / Save PDF</button>
+      </div>
+
+      <div class="report-brand">
+        <div>
+          <div class="report-kicker">MANA MOVEMENT TRAINING</div>
+          <h1>Client Progress Report</h1>
+          <p id="reportClientName" class="muted">Client</p>
+        </div>
+        <span class="pill">MOVE WITH PURPOSE</span>
+      </div>
+
+      <div class="report-grid four">
+        <div class="report-stat"><span>Days complete</span><strong id="reportDaysComplete">—</strong></div>
+        <div class="report-stat"><span>Habit adherence</span><strong id="reportHabitAdherence">—</strong></div>
+        <div class="report-stat"><span>Strength sessions</span><strong id="reportStrengthSessions">—</strong></div>
+        <div class="report-stat"><span>Average load change</span><strong id="reportAvgLoadChange">—</strong></div>
+      </div>
+
+      <div class="report-section">
+        <h2>Strength highlights</h2>
+        <div id="reportStrengthHighlights" class="report-grid two"></div>
+      </div>
+
+      <div class="report-section">
+        <h2>Latest check-in</h2>
+        <div id="reportCheckinSummary" class="report-grid two"></div>
+      </div>
+
+      <div class="report-section">
+        <h2>Habit summary</h2>
+        <div id="reportHabitSummary"></div>
+      </div>
+
+      <div class="report-section">
+        <h2>Coach notes</h2>
+        <div id="reportCoachNotes" class="report-note-box muted">No coach notes yet.</div>
+      </div>
+    </div>
+  </div>
+
+  <section id="clientView" class="hide">
+<div id="clientRequestBanner" class="card hide" style="border-color:var(--gold)">
+  <div class="row"><h3>Coach check-in requested</h3><span class="pill">NEW</span></div>
+  <p class="muted">Lewis has requested an update. Complete your check-in below.</p>
+  <button id="clientRequestGo" class="btn">Complete check-in</button>
+</div>
+
+    <div class="row"><div><span class="pill">CLIENT</span><h2 id="hello">Kia ora</h2></div><div class="avatar" id="avatar">MN</div></div>
+
+    <div class="card">
+      <div class="row"><div><span class="tiny gold">YOUR PROGRAMS</span><h3 style="margin:5px 0 0">Mana Movement Training</h3></div><span class="pill">1 ACTIVE</span></div>
+      <div class="day" style="align-items:flex-start">
+        <div class="avatar" style="border-radius:14px">28</div>
+        <div style="flex:1"><strong>MANA 28</strong><div class="tiny muted">28 Days to Move With Purpose</div><div class="tiny gold" style="margin-top:4px">ACTIVE PROGRAM</div></div>
+      </div>
+      <div class="day" style="align-items:flex-start;opacity:.72">
+        <div class="avatar" style="border-radius:14px">S</div>
+        <div style="flex:1"><strong>MANA STRONG</strong><div class="tiny muted">8-week strength progression</div><div class="tiny muted" style="margin-top:4px">COMING NEXT</div></div>
+      </div>
+      <div class="day" style="align-items:flex-start;opacity:.72;border-bottom:0">
+        <div class="avatar" style="border-radius:14px">L</div>
+        <div style="flex:1"><strong>MANA FOR LIFE</strong><div class="tiny muted">Strength, mobility & longevity</div><div class="tiny muted" style="margin-top:4px">COMING SOON</div></div>
+      </div>
+    </div>
+
+    <div class="card hero">
+      <p class="gold tiny">28 DAYS TO MOVE WITH PURPOSE</p>
+      <h2>MANA <span class="gold">28</span></h2>
+      <div class="row"><span id="dayLabel">Day 1 of 28</span><strong id="pctLabel" class="gold">0%</strong></div>
+      <div class="progress"><span id="progressBar" style="width:0%"></span></div>
+    </div>
+    <div class="grid">
+      <div class="metric"><span class="tiny muted">Workouts</span><strong id="workoutCount">0</strong><span class="tiny">completed</span></div>
+      <div class="metric"><span class="tiny muted">Current streak</span><strong id="streakCount">0</strong><span class="tiny">days</span></div>
+    </div>
+    <div class="card">
+      <div class="row"><h3>Today</h3><span class="gold" id="weekLabel">Week 1</span></div>
+      <h2 id="todayTitle">Full Body Strength A</h2>
+      <p class="muted" id="todayDesc">Goblet Squat • DB Chest Press • Seated Cable Row • RDL • Shoulder Press • Dead Bug</p>
+      <button id="completeToday" class="btn primary">Mark today complete</button>
+    </div>
+    <div class="card">
+      <h3>Daily habits</h3>
+      <div id="habitList"></div>
+    </div>
+    <div class="card">
+      <div class="row"><h3>Mana Movement Hub</h3><span class="pill">APP HOME</span></div>
+      <div class="grid">
+        <div class="metric"><span class="tiny muted">Programs</span><strong style="font-size:20px">Training</strong><span class="tiny">your plans</span></div>
+        <div class="metric"><span class="tiny muted">Coach</span><strong style="font-size:20px">Check-ins</strong><span class="tiny">support</span></div>
+        <div class="metric"><span class="tiny muted">Fuel</span><strong style="font-size:20px">Nutrition</strong><span class="tiny">guidance</span></div>
+        <div class="metric"><span class="tiny muted">Results</span><strong style="font-size:20px">Progress</strong><span class="tiny">your journey</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Latest check-in</h3>
+      <div class="grid">
+        <div><label>Weight (kg)</label><input id="weightInput" type="number" step=".1" placeholder="Optional"></div>
+        <div><label>Energy / 10</label><input id="energyInput" type="number" min="1" max="10" placeholder="1–10"></div>
+      </div>
+      <label>Note to Lewis</label><textarea id="noteInput" rows="3" placeholder="How are you feeling?"></textarea>
+      <button id="saveCheckin" class="btn secondary">Save check-in</button>
+    </div>
+  </section>
+
+  <section id="coachView" class="hide">
+    <div id="coachHomePage" class="coach-page">
+    <div class="row"><div><span class="pill">COACH</span><h2>Mana Movement Coach</h2><p class="muted">Lewis Norman</p></div><div class="avatar">LN</div></div>
+    <div class="grid">
+      <div class="metric"><span class="tiny muted">Active clients</span><strong id="coachClientCount">0</strong><span class="tiny">all programs</span></div>
+      <div class="metric"><span class="tiny muted">Avg adherence</span><strong id="coachAdherence">0%</strong><span class="tiny">this week</span></div>
+    </div>
+    <div class="card" id="coachClientsCard">
+      <div class="row"><h3>Active Clients</h3><span class="pill">LIVE DATA</span></div>
+      <p class="muted">Loading real client accounts…</p>
+    </div>
+    <div class="card">
+      <h3>Next coach tools</h3>
+      <p class="muted">Client detail pages • private progress photos • weekly check-ins • coach notes • messages • program assignments.</p>
+    </div>
+    </div>
+
+    <div id="coachProgramsPage" class="coach-page hide">
+      <div class="row"><div><span class="pill">COACH</span><h2>Programs</h2></div><div class="avatar">LN</div></div>
+      <div class="card">
+        <h3>MANA 28</h3>
+        <p class="muted">28 Days to Move With Purpose</p>
+        <div class="row"><span>Active clients</span><strong class="gold" id="programClientCount">0</strong></div>
+      </div>
+      <div class="card">
+        <h3>Coming next</h3>
+        <div class="day"><div class="avatar" style="border-radius:14px">S</div><div><strong>MANA STRONG</strong><div class="tiny muted">8-week strength progression</div></div></div>
+        <div class="day" style="border-bottom:0"><div class="avatar" style="border-radius:14px">L</div><div><strong>MANA FOR LIFE</strong><div class="tiny muted">Strength, mobility & longevity</div></div></div>
+      </div>
+    </div>
+
+    <div id="coachFuelPage" class="coach-page hide">
+      <div class="row"><div><span class="pill">COACH</span><h2>Fuel</h2></div><div class="avatar">LN</div></div>
+      <div class="card"><h3>Mana Nutrition</h3><p class="muted">Nutrition guides, meal templates and future client nutrition resources will live here.</p></div>
+      <div class="card"><h3>MANA 28 Nutrition Guide</h3><p>Protein • whole foods • hydration • fruit & vegetables • 80/20 flexibility.</p></div>
+    </div>
+
+    <div id="coachProgressPage" class="coach-page hide">
+      <div class="row"><div><span class="pill">COACH</span><h2>Progress</h2></div><div class="avatar">LN</div></div>
+      <div class="card">
+        <h3>Client Progress Overview</h3>
+        <p class="muted">As real clients join, this screen will summarize program completion, adherence and check-ins.</p>
+        <div class="grid">
+          <div class="metric"><span class="tiny muted">Clients</span><strong id="progressClientCount">0</strong><span class="tiny">active</span></div>
+          <div class="metric"><span class="tiny muted">Adherence</span><strong id="progressAdherence">0%</strong><span class="tiny">average</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="coachProfilePage" class="coach-page hide">
+      <div class="row"><div><span class="pill">COACH</span><h2>Profile</h2></div><div class="avatar">LN</div></div>
+      <div class="card">
+        <h3>Lewis Norman</h3>
+        <p class="muted">Mana Movement Training • Coach</p>
+        <button id="coachLogoutButton" class="btn secondary">Log out</button>
+      </div>
+    </div>
+  </section>
+
+<section id="clientProgramsView" class="hide">
+  <div class="row">
+    <div><span class="pill">MANA 28</span><h2>Programs</h2><p class="muted">28 Days to Move With Purpose</p></div>
+    <div class="avatar">28</div>
+  </div>
+  <div class="card">
+    <h3>Your MANA 28 program</h3>
+    <p class="muted">Completed days sync automatically with your coach.</p>
+    <div id="clientProgramDays"></div>
+  </div>
+</section>
+
+<section id="clientFuelView" class="hide">
+  <div class="row">
+    <div><span class="pill">FUEL</span><h2>Nutrition</h2><p class="muted">Simple foundations for better consistency</p></div>
+    <div class="avatar">F</div>
+  </div>
+
+  <div class="card">
+    <h3>Move with purpose. Fuel with purpose.</h3>
+    <p class="muted">Keep nutrition simple and repeatable while completing MANA 28.</p>
+  </div>
+
+  <div class="card">
+    <h3>Daily foundations</h3>
+    <div class="history-row"><strong>Protein</strong><div class="tiny muted">Include a quality protein source at each main meal.</div></div>
+    <div class="history-row"><strong>Hydration</strong><div class="tiny muted">Drink water consistently across the day.</div></div>
+    <div class="history-row"><strong>Fruit & vegetables</strong><div class="tiny muted">Build colour and variety into your meals.</div></div>
+    <div class="history-row"><strong>Whole foods</strong><div class="tiny muted">Base most meals around minimally processed foods.</div></div>
+    <div class="history-row"><strong>80/20 flexibility</strong><div class="tiny muted">Consistency matters more than perfection.</div></div>
+  </div>
+</section>
+
+<section id="clientProgressView" class="hide">
+  <div class="row">
+    <div><span class="pill">PROGRESS</span><h2>Your progress</h2><p class="muted">MANA 28 • One day at a time</p></div>
+    <div class="avatar">↗</div>
+  </div>
+
+  <div class="grid">
+    <div class="metric"><span class="tiny muted">Days complete</span><strong id="cpDaysComplete">0</strong><span class="tiny">of 28</span></div>
+    <div class="metric"><span class="tiny muted">Habits</span><strong id="cpHabitPercent">0%</strong><span class="tiny">overall</span></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><h3>Weight trend</h3><span class="pill">LIVE</span></div>
+    <div id="cpWeightTrend"><p class="muted">No check-ins yet.</p></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><h3>Energy trend</h3><span class="pill">LIVE</span></div>
+    <div id="cpEnergyTrend"><p class="muted">No check-ins yet.</p></div>
+  </div>
+
+  <div class="card">
+    <h3>Workout history</h3>
+    <div id="cpWorkoutHistory"><p class="muted">No completed sessions yet.</p></div>
+  </div>
+</section>
+
+<section id="clientProfileView" class="hide">
+  <div class="row">
+    <div><span class="pill">PROFILE</span><h2>Your account</h2><p class="muted">Mana Movement Training</p></div>
+    <div class="avatar" id="clientProfileInitials">MM</div>
+  </div>
+
+  <div class="card">
+    <h3 id="clientProfileName">Client</h3>
+    <p class="muted" id="clientProfileEmail"></p>
+    <p>MANA 28 • Active</p>
+    <button id="clientLogoutBtn" class="btn secondary">Log out</button>
+  </div>
+
+  <div class="card">
+    <h3>Password</h3>
+    <p class="muted">Need a new password? Log out and use “Forgot password?” on the login screen.</p>
+  </div>
+</section>
+
+</div>
+
+
+<div id="dayModalBackdrop" class="day-modal-backdrop" aria-hidden="true">
+  <div class="day-modal" role="dialog" aria-modal="true" aria-labelledby="dayModalTitle">
+    <div class="day-modal-head">
+      <div>
+        <span id="dayModalChip" class="day-chip">MANA 28</span>
+        <h2 id="dayModalTitle">Day</h2>
+        <div id="dayModalSub" class="day-sub"></div>
+      </div>
+      <button id="dayModalClose" class="day-modal-close" type="button" aria-label="Close">×</button>
+    </div>
+    <div id="dayModalBody"></div>
+    <div id="strengthLogStatus" class="strength-log-status"></div>
+    <button id="dayCompleteBtn" class="day-complete-btn" type="button">Mark day complete</button>
+  </div>
+</div>
+
+<nav id="bottomNav" class="nav hide"><div class="navin">
+  <button data-page="home" class="active">⌂<br>Home</button>
+  <button data-page="programs">▣<br>Programs</button>
+  <button data-page="fuel">◯<br>Fuel</button>
+  <button data-page="progress">↗<br>Progress</button>
+  <button data-page="profile">◎<br>Profile</button>
+</div></nav>
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const DAYS=[
+["Full Body Strength A","Goblet Squat • DB Chest Press • Seated Cable Row • RDL • Shoulder Press • Dead Bug"],
+["Move & Recover","30-minute walk • mobility • Mana Action"],
+["Full Body Strength B","Step-Up • Lat Pulldown • Incline DB Press • Hip Thrust • Curls • Triceps • Plank"],
+["Active Recovery","7,000+ steps • protein with main meals"],
+["Mana Conditioning","Bike/row/walk • squat • band row • incline push-up • farmer carry"],
+["Strength + Core","Leg Press • DB Bench • Row • RDL • Pallof Press • Bird Dog"],
+["Reset","Walk • recover • review your week"],
+["Strength A","Progress weight, reps or quality"],
+["Move & Recover","30–40 minute walk • meal prep"],
+["Strength B","Step-Up • Pulldown • Press • Hip Thrust • Arms • Plank"],
+["Active Recovery","7,000–10,000 steps • mobility"],
+["Conditioning","5 rounds • 40 sec work / 20 sec transition"],
+["Strength + Core","Leg Press • Chest Press • Row • RDL • Pallof • Plank"],
+["Reset","Recovery • weekly review"],
+["Strength A","Week 3 challenge • controlled RPE 7–8"],
+["Move & Recover","35–45 minute walk • Mana Action"],
+["Strength B","Week 3 challenge session"],
+["Active Recovery","Walk • stretch • mobility • hydration"],
+["Mana Conditioning","Bike/row • boxing • step-up • band row • carry"],
+["Strength + Core","Strength work • 5 minute cardio finish"],
+["Reset","Rest • recover • eat well • sleep"],
+["Re-Test Strength A","Repeat Day 1 and compare"],
+["Move & Reflect","40-minute walk • write 3 improvements"],
+["Re-Test Strength B","Repeat Day 3 and improve safely"],
+["Recovery","Walk • stretch • mobility"],
+["Mana Test","5-minute bike/row/walk benchmark"],
+["Final Strength Session","Choose 6 favourite exercises • 3 × 10"],
+["Move With Purpose","Final review • optional measures • reflect"]
+];
+const habits=["Workout / movement","Steps","Hydration","Protein / nutrition","Mindset / Mana","Sleep"];
+
+let mode=null, currentUser=null, sb=null;
+let state={name:"Client",day:1,completed:[],habits:{},checkins:[]};
+const $=id=>document.getElementById(id);
+const auth=$("authView"), client=$("clientView"), coach=$("coachView"), nav=$("bottomNav");
+
+function storageLoad(){ try{const s=localStorage.getItem("mana28v2demo"); if(s) state=JSON.parse(s)}catch(e){} }
+function storageSave(){ localStorage.setItem("mana28v2demo",JSON.stringify(state)); }
+function todayISO(){return new Date().toISOString().slice(0,10)}
+function esc(s){return String(s||"").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"}[m]))}
+
+$("loginTab").onclick=()=>{$("loginTab").classList.add("active");$("signupTab").classList.remove("active");$("loginForm").classList.remove("hide");$("signupForm").classList.add("hide")};
+$("signupTab").onclick=()=>{$("signupTab").classList.add("active");$("loginTab").classList.remove("active");$("signupForm").classList.remove("hide");$("loginForm").classList.add("hide")};
+
+function openDemoClient(name){currentUser=null;storageLoad();mode="client";state.name=name||state.name||"Client";auth.classList.add("hide");coach.classList.add("hide");client.classList.remove("hide");nav.classList.remove("hide");renderClient()}
+function openDemoCoach(){currentUser=null;mode="coach";auth.classList.add("hide");client.classList.add("hide");coach.classList.remove("hide");nav.classList.remove("hide")}
+
+function renderClient(){
+ const done=state.completed.length,pct=Math.round(done/28*100),day=Math.min(Math.max(state.day,1),28),d=DAYS[day-1];
+ $("hello").textContent=`Kia ora, ${state.name}`;
+ $("avatar").textContent=state.name.split(" ").map(x=>x[0]).join("").slice(0,2).toUpperCase();
+ $("dayLabel").textContent=`Day ${day} of 28`;$("pctLabel").textContent=pct+"%";$("progressBar").style.width=pct+"%";
+ $("workoutCount").textContent=done;$("streakCount").textContent=Math.min(done,7);$("weekLabel").textContent=`Week ${Math.ceil(day/7)}`;
+ $("todayTitle").textContent=d[0];$("todayDesc").textContent=d[1];
+ $("completeToday").textContent=state.completed.includes(day)?"Completed ✓":"Mark today complete";
+ $("habitList").innerHTML=habits.map(h=>{const yes=!!state.habits[h];return `<div class="day"><button class="check ${yes?"done":""}" data-habit="${esc(h)}">${yes?"✓":"○"}</button><span>${esc(h)}</span></div>`}).join("");
+ document.querySelectorAll("[data-habit]").forEach(b=>b.onclick=async()=>{
+   const h=b.dataset.habit,next=!state.habits[h];
+   if(currentUser){try{await saveHabitCloud(h,next);await loadClientCloud()}catch(e){alert("Could not save habit: "+e.message)}}
+   else{state.habits[h]=next;storageSave();renderClient()}
+ });
+}
+
+async function supabaseClient(){
+  if(sb) return sb;
+  sb = window.supabase.createClient(
+    MANA_CONFIG.supabaseUrl,
+    MANA_CONFIG.supabaseAnonKey,
+    {
+      auth:{
+        persistSession:true,
+        autoRefreshToken:true,
+        detectSessionInUrl:true,
+        storage:window.localStorage
+      }
+    }
+  );
+  return sb;
+}
+async function getProfile(uid){const c=await supabaseClient();const {data,error}=await c.from('profiles').select('id,full_name,role,program_start_date').eq('id',uid).single();if(error)throw error;return data}
+
+async function loadClientCloud(){
+ const c=await supabaseClient(), profile=await getProfile(currentUser.id);
+ state.name=profile.full_name||currentUser.email.split('@')[0];
+ const {data:days,error:dErr}=await c.from('day_progress').select('day_number,completed').eq('user_id',currentUser.id).eq('completed',true).order('day_number');if(dErr)throw dErr;
+ state.completed=(days||[]).map(x=>x.day_number);state.day=Math.min(28,state.completed.length?Math.max(...state.completed)+1:1);
+ const {data:hrs,error:hErr}=await c.from('habit_logs').select('habit_key,completed').eq('user_id',currentUser.id).eq('log_date',todayISO());if(hErr)throw hErr;
+ state.habits={};(hrs||[]).forEach(r=>state.habits[r.habit_key]=!!r.completed);
+ renderClient();
+ await loadClientCheckinRequest();
+}
+async function saveHabitCloud(habit,completed){const c=await supabaseClient();const {error}=await c.from('habit_logs').upsert({user_id:currentUser.id,log_date:todayISO(),habit_key:habit,completed},{onConflict:'user_id,log_date,habit_key'});if(error)throw error}
+async function markDayCloud(day){const c=await supabaseClient();const {error}=await c.from('day_progress').upsert({user_id:currentUser.id,day_number:day,completed:true,completed_at:new Date().toISOString()},{onConflict:'user_id,day_number'});if(error)throw error}
+async function saveCheckinCloud(){const c=await supabaseClient();const {error}=await c.from('checkins').insert({user_id:currentUser.id,weight_kg:$("weightInput").value?Number($("weightInput").value):null,energy:$("energyInput").value?Number($("energyInput").value):null,note:$("noteInput").value||null});if(error)throw error;await completeClientCheckinRequests();await loadClientCheckinRequest()}
+
+async function loadClientCheckinRequest(){
+  if(!currentUser) return;
+  try{
+    const c=await supabaseClient();
+    const {data,error}=await c.from("checkin_requests")
+      .select("id,status,requested_at")
+      .eq("client_id",currentUser.id)
+      .eq("status","requested")
+      .order("requested_at",{ascending:false})
+      .limit(1);
+    if(error) throw error;
+    const banner=document.getElementById("clientRequestBanner");
+    if(banner) banner.classList.toggle("hide", !(data && data.length));
+  }catch(e){
+    console.warn("check-in request",e);
+  }
+}
+
+async function completeClientCheckinRequests(){
+  if(!currentUser) return;
+  try{
+    const c=await supabaseClient();
+    const {data,error}=await c.from("checkin_requests")
+      .select("id")
+      .eq("client_id",currentUser.id)
+      .eq("status","requested");
+    if(error) throw error;
+    if(data && data.length){
+      await c.from("checkin_requests")
+        .update({status:"completed",completed_at:new Date().toISOString()})
+        .in("id",data.map(x=>x.id));
+    }
+  }catch(e){
+    console.warn("complete check-in request",e);
+  }
+}
+
+async function openConnectedClient(profile){mode='client';state.name=profile.full_name||currentUser.email.split('@')[0];hideClientSuiteViews();auth.classList.add('hide');coach.classList.add('hide');client.classList.remove('hide');nav.classList.remove('hide');setActiveNav('home');await loadClientCloud()}
+async function openConnectedCoach(){mode='coach';auth.classList.add('hide');client.classList.add('hide');coach.classList.remove('hide');nav.classList.remove('hide');showCoachPage('home');await loadCoachDashboard()}
+
+async function loadCoachDashboard(){
+  const card = document.getElementById("coachClientsCard");
+  const clientMetric = document.getElementById("coachClientCount");
+  const adherenceMetric = document.getElementById("coachAdherence");
+
+  if(clientMetric) clientMetric.textContent = "0";
+  if(adherenceMetric) adherenceMetric.textContent = "0%";
+  if(card) card.innerHTML =
+    '<div class="row"><h3>Active Clients</h3><span class="pill">LIVE DATA</span></div>' +
+    '<p class="muted">Connecting to Mana cloud…</p>';
+
+  try{
+    const c = await supabaseClient();
+
+    const timeout = new Promise((_, reject)=>
+      setTimeout(()=>reject(new Error("Coach dashboard request timed out.")), 8000)
+    );
+
+    const rpcCall = c.rpc("coach_clients_summary");
+
+    const result = await Promise.race([rpcCall, timeout]);
+    if(result.error) throw result.error;
+
+    const rows = result.data || [];
+    const clientCount = rows.length;
+    const adherence = clientCount
+      ? Math.round(rows.reduce((sum,r)=>sum + Number(r.habit_percent || 0),0)/clientCount)
+      : 0;
+
+    if(clientMetric) clientMetric.textContent = String(clientCount);
+    if(adherenceMetric) adherenceMetric.textContent = adherence + "%";
+
+    const pc=document.getElementById("programClientCount");
+    const prc=document.getElementById("progressClientCount");
+    const pra=document.getElementById("progressAdherence");
+    if(pc) pc.textContent=String(clientCount);
+    if(prc) prc.textContent=String(clientCount);
+    if(pra) pra.textContent=adherence+"%";
+
+    if(card){
+      if(!clientCount){
+        card.innerHTML =
+          '<div class="row"><h3>Active Clients</h3><span class="pill">LIVE DATA</span></div>' +
+          '<p class="muted">No client accounts yet.</p>';
+      } else {
+        card.innerHTML =
+          '<div class="row"><h3>Active Clients</h3><span class="pill">LIVE DATA</span></div>' +
+          rows.map(r=>`<button class="client client-open" data-client-id="${r.user_id}" data-client-name="${esc(r.full_name || "Client")}" style="width:100%;background:none;border:0;color:inherit;text-align:left;padding:18px 0">
+            <div class="row"><strong>${esc(r.full_name || "Client")}</strong><span class="gold">Day ${Math.min(Number(r.current_day || 1),28)} / 28</span></div>
+            <p class="tiny muted">${Number(r.days_complete || 0)} days complete • Habits ${Number(r.habit_percent || 0)}%</p>
+          </button>`).join("");
+      }
+    }
+  }catch(err){
+    console.error("coach rpc failed",err);
+    if(card) card.innerHTML =
+      '<div class="row"><h3>Active Clients</h3><span class="pill">CLOUD ERROR</span></div>' +
+      '<p class="muted">'+esc(err?.message || String(err))+'</p>';
+  }
+}
+
+$("completeToday").onclick=async()=>{const d=state.day;if(currentUser){try{await markDayCloud(d);await loadClientCloud()}catch(e){alert('Could not save progress: '+e.message)}}else{if(!state.completed.includes(d))state.completed.push(d);if(state.day<28)state.day++;storageSave();renderClient()}};
+$("saveCheckin").onclick=async()=>{if(currentUser){try{await saveCheckinCloud();$("saveCheckin").textContent='Saved ✓';$("weightInput").value='';$("energyInput").value='';$("noteInput").value='';setTimeout(()=>$("saveCheckin").textContent='Save check-in',1200)}catch(e){alert('Could not save check-in: '+e.message)}}else{state.checkins.push({date:new Date().toISOString(),weight:$("weightInput").value,energy:$("energyInput").value,note:$("noteInput").value});storageSave()}};
+
+$("signupForm").onsubmit=async e=>{e.preventDefault();const c=await supabaseClient(),email=$("signupEmail").value.trim(),password=$("signupPassword").value,name=$("firstName").value.trim(),start_date=$("startDate").value;$("authMsg").textContent='Creating account…';const {error}=await c.auth.signUp({email,password,options:{data:{name,start_date,role:'client'}}});$("authMsg").textContent=error?error.message:'Account created. Check your email to confirm, then log in.'};
+$("loginForm").onsubmit=async e=>{
+  e.preventDefault();
+  const c=await supabaseClient();
+  const email=$("loginEmail").value.trim();
+  const password=$("loginPassword").value;
+  $("authMsg").textContent='Logging in…';
+  const {data,error}=await c.auth.signInWithPassword({email,password});
+  if(error){
+    $("authMsg").textContent=error.message;
+    return;
+  }
+  try{ localStorage.setItem("mana:lastEmail", email); }catch(e){}
+  currentUser=data.user;
+  try{
+    const profile=await getProfile(currentUser.id);
+    $("authMsg").textContent='';
+    profile.role==='coach'?await openConnectedCoach():await openConnectedClient(profile);
+  }catch(err){
+    $("authMsg").textContent='Login worked, but profile load failed: '+err.message;
+  }
+};
+
+
+
+let selectedCoachClient = null;
+
+
+function renderTrend(containerId, values, suffix=""){
+  const el = document.getElementById(containerId);
+  const pts = (values || []).filter(v => v.value !== null && v.value !== undefined && !Number.isNaN(Number(v.value)));
+  if(!pts.length){
+    el.innerHTML = '<p class="muted">No data yet.</p>';
+    return;
+  }
+  if(pts.length === 1){
+    el.innerHTML = `<div class="metric"><span class="tiny muted">${esc(pts[0].label)}</span><strong>${pts[0].value}${suffix}</strong><span class="tiny">latest</span></div>`;
+    return;
+  }
+
+  const nums = pts.map(p=>Number(p.value));
+  let min = Math.min(...nums), max = Math.max(...nums);
+  if(max === min){ max += 1; min -= 1; }
+  const w = 320, h = 115, pad = 8;
+  const coords = pts.map((p,i)=>{
+    const x = pad + (i/(pts.length-1))*(w-pad*2);
+    const y = h-pad - ((Number(p.value)-min)/(max-min))*(h-pad*2);
+    return {x,y,p};
+  });
+  const path = coords.map((c,i)=>(i===0?"M":"L")+c.x.toFixed(1)+" "+c.y.toFixed(1)).join(" ");
+  el.innerHTML = `
+    <div class="spark-wrap">
+      <svg class="spark-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+        <path class="spark-line" d="${path}"></path>
+        ${coords.map(c=>`<circle class="spark-dot" cx="${c.x}" cy="${c.y}" r="4"></circle>`).join("")}
+      </svg>
+      <div class="spark-labels"><span>${esc(pts[0].label)}</span><span>${esc(pts[pts.length-1].label)}</span></div>
+    </div>
+    <p class="tiny muted">Latest: ${pts[pts.length-1].value}${suffix}</p>`;
+}
+
+function groupHabitHistory(habits){
+  const byDate = {};
+  (habits||[]).forEach(h=>{
+    if(!byDate[h.log_date]) byDate[h.log_date] = [];
+    byDate[h.log_date].push(h);
+  });
+  return Object.entries(byDate).sort((a,b)=>b[0].localeCompare(a[0]));
+}
+
+
+let currentClientReportData = null;
+
+function reportKg(v){
+  const n = Number(v);
+  if(!Number.isFinite(n)) return "—";
+  return `${n.toFixed(n % 1 ? 1 : 0)} kg`;
+}
+
+function renderClientReport(){
+  const d = currentClientReportData;
+  if(!d) return;
+
+  document.getElementById("reportClientName").textContent = d.clientName || "Client";
+  document.getElementById("reportDaysComplete").textContent = `${d.daysComplete} / 28`;
+  document.getElementById("reportHabitAdherence").textContent = `${d.habitPct}%`;
+  document.getElementById("reportStrengthSessions").textContent = String(d.totalStrengthSessions);
+
+  document.getElementById("reportAvgLoadChange").textContent =
+    d.repeatLiftCount
+      ? `${d.avgIncrease > 0 ? "+" : ""}${d.avgIncrease.toFixed(d.avgIncrease % 1 ? 1 : 0)} kg`
+      : "—";
+
+  const highlights = [];
+  if(d.strongest){
+    highlights.push(`
+      <div class="report-highlight">
+        <span class="tiny muted">Strongest improvement</span>
+        <strong>${esc(d.strongest.name)}</strong>
+        <div class="gold">+${reportKg(d.strongest.delta)}</div>
+      </div>
+    `);
+  }
+  if(d.consistent){
+    highlights.push(`
+      <div class="report-highlight">
+        <span class="tiny muted">Most consistent lift</span>
+        <strong>${esc(d.consistent.name)}</strong>
+        <div>${d.consistent.entries.length} logs</div>
+      </div>
+    `);
+  }
+
+  (d.summaryExercises || [])
+    .filter(x=>x.latest)
+    .sort((a,b)=>(b.latest.weight||0)-(a.latest.weight||0))
+    .slice(0,4)
+    .forEach(x=>{
+      highlights.push(`
+        <div class="report-highlight">
+          <span class="tiny muted">${esc(x.name)}</span>
+          <strong class="gold">${reportKg(x.latest.weight)}</strong>
+          <div class="tiny muted">${x.entries.length} logged session${x.entries.length===1?"":"s"}</div>
+        </div>
+      `);
+    });
+
+  document.getElementById("reportStrengthHighlights").innerHTML =
+    highlights.length ? highlights.join("") : '<p class="muted">No strength data yet.</p>';
+
+  const latest = d.latestCheckin;
+  document.getElementById("reportCheckinSummary").innerHTML = latest ? `
+    <div class="report-stat">
+      <span>Weight</span>
+      <strong>${latest.weight_kg ?? "—"} kg</strong>
+    </div>
+    <div class="report-stat">
+      <span>Energy</span>
+      <strong>${latest.energy ?? "—"} / 10</strong>
+    </div>
+    <div class="report-highlight report-wide">
+      <span class="tiny muted">Latest note</span>
+      <strong>${esc(latest.note || "No note")}</strong>
+      <div class="tiny muted">${new Date(latest.created_at).toLocaleString()}</div>
+    </div>
+  ` : '<p class="muted">No check-ins yet.</p>';
+
+  document.getElementById("reportHabitSummary").innerHTML = `
+    <div class="report-habit">
+      <div class="row"><span>Overall adherence</span><strong class="gold">${d.habitPct}%</strong></div>
+      <div class="report-bar"><span style="width:${Math.max(0,Math.min(100,d.habitPct))}%"></span></div>
+      <div class="tiny muted">${d.habitDone} of ${d.habitTotal} logged habits completed.</div>
+    </div>
+  `;
+
+  document.getElementById("reportCoachNotes").textContent =
+    d.coachNote || "No coach notes yet.";
+}
+
+function openClientReport(){
+  if(!currentClientReportData) return;
+  renderClientReport();
+  const modal = document.getElementById("clientReportModal");
+  modal.classList.remove("hide");
+  document.body.classList.add("report-open");
+  modal.scrollTop = 0;
+}
+
+function closeClientReport(){
+  document.getElementById("clientReportModal").classList.add("hide");
+  document.body.classList.remove("report-open");
+}
+
+async function openCoachClientDetail(userId, clientName){
+  selectedCoachClient = {userId, clientName};
+  currentClientReportData = null;
+
+  coach.classList.add("hide");
+  document.getElementById("coachClientDetailView").classList.remove("hide");
+  nav.classList.add("hide");
+  window.scrollTo({top:0, behavior:"instant"});
+
+  document.getElementById("detailClientName").textContent = clientName || "Client";
+  document.getElementById("detailClientAvatar").textContent =
+    (clientName || "C").trim().split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
+
+  document.getElementById("detailCurrentDay").textContent = "…";
+  document.getElementById("detailDaysComplete").textContent = "…";
+  document.getElementById("detailHabitPercent").textContent = "…";
+  document.getElementById("detailCheckinCount").textContent = "…";
+  document.getElementById("detailLatestCheckin").innerHTML = '<p class="muted">Loading…</p>';
+  document.getElementById("detailCheckinHistory").innerHTML = '<p class="muted">Loading…</p>';
+  document.getElementById("detailWorkoutHistory").innerHTML = '<p class="muted">Loading…</p>';
+  document.getElementById("detailCoachSummary").innerHTML = '<p class="muted">Loading coaching summary…</p>';
+  document.getElementById("detailStrengthLogs").innerHTML = '<p class="muted">Loading…</p>';
+  document.getElementById("detailHabitHistory").innerHTML = '<p class="muted">Loading…</p>';
+  document.getElementById("weightTrendChart").innerHTML = '<p class="muted">Loading…</p>';
+  document.getElementById("energyTrendChart").innerHTML = '<p class="muted">Loading…</p>';
+
+  try{
+    const c = await supabaseClient();
+
+    const [progressRes, habitsRes, checkinsRes, strengthRes] = await Promise.all([
+      c.from("day_progress").select("day_number,completed,completed_at").eq("user_id",userId).order("day_number"),
+      c.from("habit_logs").select("log_date,habit_key,completed").eq("user_id",userId).order("log_date",{ascending:false}),
+      c.from("checkins").select("created_at,weight_kg,waist_cm,energy,note").eq("user_id",userId).order("created_at",{ascending:false}),
+      c.from("exercise_logs").select("day_number,exercise_name,weight_kg,updated_at").eq("user_id",userId).order("day_number",{ascending:false}).order("exercise_name")
+    ]);
+
+    if(progressRes.error) throw progressRes.error;
+    if(habitsRes.error) throw habitsRes.error;
+    if(checkinsRes.error) throw checkinsRes.error;
+    if(strengthRes.error) throw strengthRes.error;
+
+    const progress = progressRes.data || [];
+    const habits = habitsRes.data || [];
+    const checkins = checkinsRes.data || [];
+    const strengthLogs = strengthRes.data || [];
+
+    // Coach summary metrics from strength logs
+    const summaryByExercise = {};
+    strengthLogs.forEach(r=>{
+      const name = r.exercise_name || "Exercise";
+      if(!summaryByExercise[name]) summaryByExercise[name] = [];
+      summaryByExercise[name].push({
+        day:Number(r.day_number),
+        weight:Number(r.weight_kg),
+        updated_at:r.updated_at
+      });
+    });
+
+    const summaryExercises = Object.entries(summaryByExercise).map(([name,entries])=>{
+      const clean = entries
+        .filter(x=>Number.isFinite(x.weight))
+        .sort((a,b)=>a.day-b.day || String(a.updated_at||"").localeCompare(String(b.updated_at||"")));
+      const first = clean[0] || null;
+      const latest = clean[clean.length-1] || null;
+      const delta = first && latest ? latest.weight - first.weight : 0;
+
+      let variability = null;
+      if(clean.length > 1){
+        const diffs = [];
+        for(let i=1;i<clean.length;i++) diffs.push(Math.abs(clean[i].weight-clean[i-1].weight));
+        variability = diffs.length ? diffs.reduce((a,b)=>a+b,0)/diffs.length : 0;
+      }
+      return {name,entries:clean,first,latest,delta,variability};
+    }).filter(x=>x.entries.length);
+
+    const totalStrengthSessions = new Set(
+      strengthLogs.map(r=>Number(r.day_number)).filter(Number.isFinite)
+    ).size;
+
+    const strongest = summaryExercises
+      .filter(x=>x.entries.length > 1)
+      .sort((a,b)=>b.delta-a.delta)[0] || null;
+
+    const consistent = summaryExercises
+      .filter(x=>x.entries.length > 1 && x.variability !== null)
+      .sort((a,b)=>a.variability-b.variability || b.entries.length-a.entries.length)[0] || null;
+
+    const deltas = summaryExercises
+      .filter(x=>x.entries.length > 1)
+      .map(x=>x.delta);
+
+    const avgIncrease = deltas.length
+      ? deltas.reduce((a,b)=>a+b,0)/deltas.length
+      : 0;
+
+    const completed = progress.filter(x=>x.completed);
+    const maxDay = completed.length ? Math.max(...completed.map(x=>x.day_number)) : 0;
+    const currentDay = Math.min(maxDay + 1, 28);
+    const habitPct = habits.length ? Math.round(habits.filter(x=>x.completed).length / habits.length * 100) : 0;
+
+    currentClientReportData = {
+      clientId:userId,
+      clientName:clientName || "Client",
+      daysComplete:completed.length,
+      habitPct,
+      habitDone:habits.filter(x=>x.completed).length,
+      habitTotal:habits.length,
+      totalStrengthSessions,
+      avgIncrease,
+      repeatLiftCount:deltas.length,
+      strongest,
+      consistent,
+      summaryExercises,
+      latestCheckin:checkins[0] || null,
+      coachNote:""
+    };
+
+    document.getElementById("detailCurrentDay").textContent = currentDay + " / 28";
+    document.getElementById("detailDaysComplete").textContent = String(completed.length);
+    document.getElementById("detailHabitPercent").textContent = habitPct + "%";
+    document.getElementById("detailCheckinCount").textContent = String(checkins.length);
+
+    if(checkins.length){
+      const latest = checkins[0];
+      document.getElementById("detailLatestCheckin").innerHTML = `
+        <div class="grid">
+          <div class="metric"><span class="tiny muted">Weight</span><strong>${latest.weight_kg ?? "—"}</strong><span class="tiny">kg</span></div>
+          <div class="metric"><span class="tiny muted">Energy</span><strong>${latest.energy ?? "—"}</strong><span class="tiny">/10</span></div>
+        </div>
+        <p class="muted" style="margin-top:14px">${esc(latest.note || "No note")}</p>
+        <p class="tiny muted">${new Date(latest.created_at).toLocaleString()}</p>
+      `;
+
+      document.getElementById("detailCheckinHistory").innerHTML = checkins.map(ci=>`
+        <div class="day">
+          <div>
+            <strong>${new Date(ci.created_at).toLocaleDateString()}</strong>
+            <div class="tiny muted">Weight ${ci.weight_kg ?? "—"} kg • Energy ${ci.energy ?? "—"}/10</div>
+            <div class="tiny muted">${esc(ci.note || "")}</div>
+          </div>
+        </div>
+      `).join("");
+    }else{
+      document.getElementById("detailLatestCheckin").innerHTML = '<p class="muted">No check-ins yet.</p>';
+      document.getElementById("detailCheckinHistory").innerHTML = '<p class="muted">No check-ins yet.</p>';
+    }
+
+
+    // Trends
+    const trendCheckins = [...checkins].reverse();
+    renderTrend("weightTrendChart",
+      trendCheckins.map(ci=>({
+        label:new Date(ci.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short"}),
+        value:ci.weight_kg
+      })),
+      " kg"
+    );
+    renderTrend("energyTrendChart",
+      trendCheckins.map(ci=>({
+        label:new Date(ci.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short"}),
+        value:ci.energy
+      })),
+      "/10"
+    );
+
+    // Workout history
+    if(completed.length){
+      document.getElementById("detailWorkoutHistory").innerHTML = [...completed]
+        .sort((a,b)=>b.day_number-a.day_number)
+        .map(d=>`<div class="history-row">
+          <div class="row"><strong>Day ${d.day_number}</strong><span class="gold">Complete ✓</span></div>
+          <div class="tiny muted">${d.completed_at ? new Date(d.completed_at).toLocaleString() : ""}</div>
+        </div>`).join("");
+    }else{
+      document.getElementById("detailWorkoutHistory").innerHTML = '<p class="muted">No completed sessions yet.</p>';
+    }
+
+
+    function strengthSparkline(entries){
+      const vals = (entries || []).map(x=>Number(x.weight)).filter(Number.isFinite);
+      if(!vals.length) return "";
+
+      const width = 280, height = 68, padX = 12, padY = 12;
+      const min = Math.min(...vals);
+      const max = Math.max(...vals);
+      const range = Math.max(max - min, 1);
+      const stepX = vals.length > 1 ? (width - padX*2) / (vals.length - 1) : 0;
+
+      const points = vals.map((v,i)=>{
+        const x = vals.length > 1 ? padX + i*stepX : width/2;
+        const y = height - padY - ((v - min)/range)*(height - padY*2);
+        return {x,y,v};
+      });
+
+      const poly = points.map(p=>`${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+      const circles = points.map(p=>`
+        <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="4.2" class="spark-dot"></circle>
+      `).join("");
+
+      return `
+        <div class="strength-spark-wrap">
+          <div class="tiny muted">Trend</div>
+          <svg class="strength-spark" viewBox="0 0 ${width} ${height}" role="img" aria-label="Strength trend">
+            <line x1="${padX}" y1="${height-padY}" x2="${width-padX}" y2="${height-padY}" class="spark-base"></line>
+            ${vals.length > 1 ? `<polyline points="${poly}" class="spark-line"></polyline>` : ""}
+            ${circles}
+          </svg>
+        </div>`;
+    }
+
+    // Coach summary
+    if(strengthLogs.length){
+      const fmtKg = v => `${Number(v).toFixed(Number(v)%1?1:0)} kg`;
+
+      document.getElementById("detailCoachSummary").innerHTML = `
+        <div class="coach-summary-grid">
+          <div class="coach-summary-stat">
+            <span class="coach-summary-label">Strongest improvement</span>
+            <strong>${strongest ? esc(strongest.name) : "Not enough data"}</strong>
+            <span class="coach-summary-value gold">${strongest ? `+${fmtKg(strongest.delta)}` : "—"}</span>
+          </div>
+
+          <div class="coach-summary-stat">
+            <span class="coach-summary-label">Most consistent lift</span>
+            <strong>${consistent ? esc(consistent.name) : "Not enough data"}</strong>
+            <span class="coach-summary-value">${consistent ? `${consistent.entries.length} logs` : "—"}</span>
+          </div>
+
+          <div class="coach-summary-stat">
+            <span class="coach-summary-label">Strength sessions</span>
+            <strong class="coach-summary-number gold">${totalStrengthSessions}</strong>
+            <span class="coach-summary-value">logged</span>
+          </div>
+
+          <div class="coach-summary-stat">
+            <span class="coach-summary-label">Average load change</span>
+            <strong class="coach-summary-number ${avgIncrease > 0 ? "gold" : ""}">
+              ${deltas.length ? `${avgIncrease > 0 ? "+" : ""}${avgIncrease.toFixed(avgIncrease%1?1:0)} kg` : "—"}
+            </strong>
+            <span class="coach-summary-value">${deltas.length ? "across repeated lifts" : "needs repeat logs"}</span>
+          </div>
+        </div>
+
+        <div class="coach-summary-note">
+          <strong>Coach view</strong>
+          <span>Summary updates automatically as new strength sessions are logged.</span>
+        </div>
+      `;
+    }else{
+      document.getElementById("detailCoachSummary").innerHTML =
+        '<p class="muted">Strength summary will appear once weights are logged.</p>';
+    }
+
+    // Strength progression
+    if(strengthLogs.length){
+      const byExercise = {};
+      strengthLogs.forEach(r=>{
+        const name = r.exercise_name || "Exercise";
+        if(!byExercise[name]) byExercise[name] = [];
+        byExercise[name].push({
+          day:Number(r.day_number),
+          weight:Number(r.weight_kg),
+          updated_at:r.updated_at
+        });
+      });
+
+      const exerciseNames = Object.keys(byExercise).sort((a,b)=>a.localeCompare(b));
+      document.getElementById("detailStrengthLogs").innerHTML = exerciseNames.map(name=>{
+        const entries = byExercise[name]
+          .filter(x=>Number.isFinite(x.weight))
+          .sort((a,b)=>a.day-b.day || String(a.updated_at||"").localeCompare(String(b.updated_at||"")));
+
+        const latest = entries.length ? entries[entries.length-1] : null;
+        const first = entries.length ? entries[0] : null;
+        const delta = latest && first ? latest.weight - first.weight : 0;
+        const deltaText = !latest || !first || entries.length < 2
+          ? "First log"
+          : delta > 0
+            ? `+${delta.toFixed(delta%1?1:0)} kg`
+            : delta < 0
+              ? `${delta.toFixed(delta%1?1:0)} kg`
+              : "No change";
+
+        const history = entries.map(x=>`
+          <div class="strength-progress-chip">
+            <span>Day ${x.day}</span>
+            <strong>${x.weight.toFixed(x.weight%1?1:0)} kg</strong>
+          </div>
+        `).join("");
+
+        return `
+          <div class="strength-progress-card">
+            <div class="row strength-progress-head">
+              <div>
+                <strong>${esc(name)}</strong>
+                <div class="tiny muted">${entries.length} logged session${entries.length===1?"":"s"}</div>
+              </div>
+              <div class="strength-progress-latest">
+                <strong class="gold">${latest ? latest.weight.toFixed(latest.weight%1?1:0) : "—"} kg</strong>
+                <span class="tiny ${delta > 0 ? "gold" : "muted"}">${deltaText}</span>
+              </div>
+            </div>
+            <div class="strength-progress-track">${history}</div>
+            ${strengthSparkline(entries)}
+          </div>
+        `;
+      }).join("");
+    }else{
+      document.getElementById("detailStrengthLogs").innerHTML = '<p class="muted">No weights logged yet.</p>';
+    }
+
+    // Habit history
+    const groupedHabits = groupHabitHistory(habits);
+    if(groupedHabits.length){
+      document.getElementById("detailHabitHistory").innerHTML = groupedHabits.map(([date,rows])=>{
+        const done = rows.filter(x=>x.completed).length;
+        const pct = rows.length ? Math.round(done/rows.length*100) : 0;
+        return `<div class="history-row">
+          <div class="row"><strong>${new Date(date+"T12:00:00").toLocaleDateString()}</strong><span class="gold">${pct}%</span></div>
+          <div class="tiny muted">${done} of ${rows.length} habits complete</div>
+        </div>`;
+      }).join("");
+    }else{
+      document.getElementById("detailHabitHistory").innerHTML = '<p class="muted">No habit data yet.</p>';
+    }
+
+    // Cloud coach note
+    const noteRes = await c.from("coach_notes")
+      .select("note,updated_at")
+      .eq("client_id",userId)
+      .maybeSingle();
+
+    if(!noteRes.error && noteRes.data){
+      document.getElementById("coachNoteDraft").value = noteRes.data.note || "";
+      document.getElementById("coachNoteStatus").textContent =
+        noteRes.data.updated_at ? "Last saved " + new Date(noteRes.data.updated_at).toLocaleString() : "";
+      if(currentClientReportData) currentClientReportData.coachNote = noteRes.data.note || "";
+    }else{
+      document.getElementById("coachNoteDraft").value = "";
+      if(currentClientReportData) currentClientReportData.coachNote = "";
+    }
+
+    // Check-in request status
+    const reqRes = await c.from("checkin_requests")
+      .select("requested_at,status")
+      .eq("client_id",userId)
+      .order("requested_at",{ascending:false})
+      .limit(1);
+
+    if(!reqRes.error && reqRes.data && reqRes.data.length){
+      const latestReq=reqRes.data[0];
+      document.getElementById("requestCheckinStatus").textContent =
+        `Latest request: ${latestReq.status} • ${new Date(latestReq.requested_at).toLocaleString()}`;
+    }else{
+      document.getElementById("requestCheckinStatus").textContent = "";
+    }
+
+  }catch(err){
+    document.getElementById("detailLatestCheckin").innerHTML =
+      '<p class="muted">Could not load client details: '+esc(err?.message || String(err))+'</p>';
+    document.getElementById("detailCheckinHistory").innerHTML = "";
+    document.getElementById("detailWorkoutHistory").innerHTML = "";
+    document.getElementById("detailCoachSummary").innerHTML = "";
+    document.getElementById("detailStrengthLogs").innerHTML = "";
+    document.getElementById("detailHabitHistory").innerHTML = "";
+  }
+}
+
+document.addEventListener("click", function(e){
+  const btn = e.target.closest(".client-open");
+  if(btn){
+    openCoachClientDetail(btn.dataset.clientId, btn.dataset.clientName);
+  }
+});
+
+document.getElementById("backToCoachClients").onclick = function(){
+  document.getElementById("coachClientDetailView").classList.add("hide");
+  coach.classList.remove("hide");
+  nav.classList.remove("hide");
+  showCoachPage("home");
+};
+
+document.getElementById("saveCoachNote").onclick = async function(){
+  if(!selectedCoachClient) return;
+  const status = document.getElementById("coachNoteStatus");
+  status.textContent = "Saving…";
+  try{
+    const c = await supabaseClient();
+    const {error} = await c.from("coach_notes").upsert({
+      client_id:selectedCoachClient.userId,
+      coach_id:currentUser.id,
+      note:document.getElementById("coachNoteDraft").value || "",
+      updated_at:new Date().toISOString()
+    },{onConflict:"coach_id,client_id"});
+    if(error) throw error;
+    status.textContent = "Saved to Mana cloud ✓";
+    if(currentClientReportData) currentClientReportData.coachNote = document.getElementById("coachNoteDraft").value || "";
+  }catch(err){
+    status.textContent = "Could not save: " + (err?.message || String(err));
+  }
+};
+
+
+document.getElementById("requestCheckinBtn").onclick = async function(){
+  if(!selectedCoachClient) return;
+  const status = document.getElementById("requestCheckinStatus");
+  status.textContent = "Sending request…";
+  try{
+    const c = await supabaseClient();
+    const {error} = await c.from("checkin_requests").insert({
+      client_id:selectedCoachClient.userId,
+      coach_id:currentUser.id,
+      status:"requested"
+    });
+    if(error) throw error;
+    status.textContent = "Check-in requested ✓";
+  }catch(err){
+    status.textContent = "Could not request: " + (err?.message || String(err));
+  }
+};
+
+
+document.getElementById("openClientReportBtn").onclick = openClientReport;
+document.getElementById("closeClientReportBtn").onclick = closeClientReport;
+document.getElementById("printClientReportBtn").onclick = printStandaloneClientReport;
+
+document.getElementById("clientReportModal").addEventListener("click", function(e){
+  if(e.target === this) closeClientReport();
+});
+
+
+function printStandaloneClientReport(){
+  const report = document.querySelector("#clientReportModal .report-shell");
+  if(!report) return;
+
+  const clone = report.cloneNode(true);
+
+  // Remove controls that should never appear in the PDF.
+  clone.querySelectorAll(".no-print,.report-actions,#closeClientReportBtn,#printClientReportBtn").forEach(el=>el.remove());
+
+  // Make a completely separate document so Safari cannot include the app behind it.
+  const printWin = window.open("", "_blank");
+  if(!printWin){
+    alert("Please allow pop-ups for this site, then try Print / Save PDF again.");
+    return;
+  }
+
+  const css = `
+    @page { size: A4 portrait; margin: 8mm; }
+    html,body{
+      margin:0;padding:0;background:#fff;color:#111;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    .report-shell{
+      width:100%;max-width:none;margin:0;padding:7mm;
+      background:#fff;color:#111;border:0;border-radius:0;box-shadow:none;
+    }
+    .report-brand{
+      display:flex;justify-content:space-between;gap:4mm;align-items:flex-start;
+      padding:0 0 4mm;margin:0 0 4mm;border-bottom:1px solid #bbb;
+      break-after:avoid-page;
+    }
+    .report-kicker{color:#9a7600;font-size:8pt;letter-spacing:.10em;margin-bottom:1mm}
+    .report-brand h1{font-size:20pt;line-height:1.05;margin:0 0 1mm}
+    .report-brand .muted{font-size:9pt;margin:0;color:#666}
+    .pill,.report-badge{
+      display:inline-block;border:1px solid #9a7600;color:#9a7600;
+      border-radius:999px;padding:1.8mm 3mm;font-size:7.5pt;white-space:nowrap;
+    }
+    .report-grid{display:grid;gap:2.5mm}
+    .report-grid.four,.report-grid-4{grid-template-columns:repeat(4,1fr);margin-top:3mm}
+    .report-grid.two,.report-grid-2,#reportStrengthHighlights,#reportCheckinSummary{
+      grid-template-columns:repeat(2,1fr)
+    }
+    .report-stat,.report-highlight,.report-habit,.report-note-box{
+      background:#fff;color:#111;border:1px solid #ccc;border-radius:3mm;
+      padding:3mm;min-height:0;break-inside:avoid;
+    }
+    .report-stat span,.report-highlight span{display:block;color:#666;font-size:7.5pt;margin-bottom:1mm}
+    .report-stat strong{font-size:13pt;line-height:1.05;color:#9a7600}
+    .report-highlight strong{display:block;font-size:10.5pt;line-height:1.1;margin:1mm 0}
+    .report-highlight div,.report-highlight em{font-size:8pt}
+    .gold{color:#9a7600}
+    .muted{color:#666}
+    .tiny{font-size:7.5pt}
+    .report-section{margin-top:5mm}
+    .report-section h2{font-size:14pt;line-height:1.05;margin:0 0 2.5mm;break-after:avoid-page}
+    .report-bar{height:2mm;background:#ddd;border-radius:999px;overflow:hidden;margin:2mm 0 1.5mm}
+    .report-bar span{display:block;height:100%;background:#9a7600}
+    .report-note-box{font-size:8.5pt;line-height:1.3;white-space:pre-wrap}
+    .report-wide{grid-column:1/-1}
+    @media print{
+      .no-print,.report-actions{display:none!important}
+    }
+  `;
+
+  printWin.document.open();
+  printWin.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>Mana Movement Client Progress Report</title>
+        <style>${css}</style>
+      </head>
+      <body>
+        <div class="return-bar no-print">
+          <button type="button" onclick="returnToMana()">← Back to Mana Movement</button>
+        </div>
+        ${clone.outerHTML}
+        <script>
+          function returnToMana(){
+            try{
+              if(window.opener && !window.opener.closed){
+                window.opener.focus();
+                window.close();
+                return;
+              }
+            }catch(e){}
+            try{
+              history.back();
+            }catch(e){}
+          }
+        <\/script>
+      </body>
+    </html>
+  `);
+  printWin.document.close();
+
+  const doPrint = () => {
+    try{
+      printWin.focus();
+      printWin.print();
+    }catch(e){
+      console.error(e);
+    }
+  };
+
+  // Safari needs a short delay to finish rendering the cloned document.
+  setTimeout(doPrint, 500);
+}
+
+
+function mana28Plan(){
+  const titles=[
+    ["Full Body Strength A","Strength"],
+    ["Walk + Mobility","Recovery"],
+    ["Lower Body Strength","Strength"],
+    ["Upper Body Strength","Strength"],
+    ["Conditioning","Conditioning"],
+    ["Mobility + Core","Recovery"],
+    ["Rest / Reset","Recovery"]
+  ];
+  return Array.from({length:28},(_,i)=>{
+    const day=i+1,base=titles[i%7];
+    return {day,title:base[0],type:base[1],week:Math.ceil(day/7)};
+  });
+}
+
+async function fetchClientSuiteData(){
+  if(!currentUser) return {progress:[],habits:[],checkins:[]};
+  const c=await supabaseClient();
+  const uid=currentUser.id;
+
+  const [progressRes,habitsRes,checkinsRes] = await Promise.all([
+    c.from("day_progress")
+      .select("day_number,completed,completed_at")
+      .eq("user_id",uid)
+      .order("day_number"),
+    c.from("habit_logs")
+      .select("log_date,habit_key,completed")
+      .eq("user_id",uid)
+      .order("log_date",{ascending:false}),
+    c.from("checkins")
+      .select("created_at,weight_kg,energy,note")
+      .eq("user_id",uid)
+      .order("created_at",{ascending:false})
+  ]);
+
+  if(progressRes.error) throw progressRes.error;
+  if(habitsRes.error) throw habitsRes.error;
+  if(checkinsRes.error) throw checkinsRes.error;
+
+  return {
+    progress:progressRes.data||[],
+    habits:habitsRes.data||[],
+    checkins:checkinsRes.data||[]
+  };
+}
+
+function hideClientSuiteViews(){
+  ["clientProgramsView","clientFuelView","clientProgressView","clientProfileView"]
+    .forEach(id=>document.getElementById(id)?.classList.add("hide"));
+}
+
+function showClientHomeStable(){
+  hideClientSuiteViews();
+  client.classList.remove("hide");
+  nav.classList.remove("hide");
+  setActiveNav("home");
+  window.scrollTo({top:0,behavior:"instant"});
+}
+
+async function showClientProgramsView(){
+  const {progress}=await fetchClientSuiteData();
+  const completed=new Set(progress.filter(x=>x.completed).map(x=>Number(x.day_number)));
+
+  client.classList.add("hide");
+  hideClientSuiteViews();
+  document.getElementById("clientProgramsView").classList.remove("hide");
+  nav.classList.remove("hide");
+  setActiveNav("programs");
+  window.scrollTo({top:0,behavior:"instant"});
+
+  document.getElementById("clientProgramDays").innerHTML = mana28Plan().map(d=>{
+    const isDone = completed.has(d.day);
+    const isCurrent = !isDone && d.day === state.day;
+    const rowClass = isCurrent ? "mana-current-day" : (isDone ? "mana-complete-day" : "mana-future-day");
+    const statusText = isDone ? "Complete ✓" : (isCurrent ? "Today" : "Tap to open");
+    const statusClass = isDone || isCurrent ? "gold" : "muted";
+    return `
+    <button type="button" class="history-row program-day mana-day-row ${rowClass}" data-day="${d.day}" style="width:100%;text-align:left;background:none;color:inherit;border-left:0;border-right:0;border-top:0;border-radius:0;padding-left:0;padding-right:0;">
+      <div class="row">
+        <div>
+          <strong>Day ${d.day} • ${esc(d.type)}</strong>
+          <div class="tiny muted">${esc(d.title)}</div>
+        </div>
+        <span data-day-status="${d.day}" class="${statusClass}">
+          ${statusText}
+        </span>
+      </div>
+    </button>`;
+  }).join("");
+}
+
+function showClientFuelView(){
+  client.classList.add("hide");
+  hideClientSuiteViews();
+  document.getElementById("clientFuelView").classList.remove("hide");
+  nav.classList.remove("hide");
+  setActiveNav("fuel");
+  window.scrollTo({top:0,behavior:"instant"});
+}
+
+async function showClientProgressView(){
+  const {progress,habits,checkins}=await fetchClientSuiteData();
+
+  client.classList.add("hide");
+  hideClientSuiteViews();
+  document.getElementById("clientProgressView").classList.remove("hide");
+  nav.classList.remove("hide");
+  setActiveNav("progress");
+  window.scrollTo({top:0,behavior:"instant"});
+
+  const completed=progress.filter(x=>x.completed);
+  const habitPct=habits.length
+    ? Math.round(habits.filter(x=>x.completed).length/habits.length*100)
+    : 0;
+
+  document.getElementById("cpDaysComplete").textContent=String(completed.length);
+  document.getElementById("cpHabitPercent").textContent=habitPct+"%";
+
+  renderTrend(
+    "cpWeightTrend",
+    [...checkins].reverse().map(ci=>({
+      label:new Date(ci.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short"}),
+      value:ci.weight_kg
+    })),
+    " kg"
+  );
+
+  renderTrend(
+    "cpEnergyTrend",
+    [...checkins].reverse().map(ci=>({
+      label:new Date(ci.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short"}),
+      value:ci.energy
+    })),
+    "/10"
+  );
+
+  const hist=document.getElementById("cpWorkoutHistory");
+  hist.innerHTML = completed.length
+    ? [...completed].sort((a,b)=>b.day_number-a.day_number).map(d=>`
+      <div class="history-row">
+        <div class="row">
+          <strong>Day ${d.day_number}</strong>
+          <span class="gold">Complete ✓</span>
+        </div>
+        <div class="tiny muted">${d.completed_at?new Date(d.completed_at).toLocaleString():""}</div>
+      </div>
+    `).join("")
+    : '<p class="muted">No completed sessions yet.</p>';
+}
+
+function showClientProfileView(){
+  client.classList.add("hide");
+  hideClientSuiteViews();
+  document.getElementById("clientProfileView").classList.remove("hide");
+  nav.classList.remove("hide");
+  setActiveNav("profile");
+  window.scrollTo({top:0,behavior:"instant"});
+
+  const name=state.name || currentUser?.email?.split("@")[0] || "Client";
+  const initials=name.trim().split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();
+  document.getElementById("clientProfileName").textContent=name;
+  document.getElementById("clientProfileInitials").textContent=initials;
+  document.getElementById("clientProfileEmail").textContent=currentUser?.email || "";
+}
+
+const clientLogoutBtn=document.getElementById("clientLogoutBtn");
+if(clientLogoutBtn){
+  clientLogoutBtn.onclick=logoutMana;
+}
+
+const forgotPasswordBtn=document.getElementById("forgotPasswordBtn");
+if(forgotPasswordBtn){
+  forgotPasswordBtn.onclick=async function(){
+    const email=(document.getElementById("email")?.value||"").trim();
+    const msg=document.getElementById("authMsg");
+    if(!email){
+      msg.textContent="Enter your email above first.";
+      return;
+    }
+    msg.textContent="Sending reset email…";
+    try{
+      const c=await supabaseClient();
+      const {error}=await c.auth.resetPasswordForEmail(email,{
+        redirectTo:window.location.origin
+      });
+      if(error) throw error;
+      msg.textContent="Password reset email sent ✓";
+    }catch(err){
+      msg.textContent="Could not send reset email: "+(err?.message||String(err));
+    }
+  };
+}
+
+const saveNewPasswordBtn=document.getElementById("saveNewPasswordBtn");
+if(saveNewPasswordBtn){
+  saveNewPasswordBtn.onclick=async function(){
+    const password=document.getElementById("newPasswordInput").value;
+    const msg=document.getElementById("resetPasswordMsg");
+    if(password.length<6){
+      msg.textContent="Use at least 6 characters.";
+      return;
+    }
+    try{
+      const c=await supabaseClient();
+      const {error}=await c.auth.updateUser({password});
+      if(error) throw error;
+      msg.textContent="Password updated ✓ You can now log in.";
+    }catch(err){
+      msg.textContent="Could not update password: "+(err?.message||String(err));
+    }
+  };
+}
+
+(async()=>{
+  try{
+    const c=await supabaseClient();
+    c.auth.onAuthStateChange((event, session)=>{
+      if(session?.user) currentUser=session.user;
+      if(event==="SIGNED_OUT") currentUser=null;
+      if(event==="PASSWORD_RECOVERY"){
+        document.getElementById("resetPasswordPanel")?.classList.remove("hide");
+        auth.classList.remove("hide");
+        coach.classList.add("hide");
+        client.classList.add("hide");
+        hideClientSuiteViews();
+        nav.classList.add("hide");
+      }
+    });
+  }catch(e){}
+})();
+
+function setActiveNav(page){
+  document.querySelectorAll("#bottomNav [data-page]").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.page === page);
+  });
+}
+
+function showCoachPage(page){
+  const pages = {
+    home: "coachHomePage",
+    programs: "coachProgramsPage",
+    fuel: "coachFuelPage",
+    progress: "coachProgressPage",
+    profile: "coachProfilePage"
+  };
+
+  document.querySelectorAll("#coachView .coach-page").forEach(el=>el.classList.add("hide"));
+  const target = document.getElementById(pages[page] || pages.home);
+  if(target) target.classList.remove("hide");
+  setActiveNav(page);
+  window.scrollTo({top:0, behavior:"instant"});
+}
+
+async function logoutMana(){
+  try{
+    const c = await supabaseClient();
+    await c.auth.signOut();
+  }catch(e){
+    console.warn("logout", e);
+  }
+  currentUser = null;
+  mode = null;
+  client.classList.add("hide");
+  coach.classList.add("hide");
+  hideClientSuiteViews();
+  nav.classList.add("hide");
+  auth.classList.remove("hide");
+  setActiveNav("home");
+  window.scrollTo({top:0, behavior:"instant"});
+}
+
+document.querySelectorAll("#bottomNav [data-page]").forEach(btn=>{
+  btn.onclick = async function(){
+    const page=this.dataset.page;
+
+    if(mode==="coach"){
+      showCoachPage(page);
+      return;
+    }
+
+    if(mode==="client"){
+      try{
+        if(page==="home"){showClientHomeStable();return;}
+        if(page==="programs"){await showClientProgramsView();return;}
+        if(page==="fuel"){showClientFuelView();return;}
+        if(page==="progress"){await showClientProgressView();return;}
+        if(page==="profile"){showClientProfileView();return;}
+      }catch(err){
+        alert("Could not open "+page+": "+(err?.message||String(err)));
+      }
+    }
+  };
+});
+
+const coachLogout = document.getElementById("coachLogoutButton");
+if(coachLogout){
+  coachLogout.onclick = logoutMana;
+}
+
+
+const reqGo=document.getElementById("clientRequestGo");
+if(reqGo){
+  reqGo.onclick=()=>{
+    const target=document.getElementById("weightInput") || document.getElementById("noteInput");
+    if(target) target.scrollIntoView({behavior:"smooth",block:"center"});
+  };
+}
+
+(async function restoreSession(){
+  try{
+    try{
+      const lastEmail=localStorage.getItem("mana:lastEmail");
+      if(lastEmail && $("loginEmail")) $("loginEmail").value=lastEmail;
+    }catch(e){}
+
+    const c=await supabaseClient();
+
+    async function openSessionUser(session){
+      if(!session?.user) return false;
+      currentUser=session.user;
+      const profile=await getProfile(currentUser.id);
+      $("authMsg").textContent='';
+      profile.role==='coach'
+        ? await openConnectedCoach()
+        : await openConnectedClient(profile);
+      return true;
+    }
+
+    let {data:{session},error}=await c.auth.getSession();
+    if(error) console.warn("getSession",error);
+
+    if(await openSessionUser(session)) return;
+
+    // If Safari restored storage but the access token needs refreshing,
+    // ask Supabase to refresh it before showing the login screen.
+    try{
+      const refreshed=await c.auth.refreshSession();
+      if(await openSessionUser(refreshed?.data?.session)) return;
+    }catch(e){
+      console.warn("refreshSession",e);
+    }
+
+    if($("loginEmail")?.value){
+      setTimeout(()=>$("loginPassword")?.focus(),150);
+    }
+  }catch(e){
+    console.error("restoreSession",e);
+  }
+})();
+</script>
+
+
+<script>
+(async function clearOldManaCaches(){
+  try {
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) await reg.unregister();
+    }
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      for (const key of keys) await caches.delete(key);
+    }
+  } catch(e) { console.log("cache cleanup", e); }
+})();
+</script>
+
+
+<script>
+
+let activeStrengthLogs = {};
+
+
+function strengthLoadConfig(exerciseName){
+  const n = String(exerciseName || "").toLowerCase();
+
+  const noLoadTerms = [
+    "plank",
+    "side plank",
+    "bird dog",
+    "dead bug",
+    "hollow hold",
+    "mountain climber",
+    "bear crawl",
+    "mobility",
+    "walk",
+    "breathing",
+    "stretch",
+    "thoracic rotation"
+  ];
+
+  if (noLoadTerms.some(term => n.includes(term))) {
+    return { show:false, label:"" };
+  }
+
+  // This exercise allows either a push-up or a chest press.
+  // "Load used" works accurately for either choice.
+  if (n.includes("push-up") || n.includes("push up")) {
+    return { show:true, label:"Load used", optional:true };
+  }
+
+  return { show:true, label:"Weight used", optional:false };
+}
+
+async function loadStrengthLogsForDay(day){
+  activeStrengthLogs = {};
+  if(!currentUser) return activeStrengthLogs;
+  const c = await supabaseClient();
+  const {data,error} = await c.from("exercise_logs")
+    .select("exercise_name,weight_kg")
+    .eq("user_id",currentUser.id)
+    .eq("day_number",Number(day));
+  if(error) throw error;
+  (data||[]).forEach(r=>activeStrengthLogs[r.exercise_name]=r.weight_kg);
+  return activeStrengthLogs;
+}
+
+async function saveStrengthLogsForDay(day){
+  if(!currentUser) throw new Error("Please log in again.");
+  const inputs = [...document.querySelectorAll(".strength-load-input[data-exercise]")];
+  const rows = inputs
+    .map(input=>({
+      user_id:currentUser.id,
+      day_number:Number(day),
+      exercise_name:input.dataset.exercise,
+      weight_kg:input.value === "" ? null : Number(input.value),
+      updated_at:new Date().toISOString()
+    }))
+    .filter(r=>r.weight_kg !== null && Number.isFinite(r.weight_kg));
+
+  const c = await supabaseClient();
+
+  // Delete cleared values from this day, then upsert entered values.
+  const enteredNames = new Set(rows.map(r=>r.exercise_name));
+  const allNames = inputs.map(i=>i.dataset.exercise);
+  const clearedNames = allNames.filter(n=>!enteredNames.has(n));
+
+  if(clearedNames.length){
+    const del = await c.from("exercise_logs")
+      .delete()
+      .eq("user_id",currentUser.id)
+      .eq("day_number",Number(day))
+      .in("exercise_name",clearedNames);
+    if(del.error) throw del.error;
+  }
+
+  if(rows.length){
+    const {error} = await c.from("exercise_logs")
+      .upsert(rows,{onConflict:"user_id,day_number,exercise_name"});
+    if(error) throw error;
+  }
+
+  await loadStrengthLogsForDay(day);
+}
+
+window.MANA28_PROGRAM = {"1": {"category": "Strength", "title": "Full Body Strength A", "tasks": [{"name": "Goblet squat", "detail": "3 sets \u00d7 10 reps"}, {"name": "Push-up or chest press", "detail": "3 sets \u00d7 8\u201312 reps"}, {"name": "Dumbbell row", "detail": "3 sets \u00d7 10 reps each side"}, {"name": "Romanian deadlift", "detail": "3 sets \u00d7 10 reps"}, {"name": "Plank", "detail": "3 \u00d7 30\u201345 sec"}]}, "2": {"category": "Recovery", "title": "Walk + Mobility", "tasks": [{"name": "Walk", "detail": "25\u201335 minutes at an easy pace"}, {"name": "Hip mobility", "detail": "2 \u00d7 45 sec each side"}, {"name": "Thoracic rotations", "detail": "2 \u00d7 8 each side"}, {"name": "Breathing reset", "detail": "3 minutes"}]}, "3": {"category": "Strength", "title": "Lower Body Strength", "tasks": [{"name": "Squat pattern", "detail": "4 sets \u00d7 8 reps"}, {"name": "Romanian deadlift", "detail": "3 sets \u00d7 10 reps"}, {"name": "Split squat or step-up", "detail": "3 sets \u00d7 8 each side"}, {"name": "Calf raise", "detail": "3 sets \u00d7 15 reps"}, {"name": "Dead bug", "detail": "3 \u00d7 10 each side"}]}, "4": {"category": "Strength", "title": "Upper Body Strength", "tasks": [{"name": "Press", "detail": "4 sets \u00d7 8\u201310 reps"}, {"name": "Row", "detail": "4 sets \u00d7 8\u201310 reps"}, {"name": "Shoulder press", "detail": "3 sets \u00d7 10 reps"}, {"name": "Lat pulldown / band pulldown", "detail": "3 sets \u00d7 10\u201312 reps"}, {"name": "Carry", "detail": "3 \u00d7 30\u201345 sec"}]}, "5": {"category": "Conditioning", "title": "Conditioning", "tasks": [{"name": "Warm-up", "detail": "5 minutes"}, {"name": "Intervals", "detail": "8 rounds: 30 sec work / 60 sec easy"}, {"name": "Cool-down", "detail": "5 minutes"}]}, "6": {"category": "Recovery", "title": "Mobility + Core", "tasks": [{"name": "Mobility flow", "detail": "12\u201315 minutes"}, {"name": "Bird dog", "detail": "3 \u00d7 8 each side"}, {"name": "Side plank", "detail": "3 \u00d7 20\u201330 sec each side"}, {"name": "Easy walk", "detail": "15\u201320 minutes"}]}, "7": {"category": "Recovery", "title": "Rest / Reset", "tasks": [{"name": "Recovery", "detail": "Rest day or light walk"}, {"name": "Hydration", "detail": "Hit your water target"}, {"name": "Reset", "detail": "Prepare for the next week"}]}, "8": {"category": "Strength", "title": "Full Body Strength A", "tasks": [{"name": "Goblet squat", "detail": "3 sets \u00d7 10 reps"}, {"name": "Push-up or chest press", "detail": "3 sets \u00d7 8\u201312 reps"}, {"name": "Dumbbell row", "detail": "3 sets \u00d7 10 reps each side"}, {"name": "Romanian deadlift", "detail": "3 sets \u00d7 10 reps"}, {"name": "Plank", "detail": "3 \u00d7 30\u201345 sec"}]}, "9": {"category": "Recovery", "title": "Walk + Mobility", "tasks": [{"name": "Walk", "detail": "25\u201335 minutes at an easy pace"}, {"name": "Hip mobility", "detail": "2 \u00d7 45 sec each side"}, {"name": "Thoracic rotations", "detail": "2 \u00d7 8 each side"}, {"name": "Breathing reset", "detail": "3 minutes"}]}, "10": {"category": "Strength", "title": "Lower Body Strength", "tasks": [{"name": "Squat pattern", "detail": "4 sets \u00d7 8 reps"}, {"name": "Romanian deadlift", "detail": "3 sets \u00d7 10 reps"}, {"name": "Split squat or step-up", "detail": "3 sets \u00d7 8 each side"}, {"name": "Calf raise", "detail": "3 sets \u00d7 15 reps"}, {"name": "Dead bug", "detail": "3 \u00d7 10 each side"}]}, "11": {"category": "Strength", "title": "Upper Body Strength", "tasks": [{"name": "Press", "detail": "4 sets \u00d7 8\u201310 reps"}, {"name": "Row", "detail": "4 sets \u00d7 8\u201310 reps"}, {"name": "Shoulder press", "detail": "3 sets \u00d7 10 reps"}, {"name": "Lat pulldown / band pulldown", "detail": "3 sets \u00d7 10\u201312 reps"}, {"name": "Carry", "detail": "3 \u00d7 30\u201345 sec"}]}, "12": {"category": "Conditioning", "title": "Conditioning", "tasks": [{"name": "Warm-up", "detail": "5 minutes"}, {"name": "Intervals", "detail": "8 rounds: 30 sec work / 60 sec easy"}, {"name": "Cool-down", "detail": "5 minutes"}]}, "13": {"category": "Recovery", "title": "Mobility + Core", "tasks": [{"name": "Mobility flow", "detail": "12\u201315 minutes"}, {"name": "Bird dog", "detail": "3 \u00d7 8 each side"}, {"name": "Side plank", "detail": "3 \u00d7 20\u201330 sec each side"}, {"name": "Easy walk", "detail": "15\u201320 minutes"}]}, "14": {"category": "Recovery", "title": "Rest / Reset", "tasks": [{"name": "Recovery", "detail": "Rest day or light walk"}, {"name": "Hydration", "detail": "Hit your water target"}, {"name": "Reset", "detail": "Prepare for the next week"}]}, "15": {"category": "Strength", "title": "Full Body Strength A", "tasks": [{"name": "Goblet squat", "detail": "3 sets \u00d7 10 reps"}, {"name": "Push-up or chest press", "detail": "3 sets \u00d7 8\u201312 reps"}, {"name": "Dumbbell row", "detail": "3 sets \u00d7 10 reps each side"}, {"name": "Romanian deadlift", "detail": "3 sets \u00d7 10 reps"}, {"name": "Plank", "detail": "3 \u00d7 30\u201345 sec"}]}, "16": {"category": "Recovery", "title": "Walk + Mobility", "tasks": [{"name": "Walk", "detail": "25\u201335 minutes at an easy pace"}, {"name": "Hip mobility", "detail": "2 \u00d7 45 sec each side"}, {"name": "Thoracic rotations", "detail": "2 \u00d7 8 each side"}, {"name": "Breathing reset", "detail": "3 minutes"}]}, "17": {"category": "Strength", "title": "Lower Body Strength", "tasks": [{"name": "Squat pattern", "detail": "4 sets \u00d7 8 reps"}, {"name": "Romanian deadlift", "detail": "3 sets \u00d7 10 reps"}, {"name": "Split squat or step-up", "detail": "3 sets \u00d7 8 each side"}, {"name": "Calf raise", "detail": "3 sets \u00d7 15 reps"}, {"name": "Dead bug", "detail": "3 \u00d7 10 each side"}]}, "18": {"category": "Strength", "title": "Upper Body Strength", "tasks": [{"name": "Press", "detail": "4 sets \u00d7 8\u201310 reps"}, {"name": "Row", "detail": "4 sets \u00d7 8\u201310 reps"}, {"name": "Shoulder press", "detail": "3 sets \u00d7 10 reps"}, {"name": "Lat pulldown / band pulldown", "detail": "3 sets \u00d7 10\u201312 reps"}, {"name": "Carry", "detail": "3 \u00d7 30\u201345 sec"}]}, "19": {"category": "Conditioning", "title": "Conditioning", "tasks": [{"name": "Warm-up", "detail": "5 minutes"}, {"name": "Intervals", "detail": "8 rounds: 30 sec work / 60 sec easy"}, {"name": "Cool-down", "detail": "5 minutes"}]}, "20": {"category": "Recovery", "title": "Mobility + Core", "tasks": [{"name": "Mobility flow", "detail": "12\u201315 minutes"}, {"name": "Bird dog", "detail": "3 \u00d7 8 each side"}, {"name": "Side plank", "detail": "3 \u00d7 20\u201330 sec each side"}, {"name": "Easy walk", "detail": "15\u201320 minutes"}]}, "21": {"category": "Recovery", "title": "Rest / Reset", "tasks": [{"name": "Recovery", "detail": "Rest day or light walk"}, {"name": "Hydration", "detail": "Hit your water target"}, {"name": "Reset", "detail": "Prepare for the next week"}]}, "22": {"category": "Strength", "title": "Full Body Strength A", "tasks": [{"name": "Goblet squat", "detail": "3 sets \u00d7 10 reps"}, {"name": "Push-up or chest press", "detail": "3 sets \u00d7 8\u201312 reps"}, {"name": "Dumbbell row", "detail": "3 sets \u00d7 10 reps each side"}, {"name": "Romanian deadlift", "detail": "3 sets \u00d7 10 reps"}, {"name": "Plank", "detail": "3 \u00d7 30\u201345 sec"}]}, "23": {"category": "Recovery", "title": "Walk + Mobility", "tasks": [{"name": "Walk", "detail": "25\u201335 minutes at an easy pace"}, {"name": "Hip mobility", "detail": "2 \u00d7 45 sec each side"}, {"name": "Thoracic rotations", "detail": "2 \u00d7 8 each side"}, {"name": "Breathing reset", "detail": "3 minutes"}]}, "24": {"category": "Strength", "title": "Lower Body Strength", "tasks": [{"name": "Squat pattern", "detail": "4 sets \u00d7 8 reps"}, {"name": "Romanian deadlift", "detail": "3 sets \u00d7 10 reps"}, {"name": "Split squat or step-up", "detail": "3 sets \u00d7 8 each side"}, {"name": "Calf raise", "detail": "3 sets \u00d7 15 reps"}, {"name": "Dead bug", "detail": "3 \u00d7 10 each side"}]}, "25": {"category": "Strength", "title": "Upper Body Strength", "tasks": [{"name": "Press", "detail": "4 sets \u00d7 8\u201310 reps"}, {"name": "Row", "detail": "4 sets \u00d7 8\u201310 reps"}, {"name": "Shoulder press", "detail": "3 sets \u00d7 10 reps"}, {"name": "Lat pulldown / band pulldown", "detail": "3 sets \u00d7 10\u201312 reps"}, {"name": "Carry", "detail": "3 \u00d7 30\u201345 sec"}]}, "26": {"category": "Conditioning", "title": "Conditioning", "tasks": [{"name": "Warm-up", "detail": "5 minutes"}, {"name": "Intervals", "detail": "8 rounds: 30 sec work / 60 sec easy"}, {"name": "Cool-down", "detail": "5 minutes"}]}, "27": {"category": "Recovery", "title": "Mobility + Core", "tasks": [{"name": "Mobility flow", "detail": "12\u201315 minutes"}, {"name": "Bird dog", "detail": "3 \u00d7 8 each side"}, {"name": "Side plank", "detail": "3 \u00d7 20\u201330 sec each side"}, {"name": "Easy walk", "detail": "15\u201320 minutes"}]}, "28": {"category": "Recovery", "title": "Rest / Reset", "tasks": [{"name": "Recovery", "detail": "Rest day or light walk"}, {"name": "Hydration", "detail": "Hit your water target"}, {"name": "Reset", "detail": "Prepare for the next week"}]}};
+
+(function(){
+  const modal = document.getElementById('dayModalBackdrop');
+  const closeBtn = document.getElementById('dayModalClose');
+  const title = document.getElementById('dayModalTitle');
+  const sub = document.getElementById('dayModalSub');
+  const chip = document.getElementById('dayModalChip');
+  const body = document.getElementById('dayModalBody');
+  const completeBtn = document.getElementById('dayCompleteBtn');
+  let activeDay = null;
+
+  function completedDaysLocal(){
+    try { return JSON.parse(localStorage.getItem('mana28_completed_days') || '[]'); }
+    catch(e) { return []; }
+  }
+
+  async function openDay(day){
+    const d = window.MANA28_PROGRAM[day];
+    if(!d) return;
+    activeDay = Number(day);
+    chip.textContent = 'MANA 28 • DAY ' + day;
+    title.textContent = d.category;
+    sub.textContent = d.title;
+
+    let logs = {};
+    if(d.category === "Strength"){
+      try{
+        logs = await loadStrengthLogsForDay(activeDay);
+      }catch(err){
+        console.warn("strength logs",err);
+      }
+    }
+
+    const sessionRows = d.tasks.map(t => {
+      const saved = logs[t.name];
+      const loadCfg = strengthLoadConfig(t.name);
+      const weightField = d.category === "Strength" && loadCfg.show ? `
+        <div class="strength-load-box">
+          <label>${loadCfg.label}${loadCfg.optional ? " (optional)" : ""}</label>
+          <input
+            class="strength-load-input"
+            data-exercise="${t.name.replace(/"/g,'&quot;')}"
+            type="number"
+            inputmode="decimal"
+            min="0"
+            step="0.5"
+            placeholder="${loadCfg.optional ? "0" : "15"}"
+            value="${saved ?? ""}">
+          <span class="strength-load-unit">kg</span>
+        </div>` : "";
+      return `<div class="day-task"><strong>${t.name}</strong><span>${t.detail}</span>${weightField}</div>`;
+    }).join('');
+
+    body.innerHTML = `
+      <div class="day-block">
+        <h3>Today's session</h3>
+        ${sessionRows}
+        ${d.category === "Strength" ? '<button id="saveStrengthLogsBtn" class="save-strength-btn" type="button">Save weights</button>' : ''}
+      </div>
+      <div class="day-block">
+        <h3>Focus</h3>
+        <div class="day-task"><strong>Move with purpose</strong><span>Use controlled reps, good technique and leave a little in the tank.</span></div>
+      </div>`;
+
+    const status = document.getElementById("strengthLogStatus");
+    if(status) status.textContent = d.category === "Strength" ? "Log load only where it applies. Saved privately to your coach." : "";
+
+    const saveBtn = document.getElementById("saveStrengthLogsBtn");
+    if(saveBtn){
+      saveBtn.onclick = async ()=>{
+        const statusEl = document.getElementById("strengthLogStatus");
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving…";
+        if(statusEl) statusEl.textContent = "Saving weights to Mana cloud…";
+        try{
+          await saveStrengthLogsForDay(activeDay);
+          saveBtn.textContent = "Weights saved ✓";
+          if(statusEl) statusEl.textContent = "Saved to Mana cloud ✓";
+          setTimeout(()=>{
+            saveBtn.disabled = false;
+            saveBtn.textContent = "Save weights";
+          },1200);
+        }catch(err){
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Save weights";
+          if(statusEl) statusEl.textContent = "Could not save: " + (err?.message || String(err));
+        }
+      };
+    }
+
+    const done = (Array.isArray(state?.completed) && state.completed.includes(activeDay)) || completedDaysLocal().includes(activeDay);
+    completeBtn.textContent = done ? 'Day complete ✓' : 'Mark day complete';
+    completeBtn.disabled = done;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+  }
+
+  function closeDay(){
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+  }
+
+  document.addEventListener('click', (e)=>{
+    const row = e.target.closest('[data-day]');
+    if(row && row.closest('#clientProgramsView')) {
+      e.preventDefault();
+      openDay(row.dataset.day);
+    }
+  });
+
+  closeBtn && closeBtn.addEventListener('click', closeDay);
+  modal && modal.addEventListener('click', (e)=>{ if(e.target === modal) closeDay(); });
+
+  completeBtn && completeBtn.addEventListener('click', async ()=>{
+    if(!activeDay) return;
+    completeBtn.disabled = true;
+    completeBtn.textContent = 'Saving…';
+
+    try {
+      const dayProgram = window.MANA28_PROGRAM[activeDay];
+      if(dayProgram && dayProgram.category === "Strength"){
+        await saveStrengthLogsForDay(activeDay);
+      }
+
+      // Use the existing live Supabase completion function already used by MANA 28 Home.
+      if (typeof markDayCloud === 'function' && currentUser) {
+        await markDayCloud(activeDay);
+
+        if (!state.completed.includes(activeDay)) {
+          state.completed.push(activeDay);
+          state.completed.sort((a,b)=>a-b);
+        }
+        state.day = Math.min(28, Math.max(...state.completed, 0) + 1);
+
+        const status = document.querySelector(`[data-day-status="${activeDay}"]`);
+        if (status) {
+          status.textContent = 'Complete ✓';
+          status.classList.remove('muted');
+          status.classList.add('gold');
+        }
+
+        // Refresh the normal client data so Home/Progress/Coach stay in sync.
+        if (typeof loadClientCloud === 'function') {
+          await loadClientCloud();
+        }
+        if (typeof renderClientPrograms === 'function') {
+          renderClientPrograms();
+        }
+      } else {
+        throw new Error('Live client session not available');
+      }
+
+      const arr = completedDaysLocal();
+      if(!arr.includes(activeDay)) {
+        arr.push(activeDay);
+        localStorage.setItem('mana28_completed_days', JSON.stringify(arr));
+      }
+
+      completeBtn.textContent = 'Day complete ✓';
+      completeBtn.disabled = true;
+    } catch(err) {
+      console.error(err);
+      completeBtn.textContent = 'Could not save — try again';
+      completeBtn.disabled = false;
+    }
+  });
+
+  // If original rows were not annotated by markup patterns, annotate them at runtime.
+  const view = document.getElementById('clientProgramsView');
+  if(view) {
+    [...view.querySelectorAll('*')].forEach(el=>{
+      const t = (el.textContent || '').trim();
+      const m = t.match(/^Day\s+(\d+)\s*•/);
+      if(m && !el.dataset.day) {
+        // Prefer a reasonably sized row container.
+        let candidate = el;
+        while(candidate.parentElement && candidate.parentElement !== view &&
+              candidate.parentElement.textContent.trim().length < 220) {
+          candidate = candidate.parentElement;
+        }
+        if(!candidate.dataset.day) {
+          candidate.dataset.day = m[1];
+          candidate.classList.add('program-day');
+        }
+      }
+    });
+  }
+})();
+
+
+(async function manaPersistentAuthWatcher(){
+  try{
+    const c=await supabaseClient();
+    c.auth.onAuthStateChange(async (event, session)=>{
+      if(!session?.user) return;
+      if(!["INITIAL_SESSION","SIGNED_IN","TOKEN_REFRESHED"].includes(event)) return;
+      try{
+        currentUser=session.user;
+        const profile=await getProfile(currentUser.id);
+        if(profile.role==="coach"){
+          await openConnectedCoach();
+        }else{
+          await openConnectedClient(profile);
+        }
+      }catch(e){
+        console.warn("persistent auth watcher",e);
+      }
+    });
+  }catch(e){
+    console.warn("persistent auth init",e);
+  }
+})();
+
+</script>
+
+</body></html>

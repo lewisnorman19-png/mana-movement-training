@@ -1,0 +1,12 @@
+{
+  "name": "mana-movement-training",
+  "version": "4.3.2",
+  "private": true,
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

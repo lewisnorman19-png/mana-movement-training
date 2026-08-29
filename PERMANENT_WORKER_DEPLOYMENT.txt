@@ -1,0 +1,42 @@
+MANA MOVEMENT TRAINING v4.3.2
+PERMANENT WORKER DEPLOYMENT PACKAGE
+
+PERMANENT WORKER
+calm-forest-aed7
+https://calm-forest-aed7.lewisnorman19.workers.dev
+
+WHAT THIS PACKAGE DOES
+- Locks Wrangler deployments to the existing Worker name: calm-forest-aed7
+- Keeps the same workers.dev URL across future releases
+- Prevents the random Worker-name problem
+- Helps Supabase session persistence and Safari password recognition remain tied to one origin
+
+FIRST-TIME COMPUTER SETUP
+1. Install Node.js.
+2. Open Terminal / Command Prompt in this folder.
+3. Run:
+   npm install
+4. Authenticate Cloudflare:
+   npx wrangler login
+5. Deploy:
+   npm run deploy
+
+FUTURE UPGRADES
+- Replace the app files in this same project folder with the newer Mana Movement release.
+- Keep wrangler.jsonc unchanged.
+- Run:
+  npm run deploy
+
+SUPABASE
+Keep these permanently:
+
+Site URL:
+https://calm-forest-aed7.lewisnorman19.workers.dev
+
+Redirect URL:
+https://calm-forest-aed7.lewisnorman19.workers.dev/**
+
+IMPORTANT
+- Do not create a new Worker for future upgrades.
+- Do not change the "name" value in wrangler.jsonc.
+- No new Supabase SQL is required for this infrastructure change.
