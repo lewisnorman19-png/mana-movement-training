@@ -1,0 +1,11 @@
+node_modules
+**/node_modules
+.git
+**/.git
+package-lock.json
+package.json
+wrangler.jsonc
+*.sql
+README*
+PERMANENT_WORKER_DEPLOYMENT.txt
+cloudflare-trigger.txt
