@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.4.1</title>
+  <title>Mana Movement Training v4.5.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -848,6 +848,32 @@
     }
     .focus-chip.good{border-color:#28442f;color:#79d98b}
 
+
+    /* v4.5 Quick Coach Actions */
+    .quick-actions-grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px
+    }
+    .quick-action-btn{
+      min-height:84px;border:1px solid #2d2d2d;border-radius:18px;background:#0b0b0b;
+      color:#f5f5f5;padding:14px;text-align:left;font-weight:800;font-size:14px;
+      cursor:pointer;transition:transform .12s ease,border-color .12s ease,background .12s ease;
+      -webkit-tap-highlight-color:rgba(243,216,117,.08)
+    }
+    .quick-action-btn span{
+      display:block;color:var(--gold2);font-size:22px;line-height:1;margin-bottom:9px
+    }
+    .quick-action-btn:active{transform:scale(.98);border-color:#5a4b1f;background:#11100b}
+    .quick-panel{
+      margin-top:14px;padding:16px;border:1px solid #2b2b2b;border-radius:18px;background:#0a0a0a
+    }
+    .quick-panel h4{margin:0 0 10px;font-size:16px}
+    .quick-panel textarea,.quick-panel input{margin-bottom:10px}
+    .quick-status{min-height:20px;margin-top:8px}
+    .message-preview{
+      white-space:pre-wrap;line-height:1.45;background:#080808;border:1px solid #292929;
+      border-radius:14px;padding:14px;color:#ddd;margin-top:10px
+    }
+
 </style>
 </head>
 <body>
@@ -865,7 +891,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.4.1</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V4.5.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -972,14 +998,50 @@
     </div>
 
     <div class="card">
-      <div class="row"><h3>Coach actions</h3><span class="pill">CLIENT</span></div>
-      <button id="requestCheckinBtn" class="btn">Request a check-in</button>
+      <div class="row">
+        <div>
+          <h3>Quick coach actions</h3>
+          <p class="tiny muted">Act on this client without leaving their profile.</p>
+        </div>
+        <span class="pill">COACH</span>
+      </div>
+
+      <div class="quick-actions-grid">
+        <button id="quickAddNoteBtn" class="quick-action-btn" type="button"><span>✎</span>Add coach note</button>
+        <button id="quickSetFocusBtn" class="quick-action-btn" type="button"><span>◎</span>Set next focus</button>
+        <button id="quickRecordSessionBtn" class="quick-action-btn" type="button"><span>✓</span>Record session</button>
+        <button id="quickMessageBtn" class="quick-action-btn" type="button"><span>↗</span>Message prompt</button>
+      </div>
+
+      <div id="quickFocusPanel" class="quick-panel hide">
+        <h4>Set next focus</h4>
+        <input id="quickFocusInput" type="text" placeholder="e.g. Technique, protein target, consistency"/>
+        <button id="saveQuickFocusBtn" class="btn secondary" type="button">Save next focus</button>
+        <p id="quickFocusStatus" class="tiny muted quick-status"></p>
+      </div>
+
+      <div id="quickSessionPanel" class="quick-panel hide">
+        <h4>Record coaching session</h4>
+        <input id="quickSessionTitle" type="text" placeholder="Session focus e.g. Lower body strength"/>
+        <textarea id="quickSessionNotes" rows="3" placeholder="Key wins, loads, technique notes, next step…"></textarea>
+        <button id="saveQuickSessionBtn" class="btn secondary" type="button">Record session</button>
+        <p id="quickSessionStatus" class="tiny muted quick-status"></p>
+      </div>
+
+      <div id="quickMessagePanel" class="quick-panel hide">
+        <div class="row"><h4>Message prompt</h4><span class="pill">READY</span></div>
+        <div id="quickMessagePreview" class="message-preview"></div>
+        <button id="copyQuickMessageBtn" class="btn secondary" type="button">Copy message</button>
+        <p id="quickMessageStatus" class="tiny muted quick-status"></p>
+      </div>
+
+      <button id="requestCheckinBtn" class="btn" type="button" style="margin-top:14px">Request a check-in</button>
       <p id="requestCheckinStatus" class="tiny muted"></p>
     </div>
 
-    <div class="card">
+    <div class="card" id="coachNotesCard">
       <h3>Coach notes</h3>
-      <textarea id="coachNoteDraft" rows="4" placeholder="Private coach note for this client…"></textarea>
+      <textarea id="coachNoteDraft" rows="5" placeholder="Private coach note for this client…"></textarea>
       <button id="saveCoachNote" class="btn secondary">Save coach note</button>
       <p id="coachNoteStatus" class="tiny muted"></p>
     </div>
@@ -1710,6 +1772,7 @@ function closeClientReport(){
 }
 
 async function openCoachClientDetail(userId, clientName){
+  hideQuickCoachPanels();
   selectedCoachClient = {userId, clientName};
   currentClientReportData = null;
 
@@ -2108,6 +2171,138 @@ document.getElementById("saveCoachNote").onclick = async function(){
     if(currentClientReportData) currentClientReportData.coachNote = document.getElementById("coachNoteDraft").value || "";
   }catch(err){
     status.textContent = "Could not save: " + (err?.message || String(err));
+  }
+};
+
+
+
+function hideQuickCoachPanels(){
+  ["quickFocusPanel","quickSessionPanel","quickMessagePanel"].forEach(id=>{
+    document.getElementById(id)?.classList.add("hide");
+  });
+}
+
+function appendStructuredCoachNote(label, body){
+  const draft = document.getElementById("coachNoteDraft");
+  const stamp = new Date().toLocaleDateString();
+  const entry = `[${label} • ${stamp}] ${body}`.trim();
+  const existing = (draft.value || "").trim();
+  draft.value = existing ? `${existing}\n\n${entry}` : entry;
+  return entry;
+}
+
+async function persistCoachNoteFromDraft(statusEl){
+  if(!selectedCoachClient) return false;
+  const c = await supabaseClient();
+  const note = document.getElementById("coachNoteDraft").value || "";
+  const {error} = await c.from("coach_notes").upsert({
+    client_id:selectedCoachClient.userId,
+    coach_id:currentUser.id,
+    note,
+    updated_at:new Date().toISOString()
+  },{onConflict:"coach_id,client_id"});
+  if(error) throw error;
+  if(currentClientReportData) currentClientReportData.coachNote = note;
+  if(statusEl) statusEl.textContent = "Saved to Mana cloud ✓";
+  return true;
+}
+
+document.getElementById("quickAddNoteBtn").onclick = function(){
+  hideQuickCoachPanels();
+  document.getElementById("coachNotesCard")?.scrollIntoView({behavior:"smooth",block:"center"});
+  setTimeout(()=>document.getElementById("coachNoteDraft")?.focus(),350);
+};
+
+document.getElementById("quickSetFocusBtn").onclick = function(){
+  const panel = document.getElementById("quickFocusPanel");
+  const wasHidden = panel.classList.contains("hide");
+  hideQuickCoachPanels();
+  if(wasHidden){
+    panel.classList.remove("hide");
+    setTimeout(()=>document.getElementById("quickFocusInput")?.focus(),100);
+  }
+};
+
+document.getElementById("saveQuickFocusBtn").onclick = async function(){
+  const input = document.getElementById("quickFocusInput");
+  const status = document.getElementById("quickFocusStatus");
+  const value = (input.value || "").trim();
+  if(!value){ status.textContent = "Add the next focus first."; return; }
+  status.textContent = "Saving…";
+  try{
+    appendStructuredCoachNote("NEXT FOCUS", value);
+    await persistCoachNoteFromDraft(status);
+    input.value = "";
+  }catch(err){
+    status.textContent = "Could not save: " + (err?.message || String(err));
+  }
+};
+
+document.getElementById("quickRecordSessionBtn").onclick = function(){
+  const panel = document.getElementById("quickSessionPanel");
+  const wasHidden = panel.classList.contains("hide");
+  hideQuickCoachPanels();
+  if(wasHidden){
+    panel.classList.remove("hide");
+    setTimeout(()=>document.getElementById("quickSessionTitle")?.focus(),100);
+  }
+};
+
+document.getElementById("saveQuickSessionBtn").onclick = async function(){
+  const title = (document.getElementById("quickSessionTitle").value || "").trim();
+  const notes = (document.getElementById("quickSessionNotes").value || "").trim();
+  const status = document.getElementById("quickSessionStatus");
+  if(!title && !notes){ status.textContent = "Add a session focus or note first."; return; }
+  status.textContent = "Recording…";
+  try{
+    const body = [title,notes].filter(Boolean).join(" — ");
+    appendStructuredCoachNote("SESSION", body);
+    await persistCoachNoteFromDraft(status);
+    document.getElementById("quickSessionTitle").value = "";
+    document.getElementById("quickSessionNotes").value = "";
+  }catch(err){
+    status.textContent = "Could not record: " + (err?.message || String(err));
+  }
+};
+
+document.getElementById("quickMessageBtn").onclick = function(){
+  const panel = document.getElementById("quickMessagePanel");
+  const wasHidden = panel.classList.contains("hide");
+  hideQuickCoachPanels();
+  if(!wasHidden) return;
+
+  const name = selectedCoachClient?.clientName || "there";
+  const firstName = name.split(/\s+/)[0] || "there";
+  const dayText = document.getElementById("detailCurrentDay")?.textContent?.trim() || "";
+  const habits = document.getElementById("detailHabitPercent")?.textContent?.trim() || "";
+  const checkins = document.getElementById("detailCheckinCount")?.textContent?.trim() || "0";
+  const completed = document.getElementById("detailDaysComplete")?.textContent?.trim() || "0";
+
+  let message = `Hey ${firstName}, just checking in from Mana Movement. `;
+  if(dayText) message += `You're currently at Day ${dayText}. `;
+  message += `You've completed ${completed} sessions`;
+  if(habits) message += ` with ${habits} habit adherence`;
+  message += `. `;
+  if(checkins === "0") {
+    message += `When you get a chance, send through your first check-in so I can make sure we're on track. `;
+  } else {
+    message += `Keep the momentum going and let me know if anything needs adjusting. `;
+  }
+  message += `Move with purpose 💪`;
+
+  document.getElementById("quickMessagePreview").textContent = message;
+  document.getElementById("quickMessageStatus").textContent = "";
+  panel.classList.remove("hide");
+};
+
+document.getElementById("copyQuickMessageBtn").onclick = async function(){
+  const status = document.getElementById("quickMessageStatus");
+  const text = document.getElementById("quickMessagePreview").textContent || "";
+  try{
+    await navigator.clipboard.writeText(text);
+    status.textContent = "Copied ✓";
+  }catch(e){
+    status.textContent = "Press and hold the message to copy.";
   }
 };
 
