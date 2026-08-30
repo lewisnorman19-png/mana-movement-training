@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.5.0</title>
+  <title>Mana Movement Training v4.5.1</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -891,7 +891,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.5.0</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V4.5.1</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -1031,7 +1031,10 @@
       <div id="quickMessagePanel" class="quick-panel hide">
         <div class="row"><h4>Message prompt</h4><span class="pill">READY</span></div>
         <div id="quickMessagePreview" class="message-preview"></div>
-        <button id="copyQuickMessageBtn" class="btn secondary" type="button">Copy message</button>
+        <div class="row" style="gap:10px;margin-top:10px">
+          <button id="refreshQuickMessageBtn" class="btn secondary" type="button" style="flex:1">Refresh message</button>
+          <button id="copyQuickMessageBtn" class="btn secondary" type="button" style="flex:1">Copy message</button>
+        </div>
         <p id="quickMessageStatus" class="tiny muted quick-status"></p>
       </div>
 
@@ -2265,12 +2268,7 @@ document.getElementById("saveQuickSessionBtn").onclick = async function(){
   }
 };
 
-document.getElementById("quickMessageBtn").onclick = function(){
-  const panel = document.getElementById("quickMessagePanel");
-  const wasHidden = panel.classList.contains("hide");
-  hideQuickCoachPanels();
-  if(!wasHidden) return;
-
+function buildQuickCoachMessage(){
   const name = selectedCoachClient?.clientName || "there";
   const firstName = name.split(/\s+/)[0] || "there";
   const dayText = document.getElementById("detailCurrentDay")?.textContent?.trim() || "";
@@ -2291,8 +2289,24 @@ document.getElementById("quickMessageBtn").onclick = function(){
   message += `Move with purpose 💪`;
 
   document.getElementById("quickMessagePreview").textContent = message;
+  return message;
+}
+
+document.getElementById("quickMessageBtn").onclick = function(){
+  const panel = document.getElementById("quickMessagePanel");
+  const wasHidden = panel.classList.contains("hide");
+  hideQuickCoachPanels();
+  if(!wasHidden) return;
+
+  buildQuickCoachMessage();
   document.getElementById("quickMessageStatus").textContent = "";
   panel.classList.remove("hide");
+};
+
+document.getElementById("refreshQuickMessageBtn").onclick = function(){
+  const status = document.getElementById("quickMessageStatus");
+  buildQuickCoachMessage();
+  status.textContent = "Updated from latest client data ✓";
 };
 
 document.getElementById("copyQuickMessageBtn").onclick = async function(){
