@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.6.2</title>
+  <title>Mana Movement Training v4.7.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -915,6 +915,21 @@
       border:1px solid #292929;border-radius:15px;padding:12px 14px
     }
 
+
+    /* v4.7 Session history edit/delete */
+    .session-history-actions{
+      display:flex;gap:8px;margin-top:10px;flex-wrap:wrap
+    }
+    .session-history-action{
+      flex:1;min-width:110px;border:1px solid #343434;border-radius:12px;
+      background:#111;color:#eee;padding:10px 12px;font-weight:800;font-size:12px;cursor:pointer
+    }
+    .session-history-action.delete{color:#ffb6b6;border-color:#5a2c2c}
+    .session-edit-panel{
+      margin-top:10px;padding:12px;border:1px solid #3a331c;border-radius:14px;background:#0a0a0a
+    }
+    .session-edit-panel input,.session-edit-panel textarea{margin-bottom:10px}
+
 </style>
 </head>
 <body>
@@ -932,7 +947,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.6.2</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V4.7.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -2259,11 +2274,17 @@ function parseSessionHistoryFromNote(noteText){
   const entries = [];
   for(let i=0;i<matches.length;i++){
     const current = matches[i];
-    const start = current.index + current[0].length;
-    const nextStructured = text.slice(start).search(/\n\s*\[[A-Z ]+\s*•\s*[^\]]+\]\s*/);
-    const end = nextStructured >= 0 ? start + nextStructured : text.length;
-    const body = text.slice(start,end).trim();
-    entries.push({date:(current[1]||"").trim(), body});
+    const sourceStart = current.index;
+    const bodyStart = current.index + current[0].length;
+    const nextStructured = text.slice(bodyStart).search(/\n\s*\[[A-Z ]+\s*•\s*[^\]]+\]\s*/);
+    const sourceEnd = nextStructured >= 0 ? bodyStart + nextStructured : text.length;
+    const body = text.slice(bodyStart,sourceEnd).trim();
+    entries.push({
+      date:(current[1]||"").trim(),
+      body,
+      sourceStart,
+      sourceEnd
+    });
   }
   return entries.reverse();
 }
@@ -2277,13 +2298,101 @@ function renderSessionHistory(noteText){
     host.innerHTML = '<p class="session-history-empty">No coaching sessions recorded yet.</p>';
     return;
   }
-  host.innerHTML = entries.map(entry=>`
-    <div class="session-history-item">
+  host.innerHTML = entries.map((entry,index)=>`
+    <div class="session-history-item" data-session-index="${index}">
       <span class="session-history-dot"></span>
       <div class="session-history-date">${esc(entry.date)}</div>
       <div class="session-history-body">${esc(entry.body)}</div>
+      <div class="session-history-actions">
+        <button class="session-history-action edit-session-entry" type="button" data-session-index="${index}">Edit</button>
+        <button class="session-history-action delete delete-session-entry" type="button" data-session-index="${index}">Delete</button>
+      </div>
+      <div class="session-edit-panel hide" id="sessionEditPanel${index}">
+        <input id="sessionEditDate${index}" type="text" value="${esc(entry.date)}" placeholder="Date"/>
+        <textarea id="sessionEditBody${index}" rows="3" placeholder="Session details">${esc(entry.body)}</textarea>
+        <button class="btn secondary save-session-edit" type="button" data-session-index="${index}">Save changes</button>
+        <p class="tiny muted" id="sessionEditStatus${index}"></p>
+      </div>
     </div>
   `).join("");
+
+  host.querySelectorAll(".edit-session-entry").forEach(btn=>{
+    btn.onclick=()=>{
+      const i=btn.dataset.sessionIndex;
+      document.getElementById("sessionEditPanel"+i)?.classList.toggle("hide");
+    };
+  });
+
+  host.querySelectorAll(".save-session-edit").forEach(btn=>{
+    btn.onclick=()=>saveSessionHistoryEdit(Number(btn.dataset.sessionIndex));
+  });
+
+  host.querySelectorAll(".delete-session-entry").forEach(btn=>{
+    btn.onclick=()=>deleteSessionHistoryEntry(Number(btn.dataset.sessionIndex));
+  });
+}
+
+
+function getSessionHistorySource(){
+  return document.getElementById("coachNoteDraft")?.value || "";
+}
+
+function replaceSessionEntryAtReverseIndex(reverseIndex, newDate, newBody){
+  const text = getSessionHistorySource().replace(/\r\n/g,"\n");
+  const forwardEntries = parseSessionHistoryFromNote(text).reverse();
+  const target = forwardEntries[forwardEntries.length - 1 - reverseIndex];
+  if(!target) return null;
+
+  const replacement = `[SESSION • ${newDate}] ${newBody}`.trim();
+  const before = text.slice(0,target.sourceStart).replace(/\s+$/,"");
+  const after = text.slice(target.sourceEnd).replace(/^\s+/,"");
+  return [before,replacement,after].filter(Boolean).join("\n\n");
+}
+
+function deleteSessionEntryAtReverseIndex(reverseIndex){
+  const text = getSessionHistorySource().replace(/\r\n/g,"\n");
+  const forwardEntries = parseSessionHistoryFromNote(text).reverse();
+  const target = forwardEntries[forwardEntries.length - 1 - reverseIndex];
+  if(!target) return null;
+
+  const before = text.slice(0,target.sourceStart).replace(/\s+$/,"");
+  const after = text.slice(target.sourceEnd).replace(/^\s+/,"");
+  return [before,after].filter(Boolean).join("\n\n");
+}
+
+async function saveSessionHistoryEdit(index){
+  const status = document.getElementById("sessionEditStatus"+index);
+  const date = (document.getElementById("sessionEditDate"+index)?.value || "").trim();
+  const body = (document.getElementById("sessionEditBody"+index)?.value || "").trim();
+  if(!date || !body){
+    if(status) status.textContent = "Add both date and session details.";
+    return;
+  }
+  if(status) status.textContent = "Saving…";
+  try{
+    const updated = replaceSessionEntryAtReverseIndex(index,date,body);
+    if(updated == null) throw new Error("Session entry not found");
+    document.getElementById("coachNoteDraft").value = updated;
+    await persistCoachNoteFromDraft(status);
+    renderSessionHistory(updated);
+  }catch(err){
+    if(status) status.textContent = "Could not save: " + (err?.message || String(err));
+  }
+}
+
+async function deleteSessionHistoryEntry(index){
+  const ok = window.confirm("Delete this session history entry?");
+  if(!ok) return;
+  try{
+    const updated = deleteSessionEntryAtReverseIndex(index);
+    if(updated == null) throw new Error("Session entry not found");
+    document.getElementById("coachNoteDraft").value = updated;
+    const tempStatus = document.createElement("span");
+    await persistCoachNoteFromDraft(tempStatus);
+    renderSessionHistory(updated);
+  }catch(err){
+    alert("Could not delete session: " + (err?.message || String(err)));
+  }
 }
 
 async function persistCoachNoteFromDraft(statusEl){
