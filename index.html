@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.8.1</title>
+  <title>Mana Movement Training v4.9.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -958,6 +958,20 @@
       scroll-margin-bottom:260px;
     }
 
+
+    /* v4.9 Duration + RPE */
+    .session-meta-row{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px
+    }
+    .session-meta-row input,.session-meta-row select{margin-bottom:0}
+    .session-history-meta{
+      display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px
+    }
+    .session-meta-chip{
+      display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;
+      border:1px solid #343434;color:#d8d8d8;font-size:11px;font-weight:800
+    }
+
 </style>
 </head>
 <body>
@@ -975,7 +989,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.8.1</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V4.9.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -1114,6 +1128,17 @@
           <option value="Check-in">Check-in</option>
           <option value="Other">Other</option>
         </select>
+        <div class="session-meta-row">
+          <input id="quickSessionDuration" type="number" min="1" max="300" inputmode="numeric" placeholder="Minutes"/>
+          <select id="quickSessionRpe" class="session-type-select">
+            <option value="">RPE</option>
+            <option value="1">1 / 10</option><option value="2">2 / 10</option>
+            <option value="3">3 / 10</option><option value="4">4 / 10</option>
+            <option value="5">5 / 10</option><option value="6">6 / 10</option>
+            <option value="7">7 / 10</option><option value="8">8 / 10</option>
+            <option value="9">9 / 10</option><option value="10">10 / 10</option>
+          </select>
+        </div>
         <input id="quickSessionTitle" type="text" placeholder="Session focus e.g. Lower body strength"/>
         <textarea id="quickSessionNotes" rows="3" placeholder="Key wins, loads, technique notes, next step…"></textarea>
         <button id="saveQuickSessionBtn" class="btn secondary" type="button">Record session</button>
@@ -2317,10 +2342,23 @@ function parseSessionHistoryFromNote(noteText){
     const body = text.slice(bodyStart,sourceEnd).trim();
     const typeMatch = body.match(/^\[TYPE:([^\]]+)\]\s*/);
     const type = typeMatch ? typeMatch[1].trim() : "Other";
-    const cleanBody = typeMatch ? body.slice(typeMatch[0].length).trim() : body;
+    let cleanBody = typeMatch ? body.slice(typeMatch[0].length).trim() : body;
+    const metaMatch = cleanBody.match(/^\[META:([^\]]*)\]\s*/);
+    let duration = "";
+    let rpe = "";
+    if(metaMatch){
+      const meta = metaMatch[1] || "";
+      const durMatch = meta.match(/duration=(\d+)/i);
+      const rpeMatch = meta.match(/rpe=(\d+)/i);
+      duration = durMatch ? durMatch[1] : "";
+      rpe = rpeMatch ? rpeMatch[1] : "";
+      cleanBody = cleanBody.slice(metaMatch[0].length).trim();
+    }
     entries.push({
       date:(current[1]||"").trim(),
       type,
+      duration,
+      rpe,
       body:cleanBody,
       sourceStart,
       sourceEnd
@@ -2343,6 +2381,10 @@ function renderSessionHistory(noteText){
       <span class="session-history-dot"></span>
       <div class="session-history-date">${esc(entry.date)}</div>
       <span class="session-type-chip ${esc(entry.type.toLowerCase().replace(/\s+/g,"-"))}">${esc(entry.type)}</span>
+      <div class="session-history-meta">
+        ${entry.duration ? `<span class="session-meta-chip">${esc(entry.duration)} min</span>` : ""}
+        ${entry.rpe ? `<span class="session-meta-chip">RPE ${esc(entry.rpe)}/10</span>` : ""}
+      </div>
       <div class="session-history-body">${esc(entry.body)}</div>
       <div class="session-history-actions">
         <button class="session-history-action edit-session-entry" type="button" data-session-index="${index}">Edit</button>
@@ -2352,6 +2394,13 @@ function renderSessionHistory(noteText){
         <select id="sessionEditType${index}" class="session-type-select">
           ${["Strength","Conditioning","Mobility","Technique","Check-in","Other"].map(t=>`<option value="${t}" ${entry.type===t?"selected":""}>${t}</option>`).join("")}
         </select>
+        <div class="session-meta-row">
+          <input id="sessionEditDuration${index}" type="number" min="1" max="300" value="${esc(entry.duration || "")}" placeholder="Minutes"/>
+          <select id="sessionEditRpe${index}" class="session-type-select">
+            <option value="">RPE</option>
+            ${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option value="${n}" ${String(entry.rpe)===String(n)?"selected":""}>${n} / 10</option>`).join("")}
+          </select>
+        </div>
         <input id="sessionEditDate${index}" type="text" value="${esc(entry.date)}" placeholder="Date"/>
         <textarea id="sessionEditBody${index}" rows="3" placeholder="Session details">${esc(entry.body)}</textarea>
         <button class="btn secondary save-session-edit" type="button" data-session-index="${index}">Save changes</button>
@@ -2381,13 +2430,16 @@ function getSessionHistorySource(){
   return document.getElementById("coachNoteDraft")?.value || "";
 }
 
-function replaceSessionEntryAtReverseIndex(reverseIndex, newDate, newType, newBody){
+function replaceSessionEntryAtReverseIndex(reverseIndex, newDate, newType, newDuration, newRpe, newBody){
   const text = getSessionHistorySource().replace(/\r\n/g,"\n");
   const forwardEntries = parseSessionHistoryFromNote(text).reverse();
   const target = forwardEntries[forwardEntries.length - 1 - reverseIndex];
   if(!target) return null;
-
-  const replacement = `[SESSION • ${newDate}] [TYPE:${newType}] ${newBody}`.trim();
+  const metaBits = [];
+  if(newDuration) metaBits.push(`duration=${newDuration}`);
+  if(newRpe) metaBits.push(`rpe=${newRpe}`);
+  const meta = metaBits.length ? ` [META:${metaBits.join(";")}]` : "";
+  const replacement = `[SESSION • ${newDate}] [TYPE:${newType}]${meta} ${newBody}`.trim();
   const before = text.slice(0,target.sourceStart).replace(/\s+$/,"");
   const after = text.slice(target.sourceEnd).replace(/^\s+/,"");
   return [before,replacement,after].filter(Boolean).join("\n\n");
@@ -2407,6 +2459,8 @@ function deleteSessionEntryAtReverseIndex(reverseIndex){
 async function saveSessionHistoryEdit(index){
   const status = document.getElementById("sessionEditStatus"+index);
   const type = (document.getElementById("sessionEditType"+index)?.value || "Other").trim();
+  const duration = (document.getElementById("sessionEditDuration"+index)?.value || "").trim();
+  const rpe = (document.getElementById("sessionEditRpe"+index)?.value || "").trim();
   const date = (document.getElementById("sessionEditDate"+index)?.value || "").trim();
   const body = (document.getElementById("sessionEditBody"+index)?.value || "").trim();
   if(!date || !body){
@@ -2415,7 +2469,7 @@ async function saveSessionHistoryEdit(index){
   }
   if(status) status.textContent = "Saving…";
   try{
-    const updated = replaceSessionEntryAtReverseIndex(index,date,type,body);
+    const updated = replaceSessionEntryAtReverseIndex(index,date,type,duration,rpe,body);
     if(updated == null) throw new Error("Session entry not found");
     document.getElementById("coachNoteDraft").value = updated;
     await persistCoachNoteFromDraft(status);
@@ -2559,16 +2613,24 @@ document.getElementById("quickRecordSessionBtn").onclick = function(){
 
 document.getElementById("saveQuickSessionBtn").onclick = async function(){
   const type = (document.getElementById("quickSessionType").value || "Other").trim();
+  const duration = (document.getElementById("quickSessionDuration").value || "").trim();
+  const rpe = (document.getElementById("quickSessionRpe").value || "").trim();
   const title = (document.getElementById("quickSessionTitle").value || "").trim();
   const notes = (document.getElementById("quickSessionNotes").value || "").trim();
   const status = document.getElementById("quickSessionStatus");
   if(!title && !notes){ status.textContent = "Add a session focus or note first."; return; }
   status.textContent = "Recording…";
   try{
-    const body = `[TYPE:${type}] ` + [title,notes].filter(Boolean).join(" — ");
+    const metaBits = [];
+    if(duration) metaBits.push(`duration=${duration}`);
+    if(rpe) metaBits.push(`rpe=${rpe}`);
+    const meta = metaBits.length ? `[META:${metaBits.join(";")}] ` : "";
+    const body = `[TYPE:${type}] ${meta}` + [title,notes].filter(Boolean).join(" — ");
     appendStructuredCoachNote("SESSION", body);
     await persistCoachNoteFromDraft(status);
     renderSessionHistory();
+    document.getElementById("quickSessionDuration").value = "";
+    document.getElementById("quickSessionRpe").value = "";
     document.getElementById("quickSessionTitle").value = "";
     document.getElementById("quickSessionNotes").value = "";
     releaseSessionKeyboardSpace();
