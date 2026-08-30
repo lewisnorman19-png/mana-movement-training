@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.7.0</title>
+  <title>Mana Movement Training v4.8.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -930,6 +930,24 @@
     }
     .session-edit-panel input,.session-edit-panel textarea{margin-bottom:10px}
 
+
+    /* v4.8 Session type tagging */
+    .session-type-select{
+      width:100%;margin-bottom:10px;background:#0b0b0b;color:#f5f5f5;
+      border:1px solid #343434;border-radius:14px;padding:13px 14px;font-size:14px
+    }
+    .session-type-chip{
+      display:inline-flex;align-items:center;gap:6px;margin-bottom:8px;
+      padding:6px 10px;border-radius:999px;border:1px solid #4a4121;
+      color:var(--gold2);font-size:11px;font-weight:900;letter-spacing:.05em
+    }
+    .session-type-chip.strength{border-color:#5a4b1f}
+    .session-type-chip.conditioning{border-color:#39525a}
+    .session-type-chip.mobility{border-color:#465a39}
+    .session-type-chip.technique{border-color:#51405a}
+    .session-type-chip.check-in{border-color:#5a3940}
+    .session-type-chip.other{border-color:#444}
+
 </style>
 </head>
 <body>
@@ -947,7 +965,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.7.0</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V4.8.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -1078,6 +1096,14 @@
 
       <div id="quickSessionPanel" class="quick-panel hide">
         <h4>Record coaching session</h4>
+        <select id="quickSessionType" class="session-type-select">
+          <option value="Strength">Strength</option>
+          <option value="Conditioning">Conditioning</option>
+          <option value="Mobility">Mobility</option>
+          <option value="Technique">Technique</option>
+          <option value="Check-in">Check-in</option>
+          <option value="Other">Other</option>
+        </select>
         <input id="quickSessionTitle" type="text" placeholder="Session focus e.g. Lower body strength"/>
         <textarea id="quickSessionNotes" rows="3" placeholder="Key wins, loads, technique notes, next step…"></textarea>
         <button id="saveQuickSessionBtn" class="btn secondary" type="button">Record session</button>
@@ -2279,9 +2305,13 @@ function parseSessionHistoryFromNote(noteText){
     const nextStructured = text.slice(bodyStart).search(/\n\s*\[[A-Z ]+\s*•\s*[^\]]+\]\s*/);
     const sourceEnd = nextStructured >= 0 ? bodyStart + nextStructured : text.length;
     const body = text.slice(bodyStart,sourceEnd).trim();
+    const typeMatch = body.match(/^\[TYPE:([^\]]+)\]\s*/);
+    const type = typeMatch ? typeMatch[1].trim() : "Other";
+    const cleanBody = typeMatch ? body.slice(typeMatch[0].length).trim() : body;
     entries.push({
       date:(current[1]||"").trim(),
-      body,
+      type,
+      body:cleanBody,
       sourceStart,
       sourceEnd
     });
@@ -2302,12 +2332,16 @@ function renderSessionHistory(noteText){
     <div class="session-history-item" data-session-index="${index}">
       <span class="session-history-dot"></span>
       <div class="session-history-date">${esc(entry.date)}</div>
+      <span class="session-type-chip ${esc(entry.type.toLowerCase().replace(/\s+/g,"-"))}">${esc(entry.type)}</span>
       <div class="session-history-body">${esc(entry.body)}</div>
       <div class="session-history-actions">
         <button class="session-history-action edit-session-entry" type="button" data-session-index="${index}">Edit</button>
         <button class="session-history-action delete delete-session-entry" type="button" data-session-index="${index}">Delete</button>
       </div>
       <div class="session-edit-panel hide" id="sessionEditPanel${index}">
+        <select id="sessionEditType${index}" class="session-type-select">
+          ${["Strength","Conditioning","Mobility","Technique","Check-in","Other"].map(t=>`<option value="${t}" ${entry.type===t?"selected":""}>${t}</option>`).join("")}
+        </select>
         <input id="sessionEditDate${index}" type="text" value="${esc(entry.date)}" placeholder="Date"/>
         <textarea id="sessionEditBody${index}" rows="3" placeholder="Session details">${esc(entry.body)}</textarea>
         <button class="btn secondary save-session-edit" type="button" data-session-index="${index}">Save changes</button>
@@ -2337,13 +2371,13 @@ function getSessionHistorySource(){
   return document.getElementById("coachNoteDraft")?.value || "";
 }
 
-function replaceSessionEntryAtReverseIndex(reverseIndex, newDate, newBody){
+function replaceSessionEntryAtReverseIndex(reverseIndex, newDate, newType, newBody){
   const text = getSessionHistorySource().replace(/\r\n/g,"\n");
   const forwardEntries = parseSessionHistoryFromNote(text).reverse();
   const target = forwardEntries[forwardEntries.length - 1 - reverseIndex];
   if(!target) return null;
 
-  const replacement = `[SESSION • ${newDate}] ${newBody}`.trim();
+  const replacement = `[SESSION • ${newDate}] [TYPE:${newType}] ${newBody}`.trim();
   const before = text.slice(0,target.sourceStart).replace(/\s+$/,"");
   const after = text.slice(target.sourceEnd).replace(/^\s+/,"");
   return [before,replacement,after].filter(Boolean).join("\n\n");
@@ -2362,6 +2396,7 @@ function deleteSessionEntryAtReverseIndex(reverseIndex){
 
 async function saveSessionHistoryEdit(index){
   const status = document.getElementById("sessionEditStatus"+index);
+  const type = (document.getElementById("sessionEditType"+index)?.value || "Other").trim();
   const date = (document.getElementById("sessionEditDate"+index)?.value || "").trim();
   const body = (document.getElementById("sessionEditBody"+index)?.value || "").trim();
   if(!date || !body){
@@ -2370,7 +2405,7 @@ async function saveSessionHistoryEdit(index){
   }
   if(status) status.textContent = "Saving…";
   try{
-    const updated = replaceSessionEntryAtReverseIndex(index,date,body);
+    const updated = replaceSessionEntryAtReverseIndex(index,date,type,body);
     if(updated == null) throw new Error("Session entry not found");
     document.getElementById("coachNoteDraft").value = updated;
     await persistCoachNoteFromDraft(status);
@@ -2454,13 +2489,14 @@ document.getElementById("quickRecordSessionBtn").onclick = function(){
 };
 
 document.getElementById("saveQuickSessionBtn").onclick = async function(){
+  const type = (document.getElementById("quickSessionType").value || "Other").trim();
   const title = (document.getElementById("quickSessionTitle").value || "").trim();
   const notes = (document.getElementById("quickSessionNotes").value || "").trim();
   const status = document.getElementById("quickSessionStatus");
   if(!title && !notes){ status.textContent = "Add a session focus or note first."; return; }
   status.textContent = "Recording…";
   try{
-    const body = [title,notes].filter(Boolean).join(" — ");
+    const body = `[TYPE:${type}] ` + [title,notes].filter(Boolean).join(" — ");
     appendStructuredCoachNote("SESSION", body);
     await persistCoachNoteFromDraft(status);
     renderSessionHistory();
