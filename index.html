@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.3.4</title>
+  <title>Mana Movement Training v4.4.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -827,6 +827,21 @@
     .session-restore-card strong{display:block;font-size:20px;margin-bottom:8px}
     .session-restore-card span{color:#a6a6a6;font-size:14px}
 
+
+    /* v4.4 Coach Focus */
+    .focus-item{
+      width:100%;background:#0b0b0b;border:1px solid #292929;color:inherit;
+      text-align:left;border-radius:18px;padding:15px 16px;margin-top:11px;cursor:pointer
+    }
+    .focus-item:active{transform:scale(.995)}
+    .focus-head{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .focus-reason{margin-top:7px;color:#aaa;font-size:13px;line-height:1.35}
+    .focus-chip{
+      flex:0 0 auto;padding:6px 9px;border-radius:999px;border:1px solid #3c3420;
+      color:var(--gold2);font-size:11px;font-weight:800;letter-spacing:.04em
+    }
+    .focus-chip.good{border-color:#28442f;color:#79d98b}
+
 </style>
 </head>
 <body>
@@ -844,7 +859,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.3.4</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V4.4.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -1082,6 +1097,10 @@
     <div class="grid">
       <div class="metric"><span class="tiny muted">Active clients</span><strong id="coachClientCount">0</strong><span class="tiny">all programs</span></div>
       <div class="metric"><span class="tiny muted">Avg adherence</span><strong id="coachAdherence">0%</strong><span class="tiny">this week</span></div>
+    </div>
+    <div class="card" id="coachFocusCard">
+      <div class="row"><h3>Coach Focus</h3><span class="pill">LIVE</span></div>
+      <p class="muted">Checking which clients need your attention…</p>
     </div>
     <div class="card" id="coachClientsCard">
       <div class="row"><h3>Active Clients</h3><span class="pill">LIVE DATA</span></div>
@@ -1382,6 +1401,7 @@ async function openConnectedCoach(){mode='coach';auth.classList.add('hide');clie
 
 async function loadCoachDashboard(){
   const card = document.getElementById("coachClientsCard");
+  const focusCard = document.getElementById("coachFocusCard");
   const clientMetric = document.getElementById("coachClientCount");
   const adherenceMetric = document.getElementById("coachAdherence");
 
@@ -1390,6 +1410,9 @@ async function loadCoachDashboard(){
   if(card) card.innerHTML =
     '<div class="row"><h3>Active Clients</h3><span class="pill">LIVE DATA</span></div>' +
     '<p class="muted">Connecting to Mana cloud…</p>';
+  if(focusCard) focusCard.innerHTML =
+    '<div class="row"><h3>Coach Focus</h3><span class="pill">LIVE</span></div>' +
+    '<p class="muted">Checking which clients need your attention…</p>';
 
   try{
     const c = await supabaseClient();
@@ -1408,6 +1431,65 @@ async function loadCoachDashboard(){
     const adherence = clientCount
       ? Math.round(rows.reduce((sum,r)=>sum + Number(r.habit_percent || 0),0)/clientCount)
       : 0;
+
+    // v4.4 Coach Focus: enrich summary with latest check-ins and strength activity.
+    const userIds = rows.map(r=>r.user_id).filter(Boolean);
+    let latestCheckinByUser = {};
+    let strengthCountByUser = {};
+
+    if(userIds.length){
+      try{
+        const [checkinRes, strengthRes] = await Promise.all([
+          c.from("checkins").select("user_id,created_at").in("user_id",userIds).order("created_at",{ascending:false}),
+          c.from("exercise_logs").select("user_id").in("user_id",userIds)
+        ]);
+
+        if(!checkinRes.error){
+          (checkinRes.data || []).forEach(r=>{
+            if(!latestCheckinByUser[r.user_id]) latestCheckinByUser[r.user_id]=r.created_at;
+          });
+        }
+        if(!strengthRes.error){
+          (strengthRes.data || []).forEach(r=>{
+            strengthCountByUser[r.user_id]=(strengthCountByUser[r.user_id]||0)+1;
+          });
+        }
+      }catch(e){ console.warn("coach focus enrichment",e); }
+    }
+
+    if(focusCard){
+      if(!clientCount){
+        focusCard.innerHTML = '<div class="row"><h3>Coach Focus</h3><span class="pill">LIVE</span></div><p class="muted">No active clients yet.</p>';
+      }else{
+        const today = Date.now();
+        const focusRows = rows.map(r=>{
+          const habits = Number(r.habit_percent || 0);
+          const currentDay = Math.min(Number(r.current_day || 1),28);
+          const complete = Number(r.days_complete || 0);
+          const latest = latestCheckinByUser[r.user_id];
+          const strengthCount = Number(strengthCountByUser[r.user_id] || 0);
+          const daysSinceCheckin = latest ? Math.floor((today - new Date(latest).getTime())/86400000) : null;
+
+          let priority=0, label="ON TRACK", reason="No immediate action needed.", good=true;
+          if(!latest){ priority=5; label="CHECK-IN"; reason="No check-in submitted yet."; good=false; }
+          else if(daysSinceCheckin >= 7){ priority=4; label="CHECK-IN"; reason=`Last check-in was ${daysSinceCheckin} days ago.`; good=false; }
+          if(habits < 70 && priority < 4){ priority=4; label="HABITS"; reason=`Habit adherence is ${habits}%.`; good=false; }
+          else if(habits < 85 && priority < 3){ priority=3; label="HABITS"; reason=`Habit adherence is ${habits}% — worth a quick follow-up.`; good=false; }
+          if((currentDay - 1) - complete >= 2 && priority < 4){ priority=4; label="PROGRAM"; reason=`Day ${currentDay}, with ${complete} days completed.`; good=false; }
+          if(strengthCount === 0 && currentDay >= 4 && priority < 2){ priority=2; label="STRENGTH"; reason="No strength loads logged yet."; good=false; }
+
+          return {r,priority,label,reason,good};
+        }).sort((a,b)=>b.priority-a.priority || String(a.r.full_name||"").localeCompare(String(b.r.full_name||"")));
+
+        focusCard.innerHTML =
+          '<div class="row"><h3>Coach Focus</h3><span class="pill">LIVE</span></div>' +
+          '<p class="tiny muted">Highest-priority clients appear first.</p>' +
+          focusRows.map(x=>`<button class="focus-item client-open" data-client-id="${x.r.user_id}" data-client-name="${esc(x.r.full_name || "Client")}">
+            <div class="focus-head"><strong>${esc(x.r.full_name || "Client")}</strong><span class="focus-chip ${x.good ? "good" : ""}">${x.label}</span></div>
+            <div class="focus-reason">${esc(x.reason)}</div>
+          </button>`).join("");
+      }
+    }
 
     if(clientMetric) clientMetric.textContent = String(clientCount);
     if(adherenceMetric) adherenceMetric.textContent = adherence + "%";
@@ -1438,6 +1520,9 @@ async function loadCoachDashboard(){
     if(card) card.innerHTML =
       '<div class="row"><h3>Active Clients</h3><span class="pill">CLOUD ERROR</span></div>' +
       '<p class="muted">'+esc(err?.message || String(err))+'</p>';
+    if(focusCard) focusCard.innerHTML =
+      '<div class="row"><h3>Coach Focus</h3><span class="pill">CLOUD ERROR</span></div>' +
+      '<p class="muted">Could not calculate coach priorities.</p>';
   }
 }
 
