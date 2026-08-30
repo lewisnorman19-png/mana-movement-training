@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v5.0.0</title>
+  <title>Mana Movement Training v5.1.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -990,6 +990,25 @@
       color:#d6d6d6;font-size:12px;margin-top:5px
     }
 
+
+    /* v5.1 Training Trends */
+    .trend-stack{display:grid;gap:14px;margin-top:14px}
+    .trend-card{
+      border:1px solid #2b2b2b;border-radius:16px;background:#0b0b0b;padding:14px
+    }
+    .trend-title{font-size:13px;font-weight:900;margin-bottom:8px}
+    .trend-sub{color:#969696;font-size:12px;margin-bottom:10px}
+    .trend-bars{display:flex;align-items:flex-end;gap:7px;height:86px}
+    .trend-bar{
+      flex:1;min-width:10px;border-radius:6px 6px 2px 2px;background:linear-gradient(180deg,#f7df7b,#b99524)
+    }
+    .trend-empty{color:#8f8f8f;font-size:13px}
+    .type-mix{display:flex;flex-wrap:wrap;gap:8px}
+    .type-mix-chip{
+      padding:7px 10px;border-radius:999px;border:1px solid #3a331c;
+      color:#e7d27b;font-size:11px;font-weight:900
+    }
+
 </style>
 </head>
 <body>
@@ -1007,7 +1026,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V5.0.0</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V5.1.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -1089,6 +1108,37 @@
           <div class="session-summary-label">Top session type</div>
           <div class="session-summary-value" id="sessionSummaryType" style="font-size:18px">—</div>
           <div class="session-summary-sub">most frequent</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="clientTrainingTrendsCard">
+      <div class="row">
+        <div>
+          <h3>Training trends</h3>
+          <p class="tiny muted">Recent coaching-session load and effort.</p>
+        </div>
+        <span class="pill">LIVE</span>
+      </div>
+
+      <div class="trend-stack">
+        <div class="trend-card">
+          <div class="trend-title">RPE trend</div>
+          <div class="trend-sub" id="rpeTrendLabel">No RPE data yet.</div>
+          <div class="trend-bars" id="rpeTrendBars"></div>
+        </div>
+
+        <div class="trend-card">
+          <div class="trend-title">Session duration trend</div>
+          <div class="trend-sub" id="durationTrendLabel">No duration data yet.</div>
+          <div class="trend-bars" id="durationTrendBars"></div>
+        </div>
+
+        <div class="trend-card">
+          <div class="trend-title">Session-type mix</div>
+          <div class="type-mix" id="sessionTypeMix">
+            <span class="trend-empty">No session-type data yet.</span>
+          </div>
         </div>
       </div>
     </div>
@@ -2418,10 +2468,72 @@ function parseSessionHistoryFromNote(noteText){
 }
 
 
-function renderSessionSummary(noteText){
+
+function renderTrainingTrends(noteText){
   const entries = parseSessionHistoryFromNote(
     noteText ?? document.getElementById("coachNoteDraft")?.value ?? ""
   );
+
+  const rpes = entries
+    .map(e=>Number(e.rpe))
+    .filter(n=>Number.isFinite(n) && n>0)
+    .slice(0,8)
+    .reverse();
+
+  const durations = entries
+    .map(e=>Number(e.duration))
+    .filter(n=>Number.isFinite(n) && n>0)
+    .slice(0,8)
+    .reverse();
+
+  const rpeBars = document.getElementById("rpeTrendBars");
+  const durationBars = document.getElementById("durationTrendBars");
+  const rpeLabel = document.getElementById("rpeTrendLabel");
+  const durationLabel = document.getElementById("durationTrendLabel");
+  const typeMix = document.getElementById("sessionTypeMix");
+
+  if(rpeBars){
+    if(rpes.length){
+      rpeBars.innerHTML = rpes.map(v=>`<div class="trend-bar" title="RPE ${v}/10" style="height:${Math.max(10,Math.min(100,v*10))}%"></div>`).join("");
+      const first=rpes[0], last=rpes[rpes.length-1];
+      const dir = last>first ? "↑ trending up" : last<first ? "↓ trending down" : "→ steady";
+      if(rpeLabel) rpeLabel.textContent = `Latest RPE ${last}/10 • ${dir}`;
+    }else{
+      rpeBars.innerHTML = "";
+      if(rpeLabel) rpeLabel.textContent = "No RPE data yet.";
+    }
+  }
+
+  if(durationBars){
+    if(durations.length){
+      const max = Math.max(...durations,1);
+      durationBars.innerHTML = durations.map(v=>`<div class="trend-bar" title="${v} min" style="height:${Math.max(10,Math.round((v/max)*100))}%"></div>`).join("");
+      const first=durations[0], last=durations[durations.length-1];
+      const dir = last>first ? "↑ longer" : last<first ? "↓ shorter" : "→ steady";
+      if(durationLabel) durationLabel.textContent = `Latest ${last} min • ${dir}`;
+    }else{
+      durationBars.innerHTML = "";
+      if(durationLabel) durationLabel.textContent = "No duration data yet.";
+    }
+  }
+
+  if(typeMix){
+    const counts = {};
+    entries.forEach(e=>{
+      const type=(e.type||"Other").trim()||"Other";
+      counts[type]=(counts[type]||0)+1;
+    });
+    const pairs=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    typeMix.innerHTML = pairs.length
+      ? pairs.map(([type,n])=>`<span class="type-mix-chip">${esc(type)} • ${n}</span>`).join("")
+      : '<span class="trend-empty">No session-type data yet.</span>';
+  }
+}
+
+function renderSessionSummary(noteText){
+  const source = noteText ?? document.getElementById("coachNoteDraft")?.value ?? "";
+  renderTrainingTrends(source);
+  const entries = parseSessionHistoryFromNote(source);
 
   const count = entries.length;
 
