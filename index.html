@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.9.0</title>
+  <title>Mana Movement Training v5.0.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -972,6 +972,24 @@
       border:1px solid #343434;color:#d8d8d8;font-size:11px;font-weight:800
     }
 
+
+    /* v5 Client Session Summary */
+    .session-summary-grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px
+    }
+    .session-summary-stat{
+      border:1px solid #2b2b2b;border-radius:16px;background:#0b0b0b;padding:14px
+    }
+    .session-summary-label{
+      color:#9f9f9f;font-size:12px;margin-bottom:6px
+    }
+    .session-summary-value{
+      color:var(--gold2);font-size:24px;font-weight:900;line-height:1.1
+    }
+    .session-summary-sub{
+      color:#d6d6d6;font-size:12px;margin-top:5px
+    }
+
 </style>
 </head>
 <body>
@@ -989,7 +1007,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.9.0</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V5.0.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -1041,6 +1059,38 @@
       <div class="metric"><span class="tiny muted">Days complete</span><strong id="detailDaysComplete">0</strong><span class="tiny">sessions</span></div>
       <div class="metric"><span class="tiny muted">Habits</span><strong id="detailHabitPercent">0%</strong><span class="tiny">adherence</span></div>
       <div class="metric"><span class="tiny muted">Check-ins</span><strong id="detailCheckinCount">0</strong><span class="tiny">submitted</span></div>
+    </div>
+
+    <div class="card" id="clientSessionSummaryCard">
+      <div class="row">
+        <div>
+          <h3>Session summary</h3>
+          <p class="tiny muted">Snapshot of recorded coaching sessions.</p>
+        </div>
+        <span class="pill">LIVE</span>
+      </div>
+      <div class="session-summary-grid">
+        <div class="session-summary-stat">
+          <div class="session-summary-label">Recorded sessions</div>
+          <div class="session-summary-value" id="sessionSummaryCount">0</div>
+          <div class="session-summary-sub">coach records</div>
+        </div>
+        <div class="session-summary-stat">
+          <div class="session-summary-label">Average RPE</div>
+          <div class="session-summary-value" id="sessionSummaryRpe">—</div>
+          <div class="session-summary-sub">out of 10</div>
+        </div>
+        <div class="session-summary-stat">
+          <div class="session-summary-label">Avg duration</div>
+          <div class="session-summary-value" id="sessionSummaryDuration">—</div>
+          <div class="session-summary-sub">minutes</div>
+        </div>
+        <div class="session-summary-stat">
+          <div class="session-summary-label">Top session type</div>
+          <div class="session-summary-value" id="sessionSummaryType" style="font-size:18px">—</div>
+          <div class="session-summary-sub">most frequent</div>
+        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -2367,10 +2417,61 @@ function parseSessionHistoryFromNote(noteText){
   return entries.reverse();
 }
 
+
+function renderSessionSummary(noteText){
+  const entries = parseSessionHistoryFromNote(
+    noteText ?? document.getElementById("coachNoteDraft")?.value ?? ""
+  );
+
+  const count = entries.length;
+
+  const rpes = entries
+    .map(e=>Number(e.rpe))
+    .filter(n=>Number.isFinite(n) && n>0);
+
+  const durations = entries
+    .map(e=>Number(e.duration))
+    .filter(n=>Number.isFinite(n) && n>0);
+
+  const typeCounts = {};
+  entries.forEach(e=>{
+    const type = (e.type || "Other").trim() || "Other";
+    typeCounts[type] = (typeCounts[type] || 0) + 1;
+  });
+
+  let topType = "—";
+  let topCount = 0;
+  Object.entries(typeCounts).forEach(([type,n])=>{
+    if(n > topCount){
+      topType = type;
+      topCount = n;
+    }
+  });
+
+  const avgRpe = rpes.length
+    ? (rpes.reduce((a,b)=>a+b,0) / rpes.length).toFixed(1)
+    : "—";
+
+  const avgDuration = durations.length
+    ? Math.round(durations.reduce((a,b)=>a+b,0) / durations.length)
+    : "—";
+
+  const countEl = document.getElementById("sessionSummaryCount");
+  const rpeEl = document.getElementById("sessionSummaryRpe");
+  const durationEl = document.getElementById("sessionSummaryDuration");
+  const typeEl = document.getElementById("sessionSummaryType");
+
+  if(countEl) countEl.textContent = String(count);
+  if(rpeEl) rpeEl.textContent = avgRpe;
+  if(durationEl) durationEl.textContent = String(avgDuration);
+  if(typeEl) typeEl.textContent = topType;
+}
+
 function renderSessionHistory(noteText){
   const host = document.getElementById("sessionHistoryList");
-  if(!host) return;
   const source = noteText ?? document.getElementById("coachNoteDraft")?.value ?? "";
+  renderSessionSummary(source);
+  if(!host) return;
   const entries = parseSessionHistoryFromNote(source);
   if(!entries.length){
     host.innerHTML = '<p class="session-history-empty">No coaching sessions recorded yet.</p>';
