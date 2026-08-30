@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v5.3.0</title>
+  <title>Mana Movement Training v5.4.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -1068,6 +1068,23 @@
     }
     .coach-alert-stat.good .coach-alert-count{color:#79d98b}
 
+
+    /* v5.4 Alert filter controls */
+    .coach-alert-stat{
+      cursor:pointer;
+      transition:transform .12s ease,border-color .12s ease,background .12s ease;
+      -webkit-tap-highlight-color:rgba(243,216,117,.08)
+    }
+    .coach-alert-stat:active{transform:scale(.98)}
+    .coach-alert-stat.active{
+      border-color:#8a7426;
+      background:#121008;
+      box-shadow:inset 0 0 0 1px #6a591d;
+    }
+    .coach-alert-filter-note{
+      margin-top:10px;color:#9a9a9a;font-size:12px
+    }
+
 </style>
 </head>
 <body>
@@ -1085,7 +1102,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V5.3.0</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V5.4.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -1467,13 +1484,14 @@
         <span class="pill">LIVE</span>
       </div>
       <div class="coach-alerts-grid">
-        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountCheckin">0</span><span class="coach-alert-label">Check-in</span></div>
-        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountHabits">0</span><span class="coach-alert-label">Habits</span></div>
-        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountHighRpe">0</span><span class="coach-alert-label">High RPE</span></div>
-        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountDuration">0</span><span class="coach-alert-label">Duration</span></div>
-        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountProgram">0</span><span class="coach-alert-label">Program</span></div>
-        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountStrength">0</span><span class="coach-alert-label">Strength</span></div>
+        <button class="coach-alert-stat" type="button" data-alert-filter="CHECK-IN"><span class="coach-alert-count" id="alertCountCheckin">0</span><span class="coach-alert-label">Check-in</span></button>
+        <button class="coach-alert-stat" type="button" data-alert-filter="HABITS"><span class="coach-alert-count" id="alertCountHabits">0</span><span class="coach-alert-label">Habits</span></button>
+        <button class="coach-alert-stat" type="button" data-alert-filter="HIGH RPE"><span class="coach-alert-count" id="alertCountHighRpe">0</span><span class="coach-alert-label">High RPE</span></button>
+        <button class="coach-alert-stat" type="button" data-alert-filter="DURATION"><span class="coach-alert-count" id="alertCountDuration">0</span><span class="coach-alert-label">Duration</span></button>
+        <button class="coach-alert-stat" type="button" data-alert-filter="PROGRAM"><span class="coach-alert-count" id="alertCountProgram">0</span><span class="coach-alert-label">Program</span></button>
+        <button class="coach-alert-stat" type="button" data-alert-filter="STRENGTH"><span class="coach-alert-count" id="alertCountStrength">0</span><span class="coach-alert-label">Strength</span></button>
       </div>
+      <div class="coach-alert-filter-note" id="coachAlertFilterNote">Tap an alert to filter Coach Focus.</div>
     </div>
 
     <div class="card" id="coachFocusCard">
@@ -1924,6 +1942,8 @@ async function loadCoachDashboard(){
           return {r,priority,label,reason,good,alertClass};
         }).sort((a,b)=>b.priority-a.priority || String(a.r.full_name||"").localeCompare(String(b.r.full_name||"")));
 
+        window.manaCoachAlertFilter = window.manaCoachAlertFilter || "";
+
         const alertCounts = {
           "CHECK-IN":0,
           "HABITS":0,
@@ -1953,14 +1973,64 @@ async function loadCoachDashboard(){
           if(el) el.textContent=String(alertCounts[label]||0);
         });
 
-        focusCard.innerHTML =
-          '<div class="row"><h3>Coach Focus</h3><span class="pill">LIVE</span></div>' +
-          '<p class="tiny muted">Highest-priority clients appear first.</p>' +
-          focusRows.map(x=>`<button class="focus-item client-open" type="button" aria-label="Open ${esc(x.r.full_name || "Client")} client detail" data-client-id="${x.r.user_id}" data-client-name="${esc(x.r.full_name || "Client")}">
-            <div class="focus-head"><strong>${esc(x.r.full_name || "Client")}</strong><span class="focus-chip ${x.good ? "good" : ""} ${x.alertClass || ""}">${x.label}</span></div>
-            <div class="focus-reason">${esc(x.reason)}</div>
-            <div class="focus-open">View client →</div>
-          </button>`).join("");
+        function renderCoachFocusFilter(){
+          const activeFilter = window.manaCoachAlertFilter || "";
+          const visibleRows = activeFilter
+            ? focusRows.filter(x=>x.label===activeFilter)
+            : focusRows;
+
+          const subtitle = activeFilter
+            ? `${activeFilter} filter • ${visibleRows.length} client${visibleRows.length===1?"":"s"}`
+            : "Highest-priority clients appear first.";
+
+          focusCard.innerHTML =
+            '<div class="row"><h3>Coach Focus</h3><span class="pill">LIVE</span></div>' +
+            `<p class="tiny muted">${esc(subtitle)}</p>` +
+            (visibleRows.length
+              ? visibleRows.map(x=>`<button class="focus-item client-open" type="button" aria-label="Open ${esc(x.r.full_name || "Client")} client detail" data-client-id="${x.r.user_id}" data-client-name="${esc(x.r.full_name || "Client")}">
+                  <div class="focus-head"><strong>${esc(x.r.full_name || "Client")}</strong><span class="focus-chip ${x.good ? "good" : ""} ${x.alertClass || ""}">${x.label}</span></div>
+                  <div class="focus-reason">${esc(x.reason)}</div>
+                  <div class="focus-open">View client →</div>
+                </button>`).join("")
+              : '<p class="muted">No clients in this alert category.</p>');
+        }
+
+        renderCoachFocusFilter();
+
+        document.querySelectorAll("[data-alert-filter]").forEach(btn=>{
+          const label = btn.dataset.alertFilter || "";
+          btn.classList.toggle("active", window.manaCoachAlertFilter===label);
+
+          btn.onclick=()=>{
+            window.manaCoachAlertFilter =
+              window.manaCoachAlertFilter===label ? "" : label;
+
+            document.querySelectorAll("[data-alert-filter]").forEach(other=>{
+              other.classList.toggle(
+                "active",
+                (other.dataset.alertFilter||"")===window.manaCoachAlertFilter
+              );
+            });
+
+            const note=document.getElementById("coachAlertFilterNote");
+            if(note){
+              note.textContent = window.manaCoachAlertFilter
+                ? `Filtering Coach Focus: ${window.manaCoachAlertFilter}. Tap again to clear.`
+                : "Tap an alert to filter Coach Focus.";
+            }
+
+            renderCoachFocusFilter();
+
+            setTimeout(()=>{
+              document.querySelectorAll(".client-open").forEach(btn=>{
+                btn.onclick=()=>openCoachClientDetail(
+                  btn.dataset.clientId,
+                  btn.dataset.clientName || "Client"
+                );
+              });
+            },0);
+          };
+        });
       }
     }
 
