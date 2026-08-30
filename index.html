@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v5.2.0</title>
+  <title>Mana Movement Training v5.3.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -1036,6 +1036,38 @@
       color:#f6dd76;
     }
 
+
+    /* v5.3 Coach Alerts Summary */
+    .coach-alerts-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:9px;
+      margin-top:14px;
+    }
+    .coach-alert-stat{
+      border:1px solid #2b2b2b;
+      border-radius:15px;
+      background:#0b0b0b;
+      padding:12px 10px;
+      text-align:center;
+    }
+    .coach-alert-count{
+      display:block;
+      color:var(--gold2);
+      font-size:24px;
+      font-weight:900;
+      line-height:1;
+      margin-bottom:6px;
+    }
+    .coach-alert-label{
+      color:#aaa;
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    .coach-alert-stat.good .coach-alert-count{color:#79d98b}
+
 </style>
 </head>
 <body>
@@ -1053,7 +1085,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V5.2.0</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V5.3.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -1426,6 +1458,24 @@
       <div class="metric"><span class="tiny muted">Active clients</span><strong id="coachClientCount">0</strong><span class="tiny">all programs</span></div>
       <div class="metric"><span class="tiny muted">Avg adherence</span><strong id="coachAdherence">0%</strong><span class="tiny">this week</span></div>
     </div>
+    <div class="card" id="coachAlertsSummaryCard">
+      <div class="row">
+        <div>
+          <h3>Coach Alerts</h3>
+          <p class="tiny muted">Current coaching workload at a glance.</p>
+        </div>
+        <span class="pill">LIVE</span>
+      </div>
+      <div class="coach-alerts-grid">
+        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountCheckin">0</span><span class="coach-alert-label">Check-in</span></div>
+        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountHabits">0</span><span class="coach-alert-label">Habits</span></div>
+        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountHighRpe">0</span><span class="coach-alert-label">High RPE</span></div>
+        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountDuration">0</span><span class="coach-alert-label">Duration</span></div>
+        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountProgram">0</span><span class="coach-alert-label">Program</span></div>
+        <div class="coach-alert-stat"><span class="coach-alert-count" id="alertCountStrength">0</span><span class="coach-alert-label">Strength</span></div>
+      </div>
+    </div>
+
     <div class="card" id="coachFocusCard">
       <div class="row"><h3>Coach Focus</h3><span class="pill">LIVE</span></div>
       <p class="muted">Checking which clients need your attention…</p>
@@ -1735,6 +1785,10 @@ async function loadCoachDashboard(){
 
   if(clientMetric) clientMetric.textContent = "0";
   if(adherenceMetric) adherenceMetric.textContent = "0%";
+  ["alertCountCheckin","alertCountHabits","alertCountHighRpe","alertCountDuration","alertCountProgram","alertCountStrength"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent="0";
+  });
   if(card) card.innerHTML =
     '<div class="row"><h3>Active Clients</h3><span class="pill">LIVE DATA</span></div>' +
     '<p class="muted">Connecting to Mana cloud…</p>';
@@ -1869,6 +1923,35 @@ async function loadCoachDashboard(){
 
           return {r,priority,label,reason,good,alertClass};
         }).sort((a,b)=>b.priority-a.priority || String(a.r.full_name||"").localeCompare(String(b.r.full_name||"")));
+
+        const alertCounts = {
+          "CHECK-IN":0,
+          "HABITS":0,
+          "HIGH RPE":0,
+          "DURATION":0,
+          "PROGRAM":0,
+          "STRENGTH":0
+        };
+
+        focusRows.forEach(x=>{
+          if(Object.prototype.hasOwnProperty.call(alertCounts,x.label)){
+            alertCounts[x.label] += 1;
+          }
+        });
+
+        const alertBindings = {
+          "CHECK-IN":"alertCountCheckin",
+          "HABITS":"alertCountHabits",
+          "HIGH RPE":"alertCountHighRpe",
+          "DURATION":"alertCountDuration",
+          "PROGRAM":"alertCountProgram",
+          "STRENGTH":"alertCountStrength"
+        };
+
+        Object.entries(alertBindings).forEach(([label,id])=>{
+          const el=document.getElementById(id);
+          if(el) el.textContent=String(alertCounts[label]||0);
+        });
 
         focusCard.innerHTML =
           '<div class="row"><h3>Coach Focus</h3><span class="pill">LIVE</span></div>' +
