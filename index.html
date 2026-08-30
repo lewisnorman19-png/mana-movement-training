@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v5.1.1</title>
+  <title>Mana Movement Training v5.2.0</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -1025,6 +1025,17 @@
       color:#777;font-size:9px;margin-top:6px;white-space:nowrap
     }
 
+
+    /* v5.2 Coach training alerts */
+    .focus-chip.alert{
+      border-color:#6a3b28;
+      color:#ffcb8a;
+    }
+    .focus-chip.warn{
+      border-color:#5b4d20;
+      color:#f6dd76;
+    }
+
 </style>
 </head>
 <body>
@@ -1042,7 +1053,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V5.1.1</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V5.2.0</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -1753,12 +1764,14 @@ async function loadCoachDashboard(){
     const userIds = rows.map(r=>r.user_id).filter(Boolean);
     let latestCheckinByUser = {};
     let strengthCountByUser = {};
+    let coachNoteByUser = {};
 
     if(userIds.length){
       try{
-        const [checkinRes, strengthRes] = await Promise.all([
+        const [checkinRes, strengthRes, noteRes] = await Promise.all([
           c.from("checkins").select("user_id,created_at").in("user_id",userIds).order("created_at",{ascending:false}),
-          c.from("exercise_logs").select("user_id").in("user_id",userIds)
+          c.from("exercise_logs").select("user_id").in("user_id",userIds),
+          c.from("coach_notes").select("client_id,note").eq("coach_id",currentUser.id).in("client_id",userIds)
         ]);
 
         if(!checkinRes.error){
@@ -1771,7 +1784,58 @@ async function loadCoachDashboard(){
             strengthCountByUser[r.user_id]=(strengthCountByUser[r.user_id]||0)+1;
           });
         }
+        if(!noteRes.error){
+          (noteRes.data || []).forEach(r=>{
+            coachNoteByUser[r.client_id]=r.note || "";
+          });
+        }
       }catch(e){ console.warn("coach focus enrichment",e); }
+    }
+
+    function trainingAlertForUser(userId){
+      const entries = parseSessionHistoryFromNote(coachNoteByUser[userId] || "");
+      if(!entries.length) return null;
+
+      // entries are newest-first.
+      const rpeEntries = entries
+        .filter(e=>Number.isFinite(Number(e.rpe)) && Number(e.rpe)>0)
+        .slice(0,3);
+
+      if(rpeEntries.length >= 2){
+        const recentTwo = rpeEntries.slice(0,2).map(e=>Number(e.rpe));
+        const avgTwo = recentTwo.reduce((a,b)=>a+b,0)/recentTwo.length;
+        if(recentTwo.every(v=>v>=8) && avgTwo>=8){
+          return {
+            priority:6,
+            label:"HIGH RPE",
+            reason:`Recent sessions are averaging RPE ${avgTwo.toFixed(1)}/10.`,
+            good:false,
+            alertClass:"alert"
+          };
+        }
+      }
+
+      const durationEntries = entries
+        .filter(e=>Number.isFinite(Number(e.duration)) && Number(e.duration)>0)
+        .slice(0,4);
+
+      if(durationEntries.length >= 3){
+        const latest = Number(durationEntries[0].duration);
+        const previous = durationEntries.slice(1).map(e=>Number(e.duration));
+        const previousAvg = previous.reduce((a,b)=>a+b,0)/previous.length;
+        if(previousAvg > 0 && latest <= previousAvg * 0.7){
+          const drop = Math.round((1 - latest/previousAvg) * 100);
+          return {
+            priority:5,
+            label:"DURATION",
+            reason:`Latest session was ${latest} min — about ${drop}% shorter than recent sessions.`,
+            good:false,
+            alertClass:"warn"
+          };
+        }
+      }
+
+      return null;
     }
 
     if(focusCard){
@@ -1787,22 +1851,30 @@ async function loadCoachDashboard(){
           const strengthCount = Number(strengthCountByUser[r.user_id] || 0);
           const daysSinceCheckin = latest ? Math.floor((today - new Date(latest).getTime())/86400000) : null;
 
-          let priority=0, label="ON TRACK", reason="No immediate action needed.", good=true;
-          if(!latest){ priority=5; label="CHECK-IN"; reason="No check-in submitted yet."; good=false; }
-          else if(daysSinceCheckin >= 7){ priority=4; label="CHECK-IN"; reason=`Last check-in was ${daysSinceCheckin} days ago.`; good=false; }
-          if(habits < 70 && priority < 4){ priority=4; label="HABITS"; reason=`Habit adherence is ${habits}%.`; good=false; }
-          else if(habits < 85 && priority < 3){ priority=3; label="HABITS"; reason=`Habit adherence is ${habits}% — worth a quick follow-up.`; good=false; }
-          if((currentDay - 1) - complete >= 2 && priority < 4){ priority=4; label="PROGRAM"; reason=`Day ${currentDay}, with ${complete} days completed.`; good=false; }
-          if(strengthCount === 0 && currentDay >= 4 && priority < 2){ priority=2; label="STRENGTH"; reason="No strength loads logged yet."; good=false; }
+          let priority=0, label="ON TRACK", reason="No immediate action needed.", good=true, alertClass="";
+          const trainingAlert = trainingAlertForUser(r.user_id);
+          if(trainingAlert){
+            priority=trainingAlert.priority;
+            label=trainingAlert.label;
+            reason=trainingAlert.reason;
+            good=trainingAlert.good;
+            alertClass=trainingAlert.alertClass || "";
+          }
+          if(!latest && priority < 5){ priority=5; label="CHECK-IN"; reason="No check-in submitted yet."; good=false; alertClass=""; }
+          else if(daysSinceCheckin >= 7 && priority < 4){ priority=4; label="CHECK-IN"; reason=`Last check-in was ${daysSinceCheckin} days ago.`; good=false; alertClass=""; }
+          if(habits < 70 && priority < 4){ priority=4; label="HABITS"; reason=`Habit adherence is ${habits}%.`; good=false; alertClass=""; }
+          else if(habits < 85 && priority < 3){ priority=3; label="HABITS"; reason=`Habit adherence is ${habits}% — worth a quick follow-up.`; good=false; alertClass=""; }
+          if((currentDay - 1) - complete >= 2 && priority < 4){ priority=4; label="PROGRAM"; reason=`Day ${currentDay}, with ${complete} days completed.`; good=false; alertClass=""; }
+          if(strengthCount === 0 && currentDay >= 4 && priority < 2){ priority=2; label="STRENGTH"; reason="No strength loads logged yet."; good=false; alertClass=""; }
 
-          return {r,priority,label,reason,good};
+          return {r,priority,label,reason,good,alertClass};
         }).sort((a,b)=>b.priority-a.priority || String(a.r.full_name||"").localeCompare(String(b.r.full_name||"")));
 
         focusCard.innerHTML =
           '<div class="row"><h3>Coach Focus</h3><span class="pill">LIVE</span></div>' +
           '<p class="tiny muted">Highest-priority clients appear first.</p>' +
           focusRows.map(x=>`<button class="focus-item client-open" type="button" aria-label="Open ${esc(x.r.full_name || "Client")} client detail" data-client-id="${x.r.user_id}" data-client-name="${esc(x.r.full_name || "Client")}">
-            <div class="focus-head"><strong>${esc(x.r.full_name || "Client")}</strong><span class="focus-chip ${x.good ? "good" : ""}">${x.label}</span></div>
+            <div class="focus-head"><strong>${esc(x.r.full_name || "Client")}</strong><span class="focus-chip ${x.good ? "good" : ""} ${x.alertClass || ""}">${x.label}</span></div>
             <div class="focus-reason">${esc(x.reason)}</div>
             <div class="focus-open">View client →</div>
           </button>`).join("");
