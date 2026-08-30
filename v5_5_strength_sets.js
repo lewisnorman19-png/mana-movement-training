@@ -128,7 +128,7 @@
 
   function currentDay(){
     const text = document.getElementById("dayModalChip")?.textContent || "";
-    const match = text.match(/DAY\\s+(\\d+)/i);
+    const match = text.match(/DAY\s+(\d+)/i);
     return match ? Number(match[1]) : null;
   }
 
