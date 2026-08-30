@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.6.1</title>
+  <title>Mana Movement Training v4.6.2</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -932,7 +932,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.6.1</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V4.6.2</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -2163,13 +2163,16 @@ async function openCoachClientDetail(userId, clientName){
       .maybeSingle();
 
     if(!noteRes.error && noteRes.data){
-      document.getElementById("coachNoteDraft").value = noteRes.data.note || "";
+      const loadedCoachNote = noteRes.data.note || "";
+      document.getElementById("coachNoteDraft").value = loadedCoachNote;
       document.getElementById("coachNoteStatus").textContent =
         noteRes.data.updated_at ? "Last saved " + new Date(noteRes.data.updated_at).toLocaleString() : "";
-      if(currentClientReportData) currentClientReportData.coachNote = noteRes.data.note || "";
+      if(currentClientReportData) currentClientReportData.coachNote = loadedCoachNote;
+      renderSessionHistory(loadedCoachNote);
     }else{
       document.getElementById("coachNoteDraft").value = "";
       if(currentClientReportData) currentClientReportData.coachNote = "";
+      renderSessionHistory("");
     }
 
     // Check-in request status
