@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.6.0</title>
+  <title>Mana Movement Training v4.6.1</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -932,7 +932,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.6.0</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V4.6.1</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -2251,12 +2251,16 @@ function appendStructuredCoachNote(label, body){
 
 
 function parseSessionHistoryFromNote(noteText){
-  const text = String(noteText || "");
+  const text = String(noteText || "").replace(/\r\n/g,"\n");
+  const matches = [...text.matchAll(/\[SESSION\s*•\s*([^\]]+)\]\s*/g)];
   const entries = [];
-  const re = /\[SESSION\s*•\s*([^\]]+)\]\s*([\s\S]*?)(?=\n\n\[[A-Z ]+\s*•|\s*$)/g;
-  let m;
-  while((m = re.exec(text))){
-    entries.push({date:(m[1]||"").trim(), body:(m[2]||"").trim()});
+  for(let i=0;i<matches.length;i++){
+    const current = matches[i];
+    const start = current.index + current[0].length;
+    const nextStructured = text.slice(start).search(/\n\s*\[[A-Z ]+\s*•\s*[^\]]+\]\s*/);
+    const end = nextStructured >= 0 ? start + nextStructured : text.length;
+    const body = text.slice(start,end).trim();
+    entries.push({date:(current[1]||"").trim(), body});
   }
   return entries.reverse();
 }
@@ -2264,7 +2268,8 @@ function parseSessionHistoryFromNote(noteText){
 function renderSessionHistory(noteText){
   const host = document.getElementById("sessionHistoryList");
   if(!host) return;
-  const entries = parseSessionHistoryFromNote(noteText);
+  const source = noteText ?? document.getElementById("coachNoteDraft")?.value ?? "";
+  const entries = parseSessionHistoryFromNote(source);
   if(!entries.length){
     host.innerHTML = '<p class="session-history-empty">No coaching sessions recorded yet.</p>';
     return;
@@ -2290,7 +2295,7 @@ async function persistCoachNoteFromDraft(statusEl){
   },{onConflict:"coach_id,client_id"});
   if(error) throw error;
   if(currentClientReportData) currentClientReportData.coachNote = note;
-  renderSessionHistory(note);
+  renderSessionHistory();
   if(statusEl) statusEl.textContent = "Saved to Mana cloud ✓";
   return true;
 }
@@ -2346,6 +2351,7 @@ document.getElementById("saveQuickSessionBtn").onclick = async function(){
     const body = [title,notes].filter(Boolean).join(" — ");
     appendStructuredCoachNote("SESSION", body);
     await persistCoachNoteFromDraft(status);
+    renderSessionHistory();
     document.getElementById("quickSessionTitle").value = "";
     document.getElementById("quickSessionNotes").value = "";
   }catch(err){
