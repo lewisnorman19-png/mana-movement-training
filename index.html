@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v4.8.0</title>
+  <title>Mana Movement Training v4.8.1</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -948,6 +948,16 @@
     .session-type-chip.check-in{border-color:#5a3940}
     .session-type-chip.other{border-color:#444}
 
+
+    /* v4.8.1 iPhone keyboard comfort */
+    body.keyboard-open{
+      padding-bottom:46vh;
+    }
+    #quickSessionPanel.keyboard-focus{
+      scroll-margin-top:110px;
+      scroll-margin-bottom:260px;
+    }
+
 </style>
 </head>
 <body>
@@ -965,7 +975,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V4.8.0</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V4.8.1</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -2478,6 +2488,65 @@ document.getElementById("saveQuickFocusBtn").onclick = async function(){
   }
 };
 
+
+function ensureSessionFieldVisible(el){
+  if(!el) return;
+  document.body.classList.add("keyboard-open");
+  const panel = document.getElementById("quickSessionPanel");
+  panel?.classList.add("keyboard-focus");
+
+  const doScroll = ()=>{
+    try{
+      el.scrollIntoView({behavior:"smooth",block:"center"});
+    }catch(e){}
+    setTimeout(()=>{
+      try{
+        const saveBtn = document.getElementById("saveQuickSessionBtn");
+        if(saveBtn){
+          const r = saveBtn.getBoundingClientRect();
+          const viewportH = window.visualViewport?.height || window.innerHeight;
+          if(r.bottom > viewportH - 18){
+            window.scrollBy({top:r.bottom - viewportH + 90,behavior:"smooth"});
+          }
+        }
+      }catch(e){}
+    },180);
+  };
+
+  setTimeout(doScroll,120);
+  setTimeout(doScroll,420);
+}
+
+function releaseSessionKeyboardSpace(){
+  document.body.classList.remove("keyboard-open");
+  document.getElementById("quickSessionPanel")?.classList.remove("keyboard-focus");
+}
+
+["quickSessionTitle","quickSessionNotes"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.addEventListener("focus",()=>ensureSessionFieldVisible(el));
+  el.addEventListener("click",()=>ensureSessionFieldVisible(el));
+  el.addEventListener("blur",()=>{
+    setTimeout(()=>{
+      const active=document.activeElement;
+      if(!["quickSessionTitle","quickSessionNotes"].includes(active?.id)){
+        releaseSessionKeyboardSpace();
+      }
+    },120);
+  });
+});
+
+if(window.visualViewport){
+  window.visualViewport.addEventListener("resize",()=>{
+    const active=document.activeElement;
+    if(["quickSessionTitle","quickSessionNotes"].includes(active?.id)){
+      ensureSessionFieldVisible(active);
+    }
+  });
+}
+
+
 document.getElementById("quickRecordSessionBtn").onclick = function(){
   const panel = document.getElementById("quickSessionPanel");
   const wasHidden = panel.classList.contains("hide");
@@ -2502,6 +2571,7 @@ document.getElementById("saveQuickSessionBtn").onclick = async function(){
     renderSessionHistory();
     document.getElementById("quickSessionTitle").value = "";
     document.getElementById("quickSessionNotes").value = "";
+    releaseSessionKeyboardSpace();
   }catch(err){
     status.textContent = "Could not record: " + (err?.message || String(err));
   }
