@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="MANA 28"/>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.svg"/>
-  <title>Mana Movement Training v5.1.0</title>
+  <title>Mana Movement Training v5.1.1</title>
   <style>
     :root{--bg:#050505;--card:#101010;--line:#2b2b2b;--gold:#d4af37;--gold2:#f3d875;--text:#f5f5f5;--muted:#a6a6a6;--ok:#68d391}
     *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#050505,#0a0a0a);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -1009,6 +1009,22 @@
       color:#e7d27b;font-size:11px;font-weight:900
     }
 
+
+    /* v5.1.1 Trend labels */
+    .trend-series{
+      display:flex;align-items:flex-end;gap:7px;height:118px
+    }
+    .trend-point{
+      flex:1;min-width:30px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%
+    }
+    .trend-value{
+      color:#e8e8e8;font-size:10px;font-weight:800;margin-bottom:5px;white-space:nowrap
+    }
+    .trend-point .trend-bar{width:100%}
+    .trend-date{
+      color:#777;font-size:9px;margin-top:6px;white-space:nowrap
+    }
+
 </style>
 </head>
 <body>
@@ -1026,7 +1042,7 @@
 
   <section id="authView">
     <div class="card hero">
-      <span class="pill">MANA MOVEMENT TRAINING • V5.1.0</span>
+      <span class="pill">MANA MOVEMENT TRAINING • V5.1.1</span>
       <h2>Your training.<br><span class="gold">One home.</span></h2>
       <p class="muted">Programs, coaching, nutrition, habits and progress — all inside Mana Movement Training.</p>
     </div>
@@ -2474,17 +2490,20 @@ function renderTrainingTrends(noteText){
     noteText ?? document.getElementById("coachNoteDraft")?.value ?? ""
   );
 
-  const rpes = entries
-    .map(e=>Number(e.rpe))
-    .filter(n=>Number.isFinite(n) && n>0)
+  const rpePoints = entries
+    .filter(e=>Number.isFinite(Number(e.rpe)) && Number(e.rpe)>0)
     .slice(0,8)
-    .reverse();
+    .reverse()
+    .map(e=>({value:Number(e.rpe),date:e.date}));
 
-  const durations = entries
-    .map(e=>Number(e.duration))
-    .filter(n=>Number.isFinite(n) && n>0)
+  const durationPoints = entries
+    .filter(e=>Number.isFinite(Number(e.duration)) && Number(e.duration)>0)
     .slice(0,8)
-    .reverse();
+    .reverse()
+    .map(e=>({value:Number(e.duration),date:e.date}));
+
+  const rpes = rpePoints.map(p=>p.value);
+  const durations = durationPoints.map(p=>p.value);
 
   const rpeBars = document.getElementById("rpeTrendBars");
   const durationBars = document.getElementById("durationTrendBars");
@@ -2494,7 +2513,14 @@ function renderTrainingTrends(noteText){
 
   if(rpeBars){
     if(rpes.length){
-      rpeBars.innerHTML = rpes.map(v=>`<div class="trend-bar" title="RPE ${v}/10" style="height:${Math.max(10,Math.min(100,v*10))}%"></div>`).join("");
+      rpeBars.classList.add("trend-series");
+      rpeBars.innerHTML = rpePoints.map(p=>`
+        <div class="trend-point">
+          <div class="trend-value">${p.value}/10</div>
+          <div class="trend-bar" title="RPE ${p.value}/10" style="height:${Math.max(10,Math.min(100,p.value*10))}%"></div>
+          <div class="trend-date">${esc(p.date)}</div>
+        </div>
+      `).join("");
       const first=rpes[0], last=rpes[rpes.length-1];
       const dir = last>first ? "↑ trending up" : last<first ? "↓ trending down" : "→ steady";
       if(rpeLabel) rpeLabel.textContent = `Latest RPE ${last}/10 • ${dir}`;
@@ -2507,7 +2533,14 @@ function renderTrainingTrends(noteText){
   if(durationBars){
     if(durations.length){
       const max = Math.max(...durations,1);
-      durationBars.innerHTML = durations.map(v=>`<div class="trend-bar" title="${v} min" style="height:${Math.max(10,Math.round((v/max)*100))}%"></div>`).join("");
+      durationBars.classList.add("trend-series");
+      durationBars.innerHTML = durationPoints.map(p=>`
+        <div class="trend-point">
+          <div class="trend-value">${p.value}m</div>
+          <div class="trend-bar" title="${p.value} min" style="height:${Math.max(10,Math.round((p.value/max)*100))}%"></div>
+          <div class="trend-date">${esc(p.date)}</div>
+        </div>
+      `).join("");
       const first=durations[0], last=durations[durations.length-1];
       const dir = last>first ? "↑ longer" : last<first ? "↓ shorter" : "→ steady";
       if(durationLabel) durationLabel.textContent = `Latest ${last} min • ${dir}`;
