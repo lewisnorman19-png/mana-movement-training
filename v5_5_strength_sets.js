@@ -898,33 +898,61 @@ const changeText =
       : changeKg < 0
         ? `${changeKg} kg • ${changePct}%`
         : "No change";
+const historyByDay = {};
+
+rows
+  .slice()
+  .sort(
+    (a,b) =>
+      Number(a.day_number) - Number(b.day_number) ||
+      Number(a.set_number) - Number(b.set_number)
+  )
+  .forEach(r => {
+    const day = r.day_number ?? "—";
+
+    if(!historyByDay[day]){
+      historyByDay[day] = [];
+    }
+
+    historyByDay[day].push(r);
+  });
+
 const historyHtml =
-  rows
-    .slice()
-    .sort(
-      (a,b) =>
-        Number(a.day_number) - Number(b.day_number) ||
-        Number(a.set_number) - Number(b.set_number)
-    )
-    .map(r => `
+  Object.entries(historyByDay)
+    .map(([day,sets]) => `
       <div style="
-        padding:9px 0;
+        margin-top:10px;
+        padding-top:10px;
         border-top:1px solid #292929;
-        font-size:12px;
       ">
-        <strong>
-          Day ${r.day_number} • Set ${r.set_number}
+        <strong class="gold">
+          Day ${day}
         </strong>
 
-        <div class="tiny muted">
-          ${r.reps ?? "—"} reps
-          • ${r.weight_kg ?? "—"} kg
-          • ${
-            Number(r.rpe) > 0
-              ? `RPE ${r.rpe}`
-              : "RPE —"
-          }
-        </div>
+        ${sets.map(r => `
+          <div style="
+            padding:8px 0;
+            font-size:12px;
+          ">
+            <strong>
+              Set ${r.set_number}
+            </strong>
+
+            <div class="tiny muted">
+              ${
+                r.reps == null
+                  ? "Reps not logged"
+                  : `${r.reps} reps`
+              }
+              • ${r.weight_kg ?? "—"} kg
+              • ${
+                Number(r.rpe) > 0
+                  ? `RPE ${r.rpe}`
+                  : "RPE —"
+              }
+            </div>
+          </div>
+        `).join("")}
       </div>
     `)
     .join("");
@@ -953,7 +981,7 @@ return `
           </div>
 
           <div class="tiny muted" style="margin-top:5px;">
-            Tap to view sets
+            ▼ Tap to view sets
           </div>
         </div>
 
