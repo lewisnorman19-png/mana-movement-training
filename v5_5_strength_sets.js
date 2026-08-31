@@ -957,7 +957,14 @@ const historyHtml =
     `)
     .join("");
 return `
-  <details style="width:100%;">
+   <details style="width:100%;" ontoggle="
+  const t=this.querySelector('.strength-toggle');
+  if(t){
+    t.textContent=this.open
+      ? '▲ Hide sets'
+      : '▼ Tap to view sets';
+  }
+">
     <summary style="
       list-style:none;
       cursor:pointer;
@@ -980,7 +987,7 @@ return `
             ${changeText}
           </div>
 
-          <div class="tiny muted" style="margin-top:5px;">
+          <div class="tiny muted strength-toggle" style="margin-top:5px;">
             ▼ Tap to view sets
           </div>
         </div>
