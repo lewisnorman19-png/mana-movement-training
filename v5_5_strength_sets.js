@@ -838,7 +838,7 @@ async function loadStrengthProgress(){
           const rpes =
             rows
               .map(r => Number(r.rpe))
-              .filter(Number.isFinite);
+              .filter(r => Number.isFinite(r) && r > 0);
 
           const avgRpe =
             rpes.length
@@ -847,22 +847,83 @@ async function loadStrengthProgress(){
                   / rpes.length
                 ).toFixed(1)
               : "—";
+const dayBest = {};
+
+rows.forEach(r => {
+  const day = Number(r.day_number);
+  const weight = Number(r.weight_kg);
+
+  if(
+    Number.isFinite(day) &&
+    Number.isFinite(weight)
+  ){
+    dayBest[day] =
+      Math.max(
+        dayBest[day] || 0,
+        weight
+      );
+  }
+});
+
+const loggedDays =
+  Object.keys(dayBest)
+    .map(Number)
+    .sort((a,b) => a-b);
+
+const startWeight =
+  loggedDays.length
+    ? dayBest[loggedDays[0]]
+    : 0;
+
+const latestWeight =
+  loggedDays.length
+    ? dayBest[loggedDays[loggedDays.length - 1]]
+    : 0;
+
+const changeKg =
+  latestWeight - startWeight;
+
+const changePct =
+  startWeight > 0
+    ? Math.round(
+        (changeKg / startWeight) * 100
+      )
+    : 0;
+
+const changeText =
+  loggedDays.length < 2
+    ? "First log"
+    : changeKg > 0
+      ? `+${changeKg} kg • +${changePct}%`
+      : changeKg < 0
+        ? `${changeKg} kg • ${changePct}%`
+        : "No change";
 
           return `
-            <div class="history-row">
-              <div>
-                <strong>${name}</strong>
-                <div class="tiny muted">
-                  ${rows.length} sets logged
-                  • Avg RPE ${avgRpe}
-                </div>
-              </div>
-              <strong class="gold">
-                🏆 ${pb} kg
-              </strong>
-            </div>
-          `;
+  <div class="history-row">
+    <div>
+      <strong>${name}</strong>
 
+      <div class="tiny muted">
+        ${rows.length} sets logged
+        • Avg RPE ${avgRpe}
+      </div>
+
+      <div class="tiny muted">
+        Start ${startWeight} kg
+        → Latest ${latestWeight} kg
+      </div>
+
+      <div class="tiny gold">
+        ${changeText}
+      </div>
+    </div>
+
+    <strong class="gold">
+      🏆 ${pb} kg
+    </strong>
+  </div>
+`;
         })
         .join("");
 
