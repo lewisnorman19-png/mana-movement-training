@@ -363,7 +363,7 @@
       return;
 
     box.dataset.v55Ready = "1";
-
+box.style.display = "none";
     oldInput.classList.add(
       "v55-summary-hidden"
     );
@@ -662,11 +662,16 @@
         enhanceStrengthBox
       );
 
-    const save =
+    clet save =
       document.getElementById(
         "saveStrengthLogsBtn"
       );
-
+if(save && save.dataset.v55Clean !== "1"){
+  const cleanSave = save.cloneNode(true);
+  save.replaceWith(cleanSave);
+  save = cleanSave;
+  save.dataset.v55Clean = "1";
+}
     if(
       save &&
       save.dataset.v55Bound !== "1"
