@@ -898,31 +898,77 @@ const changeText =
       : changeKg < 0
         ? `${changeKg} kg • ${changePct}%`
         : "No change";
+const historyHtml =
+  rows
+    .slice()
+    .sort(
+      (a,b) =>
+        Number(a.day_number) - Number(b.day_number) ||
+        Number(a.set_number) - Number(b.set_number)
+    )
+    .map(r => `
+      <div style="
+        padding:9px 0;
+        border-top:1px solid #292929;
+        font-size:12px;
+      ">
+        <strong>
+          Day ${r.day_number} • Set ${r.set_number}
+        </strong>
 
-          return `
-  <div class="history-row">
-    <div>
-      <strong>${name}</strong>
-
-      <div class="tiny muted">
-        ${rows.length} sets logged
-        • Avg RPE ${avgRpe}
+        <div class="tiny muted">
+          ${r.reps ?? "—"} reps
+          • ${r.weight_kg ?? "—"} kg
+          • ${
+            Number(r.rpe) > 0
+              ? `RPE ${r.rpe}`
+              : "RPE —"
+          }
+        </div>
       </div>
+    `)
+    .join("");
+return `
+  <details style="width:100%;">
+    <summary style="
+      list-style:none;
+      cursor:pointer;
+    ">
+      <div class="history-row">
+        <div>
+          <strong>${name}</strong>
 
-      <div class="tiny muted">
-        Start ${startWeight} kg
-        → Latest ${latestWeight} kg
-      </div>
+          <div class="tiny muted">
+            ${rows.length} sets logged
+            • Avg RPE ${avgRpe}
+          </div>
 
-      <div class="tiny gold">
-        ${changeText}
+          <div class="tiny muted">
+            Start ${startWeight} kg
+            → Latest ${latestWeight} kg
+          </div>
+
+          <div class="tiny gold">
+            ${changeText}
+          </div>
+
+          <div class="tiny muted" style="margin-top:5px;">
+            Tap to view sets
+          </div>
+        </div>
+
+        <strong class="gold">
+          🏆 ${pb} kg
+        </strong>
       </div>
+    </summary>
+
+    <div style="
+      padding:4px 0 12px 0;
+    ">
+      ${historyHtml}
     </div>
-
-    <strong class="gold">
-      🏆 ${pb} kg
-    </strong>
-  </div>
+  </details>
 `;
         })
         .join("");
