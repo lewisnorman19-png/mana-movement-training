@@ -898,7 +898,106 @@ const changeText =
       : changeKg < 0
         ? `${changeKg} kg • ${changePct}%`
         : "No change";
-const historyByDay = {};
+const graphPoints =
+  loggedDays.map((day,index) => {
+    const weight = dayBest[day];
+
+    const minWeight = Math.min(
+      ...loggedDays.map(d => dayBest[d])
+    );
+
+    const maxWeight = Math.max(
+      ...loggedDays.map(d => dayBest[d])
+    );
+
+    const range =
+      maxWeight - minWeight || 1;
+
+    const x =
+      loggedDays.length === 1
+        ? 50
+        : (
+            index /
+            (loggedDays.length - 1)
+          ) * 100;
+
+    const y =
+      90 -
+      (
+        (weight - minWeight) /
+        range
+      ) * 75;
+
+    return {
+      day,
+      weight,
+      x,
+      y
+    };
+  });
+
+const graphPolyline =
+  graphPoints
+    .map(p => `${p.x},${p.y}`)
+    .join(" ");
+
+const graphDots =
+  graphPoints
+    .map(p => `
+      <circle
+        cx="${p.x}"
+        cy="${p.y}"
+        r="2.8"
+        fill="#f5d86e"
+      />
+    `)
+    .join("");
+
+const graphHtml =
+  loggedDays.length
+    ? `
+      <div style="
+        margin-top:14px;
+        padding:12px;
+        border:1px solid #292929;
+        border-radius:14px;
+      ">
+        <div class="tiny gold" style="margin-bottom:8px;">
+          Strength trend
+        </div>
+
+        <svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          style="
+            width:100%;
+            height:90px;
+            display:block;
+          "
+        >
+          <polyline
+            points="${graphPolyline}"
+            fill="none"
+            stroke="#f5d86e"
+            stroke-width="2"
+            vector-effect="non-scaling-stroke"
+          />
+          ${graphDots}
+        </svg>
+
+        <div class="tiny muted" style="
+          display:flex;
+          justify-content:space-between;
+          margin-top:5px;
+        ">
+          <span>Day ${loggedDays[0]}</span>
+          <span>Day ${loggedDays[loggedDays.length - 1]}</span>
+        </div>
+      </div>
+    `
+    : "";
+           
+           const historyByDay = {};
 
 rows
   .slice()
@@ -1001,6 +1100,7 @@ return `
     <div style="
       padding:4px 0 12px 0;
     ">
+    ${graphHtml}
       ${historyHtml}
     </div>
   </details>
