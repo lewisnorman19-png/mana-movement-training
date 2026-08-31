@@ -741,3 +741,166 @@ if(save && save.dataset.v55Clean !== "1"){
   }
 
 })();
+
+(() => {
+"use strict";
+
+function addStrengthProgress(){
+  if(document.getElementById("cpStrengthProgressCard")) return;
+
+  const energy =
+    document.getElementById("cpEnergyTrend")?.closest(".card");
+
+  if(!energy) return;
+
+  const card = document.createElement("div");
+  card.className = "card";
+  card.id = "cpStrengthProgressCard";
+
+  card.innerHTML =
+    '<div class="row"><h3>Strength progress</h3><span class="pill">LIVE</span></div>' +
+    '<div id="cpStrengthProgress"><p class="muted">Loading strength progress…</p></div>';
+
+  energy.insertAdjacentElement("afterend",card);
+}
+
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded",addStrengthProgress);
+}else{
+  addStrengthProgress();
+}
+
+})();
+
+(() => {
+
+async function loadStrengthProgress(){
+
+  const host =
+    document.getElementById(
+      "cpStrengthProgress"
+    );
+
+  if(!host || !currentUser) return;
+
+  host.innerHTML =
+    '<p class="muted">Loading strength progress…</p>';
+
+  try{
+
+    const c = await supabaseClient();
+
+    const {data,error} =
+      await c
+        .from("exercise_set_logs")
+        .select(
+          "day_number,exercise_name,set_number,reps,weight_kg,rpe"
+        )
+        .eq("user_id",currentUser.id)
+        .order("day_number");
+
+    if(error) throw error;
+
+    if(!data || !data.length){
+      host.innerHTML =
+        '<p class="muted">No strength sets logged yet.</p>';
+      return;
+    }
+
+    const exercises = {};
+
+    data.forEach(row => {
+
+      const name =
+        row.exercise_name || "Exercise";
+
+      if(!exercises[name])
+        exercises[name] = [];
+
+      exercises[name].push(row);
+
+    });
+
+    host.innerHTML =
+      Object.entries(exercises)
+        .map(([name,rows]) => {
+
+          const weights =
+            rows
+              .map(r => Number(r.weight_kg))
+              .filter(Number.isFinite);
+
+          const pb =
+            weights.length
+              ? Math.max(...weights)
+              : 0;
+
+          const rpes =
+            rows
+              .map(r => Number(r.rpe))
+              .filter(Number.isFinite);
+
+          const avgRpe =
+            rpes.length
+              ? (
+                  rpes.reduce((a,b)=>a+b,0)
+                  / rpes.length
+                ).toFixed(1)
+              : "—";
+
+          return `
+            <div class="history-row">
+              <div>
+                <strong>${name}</strong>
+                <div class="tiny muted">
+                  ${rows.length} sets logged
+                  • Avg RPE ${avgRpe}
+                </div>
+              </div>
+              <strong class="gold">
+                🏆 ${pb} kg
+              </strong>
+            </div>
+          `;
+
+        })
+        .join("");
+
+  }catch(err){
+
+    host.innerHTML =
+      '<p class="muted">Could not load strength progress.</p>';
+
+    console.warn(
+      "strength progress",
+      err
+    );
+  }
+}
+
+const progress =
+  document.getElementById(
+    "clientProgressView"
+  );
+
+if(progress){
+
+  new MutationObserver(() => {
+
+    if(
+      !progress.classList.contains("hide")
+    ){
+      loadStrengthProgress();
+    }
+
+  }).observe(
+    progress,
+    {
+      attributes:true,
+      attributeFilter:["class"]
+    }
+  );
+
+}
+
+})();
