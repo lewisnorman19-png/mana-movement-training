@@ -662,7 +662,7 @@ box.style.display = "none";
         enhanceStrengthBox
       );
 
-    clet save =
+    let save =
       document.getElementById(
         "saveStrengthLogsBtn"
       );
