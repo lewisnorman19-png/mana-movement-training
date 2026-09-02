@@ -1,8 +1,12 @@
 {
-  "name": "Mana Movement Training Beta",
-  "short_name": "Mana Training",
+  "id": "./",
+  "name": "Mana Movement Training",
+  "short_name": "Mana Movement",
+  "description": "Mana Movement Training — programs, coaching, nutrition, habits and progress in one place.",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#050505",
   "theme_color": "#050505",
   "icons": [
