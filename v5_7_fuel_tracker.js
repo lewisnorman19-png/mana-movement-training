@@ -723,18 +723,7 @@
     }
   );
 
-  const fuelV571Observer =
-    new MutationObserver(() => {
-      fuelRender();
-    });
-
-  fuelV571Observer.observe(
-    document.body,
-    {
-      childList:true,
-      subtree:true
-    }
-  );
+  
 
   fuelCreateModal();
   fuelRender();
