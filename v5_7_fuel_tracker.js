@@ -250,5 +250,493 @@
     childList: true,
     subtree: true
   });
+     /* =========================================
+     FUEL v5.7.1 — FUNCTIONAL TRACKING
+     ========================================= */
+
+  const FUEL_STORE_KEY = "mana-fuel-v571";
+
+  function fuelTodayKey() {
+    const d = new Date();
+    return [
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, "0"),
+      String(d.getDate()).padStart(2, "0")
+    ].join("-");
+  }
+
+  function fuelLoad() {
+    try {
+      const all = JSON.parse(
+        localStorage.getItem(FUEL_STORE_KEY) || "{}"
+      );
+
+      const key = fuelTodayKey();
+
+      return all[key] || {
+        meals: {
+          Breakfast: [],
+          Lunch: [],
+          Dinner: [],
+          Snacks: []
+        },
+        water: 0
+      };
+    } catch (err) {
+      return {
+        meals: {
+          Breakfast: [],
+          Lunch: [],
+          Dinner: [],
+          Snacks: []
+        },
+        water: 0
+      };
+    }
+  }
+
+  function fuelSave(data) {
+    const all = JSON.parse(
+      localStorage.getItem(FUEL_STORE_KEY) || "{}"
+    );
+
+    all[fuelTodayKey()] = data;
+
+    localStorage.setItem(
+      FUEL_STORE_KEY,
+      JSON.stringify(all)
+    );
+  }
+
+  function fuelEscape(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  function fuelTotals(data) {
+    let calories = 0;
+    let protein = 0;
+
+    Object.values(data.meals).forEach(items => {
+      items.forEach(item => {
+        calories += Number(item.calories) || 0;
+        protein += Number(item.protein) || 0;
+      });
+    });
+
+    return { calories, protein };
+  }
+
+  function fuelRender() {
+    const panel =
+      document.getElementById("fuelV57Dashboard");
+
+    if (!panel) return;
+
+    const data = fuelLoad();
+    const totals = fuelTotals(data);
+
+    const valueEls =
+      panel.querySelectorAll(".fuel-v57-value");
+
+    if (valueEls[0]) {
+      valueEls[0].textContent = totals.calories;
+    }
+
+    if (valueEls[1]) {
+      valueEls[1].textContent =
+        `${totals.protein}g`;
+    }
+
+    const mealRows =
+      panel.querySelectorAll(".fuel-v57-meal");
+
+    mealRows.forEach(row => {
+      const nameEl =
+        row.querySelector(".fuel-v57-meal-name");
+
+      const metaEl =
+        row.querySelector(".fuel-v57-meal-meta");
+
+      if (!nameEl || !metaEl) return;
+
+      const mealName =
+        nameEl.textContent.trim();
+
+      const items =
+        data.meals[mealName] || [];
+
+      if (!items.length) {
+        metaEl.textContent =
+          "Nothing logged yet";
+        return;
+      }
+
+      const mealCalories =
+        items.reduce(
+          (sum, item) =>
+            sum + (Number(item.calories) || 0),
+          0
+        );
+
+      const mealProtein =
+        items.reduce(
+          (sum, item) =>
+            sum + (Number(item.protein) || 0),
+          0
+        );
+
+      metaEl.innerHTML =
+        `${items.length} item${items.length === 1 ? "" : "s"}`
+        + ` • ${mealCalories} cal`
+        + ` • ${mealProtein}g protein`;
+    });
+
+    let waterDisplay =
+      panel.querySelector("#fuelV57WaterTotal");
+
+    if (!waterDisplay) {
+      const waterSection =
+        panel.querySelector(
+          ".fuel-v57-water-row"
+        );
+
+      if (waterSection) {
+        waterDisplay =
+          document.createElement("div");
+
+        waterDisplay.id =
+          "fuelV57WaterTotal";
+
+        waterDisplay.className =
+          "fuel-v57-value";
+
+        waterDisplay.style.fontSize =
+          "28px";
+
+        waterDisplay.style.marginBottom =
+          "14px";
+
+        waterSection.before(waterDisplay);
+      }
+    }
+
+    if (waterDisplay) {
+      waterDisplay.textContent =
+        `${data.water} ml`;
+    }
+  }
+
+  function fuelCreateModal() {
+    if (
+      document.getElementById(
+        "fuelV571Modal"
+      )
+    ) return;
+
+    const style =
+      document.createElement("style");
+
+    style.textContent = `
+      #fuelV571Modal{
+        position:fixed;
+        inset:0;
+        z-index:99999;
+        background:rgba(0,0,0,.78);
+        display:none;
+        align-items:flex-end;
+      }
+
+      #fuelV571Modal.open{
+        display:flex;
+      }
+
+      .fuel-v571-sheet{
+        width:100%;
+        background:#111;
+        border:1px solid #333;
+        border-radius:28px 28px 0 0;
+        padding:24px 22px
+          calc(28px + env(safe-area-inset-bottom));
+      }
+
+      .fuel-v571-sheet h2{
+        margin:0 0 20px;
+        font-size:28px;
+      }
+
+      .fuel-v571-field{
+        width:100%;
+        box-sizing:border-box;
+        margin-bottom:12px;
+        padding:16px;
+        border-radius:16px;
+        border:1px solid #393939;
+        background:#090909;
+        color:#fff;
+        font-size:17px;
+      }
+
+      .fuel-v571-save{
+        width:100%;
+        padding:17px;
+        border:0;
+        border-radius:18px;
+        background:#f5d86e;
+        color:#111;
+        font-weight:800;
+        font-size:18px;
+      }
+
+      .fuel-v571-cancel{
+        width:100%;
+        margin-top:10px;
+        padding:14px;
+        border:0;
+        background:transparent;
+        color:#aaa;
+        font-size:16px;
+      }
+    `;
+
+    document.head.appendChild(style);
+
+    const modal =
+      document.createElement("div");
+
+    modal.id = "fuelV571Modal";
+
+    modal.innerHTML = `
+      <div class="fuel-v571-sheet">
+        <h2>Add meal</h2>
+
+        <select
+          id="fuelV571Meal"
+          class="fuel-v571-field"
+        >
+          <option>Breakfast</option>
+          <option>Lunch</option>
+          <option>Dinner</option>
+          <option>Snacks</option>
+        </select>
+
+        <input
+          id="fuelV571Food"
+          class="fuel-v571-field"
+          placeholder="Food name"
+        >
+
+        <input
+          id="fuelV571Calories"
+          class="fuel-v571-field"
+          type="number"
+          inputmode="numeric"
+          placeholder="Calories"
+        >
+
+        <input
+          id="fuelV571Protein"
+          class="fuel-v571-field"
+          type="number"
+          inputmode="decimal"
+          placeholder="Protein (g)"
+        >
+
+        <button
+          id="fuelV571Save"
+          class="fuel-v571-save"
+          type="button"
+        >
+          Save meal
+        </button>
+
+        <button
+          id="fuelV571Cancel"
+          class="fuel-v571-cancel"
+          type="button"
+        >
+          Cancel
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+  }
+
+  function fuelOpenModal(meal) {
+    fuelCreateModal();
+
+    const modal =
+      document.getElementById(
+        "fuelV571Modal"
+      );
+
+    const select =
+      document.getElementById(
+        "fuelV571Meal"
+      );
+
+    if (meal && select) {
+      select.value = meal;
+    }
+
+    modal.classList.add("open");
+
+    setTimeout(() => {
+      document
+        .getElementById("fuelV571Food")
+        ?.focus();
+    }, 100);
+  }
+
+  document.addEventListener(
+    "click",
+    event => {
+
+      const addButton =
+        event.target.closest(
+          ".fuel-v57-meal .fuel-v57-btn"
+        );
+
+      if (addButton) {
+        const row =
+          addButton.closest(
+            ".fuel-v57-meal"
+          );
+
+        const meal =
+          row
+            ?.querySelector(
+              ".fuel-v57-meal-name"
+            )
+            ?.textContent
+            ?.trim();
+
+        fuelOpenModal(meal);
+        return;
+      }
+
+      if (
+        event.target.closest(
+          ".fuel-v57-primary"
+        )
+      ) {
+        fuelOpenModal("Breakfast");
+        return;
+      }
+
+      const water =
+        event.target.closest(
+          ".fuel-v57-water"
+        );
+
+      if (water) {
+        const amount =
+          Number(
+            water.textContent
+              .replace(/\D/g, "")
+          ) || 0;
+
+        const data = fuelLoad();
+        data.water += amount;
+
+        fuelSave(data);
+        fuelRender();
+        return;
+      }
+
+      if (
+        event.target.id ===
+        "fuelV571Cancel"
+      ) {
+        document
+          .getElementById(
+            "fuelV571Modal"
+          )
+          ?.classList.remove("open");
+      }
+
+      if (
+        event.target.id ===
+        "fuelV571Save"
+      ) {
+        const meal =
+          document.getElementById(
+            "fuelV571Meal"
+          ).value;
+
+        const food =
+          document.getElementById(
+            "fuelV571Food"
+          ).value.trim();
+
+        const calories =
+          Number(
+            document.getElementById(
+              "fuelV571Calories"
+            ).value
+          ) || 0;
+
+        const protein =
+          Number(
+            document.getElementById(
+              "fuelV571Protein"
+            ).value
+          ) || 0;
+
+        if (!food) return;
+
+        const data = fuelLoad();
+
+        data.meals[meal].push({
+          food,
+          calories,
+          protein,
+          created_at:
+            new Date().toISOString()
+        });
+
+        fuelSave(data);
+
+        document.getElementById(
+          "fuelV571Food"
+        ).value = "";
+
+        document.getElementById(
+          "fuelV571Calories"
+        ).value = "";
+
+        document.getElementById(
+          "fuelV571Protein"
+        ).value = "";
+
+        document
+          .getElementById(
+            "fuelV571Modal"
+          )
+          .classList.remove("open");
+
+        fuelRender();
+      }
+    }
+  );
+
+  const fuelV571Observer =
+    new MutationObserver(() => {
+      fuelRender();
+    });
+
+  fuelV571Observer.observe(
+    document.body,
+    {
+      childList:true,
+      subtree:true
+    }
+  );
+
+  fuelCreateModal();
+  fuelRender();
 
 })();
