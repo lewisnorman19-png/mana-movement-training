@@ -3196,5 +3196,49 @@ fuelRender = function() {
 
 fuelEnsureGoalLabelStyles();
 fuelRenderPresets();
+fuelUpdatePresetGoalLabels(); /* =========================================
+   FUEL v5.7.9.1 — GOAL LABEL CLEANUP
+   ========================================= */
+
+fuelUpdatePresetGoalLabels = function() {
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  /* Remove every old/stale goal label */
+  panel
+    .querySelectorAll(
+      ".fuel-v579-goal-label"
+    )
+    .forEach(label => label.remove());
+
+  const currentLabel =
+    fuelGoalLabel();
+
+  panel
+    .querySelectorAll(
+      ".fuel-v577-toggle"
+    )
+    .forEach(toggle => {
+
+      const badge =
+        document.createElement("div");
+
+      badge.className =
+        "fuel-v579-goal-label";
+
+      badge.textContent =
+        currentLabel;
+
+      toggle.insertAdjacentElement(
+        "afterend",
+        badge
+      );
+    });
+};
+
 fuelUpdatePresetGoalLabels(); 
 })();
