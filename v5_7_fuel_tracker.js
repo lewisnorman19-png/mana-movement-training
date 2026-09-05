@@ -5001,4 +5001,383 @@ if (
 }
 
 fuelRefreshFavouritesV593();
+/* =========================================
+   FUEL v6.0 — DAILY PROGRESS
+   ========================================= */
+
+function fuelEnsureDailyProgressStylesV60() {
+  if (
+    document.getElementById(
+      "fuel-v60-progress-style"
+    )
+  ) return;
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "fuel-v60-progress-style";
+
+  style.textContent = `
+    .fuel-v60-progress{
+      margin:20px 0;
+      padding:20px;
+      border:1px solid #3b3520;
+      border-radius:20px;
+      background:#10100e;
+    }
+
+    .fuel-v60-heading{
+      color:#fff;
+      font-size:22px;
+      font-weight:800;
+      margin-bottom:5px;
+    }
+
+    .fuel-v60-sub{
+      color:#9c9c9c;
+      font-size:13px;
+      margin-bottom:18px;
+    }
+
+    .fuel-v60-remaining-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-bottom:20px;
+    }
+
+    .fuel-v60-remaining-card{
+      padding:15px;
+      border:1px solid #303030;
+      border-radius:16px;
+      background:#0b0b0b;
+    }
+
+    .fuel-v60-label{
+      color:#9c9c9c;
+      font-size:12px;
+      margin-bottom:5px;
+    }
+
+    .fuel-v60-value{
+      color:#f5d86e;
+      font-size:26px;
+      font-weight:800;
+      line-height:1.1;
+    }
+
+    .fuel-v60-small{
+      margin-top:5px;
+      color:#8d8d8d;
+      font-size:12px;
+    }
+
+    .fuel-v60-meal-list{
+      display:grid;
+      gap:10px;
+    }
+
+    .fuel-v60-meal{
+      padding:13px 0;
+      border-top:1px solid #292929;
+    }
+
+    .fuel-v60-meal:first-child{
+      border-top:0;
+    }
+
+    .fuel-v60-meal-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .fuel-v60-meal-name{
+      color:#fff;
+      font-size:15px;
+      font-weight:700;
+    }
+
+    .fuel-v60-meal-total{
+      color:#f5d86e;
+      font-size:13px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .fuel-v60-meal-meta{
+      margin-top:4px;
+      color:#9c9c9c;
+      font-size:12px;
+    }
+
+    .fuel-v60-bar{
+      height:6px;
+      margin-top:8px;
+      border-radius:999px;
+      overflow:hidden;
+      background:#282828;
+    }
+
+    .fuel-v60-fill{
+      height:100%;
+      width:0%;
+      border-radius:999px;
+      background:#f5d86e;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function fuelMealTotalsV60(data, mealName) {
+  const items =
+    data.meals?.[mealName] || [];
+
+  return items.reduce(
+    (totals, item) => {
+      totals.calories +=
+        Number(item.calories) || 0;
+
+      totals.protein +=
+        Number(item.protein) || 0;
+
+      return totals;
+    },
+    {
+      calories: 0,
+      protein: 0
+    }
+  );
+}
+
+function fuelRenderDailyProgressV60() {
+  fuelEnsureDailyProgressStylesV60();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  panel
+    .querySelectorAll(
+      ".fuel-v60-progress"
+    )
+    .forEach(el => el.remove());
+
+  const data =
+    fuelLoad();
+
+  const totals =
+    fuelTotals(data);
+
+  const targets =
+    fuelLoadTargets();
+
+  const caloriesRemaining =
+    Math.max(
+      0,
+      targets.calories -
+      totals.calories
+    );
+
+  const proteinRemaining =
+    Math.max(
+      0,
+      targets.protein -
+      totals.protein
+    );
+
+  const caloriePct =
+    targets.calories > 0
+      ? Math.round(
+          totals.calories /
+          targets.calories *
+          100
+        )
+      : 0;
+
+  const proteinPct =
+    targets.protein > 0
+      ? Math.round(
+          totals.protein /
+          targets.protein *
+          100
+        )
+      : 0;
+
+  const meals = [
+    "Breakfast",
+    "Lunch",
+    "Dinner",
+    "Snacks"
+  ];
+
+  const card =
+    document.createElement("div");
+
+  card.className =
+    "fuel-v60-progress";
+
+  card.innerHTML = `
+    <div class="fuel-v60-heading">
+      Daily progress
+    </div>
+
+    <div class="fuel-v60-sub">
+      Your nutrition target at a glance
+    </div>
+
+    <div class="fuel-v60-remaining-grid">
+
+      <div class="fuel-v60-remaining-card">
+        <div class="fuel-v60-label">
+          Calories remaining
+        </div>
+
+        <div class="fuel-v60-value">
+          ${caloriesRemaining.toLocaleString()}
+        </div>
+
+        <div class="fuel-v60-small">
+          ${caloriePct}% of target used
+        </div>
+      </div>
+
+      <div class="fuel-v60-remaining-card">
+        <div class="fuel-v60-label">
+          Protein remaining
+        </div>
+
+        <div class="fuel-v60-value">
+          ${proteinRemaining}g
+        </div>
+
+        <div class="fuel-v60-small">
+          ${proteinPct}% of target used
+        </div>
+      </div>
+
+    </div>
+
+    <div class="fuel-v60-meal-list">
+
+      ${meals.map(mealName => {
+
+        const mealTotals =
+          fuelMealTotalsV60(
+            data,
+            mealName
+          );
+
+        const mealPct =
+          targets.calories > 0
+            ? Math.round(
+                mealTotals.calories /
+                targets.calories *
+                100
+              )
+            : 0;
+
+        const barPct =
+          Math.min(
+            100,
+            mealPct
+          );
+
+        return `
+          <div class="fuel-v60-meal">
+
+            <div class="fuel-v60-meal-top">
+
+              <div class="fuel-v60-meal-name">
+                ${mealName}
+              </div>
+
+              <div class="fuel-v60-meal-total">
+                ${mealTotals.calories} cal
+              </div>
+
+            </div>
+
+            <div class="fuel-v60-meal-meta">
+              ${mealTotals.protein}g protein
+              • ${mealPct}% of daily calories
+            </div>
+
+            <div class="fuel-v60-bar">
+              <div
+                class="fuel-v60-fill"
+                style="width:${barPct}%"
+              ></div>
+            </div>
+
+          </div>
+        `;
+      }).join("")}
+
+    </div>
+  `;
+
+  /*
+    Put Daily Progress immediately
+    before Today's Meals.
+  */
+  const todayHeading =
+    Array.from(
+      panel.querySelectorAll("*")
+    ).find(el => {
+
+      if (el.children.length) return false;
+
+      const text =
+        el.textContent
+          ?.trim()
+          .toLowerCase();
+
+      return (
+        text === "today's meals" ||
+        text === "todays meals"
+      );
+    });
+
+  if (!todayHeading) return;
+
+  const todayCard =
+    todayHeading.closest(
+      ".card, section, article, div"
+    );
+
+  if (todayCard) {
+    todayCard.insertAdjacentElement(
+      "beforebegin",
+      card
+    );
+  }
+}
+
+/*
+  Keep Daily Progress updated
+  whenever Fuel rerenders.
+*/
+const fuelRenderV60 =
+  fuelRender;
+
+fuelRender = function() {
+  fuelRenderV60();
+
+  setTimeout(
+    fuelRenderDailyProgressV60,
+    30
+  );
+};
+
+setTimeout(
+  fuelRenderDailyProgressV60,
+  150
+);  
 })();
