@@ -3686,4 +3686,50 @@ document.addEventListener(
 );
 
 fuelUpgradePresetButtonsV581();
+  /* =========================================
+   FUEL v5.8.2 — PORTION SELECTOR PRIORITY FIX
+   ========================================= */
+
+/*
+  Window capture fires BEFORE document capture,
+  so this gets control before the old preset
+  handlers can automatically save the meal.
+*/
+
+window.addEventListener(
+  "click",
+  event => {
+
+    const btn =
+      event.target.closest(
+        ".fuel-v576-preset, .fuel-v581-preset"
+      );
+
+    if (!btn) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const meal =
+      btn.dataset.meal;
+
+    const index =
+      Number(btn.dataset.index);
+
+    const preset =
+      fuelGetPresetItem(
+        meal,
+        index
+      );
+
+    if (!preset) return;
+
+    fuelOpenPortionModal(
+      meal,
+      preset
+    );
+  },
+  true
+);
 })();
