@@ -4861,5 +4861,25 @@ function() {
     });
 };
 
-fuelRefreshFavouritesV593(); 
+fuelRefreshFavouritesV593();
+  /* =========================================
+   FUEL v5.9.3.2 — KEEP FAVOURITE STARS
+   ========================================= */
+
+const fuelRenderRecentV5932 =
+  fuelRenderRecentV59;
+
+fuelRenderRecentV59 =
+function() {
+
+  fuelRenderRecentV5932();
+
+  setTimeout(() => {
+    fuelAddFavouriteButtonsToRecentV593();
+    fuelRenderFavouritesV593();
+  }, 0);
+};
+
+/* Refresh current screen */
+fuelRenderRecentV59(); 
 })();
