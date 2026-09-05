@@ -1689,5 +1689,468 @@ fuelRender = function() {
 
 fuelCreateProfileModal();
 fuelEnsureProfileCard();
-fuelRenderTargets();   
+fuelRenderTargets();  
+ /* =========================================
+   FUEL v5.7.5 — COACH OVERRIDE
+   ========================================= */
+
+const FUEL_COACH_OVERRIDE_KEY =
+  "mana-fuel-coach-override-v575";
+
+/* Keep the automatic v5.7.4 calculation */
+const fuelLoadTargetsV574 = fuelLoadTargets;
+
+function fuelLoadCoachOverride() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(
+        FUEL_COACH_OVERRIDE_KEY
+      ) || "null"
+    );
+  } catch (err) {
+    return null;
+  }
+}
+
+function fuelSaveCoachOverride(override) {
+  localStorage.setItem(
+    FUEL_COACH_OVERRIDE_KEY,
+    JSON.stringify(override)
+  );
+}
+
+function fuelClearCoachOverride() {
+  localStorage.removeItem(
+    FUEL_COACH_OVERRIDE_KEY
+  );
+}
+
+/* Override the target loader */
+fuelLoadTargets = function() {
+  const override =
+    fuelLoadCoachOverride();
+
+  if (
+    override &&
+    Number(override.calories) > 0 &&
+    Number(override.protein) > 0
+  ) {
+    return {
+      calories: Number(override.calories),
+      protein: Number(override.protein)
+    };
+  }
+
+  return fuelLoadTargetsV574();
+};
+
+function fuelCreateCoachOverrideModal() {
+  if (
+    document.getElementById(
+      "fuelV575CoachModal"
+    )
+  ) return;
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "fuel-v575-coach-style";
+
+  style.textContent = `
+    #fuelV575CoachModal{
+      position:fixed;
+      inset:0;
+      z-index:100001;
+      background:rgba(0,0,0,.82);
+      display:none;
+      align-items:flex-end;
+    }
+
+    #fuelV575CoachModal.open{
+      display:flex;
+    }
+
+    .fuel-v575-sheet{
+      width:100%;
+      box-sizing:border-box;
+      background:#111;
+      border:1px solid #333;
+      border-radius:28px 28px 0 0;
+      padding:24px 22px
+        calc(28px + env(safe-area-inset-bottom));
+    }
+
+    .fuel-v575-sheet h2{
+      margin:0 0 6px;
+      font-size:28px;
+    }
+
+    .fuel-v575-intro{
+      color:#aaa;
+      font-size:14px;
+      line-height:1.5;
+      margin-bottom:20px;
+    }
+
+    .fuel-v575-label{
+      display:block;
+      color:#f5d86e;
+      font-size:13px;
+      font-weight:700;
+      margin:14px 0 7px;
+    }
+
+    .fuel-v575-field{
+      width:100%;
+      box-sizing:border-box;
+      padding:16px;
+      border-radius:15px;
+      border:1px solid #393939;
+      background:#090909;
+      color:#fff;
+      font-size:17px;
+    }
+
+    .fuel-v575-save{
+      width:100%;
+      margin-top:22px;
+      padding:17px;
+      border:0;
+      border-radius:18px;
+      background:#f5d86e;
+      color:#111;
+      font-weight:800;
+      font-size:18px;
+    }
+
+    .fuel-v575-auto{
+      width:100%;
+      margin-top:10px;
+      padding:15px;
+      border:1px solid #5d5124;
+      border-radius:16px;
+      background:#15130b;
+      color:#f5d86e;
+      font-size:16px;
+      font-weight:700;
+    }
+
+    .fuel-v575-cancel{
+      width:100%;
+      padding:14px;
+      border:0;
+      background:transparent;
+      color:#aaa;
+      font-size:16px;
+    }
+
+    .fuel-v575-card{
+      margin-top:14px;
+      padding:18px;
+      border:1px solid #2b2b2b;
+      border-radius:20px;
+      background:#101010;
+    }
+
+    .fuel-v575-btn{
+      width:100%;
+      padding:14px;
+      border:1px solid #5d5124;
+      border-radius:16px;
+      background:#15130b;
+      color:#f5d86e;
+      font-size:16px;
+      font-weight:700;
+    }
+
+    .fuel-v575-summary{
+      margin-top:11px;
+      color:#aaa;
+      font-size:13px;
+      line-height:1.5;
+    }
+
+    .fuel-v575-badge{
+      color:#f5d86e;
+      font-weight:700;
+    }
+  `;
+
+  document.head.appendChild(style);
+
+  const modal =
+    document.createElement("div");
+
+  modal.id =
+    "fuelV575CoachModal";
+
+  modal.innerHTML = `
+    <div class="fuel-v575-sheet">
+
+      <h2>Coach override</h2>
+
+      <div class="fuel-v575-intro">
+        Fine-tune the client's nutrition target
+        without changing their profile.
+      </div>
+
+      <label class="fuel-v575-label">
+        Daily calories
+      </label>
+
+      <input
+        id="fuelV575Calories"
+        class="fuel-v575-field"
+        type="number"
+        inputmode="numeric"
+        placeholder="e.g. 2500"
+      >
+
+      <label class="fuel-v575-label">
+        Daily protein
+      </label>
+
+      <input
+        id="fuelV575Protein"
+        class="fuel-v575-field"
+        type="number"
+        inputmode="numeric"
+        placeholder="e.g. 140"
+      >
+
+      <button
+        id="fuelV575Save"
+        class="fuel-v575-save"
+        type="button"
+      >
+        Save coach target
+      </button>
+
+      <button
+        id="fuelV575Auto"
+        class="fuel-v575-auto"
+        type="button"
+      >
+        Use Mana calculation
+      </button>
+
+      <button
+        id="fuelV575Cancel"
+        class="fuel-v575-cancel"
+        type="button"
+      >
+        Cancel
+      </button>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+function fuelEnsureCoachOverrideCard() {
+  const profileCard =
+    document.getElementById(
+      "fuelV574ProfileCard"
+    );
+
+  if (!profileCard) return;
+
+  let card =
+    document.getElementById(
+      "fuelV575CoachCard"
+    );
+
+  if (!card) {
+    card = document.createElement("div");
+
+    card.id =
+      "fuelV575CoachCard";
+
+    card.className =
+      "fuel-v575-card";
+
+    profileCard.insertAdjacentElement(
+      "afterend",
+      card
+    );
+  }
+
+  const override =
+    fuelLoadCoachOverride();
+
+  const autoTargets =
+    fuelLoadTargetsV574();
+
+  const currentTargets =
+    fuelLoadTargets();
+
+  if (override) {
+    card.innerHTML = `
+      <button
+        id="fuelV575Open"
+        class="fuel-v575-btn"
+        type="button"
+      >
+        Edit coach override
+      </button>
+
+      <div class="fuel-v575-summary">
+        <span class="fuel-v575-badge">
+          COACH TARGET ACTIVE
+        </span>
+        <br>
+        ${currentTargets.calories.toLocaleString()} cal
+        • ${currentTargets.protein}g protein
+        <br>
+        Mana calculation:
+        ${autoTargets.calories.toLocaleString()} cal
+        • ${autoTargets.protein}g protein
+      </div>
+    `;
+  } else {
+    card.innerHTML = `
+      <button
+        id="fuelV575Open"
+        class="fuel-v575-btn"
+        type="button"
+      >
+        Coach override
+      </button>
+
+      <div class="fuel-v575-summary">
+        Using Mana's personalised calculation:
+        ${autoTargets.calories.toLocaleString()} cal
+        • ${autoTargets.protein}g protein
+      </div>
+    `;
+  }
+}
+
+function fuelOpenCoachOverrideModal() {
+  fuelCreateCoachOverrideModal();
+
+  const targets =
+    fuelLoadTargets();
+
+  document.getElementById(
+    "fuelV575Calories"
+  ).value =
+    targets.calories || "";
+
+  document.getElementById(
+    "fuelV575Protein"
+  ).value =
+    targets.protein || "";
+
+  document
+    .getElementById(
+      "fuelV575CoachModal"
+    )
+    .classList.add("open");
+}
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target.closest(
+        "#fuelV575Open"
+      )
+    ) {
+      fuelOpenCoachOverrideModal();
+      return;
+    }
+
+    if (
+      event.target.id ===
+      "fuelV575Cancel"
+    ) {
+      document
+        .getElementById(
+          "fuelV575CoachModal"
+        )
+        ?.classList.remove("open");
+
+      return;
+    }
+
+    if (
+      event.target.id ===
+      "fuelV575Save"
+    ) {
+      const calories =
+        Number(
+          document.getElementById(
+            "fuelV575Calories"
+          ).value
+        );
+
+      const protein =
+        Number(
+          document.getElementById(
+            "fuelV575Protein"
+          ).value
+        );
+
+      if (
+        calories <= 0 ||
+        protein <= 0
+      ) {
+        alert(
+          "Please enter valid calorie and protein targets."
+        );
+
+        return;
+      }
+
+      fuelSaveCoachOverride({
+        calories,
+        protein
+      });
+
+      document
+        .getElementById(
+          "fuelV575CoachModal"
+        )
+        .classList.remove("open");
+
+      fuelRenderTargets();
+      fuelEnsureProfileCard();
+      fuelEnsureCoachOverrideCard();
+
+      return;
+    }
+
+    if (
+      event.target.id ===
+      "fuelV575Auto"
+    ) {
+      fuelClearCoachOverride();
+
+      document
+        .getElementById(
+          "fuelV575CoachModal"
+        )
+        .classList.remove("open");
+
+      fuelRenderTargets();
+      fuelEnsureProfileCard();
+      fuelEnsureCoachOverrideCard();
+    }
+  }
+);
+
+const fuelRenderV574 = fuelRender;
+
+fuelRender = function() {
+  fuelRenderV574();
+  fuelEnsureCoachOverrideCard();
+};
+
+fuelCreateCoachOverrideModal();
+fuelEnsureCoachOverrideCard();
+fuelRenderTargets();
 })();
