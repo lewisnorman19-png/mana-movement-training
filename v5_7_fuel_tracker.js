@@ -2434,4 +2434,172 @@ fuelRender = function() {
 };
 
 fuelRenderPresets();
+   /* =========================================
+   FUEL v5.7.7 — COLLAPSIBLE MEAL PRESETS
+   ========================================= */
+
+function fuelEnsureCompactPresetStyles() {
+  if (
+    document.getElementById(
+      "fuel-v577-compact-style"
+    )
+  ) return;
+
+  const style = document.createElement("style");
+
+  style.id = "fuel-v577-compact-style";
+
+  style.textContent = `
+    .fuel-v577-toggle{
+      width:100%;
+      margin:10px 0 4px;
+      padding:13px 15px;
+      border-radius:15px;
+      border:1px solid #3a341c;
+      background:#131108;
+      color:#f5d86e;
+      font-size:14px;
+      font-weight:800;
+      text-align:left;
+    }
+
+    .fuel-v576-presets{
+      display:none;
+    }
+
+    .fuel-v576-presets.open{
+      display:grid;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function fuelMakePresetsCollapsible() {
+  fuelEnsureCompactPresetStyles();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  const groups =
+    panel.querySelectorAll(
+      ".fuel-v576-presets"
+    );
+
+  groups.forEach(group => {
+    const mealName =
+      group.getAttribute(
+        "data-fuel-preset-group"
+      );
+
+    if (!mealName) return;
+
+    if (
+      group.previousElementSibling &&
+      group.previousElementSibling.classList.contains(
+        "fuel-v577-toggle"
+      )
+    ) return;
+
+    const toggle =
+      document.createElement("button");
+
+    toggle.type = "button";
+    toggle.className = "fuel-v577-toggle";
+    toggle.setAttribute(
+      "data-fuel-toggle",
+      mealName
+    );
+
+    toggle.textContent =
+      "Choose a meal ▼";
+
+    group.insertAdjacentElement(
+      "beforebegin",
+      toggle
+    );
+  });
+}
+
+document.addEventListener(
+  "click",
+  event => {
+    const toggle =
+      event.target.closest(
+        ".fuel-v577-toggle"
+      );
+
+    if (!toggle) return;
+
+    const mealName =
+      toggle.getAttribute(
+        "data-fuel-toggle"
+      );
+
+    const group =
+      document.querySelector(
+        `[data-fuel-preset-group="${mealName}"]`
+      );
+
+    if (!group) return;
+
+    const isOpen =
+      group.classList.toggle("open");
+
+    toggle.textContent =
+      isOpen
+        ? "Hide choices ▲"
+        : "Choose a meal ▼";
+  }
+);
+
+/* Collapse after a preset is selected */
+document.addEventListener(
+  "click",
+  event => {
+    const preset =
+      event.target.closest(
+        ".fuel-v576-preset"
+      );
+
+    if (!preset) return;
+
+    const mealName =
+      preset.dataset.meal;
+
+    setTimeout(() => {
+      const group =
+        document.querySelector(
+          `[data-fuel-preset-group="${mealName}"]`
+        );
+
+      const toggle =
+        document.querySelector(
+          `[data-fuel-toggle="${mealName}"]`
+        );
+
+      if (group) {
+        group.classList.remove("open");
+      }
+
+      if (toggle) {
+        toggle.textContent =
+          "Choose a meal ▼";
+      }
+    }, 50);
+  }
+);
+
+const fuelRenderV576 = fuelRender;
+
+fuelRender = function() {
+  fuelRenderV576();
+  fuelMakePresetsCollapsible();
+};
+
+fuelMakePresetsCollapsible();
 })();
