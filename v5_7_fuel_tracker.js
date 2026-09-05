@@ -3612,4 +3612,78 @@ document.addEventListener(
 );
 
 fuelCreatePortionModal();
+   /* =========================================
+   FUEL v5.8.1 — PORTION TAP FIX
+   ========================================= */
+
+function fuelUpgradePresetButtonsV581() {
+  document
+    .querySelectorAll(".fuel-v576-preset")
+    .forEach(btn => {
+
+      btn.classList.remove(
+        "fuel-v576-preset"
+      );
+
+      btn.classList.add(
+        "fuel-v581-preset"
+      );
+    });
+}
+
+/*
+  Run after preset cards are rendered.
+*/
+const fuelRenderV580 = fuelRender;
+
+fuelRender = function() {
+  fuelRenderV580();
+
+  fuelUpgradePresetButtonsV581();
+};
+
+/*
+  New preset handler.
+  Older handlers no longer recognise
+  these buttons.
+*/
+document.addEventListener(
+  "click",
+  event => {
+
+    const btn =
+      event.target.closest(
+        ".fuel-v581-preset"
+      );
+
+    if (!btn) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const meal =
+      btn.dataset.meal;
+
+    const index =
+      Number(
+        btn.dataset.index
+      );
+
+    const preset =
+      fuelGetPresetItem(
+        meal,
+        index
+      );
+
+    if (!preset) return;
+
+    fuelOpenPortionModal(
+      meal,
+      preset
+    );
+  },
+  true
+);
+
+fuelUpgradePresetButtonsV581();
 })();
