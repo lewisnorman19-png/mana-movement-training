@@ -727,5 +727,118 @@
 
   fuelCreateModal();
   fuelRender();
+/* =========================================
+   FUEL v5.7.2 — ITEM LIST + DELETE
+   ========================================= */
 
+function fuelRenderItems() {
+  const panel = document.getElementById("fuelV57Dashboard");
+  if (!panel) return;
+
+  const data = fuelLoad();
+
+  const mealRows = panel.querySelectorAll(".fuel-v57-meal");
+
+  mealRows.forEach(row => {
+    const nameEl = row.querySelector(".fuel-v57-meal-name");
+    if (!nameEl) return;
+
+    const mealName = nameEl.textContent.trim();
+    const items = data.meals[mealName] || [];
+
+    let list = row.parentElement.querySelector(
+      `[data-fuel-list="${mealName}"]`
+    );
+
+    if (!list) {
+      list = document.createElement("div");
+      list.setAttribute("data-fuel-list", mealName);
+      list.style.padding = "0 0 8px 0";
+
+      row.insertAdjacentElement("afterend", list);
+    }
+
+    if (!items.length) {
+      list.innerHTML = "";
+      return;
+    }
+
+    list.innerHTML = items
+      .map((item, index) => `
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          gap:12px;
+          padding:10px 0;
+          border-top:1px solid #242424;
+        ">
+          <div>
+            <div style="
+              font-size:16px;
+              font-weight:700;
+              color:#f2f2f2;
+            ">
+              ${fuelEscape(item.food)}
+            </div>
+
+            <div class="tiny muted" style="margin-top:3px;">
+              ${Number(item.calories) || 0} cal
+              • ${Number(item.protein) || 0}g protein
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="fuel-v572-delete"
+            data-meal="${mealName}"
+            data-index="${index}"
+            style="
+              border:1px solid #4a2a2a;
+              background:#170d0d;
+              color:#e9a7a7;
+              border-radius:999px;
+              padding:8px 12px;
+              font-size:13px;
+              font-weight:700;
+            "
+          >
+            Delete
+          </button>
+        </div>
+      `)
+      .join("");
+  });
+}
+
+document.addEventListener("click", event => {
+  const btn = event.target.closest(".fuel-v572-delete");
+  if (!btn) return;
+
+  const meal = btn.dataset.meal;
+  const index = Number(btn.dataset.index);
+
+  const data = fuelLoad();
+
+  if (
+    !data.meals[meal] ||
+    !Number.isInteger(index) ||
+    !data.meals[meal][index]
+  ) return;
+
+  data.meals[meal].splice(index, 1);
+
+  fuelSave(data);
+  fuelRender();
+  fuelRenderItems();
+});
+
+const originalFuelRender = fuelRender;
+
+fuelRender = function() {
+  originalFuelRender();
+  fuelRenderItems();
+};
+
+fuelRenderItems();
 })();
