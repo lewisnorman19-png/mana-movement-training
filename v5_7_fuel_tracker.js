@@ -4319,4 +4319,480 @@ setTimeout(
   fuelRenderRecentV59,
   100
 );
+ /* =========================================
+   FUEL v5.9.3 — FAVOURITE MEALS
+   ========================================= */
+
+const FUEL_FAVOURITES_KEY =
+  "mana-fuel-favourites-v593";
+
+function fuelLoadFavouritesV593() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(
+        FUEL_FAVOURITES_KEY
+      ) || "[]"
+    );
+  } catch (err) {
+    return [];
+  }
+}
+
+function fuelSaveFavouritesV593(list) {
+  localStorage.setItem(
+    FUEL_FAVOURITES_KEY,
+    JSON.stringify(list)
+  );
+}
+
+function fuelFavouriteIdV593(item) {
+  return [
+    item.meal,
+    item.food,
+    item.calories,
+    item.protein
+  ].join("|");
+}
+
+function fuelIsFavouriteV593(item) {
+  const id =
+    fuelFavouriteIdV593(item);
+
+  return fuelLoadFavouritesV593()
+    .some(fav =>
+      fuelFavouriteIdV593(fav) === id
+    );
+}
+
+function fuelToggleFavouriteV593(item) {
+  let favourites =
+    fuelLoadFavouritesV593();
+
+  const id =
+    fuelFavouriteIdV593(item);
+
+  const exists =
+    favourites.some(fav =>
+      fuelFavouriteIdV593(fav) === id
+    );
+
+  if (exists) {
+    favourites =
+      favourites.filter(fav =>
+        fuelFavouriteIdV593(fav) !== id
+      );
+  } else {
+    favourites.unshift(item);
+  }
+
+  fuelSaveFavouritesV593(
+    favourites.slice(0, 12)
+  );
+}
+
+function fuelEnsureFavouriteStylesV593() {
+  if (
+    document.getElementById(
+      "fuel-v593-favourite-style"
+    )
+  ) return;
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "fuel-v593-favourite-style";
+
+  style.textContent = `
+    .fuel-v593-favourites{
+      margin:18px 0;
+      padding:18px;
+      border:1px solid #4a401c;
+      border-radius:18px;
+      background:#10100d;
+    }
+
+    .fuel-v593-title{
+      color:#f5d86e;
+      font-size:14px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      margin-bottom:12px;
+    }
+
+    .fuel-v593-list{
+      display:grid;
+      gap:9px;
+    }
+
+    .fuel-v593-item{
+      width:100%;
+      box-sizing:border-box;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:13px 14px;
+      border-radius:15px;
+      border:1px solid #303030;
+      background:#0b0b0b;
+      color:#fff;
+      text-align:left;
+    }
+
+    .fuel-v593-main{
+      flex:1;
+      min-width:0;
+    }
+
+    .fuel-v593-name{
+      font-size:15px;
+      font-weight:800;
+      line-height:1.3;
+    }
+
+    .fuel-v593-macros{
+      margin-top:4px;
+      color:#a9a9a9;
+      font-size:13px;
+    }
+
+    .fuel-v593-repeat{
+      margin-top:5px;
+      color:#f5d86e;
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .fuel-v593-star{
+      flex:0 0 auto;
+      width:42px;
+      height:42px;
+      border-radius:50%;
+      border:1px solid #5b4d1c;
+      background:#171309;
+      color:#f5d86e;
+      font-size:21px;
+      display:grid;
+      place-items:center;
+    }
+
+    .fuel-v593-recent-star{
+      width:40px;
+      height:40px;
+      border-radius:50%;
+      border:1px solid #444;
+      background:#111;
+      color:#f5d86e;
+      font-size:19px;
+      margin-top:8px;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function fuelRenderFavouritesV593() {
+  fuelEnsureFavouriteStylesV593();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  panel
+    .querySelectorAll(
+      ".fuel-v593-favourites"
+    )
+    .forEach(el => el.remove());
+
+  const favourites =
+    fuelLoadFavouritesV593();
+
+  if (!favourites.length) return;
+
+  const recentBox =
+    panel.querySelector(
+      ".fuel-v59-recent"
+    );
+
+  if (!recentBox) return;
+
+  const box =
+    document.createElement("div");
+
+  box.className =
+    "fuel-v593-favourites";
+
+  box.innerHTML = `
+    <div class="fuel-v593-title">
+      Favourite meals
+    </div>
+
+    <div class="fuel-v593-list">
+
+      ${favourites.slice(0, 5).map(
+        (item, index) => `
+          <div
+            class="fuel-v593-item"
+          >
+
+            <button
+              type="button"
+              class="fuel-v593-main"
+              data-fuel-favourite-repeat="${index}"
+              style="
+                border:0;
+                background:transparent;
+                color:inherit;
+                text-align:left;
+                padding:0;
+              "
+            >
+              <div class="fuel-v593-name">
+                ${item.food}
+              </div>
+
+              <div class="fuel-v593-macros">
+                ${item.calories} cal
+                • ${item.protein}g protein
+              </div>
+
+              <div class="fuel-v593-repeat">
+                Tap to repeat
+              </div>
+            </button>
+
+            <button
+              type="button"
+              class="fuel-v593-star"
+              data-fuel-favourite-remove="${index}"
+              aria-label="Remove favourite"
+            >
+              ★
+            </button>
+
+          </div>
+        `
+      ).join("")}
+
+    </div>
+  `;
+
+  recentBox.insertAdjacentElement(
+    "beforebegin",
+    box
+  );
+}
+
+function fuelAddFavouriteButtonsToRecentV593() {
+  const recent =
+    fuelLoadRecentV59();
+
+  document
+    .querySelectorAll(
+      ".fuel-v59-item"
+    )
+    .forEach((itemEl, index) => {
+
+      if (
+        itemEl.querySelector(
+          ".fuel-v593-recent-star"
+        )
+      ) return;
+
+      const item =
+        recent[index];
+
+      if (!item) return;
+
+      const star =
+        document.createElement("button");
+
+      star.type =
+        "button";
+
+      star.className =
+        "fuel-v593-recent-star";
+
+      star.dataset.fuelFavouriteToggle =
+        String(index);
+
+      star.textContent =
+        fuelIsFavouriteV593(item)
+          ? "★"
+          : "☆";
+
+      star.setAttribute(
+        "aria-label",
+        "Toggle favourite meal"
+      );
+
+      itemEl.appendChild(star);
+    });
+}
+
+function fuelRefreshFavouritesV593() {
+  fuelRenderFavouritesV593();
+  fuelAddFavouriteButtonsToRecentV593();
+}
+
+/*
+  Favourite a Recent Meal.
+*/
+window.addEventListener(
+  "click",
+  event => {
+
+    const star =
+      event.target.closest(
+        "[data-fuel-favourite-toggle]"
+      );
+
+    if (!star) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const index =
+      Number(
+        star.dataset.fuelFavouriteToggle
+      );
+
+    const recent =
+      fuelLoadRecentV59();
+
+    const item =
+      recent[index];
+
+    if (!item) return;
+
+    fuelToggleFavouriteV593(item);
+
+    fuelRefreshFavouritesV593();
+  },
+  true
+);
+
+/*
+  Repeat favourite meal.
+*/
+window.addEventListener(
+  "click",
+  event => {
+
+    const btn =
+      event.target.closest(
+        "[data-fuel-favourite-repeat]"
+      );
+
+    if (!btn) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const index =
+      Number(
+        btn.dataset.fuelFavouriteRepeat
+      );
+
+    const favourites =
+      fuelLoadFavouritesV593();
+
+    const item =
+      favourites[index];
+
+    if (!item) return;
+
+    const data =
+      fuelLoad();
+
+    if (!data.meals[item.meal]) {
+      data.meals[item.meal] = [];
+    }
+
+    data.meals[item.meal].push({
+      food: item.food,
+      calories: item.calories,
+      protein: item.protein
+    });
+
+    fuelSave(data);
+    fuelSaveRecentV59(item);
+
+    fuelRender();
+    fuelRenderItems();
+    fuelRenderTargets();
+
+    setTimeout(
+      fuelRefreshFavouritesV593,
+      0
+    );
+  },
+  true
+);
+
+/*
+  Remove favourite.
+*/
+window.addEventListener(
+  "click",
+  event => {
+
+    const btn =
+      event.target.closest(
+        "[data-fuel-favourite-remove]"
+      );
+
+    if (!btn) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const index =
+      Number(
+        btn.dataset.fuelFavouriteRemove
+      );
+
+    const favourites =
+      fuelLoadFavouritesV593();
+
+    favourites.splice(
+      index,
+      1
+    );
+
+    fuelSaveFavouritesV593(
+      favourites
+    );
+
+    fuelRefreshFavouritesV593();
+  },
+  true
+);
+
+/*
+  Refresh after Fuel updates.
+*/
+const fuelRenderV593 =
+  fuelRender;
+
+fuelRender = function() {
+  fuelRenderV593();
+
+  setTimeout(
+    fuelRefreshFavouritesV593,
+    20
+  );
+};
+
+setTimeout(
+  fuelRefreshFavouritesV593,
+  150
+);
 })();
