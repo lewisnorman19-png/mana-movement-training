@@ -841,4 +841,237 @@ fuelRender = function() {
 };
 
 fuelRenderItems();
+/* =========================================
+   FUEL v5.7.3 — DAILY TARGETS
+   ========================================= */
+
+const FUEL_TARGET_KEY = "mana-fuel-targets-v573";
+
+function fuelLoadTargets() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(FUEL_TARGET_KEY)
+    ) || {
+      calories: 2200,
+      protein: 150
+    };
+  } catch (err) {
+    return {
+      calories: 2200,
+      protein: 150
+    };
+  }
+}
+
+function fuelEnsureTargetStyles() {
+  if (
+    document.getElementById(
+      "mana-fuel-v573-target-style"
+    )
+  ) return;
+
+  const style = document.createElement("style");
+
+  style.id = "mana-fuel-v573-target-style";
+
+  style.textContent = `
+    .fuel-v573-target{
+      margin-top:10px;
+      font-size:14px;
+      color:#b5b5b5;
+    }
+
+    .fuel-v573-bar{
+      width:100%;
+      height:8px;
+      background:#262626;
+      border-radius:999px;
+      overflow:hidden;
+      margin-top:12px;
+    }
+
+    .fuel-v573-fill{
+      height:100%;
+      width:0%;
+      background:#f5d86e;
+      border-radius:999px;
+      transition:width .25s ease;
+    }
+
+    .fuel-v573-percent{
+      margin-top:7px;
+      font-size:12px;
+      color:#8e8e8e;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function fuelRenderTargets() {
+  fuelEnsureTargetStyles();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  const data = fuelLoad();
+  const totals = fuelTotals(data);
+  const targets = fuelLoadTargets();
+
+  const cards =
+    panel.querySelectorAll(
+      ".fuel-v57-card"
+    );
+
+  if (cards.length < 2) return;
+
+  const caloriePct =
+    targets.calories > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (totals.calories /
+              targets.calories) *
+              100
+          )
+        )
+      : 0;
+
+  const proteinPct =
+    targets.protein > 0
+      ? Math.min(
+          100,
+          Math.round(
+            (totals.protein /
+              targets.protein) *
+              100
+          )
+        )
+      : 0;
+
+  cards[0]
+    .querySelector(
+      ".fuel-v57-sub"
+    )
+    .textContent =
+      `of ${targets.calories.toLocaleString()} cal target`;
+
+  cards[1]
+    .querySelector(
+      ".fuel-v57-sub"
+    )
+    .textContent =
+      `of ${targets.protein}g target`;
+
+  let calTarget =
+    cards[0].querySelector(
+      ".fuel-v573-target"
+    );
+
+  if (!calTarget) {
+    calTarget =
+      document.createElement("div");
+
+    calTarget.className =
+      "fuel-v573-target";
+
+    calTarget.innerHTML = `
+      <div class="fuel-v573-bar">
+        <div
+          class="fuel-v573-fill"
+          data-fuel-target-fill="calories"
+        ></div>
+      </div>
+
+      <div
+        class="fuel-v573-percent"
+        data-fuel-target-percent="calories"
+      ></div>
+    `;
+
+    cards[0].appendChild(calTarget);
+  }
+
+  let proteinTarget =
+    cards[1].querySelector(
+      ".fuel-v573-target"
+    );
+
+  if (!proteinTarget) {
+    proteinTarget =
+      document.createElement("div");
+
+    proteinTarget.className =
+      "fuel-v573-target";
+
+    proteinTarget.innerHTML = `
+      <div class="fuel-v573-bar">
+        <div
+          class="fuel-v573-fill"
+          data-fuel-target-fill="protein"
+        ></div>
+      </div>
+
+      <div
+        class="fuel-v573-percent"
+        data-fuel-target-percent="protein"
+      ></div>
+    `;
+
+    cards[1].appendChild(proteinTarget);
+  }
+
+  const calorieFill =
+    panel.querySelector(
+      '[data-fuel-target-fill="calories"]'
+    );
+
+  const proteinFill =
+    panel.querySelector(
+      '[data-fuel-target-fill="protein"]'
+    );
+
+  const caloriePercent =
+    panel.querySelector(
+      '[data-fuel-target-percent="calories"]'
+    );
+
+  const proteinPercent =
+    panel.querySelector(
+      '[data-fuel-target-percent="protein"]'
+    );
+
+  if (calorieFill) {
+    calorieFill.style.width =
+      `${caloriePct}%`;
+  }
+
+  if (proteinFill) {
+    proteinFill.style.width =
+      `${proteinPct}%`;
+  }
+
+  if (caloriePercent) {
+    caloriePercent.textContent =
+      `${totals.calories.toLocaleString()} / ${targets.calories.toLocaleString()} cal • ${caloriePct}%`;
+  }
+
+  if (proteinPercent) {
+    proteinPercent.textContent =
+      `${totals.protein} / ${targets.protein}g • ${proteinPct}%`;
+  }
+}
+
+const fuelRenderV572 = fuelRender;
+
+fuelRender = function() {
+  fuelRenderV572();
+  fuelRenderTargets();
+};
+
+fuelRenderTargets();   
 })();
