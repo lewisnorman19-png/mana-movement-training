@@ -4881,5 +4881,124 @@ function() {
 };
 
 /* Refresh current screen */
-fuelRenderRecentV59(); 
+fuelRenderRecentV59(); /* =========================================
+   FUEL v5.9.3.3 — STAR CLICK FIX
+   ========================================= */
+
+fuelAddFavouriteButtonsToRecentV593 =
+function() {
+
+  const recent =
+    fuelLoadRecentV59();
+
+  document
+    .querySelectorAll(
+      ".fuel-v59-item"
+    )
+    .forEach((itemEl, index) => {
+
+      const item =
+        recent[index];
+
+      if (!item) return;
+
+      /*
+        Remove any old inline star.
+      */
+      itemEl
+        .querySelectorAll(
+          ".fuel-v593-recent-star"
+        )
+        .forEach(el => el.remove());
+
+      /*
+        Avoid duplicate wrappers.
+      */
+      if (
+        itemEl.parentElement
+          ?.classList.contains(
+            "fuel-v593-recent-wrap"
+          )
+      ) return;
+
+      const wrap =
+        document.createElement("div");
+
+      wrap.className =
+        "fuel-v593-recent-wrap";
+
+      itemEl.parentNode.insertBefore(
+        wrap,
+        itemEl
+      );
+
+      wrap.appendChild(itemEl);
+
+      const star =
+        document.createElement("button");
+
+      star.type =
+        "button";
+
+      star.className =
+        "fuel-v593-recent-star";
+
+      star.dataset.fuelFavouriteToggle =
+        String(index);
+
+      star.textContent =
+        fuelIsFavouriteV593(item)
+          ? "★"
+          : "☆";
+
+      star.setAttribute(
+        "aria-label",
+        "Toggle favourite meal"
+      );
+
+      wrap.appendChild(star);
+    });
+};
+
+/*
+  Style the wrapper so the star
+  sits cleanly below each recent meal.
+*/
+const fuelV5933Style =
+  document.createElement("style");
+
+fuelV5933Style.id =
+  "fuel-v5933-style";
+
+fuelV5933Style.textContent = `
+  .fuel-v593-recent-wrap{
+    display:grid;
+    gap:8px;
+  }
+
+  .fuel-v593-recent-star{
+    width:40px;
+    height:40px;
+    border-radius:50%;
+    border:1px solid #555;
+    background:#111;
+    color:#f5d86e;
+    font-size:20px;
+    display:grid;
+    place-items:center;
+    cursor:pointer;
+  }
+`;
+
+if (
+  !document.getElementById(
+    "fuel-v5933-style"
+  )
+) {
+  document.head.appendChild(
+    fuelV5933Style
+  );
+}
+
+fuelRefreshFavouritesV593();
 })();
