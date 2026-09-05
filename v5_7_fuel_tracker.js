@@ -2153,4 +2153,285 @@ fuelRender = function() {
 fuelCreateCoachOverrideModal();
 fuelEnsureCoachOverrideCard();
 fuelRenderTargets();
+   /* =========================================
+   FUEL v5.7.6 — SMART MEAL PRESETS
+   ========================================= */
+
+const FUEL_MEAL_PRESETS = {
+  Breakfast: [
+    {
+      food: "Oats, Greek yoghurt & banana",
+      calories: 520,
+      protein: 28
+    },
+    {
+      food: "Eggs, toast & fruit",
+      calories: 460,
+      protein: 30
+    },
+    {
+      food: "Protein smoothie",
+      calories: 430,
+      protein: 35
+    }
+  ],
+
+  Lunch: [
+    {
+      food: "Chicken, rice & vegetables",
+      calories: 620,
+      protein: 45
+    },
+    {
+      food: "Beef mince, rice & vegetables",
+      calories: 680,
+      protein: 42
+    },
+    {
+      food: "Chicken salad wrap",
+      calories: 510,
+      protein: 38
+    }
+  ],
+
+  Dinner: [
+    {
+      food: "Chicken, sweet potato & vegetables",
+      calories: 650,
+      protein: 48
+    },
+    {
+      food: "Lean beef, potato & greens",
+      calories: 700,
+      protein: 45
+    },
+    {
+      food: "Salmon, rice & vegetables",
+      calories: 720,
+      protein: 42
+    }
+  ],
+
+  Snacks: [
+    {
+      food: "Greek yoghurt & fruit",
+      calories: 220,
+      protein: 18
+    },
+    {
+      food: "Protein shake & banana",
+      calories: 280,
+      protein: 28
+    },
+    {
+      food: "Tuna on toast",
+      calories: 320,
+      protein: 30
+    }
+  ]
+};
+
+function fuelPresetEscape(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function fuelEnsurePresetStyles() {
+  if (
+    document.getElementById(
+      "fuel-v576-preset-style"
+    )
+  ) return;
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "fuel-v576-preset-style";
+
+  style.textContent = `
+    .fuel-v576-presets{
+      margin:12px 0 18px;
+      display:grid;
+      gap:10px;
+    }
+
+    .fuel-v576-preset{
+      width:100%;
+      box-sizing:border-box;
+      text-align:left;
+      background:#0d0d0d;
+      border:1px solid #303030;
+      border-radius:16px;
+      padding:14px 15px;
+      color:#fff;
+      cursor:pointer;
+    }
+
+    .fuel-v576-preset-name{
+      font-size:15px;
+      font-weight:700;
+      line-height:1.35;
+    }
+
+    .fuel-v576-preset-macros{
+      margin-top:5px;
+      color:#a9a9a9;
+      font-size:13px;
+    }
+
+    .fuel-v576-preset:hover,
+    .fuel-v576-preset:active{
+      border-color:#6d5c21;
+      background:#15130b;
+    }
+
+    .fuel-v576-label{
+      margin-top:12px;
+      color:#f5d86e;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function fuelRenderPresets() {
+  fuelEnsurePresetStyles();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  const mealRows =
+    panel.querySelectorAll(
+      ".fuel-v57-meal"
+    );
+
+  mealRows.forEach(row => {
+    const nameEl =
+      row.querySelector(
+        ".fuel-v57-meal-name"
+      );
+
+    if (!nameEl) return;
+
+    const mealName =
+      nameEl.textContent.trim();
+
+    const presets =
+      FUEL_MEAL_PRESETS[mealName];
+
+    if (!presets) return;
+
+    const existing =
+      row.parentElement.querySelector(
+        `[data-fuel-preset-group="${mealName}"]`
+      );
+
+    if (existing) return;
+
+    const wrap =
+      document.createElement("div");
+
+    wrap.className =
+      "fuel-v576-presets";
+
+    wrap.setAttribute(
+      "data-fuel-preset-group",
+      mealName
+    );
+
+    wrap.innerHTML = `
+      <div class="fuel-v576-label">
+        Quick choices
+      </div>
+
+      ${presets.map((item, index) => `
+        <button
+          type="button"
+          class="fuel-v576-preset"
+          data-meal="${fuelPresetEscape(mealName)}"
+          data-index="${index}"
+        >
+          <div class="fuel-v576-preset-name">
+            ${fuelPresetEscape(item.food)}
+          </div>
+
+          <div class="fuel-v576-preset-macros">
+            ${item.calories} cal
+            • ${item.protein}g protein
+          </div>
+        </button>
+      `).join("")}
+    `;
+
+    row.insertAdjacentElement(
+      "afterend",
+      wrap
+    );
+  });
+}
+
+document.addEventListener(
+  "click",
+  event => {
+    const btn =
+      event.target.closest(
+        ".fuel-v576-preset"
+      );
+
+    if (!btn) return;
+
+    const meal =
+      btn.dataset.meal;
+
+    const index =
+      Number(btn.dataset.index);
+
+    const preset =
+      FUEL_MEAL_PRESETS[meal]?.[index];
+
+    if (!preset) return;
+
+    const data =
+      fuelLoad();
+
+    if (!data.meals[meal]) {
+      data.meals[meal] = [];
+    }
+
+    data.meals[meal].push({
+      food: preset.food,
+      calories: preset.calories,
+      protein: preset.protein
+    });
+
+    fuelSave(data);
+
+    fuelRender();
+    fuelRenderItems();
+    fuelRenderTargets();
+    fuelRenderPresets();
+  }
+);
+
+const fuelRenderV575 = fuelRender;
+
+fuelRender = function() {
+  fuelRenderV575();
+  fuelRenderPresets();
+};
+
+fuelRenderPresets();
 })();
