@@ -3785,4 +3785,329 @@ if (
     fuelV5821Style
   );
 }  
+ /* =========================================
+   FUEL v5.9 — RECENT MEALS / QUICK REPEAT
+   ========================================= */
+
+const FUEL_RECENT_KEY =
+  "mana-fuel-recent-v59";
+
+function fuelLoadRecentV59() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(
+        FUEL_RECENT_KEY
+      ) || "[]"
+    );
+  } catch (err) {
+    return [];
+  }
+}
+
+function fuelSaveRecentV59(item) {
+  let recent =
+    fuelLoadRecentV59();
+
+  /*
+    Remove duplicate version of same meal
+    before placing newest one at the top.
+  */
+  recent =
+    recent.filter(r =>
+      !(
+        r.food === item.food &&
+        r.calories === item.calories &&
+        r.protein === item.protein
+      )
+    );
+
+  recent.unshift(item);
+
+  /*
+    Keep only last 6 meals.
+  */
+  recent =
+    recent.slice(0, 6);
+
+  localStorage.setItem(
+    FUEL_RECENT_KEY,
+    JSON.stringify(recent)
+  );
+}
+
+function fuelEnsureRecentStylesV59() {
+  if (
+    document.getElementById(
+      "fuel-v59-recent-style"
+    )
+  ) return;
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "fuel-v59-recent-style";
+
+  style.textContent = `
+    .fuel-v59-recent{
+      margin:18px 0 24px;
+      padding:18px;
+      border:1px solid #303030;
+      border-radius:18px;
+      background:#101010;
+    }
+
+    .fuel-v59-title{
+      color:#f5d86e;
+      font-size:14px;
+      font-weight:800;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      margin-bottom:12px;
+    }
+
+    .fuel-v59-list{
+      display:grid;
+      gap:9px;
+    }
+
+    .fuel-v59-item{
+      width:100%;
+      box-sizing:border-box;
+      text-align:left;
+      padding:13px 14px;
+      border-radius:15px;
+      border:1px solid #303030;
+      background:#0b0b0b;
+      color:#fff;
+    }
+
+    .fuel-v59-name{
+      font-size:15px;
+      font-weight:800;
+      line-height:1.3;
+    }
+
+    .fuel-v59-macros{
+      margin-top:4px;
+      color:#a9a9a9;
+      font-size:13px;
+    }
+
+    .fuel-v59-repeat{
+      margin-top:6px;
+      color:#f5d86e;
+      font-size:12px;
+      font-weight:800;
+    }
+  `;
+
+  document.head.appendChild(
+    style
+  );
+}
+
+function fuelRenderRecentV59() {
+  fuelEnsureRecentStylesV59();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  panel
+    .querySelectorAll(
+      ".fuel-v59-recent"
+    )
+    .forEach(el => el.remove());
+
+  const recent =
+    fuelLoadRecentV59();
+
+  if (!recent.length) return;
+
+  const mealsHeading =
+    Array.from(
+      panel.querySelectorAll(
+        "h1, h2"
+      )
+    ).find(el =>
+      el.textContent
+        .trim()
+        .toLowerCase()
+        .includes("today")
+    );
+
+  if (!mealsHeading) return;
+
+  const box =
+    document.createElement("div");
+
+  box.className =
+    "fuel-v59-recent";
+
+  box.innerHTML = `
+    <div class="fuel-v59-title">
+      Recent meals
+    </div>
+
+    <div class="fuel-v59-list">
+      ${recent.slice(0, 3).map(
+        (item, index) => `
+          <button
+            type="button"
+            class="fuel-v59-item"
+            data-fuel-recent="${index}"
+          >
+            <div class="fuel-v59-name">
+              ${item.food}
+            </div>
+
+            <div class="fuel-v59-macros">
+              ${item.calories} cal
+              • ${item.protein}g protein
+            </div>
+
+            <div class="fuel-v59-repeat">
+              Tap to repeat
+            </div>
+          </button>
+        `
+      ).join("")}
+    </div>
+  `;
+
+  mealsHeading.insertAdjacentElement(
+    "afterend",
+    box
+  );
+}
+
+/*
+  Wrap the working v5.8 portion-save
+  function so selected meals also enter
+  the Recent Meals list.
+*/
+const fuelSavePortionChoiceV58 =
+  fuelSavePortionChoice;
+
+fuelSavePortionChoice =
+  function(portionKey) {
+
+    if (
+      fuelPendingPreset &&
+      FUEL_PORTION_MULTIPLIERS[
+        portionKey
+      ]
+    ) {
+      const portion =
+        FUEL_PORTION_MULTIPLIERS[
+          portionKey
+        ];
+
+      const meal =
+        fuelPendingPreset.meal;
+
+      const preset =
+        fuelPendingPreset.preset;
+
+      const values =
+        fuelPortionValues(
+          preset,
+          portion.multiplier
+        );
+
+      fuelSaveRecentV59({
+        meal,
+        food:
+          `${preset.food} — ${portion.label}`,
+        calories:
+          values.calories,
+        protein:
+          values.protein
+      });
+    }
+
+    fuelSavePortionChoiceV58(
+      portionKey
+    );
+
+    fuelRenderRecentV59();
+  };
+
+/*
+  Repeat a recent meal.
+*/
+window.addEventListener(
+  "click",
+  event => {
+
+    const btn =
+      event.target.closest(
+        "[data-fuel-recent]"
+      );
+
+    if (!btn) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const index =
+      Number(
+        btn.dataset.fuelRecent
+      );
+
+    const recent =
+      fuelLoadRecentV59();
+
+    const item =
+      recent[index];
+
+    if (!item) return;
+
+    const data =
+      fuelLoad();
+
+    if (!data.meals[item.meal]) {
+      data.meals[item.meal] = [];
+    }
+
+    data.meals[item.meal].push({
+      food: item.food,
+      calories: item.calories,
+      protein: item.protein
+    });
+
+    fuelSave(data);
+
+    fuelSaveRecentV59(item);
+
+    fuelRender();
+    fuelRenderItems();
+    fuelRenderTargets();
+    fuelRenderRecentV59();
+  },
+  true
+);
+
+/*
+  Keep Recent Meals visible
+  whenever Fuel rerenders.
+*/
+const fuelRenderV59 =
+  fuelRender;
+
+fuelRender = function() {
+  fuelRenderV59();
+
+  setTimeout(
+    fuelRenderRecentV59,
+    0
+  );
+};
+
+fuelRenderRecentV59();  
 })();
