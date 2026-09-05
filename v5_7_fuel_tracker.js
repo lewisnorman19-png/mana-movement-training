@@ -3021,4 +3021,180 @@ fuelRender = function() {
 };
 
 fuelRenderPresets();  
+ /* =========================================
+   FUEL v5.7.9 — GOAL LABEL + PRESET SCALING
+   ========================================= */
+
+function fuelGoalLabel() {
+  const profile =
+    fuelLoadNutritionProfile();
+
+  const goal =
+    profile?.goal || "maintain";
+
+  const labels = {
+    fatLoss: "Fat loss choices",
+    maintain: "Maintain choices",
+    muscleGain: "Build muscle choices"
+  };
+
+  return labels[goal] || "Maintain choices";
+}
+
+function fuelPresetScaleFactor() {
+  const targets =
+    fuelLoadTargets();
+
+  const calories =
+    Number(targets?.calories) || 2400;
+
+  /*
+    2400 calories = baseline
+    Clamp scaling so preset meals do not
+    become unrealistically tiny or huge.
+  */
+  const raw =
+    calories / 2400;
+
+  return Math.max(
+    0.85,
+    Math.min(1.25, raw)
+  );
+}
+
+function fuelScalePresetItem(item) {
+  const scale =
+    fuelPresetScaleFactor();
+
+  return {
+    ...item,
+
+    calories:
+      Math.round(
+        (item.calories * scale) / 10
+      ) * 10
+  };
+}
+
+function fuelGetScaledGoalPresets() {
+  const base =
+    fuelGetGoalPresets();
+
+  const scaled = {};
+
+  Object.keys(base).forEach(meal => {
+    scaled[meal] =
+      base[meal].map(
+        fuelScalePresetItem
+      );
+  });
+
+  return scaled;
+}
+
+/* Replace goal preset getter used by renderer */
+fuelGetGoalPresets = function() {
+  const profile =
+    fuelLoadNutritionProfile();
+
+  const goal =
+    profile?.goal || "maintain";
+
+  const source =
+    FUEL_GOAL_PRESETS[goal] ||
+    FUEL_GOAL_PRESETS.maintain;
+
+  const scaled = {};
+
+  Object.keys(source).forEach(meal => {
+    scaled[meal] =
+      source[meal].map(
+        fuelScalePresetItem
+      );
+  });
+
+  return scaled;
+};
+
+function fuelUpdatePresetGoalLabels() {
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  const label =
+    fuelGoalLabel();
+
+  panel
+    .querySelectorAll(
+      ".fuel-v577-toggle"
+    )
+    .forEach(toggle => {
+
+      if (
+        toggle.dataset.goalLabelAdded
+      ) return;
+
+      const badge =
+        document.createElement("div");
+
+      badge.className =
+        "fuel-v579-goal-label";
+
+      badge.textContent = label;
+
+      toggle.insertAdjacentElement(
+        "afterend",
+        badge
+      );
+
+      toggle.dataset.goalLabelAdded =
+        "true";
+    });
+}
+
+function fuelEnsureGoalLabelStyles() {
+  if (
+    document.getElementById(
+      "fuel-v579-goal-style"
+    )
+  ) return;
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "fuel-v579-goal-style";
+
+  style.textContent = `
+    .fuel-v579-goal-label{
+      margin:7px 2px 0;
+      color:#9f9f9f;
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.04em;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+const fuelRenderV578 =
+  fuelRender;
+
+fuelRender = function() {
+  fuelRenderV578();
+
+  fuelEnsureGoalLabelStyles();
+
+  fuelRenderPresets();
+
+  fuelUpdatePresetGoalLabels();
+};
+
+fuelEnsureGoalLabelStyles();
+fuelRenderPresets();
+fuelUpdatePresetGoalLabels(); 
 })();
