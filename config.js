@@ -10,4 +10,7 @@ window.MANA_CONFIG = {
   const mobile=document.createElement('script');
   mobile.src='v5_6_mobile_scale.js?v=5.6.0';
   document.head.appendChild(mobile);
+  const fuel=document.createElement('script');
+fuel.src='v5_7_fuel_tracker.js?v=5.7.0';
+document.head.appendChild(fuel);
 })();
