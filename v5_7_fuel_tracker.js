@@ -2601,5 +2601,424 @@ fuelRender = function() {
   fuelMakePresetsCollapsible();
 };
 
-fuelMakePresetsCollapsible();
+fuelMakePresetsCollapsible();/* =========================================
+   FUEL v5.7.8 — GOAL-BASED MEAL PRESETS
+   ========================================= */
+
+const FUEL_GOAL_PRESETS = {
+
+  fatLoss: {
+    Breakfast: [
+      {
+        food: "Greek yoghurt, berries & oats",
+        calories: 380,
+        protein: 28
+      },
+      {
+        food: "Eggs, wholegrain toast & fruit",
+        calories: 410,
+        protein: 30
+      },
+      {
+        food: "Protein smoothie",
+        calories: 350,
+        protein: 35
+      }
+    ],
+
+    Lunch: [
+      {
+        food: "Chicken salad bowl",
+        calories: 480,
+        protein: 45
+      },
+      {
+        food: "Lean beef, rice & vegetables",
+        calories: 520,
+        protein: 42
+      },
+      {
+        food: "Tuna salad wrap",
+        calories: 430,
+        protein: 38
+      }
+    ],
+
+    Dinner: [
+      {
+        food: "Chicken, sweet potato & greens",
+        calories: 520,
+        protein: 48
+      },
+      {
+        food: "Lean beef, vegetables & potato",
+        calories: 560,
+        protein: 45
+      },
+      {
+        food: "White fish, rice & vegetables",
+        calories: 500,
+        protein: 42
+      }
+    ],
+
+    Snacks: [
+      {
+        food: "Greek yoghurt & berries",
+        calories: 180,
+        protein: 18
+      },
+      {
+        food: "Protein shake",
+        calories: 160,
+        protein: 28
+      },
+      {
+        food: "Tuna on one slice toast",
+        calories: 220,
+        protein: 24
+      }
+    ]
+  },
+
+  maintain: {
+    Breakfast: [
+      {
+        food: "Oats, Greek yoghurt & banana",
+        calories: 520,
+        protein: 28
+      },
+      {
+        food: "Eggs, toast & fruit",
+        calories: 460,
+        protein: 30
+      },
+      {
+        food: "Protein smoothie",
+        calories: 430,
+        protein: 35
+      }
+    ],
+
+    Lunch: [
+      {
+        food: "Chicken, rice & vegetables",
+        calories: 620,
+        protein: 45
+      },
+      {
+        food: "Beef mince, rice & vegetables",
+        calories: 680,
+        protein: 42
+      },
+      {
+        food: "Chicken salad wrap",
+        calories: 510,
+        protein: 38
+      }
+    ],
+
+    Dinner: [
+      {
+        food: "Chicken, sweet potato & vegetables",
+        calories: 650,
+        protein: 48
+      },
+      {
+        food: "Lean beef, potato & greens",
+        calories: 700,
+        protein: 45
+      },
+      {
+        food: "Salmon, rice & vegetables",
+        calories: 720,
+        protein: 42
+      }
+    ],
+
+    Snacks: [
+      {
+        food: "Greek yoghurt & fruit",
+        calories: 220,
+        protein: 18
+      },
+      {
+        food: "Protein shake & banana",
+        calories: 280,
+        protein: 28
+      },
+      {
+        food: "Tuna on toast",
+        calories: 320,
+        protein: 30
+      }
+    ]
+  },
+
+  muscleGain: {
+    Breakfast: [
+      {
+        food: "Large oats, yoghurt, banana & honey",
+        calories: 700,
+        protein: 35
+      },
+      {
+        food: "4 eggs, toast, avocado & fruit",
+        calories: 680,
+        protein: 38
+      },
+      {
+        food: "Protein smoothie with oats & banana",
+        calories: 650,
+        protein: 45
+      }
+    ],
+
+    Lunch: [
+      {
+        food: "Chicken, rice, vegetables & avocado",
+        calories: 780,
+        protein: 55
+      },
+      {
+        food: "Beef mince, rice & vegetables",
+        calories: 820,
+        protein: 50
+      },
+      {
+        food: "Chicken pasta bowl",
+        calories: 760,
+        protein: 52
+      }
+    ],
+
+    Dinner: [
+      {
+        food: "Chicken, sweet potato, vegetables & olive oil",
+        calories: 800,
+        protein: 58
+      },
+      {
+        food: "Lean beef, potato, greens & avocado",
+        calories: 850,
+        protein: 55
+      },
+      {
+        food: "Salmon, rice & vegetables",
+        calories: 820,
+        protein: 50
+      }
+    ],
+
+    Snacks: [
+      {
+        food: "Greek yoghurt, fruit & granola",
+        calories: 350,
+        protein: 22
+      },
+      {
+        food: "Protein shake, milk & banana",
+        calories: 420,
+        protein: 38
+      },
+      {
+        food: "Tuna, cheese & toast",
+        calories: 430,
+        protein: 38
+      }
+    ]
+  }
+};
+
+function fuelGetGoalPresets() {
+  const profile =
+    fuelLoadNutritionProfile();
+
+  const goal =
+    profile?.goal || "maintain";
+
+  return (
+    FUEL_GOAL_PRESETS[goal] ||
+    FUEL_GOAL_PRESETS.maintain
+  );
+}
+
+/* Replace preset renderer with goal-aware version */
+fuelRenderPresets = function() {
+  fuelEnsurePresetStyles();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  /* Remove old preset groups first */
+  panel
+    .querySelectorAll(
+      ".fuel-v576-presets"
+    )
+    .forEach(el => el.remove());
+
+  panel
+    .querySelectorAll(
+      ".fuel-v577-toggle"
+    )
+    .forEach(el => el.remove());
+
+  const presetsByMeal =
+    fuelGetGoalPresets();
+
+  const mealRows =
+    panel.querySelectorAll(
+      ".fuel-v57-meal"
+    );
+
+  mealRows.forEach(row => {
+    const nameEl =
+      row.querySelector(
+        ".fuel-v57-meal-name"
+      );
+
+    if (!nameEl) return;
+
+    const mealName =
+      nameEl.textContent.trim();
+
+    const presets =
+      presetsByMeal[mealName];
+
+    if (!presets) return;
+
+    const wrap =
+      document.createElement("div");
+
+    wrap.className =
+      "fuel-v576-presets";
+
+    wrap.setAttribute(
+      "data-fuel-preset-group",
+      mealName
+    );
+
+    wrap.innerHTML = `
+      <div class="fuel-v576-label">
+        Recommended for your goal
+      </div>
+
+      ${presets.map((item, index) => `
+        <button
+          type="button"
+          class="fuel-v576-preset"
+          data-meal="${fuelPresetEscape(mealName)}"
+          data-index="${index}"
+        >
+          <div class="fuel-v576-preset-name">
+            ${fuelPresetEscape(item.food)}
+          </div>
+
+          <div class="fuel-v576-preset-macros">
+            ${item.calories} cal
+            • ${item.protein}g protein
+          </div>
+        </button>
+      `).join("")}
+    `;
+
+    row.insertAdjacentElement(
+      "afterend",
+      wrap
+    );
+  });
+
+  fuelMakePresetsCollapsible();
+};
+
+/* Upgrade preset click handler data source */
+function fuelGetPresetItem(meal, index) {
+  const presets =
+    fuelGetGoalPresets();
+
+  return presets[meal]?.[index] || null;
+}
+
+document.addEventListener(
+  "click",
+  event => {
+    const btn =
+      event.target.closest(
+        ".fuel-v576-preset"
+      );
+
+    if (!btn) return;
+
+    const meal =
+      btn.dataset.meal;
+
+    const index =
+      Number(btn.dataset.index);
+
+    const preset =
+      fuelGetPresetItem(
+        meal,
+        index
+      );
+
+    if (!preset) return;
+
+    /* Stop older v5.7.6 preset handler */
+    event.stopImmediatePropagation();
+
+    const data =
+      fuelLoad();
+
+    if (!data.meals[meal]) {
+      data.meals[meal] = [];
+    }
+
+    data.meals[meal].push({
+      food: preset.food,
+      calories: preset.calories,
+      protein: preset.protein
+    });
+
+    fuelSave(data);
+
+    fuelRender();
+    fuelRenderItems();
+    fuelRenderTargets();
+
+    setTimeout(() => {
+      const group =
+        document.querySelector(
+          `[data-fuel-preset-group="${meal}"]`
+        );
+
+      const toggle =
+        document.querySelector(
+          `[data-fuel-toggle="${meal}"]`
+        );
+
+      if (group) {
+        group.classList.remove("open");
+      }
+
+      if (toggle) {
+        toggle.textContent =
+          "Choose a meal ▼";
+      }
+    }, 50);
+  },
+  true
+);
+
+const fuelRenderV577 = fuelRender;
+
+fuelRender = function() {
+  fuelRenderV577();
+  fuelRenderPresets();
+};
+
+fuelRenderPresets();  
 })();
