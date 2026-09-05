@@ -4795,4 +4795,71 @@ setTimeout(
   fuelRefreshFavouritesV593,
   150
 );
+/* =========================================
+   FUEL v5.9.3.1 — FAVOURITE STAR FIX
+   ========================================= */
+
+fuelAddFavouriteButtonsToRecentV593 =
+function() {
+
+  const recent =
+    fuelLoadRecentV59();
+
+  document
+    .querySelectorAll(
+      ".fuel-v59-item"
+    )
+    .forEach((itemEl, index) => {
+
+      itemEl
+        .querySelectorAll(
+          ".fuel-v593-recent-star"
+        )
+        .forEach(el => el.remove());
+
+      const item =
+        recent[index];
+
+      if (!item) return;
+
+      /*
+        Use a span instead of a button
+        because the Recent Meal itself
+        is already a button.
+      */
+      const star =
+        document.createElement("span");
+
+      star.className =
+        "fuel-v593-recent-star";
+
+      star.dataset.fuelFavouriteToggle =
+        String(index);
+
+      star.textContent =
+        fuelIsFavouriteV593(item)
+          ? "★"
+          : "☆";
+
+      star.setAttribute(
+        "role",
+        "button"
+      );
+
+      star.setAttribute(
+        "aria-label",
+        "Toggle favourite meal"
+      );
+
+      star.style.display =
+        "inline-grid";
+
+      star.style.placeItems =
+        "center";
+
+      itemEl.appendChild(star);
+    });
+};
+
+fuelRefreshFavouritesV593(); 
 })();
