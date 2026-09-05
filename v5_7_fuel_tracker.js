@@ -3732,4 +3732,57 @@ window.addEventListener(
   },
   true
 );
+/* =========================================
+   FUEL v5.8.2.1 — RESTORE PRESET STYLING
+   ========================================= */
+
+const fuelV5821Style =
+  document.createElement("style");
+
+fuelV5821Style.id =
+  "fuel-v5821-preset-style";
+
+fuelV5821Style.textContent = `
+  .fuel-v581-preset{
+    width:100%;
+    box-sizing:border-box;
+    text-align:left;
+    background:#0d0d0d;
+    border:1px solid #303030;
+    border-radius:16px;
+    padding:14px 15px;
+    color:#fff;
+    cursor:pointer;
+  }
+
+  .fuel-v581-preset
+  .fuel-v576-preset-name{
+    color:#fff;
+    font-size:15px;
+    font-weight:700;
+    line-height:1.35;
+  }
+
+  .fuel-v581-preset
+  .fuel-v576-preset-macros{
+    margin-top:5px;
+    color:#a9a9a9;
+    font-size:13px;
+  }
+
+  .fuel-v581-preset:active{
+    border-color:#6d5c21;
+    background:#15130b;
+  }
+`;
+
+if (
+  !document.getElementById(
+    "fuel-v5821-preset-style"
+  )
+) {
+  document.head.appendChild(
+    fuelV5821Style
+  );
+}  
 })();
