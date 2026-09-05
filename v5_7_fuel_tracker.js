@@ -1074,4 +1074,620 @@ fuelRender = function() {
 };
 
 fuelRenderTargets();   
+/* =========================================
+   FUEL v5.7.4 — PERSONAL NUTRITION ENGINE
+   ========================================= */
+
+const FUEL_PROFILE_KEY = "mana-fuel-profile-v574";
+
+function fuelLoadNutritionProfile() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(FUEL_PROFILE_KEY) || "null"
+    );
+  } catch (err) {
+    return null;
+  }
+}
+
+function fuelSaveNutritionProfile(profile) {
+  localStorage.setItem(
+    FUEL_PROFILE_KEY,
+    JSON.stringify(profile)
+  );
+}
+
+/* Mifflin-St Jeor starting estimate */
+function fuelCalculatePersonalTargets(profile) {
+  const weight = Number(profile.weight);
+  const height = Number(profile.height);
+  const age = Number(profile.age);
+
+  if (
+    !weight ||
+    !height ||
+    !age ||
+    !profile.sex ||
+    !profile.activity ||
+    !profile.goal
+  ) {
+    return {
+      calories: 2200,
+      protein: 150
+    };
+  }
+
+  let bmr;
+
+  if (profile.sex === "male") {
+    bmr =
+      (10 * weight) +
+      (6.25 * height) -
+      (5 * age) +
+      5;
+  } else {
+    bmr =
+      (10 * weight) +
+      (6.25 * height) -
+      (5 * age) -
+      161;
+  }
+
+  const activityMultipliers = {
+    sedentary: 1.2,
+    light: 1.375,
+    moderate: 1.55,
+    high: 1.725,
+    veryHigh: 1.9
+  };
+
+  const activity =
+    activityMultipliers[profile.activity] || 1.55;
+
+  let calories = bmr * activity;
+
+  if (profile.goal === "fatLoss") {
+    calories *= 0.85;
+  }
+
+  if (profile.goal === "muscleGain") {
+    calories *= 1.10;
+  }
+
+  calories =
+    Math.round(calories / 50) * 50;
+
+  let proteinMultiplier = 1.6;
+
+  if (profile.goal === "fatLoss") {
+    proteinMultiplier = 2.0;
+  }
+
+  if (profile.goal === "muscleGain") {
+    proteinMultiplier = 1.8;
+  }
+
+  let protein =
+    weight * proteinMultiplier;
+
+  protein =
+    Math.round(protein / 5) * 5;
+
+  return {
+    calories,
+    protein
+  };
+}
+
+/* Replace the old fixed target loader */
+fuelLoadTargets = function() {
+  const profile =
+    fuelLoadNutritionProfile();
+
+  if (!profile) {
+    return {
+      calories: 2200,
+      protein: 150
+    };
+  }
+
+  return fuelCalculatePersonalTargets(profile);
+};
+
+function fuelCreateProfileModal() {
+  if (
+    document.getElementById(
+      "fuelV574ProfileModal"
+    )
+  ) return;
+
+  const style =
+    document.createElement("style");
+
+  style.id = "fuel-v574-profile-style";
+
+  style.textContent = `
+    #fuelV574ProfileModal{
+      position:fixed;
+      inset:0;
+      z-index:100000;
+      background:rgba(0,0,0,.82);
+      display:none;
+      align-items:flex-end;
+    }
+
+    #fuelV574ProfileModal.open{
+      display:flex;
+    }
+
+    .fuel-v574-sheet{
+      width:100%;
+      max-height:90vh;
+      overflow:auto;
+      box-sizing:border-box;
+      background:#111;
+      border:1px solid #333;
+      border-radius:28px 28px 0 0;
+      padding:24px 22px
+        calc(28px + env(safe-area-inset-bottom));
+    }
+
+    .fuel-v574-sheet h2{
+      margin:0 0 6px;
+      font-size:28px;
+    }
+
+    .fuel-v574-intro{
+      color:#aaa;
+      font-size:14px;
+      margin-bottom:20px;
+      line-height:1.5;
+    }
+
+    .fuel-v574-label{
+      display:block;
+      color:#f5d86e;
+      font-size:13px;
+      font-weight:700;
+      margin:13px 0 7px;
+    }
+
+    .fuel-v574-field{
+      width:100%;
+      box-sizing:border-box;
+      padding:15px;
+      border-radius:15px;
+      border:1px solid #393939;
+      background:#090909;
+      color:#fff;
+      font-size:17px;
+    }
+
+    .fuel-v574-save{
+      width:100%;
+      margin-top:22px;
+      padding:17px;
+      border:0;
+      border-radius:18px;
+      background:#f5d86e;
+      color:#111;
+      font-size:18px;
+      font-weight:800;
+    }
+
+    .fuel-v574-cancel{
+      width:100%;
+      padding:14px;
+      border:0;
+      background:transparent;
+      color:#aaa;
+      font-size:16px;
+    }
+
+    .fuel-v574-profile-card{
+      margin-top:16px;
+      padding:18px;
+      background:#101010;
+      border:1px solid #2b2b2b;
+      border-radius:20px;
+    }
+
+    .fuel-v574-profile-btn{
+      width:100%;
+      border:1px solid #5d5124;
+      background:#15130b;
+      color:#f5d86e;
+      padding:14px;
+      border-radius:16px;
+      font-size:16px;
+      font-weight:700;
+    }
+
+    .fuel-v574-summary{
+      margin-top:12px;
+      color:#aaa;
+      font-size:13px;
+      line-height:1.5;
+    }
+  `;
+
+  document.head.appendChild(style);
+
+  const modal =
+    document.createElement("div");
+
+  modal.id = "fuelV574ProfileModal";
+
+  modal.innerHTML = `
+    <div class="fuel-v574-sheet">
+
+      <h2>Nutrition profile</h2>
+
+      <div class="fuel-v574-intro">
+        Mana uses these details to calculate
+        a personalised daily starting target.
+      </div>
+
+      <label class="fuel-v574-label">
+        Age
+      </label>
+
+      <input
+        id="fuelV574Age"
+        class="fuel-v574-field"
+        type="number"
+        inputmode="numeric"
+        placeholder="Age"
+      >
+
+      <label class="fuel-v574-label">
+        Height
+      </label>
+
+      <input
+        id="fuelV574Height"
+        class="fuel-v574-field"
+        type="number"
+        inputmode="decimal"
+        placeholder="Height in cm"
+      >
+
+      <label class="fuel-v574-label">
+        Weight
+      </label>
+
+      <input
+        id="fuelV574Weight"
+        class="fuel-v574-field"
+        type="number"
+        inputmode="decimal"
+        placeholder="Weight in kg"
+      >
+
+      <label class="fuel-v574-label">
+        Sex used for calorie calculation
+      </label>
+
+      <select
+        id="fuelV574Sex"
+        class="fuel-v574-field"
+      >
+        <option value="">Select</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+
+      <label class="fuel-v574-label">
+        Activity level
+      </label>
+
+      <select
+        id="fuelV574Activity"
+        class="fuel-v574-field"
+      >
+        <option value="">
+          Select activity
+        </option>
+
+        <option value="sedentary">
+          Low activity
+        </option>
+
+        <option value="light">
+          Light — 1–3 sessions/week
+        </option>
+
+        <option value="moderate">
+          Moderate — 3–5 sessions/week
+        </option>
+
+        <option value="high">
+          High — 6–7 sessions/week
+        </option>
+
+        <option value="veryHigh">
+          Very high / physical job
+        </option>
+      </select>
+
+      <label class="fuel-v574-label">
+        Goal
+      </label>
+
+      <select
+        id="fuelV574Goal"
+        class="fuel-v574-field"
+      >
+        <option value="">
+          Select goal
+        </option>
+
+        <option value="fatLoss">
+          Fat loss
+        </option>
+
+        <option value="maintain">
+          Maintain
+        </option>
+
+        <option value="muscleGain">
+          Build muscle
+        </option>
+      </select>
+
+      <button
+        id="fuelV574Save"
+        class="fuel-v574-save"
+        type="button"
+      >
+        Calculate my targets
+      </button>
+
+      <button
+        id="fuelV574Cancel"
+        class="fuel-v574-cancel"
+        type="button"
+      >
+        Cancel
+      </button>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+function fuelEnsureProfileCard() {
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  let card =
+    document.getElementById(
+      "fuelV574ProfileCard"
+    );
+
+  if (!card) {
+    card = document.createElement("div");
+
+    card.id = "fuelV574ProfileCard";
+    card.className =
+      "fuel-v574-profile-card";
+
+    const grid =
+      panel.querySelector(
+        ".fuel-v57-grid"
+      );
+
+    if (grid) {
+      grid.insertAdjacentElement(
+        "afterend",
+        card
+      );
+    }
+  }
+
+  const profile =
+    fuelLoadNutritionProfile();
+
+  const targets =
+    fuelLoadTargets();
+
+  if (!profile) {
+    card.innerHTML = `
+      <button
+        class="fuel-v574-profile-btn"
+        id="fuelV574Open"
+        type="button"
+      >
+        Set personalised nutrition target
+      </button>
+
+      <div class="fuel-v574-summary">
+        Add your body details, activity and
+        goal to personalise calories and protein.
+      </div>
+    `;
+
+    return;
+  }
+
+  const goalNames = {
+    fatLoss: "Fat loss",
+    maintain: "Maintain",
+    muscleGain: "Build muscle"
+  };
+
+  card.innerHTML = `
+    <button
+      class="fuel-v574-profile-btn"
+      id="fuelV574Open"
+      type="button"
+    >
+      Update nutrition profile
+    </button>
+
+    <div class="fuel-v574-summary">
+      ${profile.age} yrs
+      • ${profile.height} cm
+      • ${profile.weight} kg
+      • ${goalNames[profile.goal] || profile.goal}
+      <br>
+      Mana target:
+      ${targets.calories.toLocaleString()} cal
+      • ${targets.protein}g protein
+    </div>
+  `;
+}
+
+function fuelOpenProfileModal() {
+  fuelCreateProfileModal();
+
+  const profile =
+    fuelLoadNutritionProfile();
+
+  if (profile) {
+    document.getElementById(
+      "fuelV574Age"
+    ).value = profile.age || "";
+
+    document.getElementById(
+      "fuelV574Height"
+    ).value = profile.height || "";
+
+    document.getElementById(
+      "fuelV574Weight"
+    ).value = profile.weight || "";
+
+    document.getElementById(
+      "fuelV574Sex"
+    ).value = profile.sex || "";
+
+    document.getElementById(
+      "fuelV574Activity"
+    ).value = profile.activity || "";
+
+    document.getElementById(
+      "fuelV574Goal"
+    ).value = profile.goal || "";
+  }
+
+  document
+    .getElementById(
+      "fuelV574ProfileModal"
+    )
+    .classList.add("open");
+}
+
+document.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target.closest(
+        "#fuelV574Open"
+      )
+    ) {
+      fuelOpenProfileModal();
+      return;
+    }
+
+    if (
+      event.target.id ===
+      "fuelV574Cancel"
+    ) {
+      document
+        .getElementById(
+          "fuelV574ProfileModal"
+        )
+        ?.classList.remove("open");
+
+      return;
+    }
+
+    if (
+      event.target.id ===
+      "fuelV574Save"
+    ) {
+      const profile = {
+        age:
+          Number(
+            document.getElementById(
+              "fuelV574Age"
+            ).value
+          ),
+
+        height:
+          Number(
+            document.getElementById(
+              "fuelV574Height"
+            ).value
+          ),
+
+        weight:
+          Number(
+            document.getElementById(
+              "fuelV574Weight"
+            ).value
+          ),
+
+        sex:
+          document.getElementById(
+            "fuelV574Sex"
+          ).value,
+
+        activity:
+          document.getElementById(
+            "fuelV574Activity"
+          ).value,
+
+        goal:
+          document.getElementById(
+            "fuelV574Goal"
+          ).value
+      };
+
+      if (
+        !profile.age ||
+        !profile.height ||
+        !profile.weight ||
+        !profile.sex ||
+        !profile.activity ||
+        !profile.goal
+      ) {
+        alert(
+          "Please complete all profile fields."
+        );
+
+        return;
+      }
+
+      fuelSaveNutritionProfile(profile);
+
+      document
+        .getElementById(
+          "fuelV574ProfileModal"
+        )
+        .classList.remove("open");
+
+      fuelRender();
+      fuelRenderTargets();
+      fuelEnsureProfileCard();
+    }
+  }
+);
+
+const fuelRenderV573 = fuelRender;
+
+fuelRender = function() {
+  fuelRenderV573();
+  fuelEnsureProfileCard();
+};
+
+fuelCreateProfileModal();
+fuelEnsureProfileCard();
+fuelRenderTargets();   
 })();
