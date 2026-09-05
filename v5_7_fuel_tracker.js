@@ -4208,4 +4208,115 @@ setTimeout(
   fuelRenderRecentV59,
   50
 ); 
+  /* =========================================
+   FUEL v5.9.2 — RECENT MEALS PLACEMENT HARD FIX
+   ========================================= */
+
+fuelRenderRecentV59 = function() {
+  fuelEnsureRecentStylesV59();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  panel
+    .querySelectorAll(
+      ".fuel-v59-recent"
+    )
+    .forEach(el => el.remove());
+
+  const recent =
+    fuelLoadRecentV59();
+
+  if (!recent.length) return;
+
+  /*
+    Find the exact element containing
+    the Today's meals heading.
+  */
+  const heading =
+    Array.from(
+      panel.querySelectorAll("*")
+    ).find(el => {
+
+      if (el.children.length) return false;
+
+      const text =
+        el.textContent
+          ?.trim()
+          .toLowerCase();
+
+      return (
+        text === "today's meals" ||
+        text === "todays meals"
+      );
+    });
+
+  if (!heading) return;
+
+  /*
+    Find the card/container that holds
+    Today's meals.
+  */
+  const card =
+    heading.closest(
+      ".card, section, article, div"
+    );
+
+  if (!card) return;
+
+  const box =
+    document.createElement("div");
+
+  box.className =
+    "fuel-v59-recent";
+
+  box.innerHTML = `
+    <div class="fuel-v59-title">
+      Recent meals
+    </div>
+
+    <div class="fuel-v59-list">
+      ${recent.slice(0, 3).map(
+        (item, index) => `
+          <button
+            type="button"
+            class="fuel-v59-item"
+            data-fuel-recent="${index}"
+          >
+            <div class="fuel-v59-name">
+              ${item.food}
+            </div>
+
+            <div class="fuel-v59-macros">
+              ${item.calories} cal
+              • ${item.protein}g protein
+            </div>
+
+            <div class="fuel-v59-repeat">
+              Tap to repeat
+            </div>
+          </button>
+        `
+      ).join("")}
+    </div>
+  `;
+
+  /*
+    Put it directly below the heading
+    inside the Today's meals card.
+  */
+  heading.insertAdjacentElement(
+    "afterend",
+    box
+  );
+};
+
+setTimeout(
+  fuelRenderRecentV59,
+  100
+);
 })();
