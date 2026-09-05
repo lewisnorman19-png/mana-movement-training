@@ -4109,5 +4109,103 @@ fuelRender = function() {
   );
 };
 
-fuelRenderRecentV59();  
+fuelRenderRecentV59(); 
+ /* =========================================
+   FUEL v5.9.1 — RECENT MEALS PLACEMENT FIX
+   ========================================= */
+
+fuelRenderRecentV59 = function() {
+  fuelEnsureRecentStylesV59();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  panel
+    .querySelectorAll(
+      ".fuel-v59-recent"
+    )
+    .forEach(el => el.remove());
+
+  const recent =
+    fuelLoadRecentV59();
+
+  if (!recent.length) return;
+
+  /*
+    Find the element containing
+    "Today's meals" regardless of tag.
+  */
+  const mealsHeading =
+    Array.from(
+      panel.querySelectorAll("*")
+    ).find(el => {
+
+      const text =
+        el.textContent
+          ?.trim()
+          .toLowerCase();
+
+      return (
+        text === "today's meals" ||
+        text === "todays meals"
+      );
+    });
+
+  if (!mealsHeading) return;
+
+  const box =
+    document.createElement("div");
+
+  box.className =
+    "fuel-v59-recent";
+
+  box.innerHTML = `
+    <div class="fuel-v59-title">
+      Recent meals
+    </div>
+
+    <div class="fuel-v59-list">
+      ${recent.slice(0, 3).map(
+        (item, index) => `
+          <button
+            type="button"
+            class="fuel-v59-item"
+            data-fuel-recent="${index}"
+          >
+            <div class="fuel-v59-name">
+              ${item.food}
+            </div>
+
+            <div class="fuel-v59-macros">
+              ${item.calories} cal
+              • ${item.protein}g protein
+            </div>
+
+            <div class="fuel-v59-repeat">
+              Tap to repeat
+            </div>
+          </button>
+        `
+      ).join("")}
+    </div>
+  `;
+
+  /*
+    Put Recent Meals underneath
+    the Today's meals heading.
+  */
+  mealsHeading.insertAdjacentElement(
+    "afterend",
+    box
+  );
+};
+
+setTimeout(
+  fuelRenderRecentV59,
+  50
+); 
 })();
