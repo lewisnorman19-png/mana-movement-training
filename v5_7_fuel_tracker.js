@@ -3241,4 +3241,375 @@ fuelUpdatePresetGoalLabels = function() {
 };
 
 fuelUpdatePresetGoalLabels(); 
+   /* =========================================
+   FUEL v5.8 — PORTION SELECTOR
+   ========================================= */
+
+const FUEL_PORTION_MULTIPLIERS = {
+  light: {
+    label: "Light",
+    multiplier: 0.8
+  },
+  standard: {
+    label: "Standard",
+    multiplier: 1
+  },
+  large: {
+    label: "Large",
+    multiplier: 1.2
+  }
+};
+
+let fuelPendingPreset = null;
+
+function fuelEnsurePortionStyles() {
+  if (
+    document.getElementById(
+      "fuel-v58-portion-style"
+    )
+  ) return;
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "fuel-v58-portion-style";
+
+  style.textContent = `
+    #fuelV58PortionModal{
+      position:fixed;
+      inset:0;
+      z-index:100005;
+      background:rgba(0,0,0,.82);
+      display:none;
+      align-items:flex-end;
+    }
+
+    #fuelV58PortionModal.open{
+      display:flex;
+    }
+
+    .fuel-v58-sheet{
+      width:100%;
+      box-sizing:border-box;
+      background:#111;
+      border:1px solid #333;
+      border-radius:28px 28px 0 0;
+      padding:24px 22px
+        calc(28px + env(safe-area-inset-bottom));
+    }
+
+    .fuel-v58-sheet h2{
+      margin:0 0 8px;
+      font-size:28px;
+    }
+
+    .fuel-v58-food{
+      color:#f5d86e;
+      font-size:17px;
+      font-weight:800;
+      margin-bottom:18px;
+      line-height:1.35;
+    }
+
+    .fuel-v58-options{
+      display:grid;
+      gap:11px;
+    }
+
+    .fuel-v58-option{
+      width:100%;
+      padding:16px;
+      border-radius:17px;
+      border:1px solid #353535;
+      background:#0b0b0b;
+      color:#fff;
+      text-align:left;
+    }
+
+    .fuel-v58-option-title{
+      font-size:17px;
+      font-weight:800;
+    }
+
+    .fuel-v58-option-macros{
+      margin-top:5px;
+      color:#aaa;
+      font-size:14px;
+    }
+
+    .fuel-v58-option.standard{
+      border-color:#6d5c21;
+      background:#15130b;
+    }
+
+    .fuel-v58-cancel{
+      width:100%;
+      margin-top:10px;
+      padding:14px;
+      border:0;
+      background:transparent;
+      color:#aaa;
+      font-size:16px;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function fuelCreatePortionModal() {
+  if (
+    document.getElementById(
+      "fuelV58PortionModal"
+    )
+  ) return;
+
+  fuelEnsurePortionStyles();
+
+  const modal =
+    document.createElement("div");
+
+  modal.id =
+    "fuelV58PortionModal";
+
+  modal.innerHTML = `
+    <div class="fuel-v58-sheet">
+
+      <h2>Choose portion</h2>
+
+      <div
+        id="fuelV58Food"
+        class="fuel-v58-food"
+      ></div>
+
+      <div
+        id="fuelV58Options"
+        class="fuel-v58-options"
+      ></div>
+
+      <button
+        id="fuelV58Cancel"
+        class="fuel-v58-cancel"
+        type="button"
+      >
+        Cancel
+      </button>
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+function fuelPortionValues(
+  preset,
+  multiplier
+) {
+  return {
+    calories:
+      Math.round(
+        (preset.calories * multiplier) / 10
+      ) * 10,
+
+    protein:
+      Math.max(
+        1,
+        Math.round(
+          preset.protein * multiplier
+        )
+      )
+  };
+}
+
+function fuelOpenPortionModal(
+  meal,
+  preset
+) {
+  fuelCreatePortionModal();
+
+  fuelPendingPreset = {
+    meal,
+    preset
+  };
+
+  document.getElementById(
+    "fuelV58Food"
+  ).textContent =
+    preset.food;
+
+  const options =
+    document.getElementById(
+      "fuelV58Options"
+    );
+
+  options.innerHTML =
+    Object.entries(
+      FUEL_PORTION_MULTIPLIERS
+    )
+    .map(([key, portion]) => {
+
+      const values =
+        fuelPortionValues(
+          preset,
+          portion.multiplier
+        );
+
+      return `
+        <button
+          type="button"
+          class="fuel-v58-option ${key}"
+          data-fuel-portion="${key}"
+        >
+          <div
+            class="fuel-v58-option-title"
+          >
+            ${portion.label}
+          </div>
+
+          <div
+            class="fuel-v58-option-macros"
+          >
+            ${values.calories} cal
+            • ${values.protein}g protein
+          </div>
+        </button>
+      `;
+    })
+    .join("");
+
+  document
+    .getElementById(
+      "fuelV58PortionModal"
+    )
+    .classList.add("open");
+}
+
+function fuelSavePortionChoice(
+  portionKey
+) {
+  if (!fuelPendingPreset) return;
+
+  const portion =
+    FUEL_PORTION_MULTIPLIERS[
+      portionKey
+    ];
+
+  if (!portion) return;
+
+  const {
+    meal,
+    preset
+  } = fuelPendingPreset;
+
+  const values =
+    fuelPortionValues(
+      preset,
+      portion.multiplier
+    );
+
+  const data =
+    fuelLoad();
+
+  if (!data.meals[meal]) {
+    data.meals[meal] = [];
+  }
+
+  data.meals[meal].push({
+    food:
+      `${preset.food} — ${portion.label}`,
+    calories:
+      values.calories,
+    protein:
+      values.protein
+  });
+
+  fuelSave(data);
+
+  fuelPendingPreset = null;
+
+  document
+    .getElementById(
+      "fuelV58PortionModal"
+    )
+    ?.classList.remove("open");
+
+  fuelRender();
+  fuelRenderItems();
+  fuelRenderTargets();
+}
+
+/*
+  Capture preset taps BEFORE
+  older preset handlers run.
+*/
+document.addEventListener(
+  "click",
+  event => {
+
+    const btn =
+      event.target.closest(
+        ".fuel-v576-preset"
+      );
+
+    if (!btn) return;
+
+    const meal =
+      btn.dataset.meal;
+
+    const index =
+      Number(
+        btn.dataset.index
+      );
+
+    const preset =
+      fuelGetPresetItem(
+        meal,
+        index
+      );
+
+    if (!preset) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    fuelOpenPortionModal(
+      meal,
+      preset
+    );
+  },
+  true
+);
+
+document.addEventListener(
+  "click",
+  event => {
+
+    const portionBtn =
+      event.target.closest(
+        "[data-fuel-portion]"
+      );
+
+    if (portionBtn) {
+      fuelSavePortionChoice(
+        portionBtn.dataset.fuelPortion
+      );
+      return;
+    }
+
+    if (
+      event.target.id ===
+      "fuelV58Cancel"
+    ) {
+      fuelPendingPreset = null;
+
+      document
+        .getElementById(
+          "fuelV58PortionModal"
+        )
+        ?.classList.remove("open");
+    }
+  }
+);
+
+fuelCreatePortionModal();
 })();
