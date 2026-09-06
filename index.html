@@ -1084,7 +1084,31 @@
     .coach-alert-filter-note{
       margin-top:10px;color:#9a9a9a;font-size:12px
     }
+/* =========================================
+   HOME v6.2 — TAPPABLE PROGRAM CARDS
+   ========================================= */
 
+.mana-home-program{
+  cursor:pointer;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+  transition:
+    transform .12s ease,
+    background .12s ease;
+}
+
+.mana-home-program:active{
+  transform:scale(.985);
+  background:rgba(243,216,117,.05);
+}
+
+.mana-home-arrow{
+  align-self:center;
+  color:#f3d875;
+  font-size:34px;
+  line-height:1;
+  padding-left:10px;
+}
 </style>
 </head>
 <body>
@@ -4062,7 +4086,72 @@ window.MANA28_PROGRAM = {"1": {"category": "Strength", "title": "Full Body Stren
     console.warn("persistent auth init", e);
   }
 })();
+/* =========================================
+   HOME v6.2.1 — TAP PROGRAM ROWS
+   ========================================= */
 
-</script>
+(function () {
+
+  function makeHomeProgramRowsClickable() {
+
+    const allElements =
+      Array.from(document.querySelectorAll("*"));
+
+    const mana28Label =
+      allElements.find(el =>
+        el.textContent?.trim() === "MANA 28"
+      );
+
+    if (!mana28Label) return;
+
+    const mana28Row =
+      mana28Label.closest(".day");
+
+    if (!mana28Row) return;
+
+    mana28Row.classList.add(
+      "mana-home-program"
+    );
+
+    if (
+      !mana28Row.querySelector(
+        ".mana-home-arrow"
+      )
+    ) {
+      const arrow =
+        document.createElement("div");
+
+      arrow.className =
+        "mana-home-arrow";
+
+      arrow.textContent =
+        "›";
+
+      mana28Row.appendChild(
+        arrow
+      );
+    }
+
+    if (
+      mana28Row.dataset.homeProgramReady
+    ) return;
+
+    mana28Row.dataset.homeProgramReady =
+      "true";
+
+    mana28Row.addEventListener(
+      "click",
+      () => {
+        showClientProgramsView();
+      }
+    );
+  }
+
+  setTimeout(
+    makeHomeProgramRowsClickable,
+    300
+  );
+
+})();</script>
 
 </body></html>
