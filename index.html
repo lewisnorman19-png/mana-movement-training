@@ -4087,27 +4087,29 @@ window.MANA28_PROGRAM = {"1": {"category": "Strength", "title": "Full Body Stren
   }
 })();
 /* =========================================
-   HOME v6.2.1 — TAP PROGRAM ROWS
+   HOME v6.2.2 — PROGRAM ROW WATCHER
    ========================================= */
 
 (function () {
 
-  function makeHomeProgramRowsClickable() {
+  function wireMana28HomeRow() {
 
-    const allElements =
-      Array.from(document.querySelectorAll("*"));
+    const labels =
+      Array.from(
+        document.querySelectorAll("*")
+      );
 
     const mana28Label =
-      allElements.find(el =>
+      labels.find(el =>
         el.textContent?.trim() === "MANA 28"
       );
 
-    if (!mana28Label) return;
+    if (!mana28Label) return false;
 
     const mana28Row =
       mana28Label.closest(".day");
 
-    if (!mana28Row) return;
+    if (!mana28Row) return false;
 
     mana28Row.classList.add(
       "mana-home-program"
@@ -4127,29 +4129,39 @@ window.MANA28_PROGRAM = {"1": {"category": "Strength", "title": "Full Body Stren
       arrow.textContent =
         "›";
 
-      mana28Row.appendChild(
-        arrow
-      );
+      mana28Row.appendChild(arrow);
     }
 
     if (
-      mana28Row.dataset.homeProgramReady
-    ) return;
+      !mana28Row.dataset.homeProgramReady
+    ) {
+      mana28Row.dataset.homeProgramReady =
+        "true";
 
-    mana28Row.dataset.homeProgramReady =
-      "true";
+      mana28Row.addEventListener(
+        "click",
+        () => {
+          showClientProgramsView();
+        }
+      );
+    }
 
-    mana28Row.addEventListener(
-      "click",
-      () => {
-        showClientProgramsView();
-      }
-    );
+    return true;
   }
 
-  setTimeout(
-    makeHomeProgramRowsClickable,
-    300
+  wireMana28HomeRow();
+
+  const homeProgramObserver =
+    new MutationObserver(() => {
+      wireMana28HomeRow();
+    });
+
+  homeProgramObserver.observe(
+    document.body,
+    {
+      childList: true,
+      subtree: true
+    }
   );
 
 })();</script>
