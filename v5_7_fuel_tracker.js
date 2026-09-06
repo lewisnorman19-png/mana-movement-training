@@ -5379,5 +5379,494 @@ fuelRender = function() {
 setTimeout(
   fuelRenderDailyProgressV60,
   150
+); 
+/* =========================================
+   FUEL v6.1 — 7 DAY NUTRITION HISTORY
+   ========================================= */
+
+const FUEL_TARGET_HISTORY_KEY =
+  "mana-fuel-target-history-v61";
+
+function fuelLoadAllDaysV61() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(
+        FUEL_STORE_KEY
+      ) || "{}"
+    );
+  } catch (err) {
+    return {};
+  }
+}
+
+function fuelLoadTargetHistoryV61() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(
+        FUEL_TARGET_HISTORY_KEY
+      ) || "{}"
+    );
+  } catch (err) {
+    return {};
+  }
+}
+
+function fuelSaveTodayTargetV61() {
+  const history =
+    fuelLoadTargetHistoryV61();
+
+  const targets =
+    fuelLoadTargets();
+
+  history[fuelTodayKey()] = {
+    calories:
+      Number(targets.calories) || 0,
+    protein:
+      Number(targets.protein) || 0
+  };
+
+  localStorage.setItem(
+    FUEL_TARGET_HISTORY_KEY,
+    JSON.stringify(history)
+  );
+}
+
+function fuelDateKeyV61(date) {
+  return [
+    date.getFullYear(),
+    String(
+      date.getMonth() + 1
+    ).padStart(2, "0"),
+    String(
+      date.getDate()
+    ).padStart(2, "0")
+  ].join("-");
+}
+
+function fuelDayLabelV61(date, offset) {
+  if (offset === 0) {
+    return "Today";
+  }
+
+  if (offset === 1) {
+    return "Yesterday";
+  }
+
+  return date.toLocaleDateString(
+    undefined,
+    {
+      weekday: "short"
+    }
+  );
+}
+
+function fuelEnsureWeeklyStylesV61() {
+  if (
+    document.getElementById(
+      "fuel-v61-week-style"
+    )
+  ) return;
+
+  const style =
+    document.createElement("style");
+
+  style.id =
+    "fuel-v61-week-style";
+
+  style.textContent = `
+    .fuel-v61-week{
+      margin:20px 0;
+      padding:20px;
+      border:1px solid #3b3520;
+      border-radius:20px;
+      background:#10100e;
+    }
+
+    .fuel-v61-title{
+      color:#fff;
+      font-size:22px;
+      font-weight:800;
+      margin-bottom:5px;
+    }
+
+    .fuel-v61-sub{
+      color:#999;
+      font-size:13px;
+      margin-bottom:18px;
+    }
+
+    .fuel-v61-summary{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      margin-bottom:18px;
+    }
+
+    .fuel-v61-summary-card{
+      padding:14px;
+      border:1px solid #303030;
+      border-radius:15px;
+      background:#0b0b0b;
+    }
+
+    .fuel-v61-summary-label{
+      color:#999;
+      font-size:12px;
+      margin-bottom:5px;
+    }
+
+    .fuel-v61-summary-value{
+      color:#f5d86e;
+      font-size:23px;
+      line-height:1.1;
+      font-weight:800;
+    }
+
+    .fuel-v61-days{
+      display:grid;
+    }
+
+    .fuel-v61-day{
+      padding:13px 0;
+      border-top:1px solid #292929;
+    }
+
+    .fuel-v61-day:first-child{
+      border-top:0;
+    }
+
+    .fuel-v61-row{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+    }
+
+    .fuel-v61-day-name{
+      color:#fff;
+      font-size:15px;
+      font-weight:700;
+    }
+
+    .fuel-v61-calories{
+      color:#f5d86e;
+      font-size:14px;
+      font-weight:700;
+    }
+
+    .fuel-v61-meta{
+      margin-top:4px;
+      color:#999;
+      font-size:12px;
+    }
+
+    .fuel-v61-bar{
+      height:6px;
+      border-radius:999px;
+      overflow:hidden;
+      background:#282828;
+      margin-top:8px;
+    }
+
+    .fuel-v61-fill{
+      height:100%;
+      border-radius:999px;
+      background:#f5d86e;
+    }
+
+    .fuel-v61-empty{
+      color:#777;
+      font-size:13px;
+    }
+  `;
+
+  document.head.appendChild(
+    style
+  );
+}
+
+function fuelBuildSevenDaysV61() {
+  const allDays =
+    fuelLoadAllDaysV61();
+
+  const targetHistory =
+    fuelLoadTargetHistoryV61();
+
+  const currentTargets =
+    fuelLoadTargets();
+
+  const days = [];
+
+  for (
+    let offset = 0;
+    offset < 7;
+    offset++
+  ) {
+    const date =
+      new Date();
+
+    date.setHours(
+      12,
+      0,
+      0,
+      0
+    );
+
+    date.setDate(
+      date.getDate() - offset
+    );
+
+    const key =
+      fuelDateKeyV61(date);
+
+    const data =
+      allDays[key];
+
+    const totals =
+      data
+        ? fuelTotals(data)
+        : {
+            calories: 0,
+            protein: 0
+          };
+
+    const target =
+      targetHistory[key] || {
+        calories:
+          currentTargets.calories,
+        protein:
+          currentTargets.protein
+      };
+
+    days.push({
+      key,
+      date,
+      offset,
+      calories:
+        totals.calories,
+      protein:
+        totals.protein,
+      targetCalories:
+        Number(
+          target.calories
+        ) || 0,
+      targetProtein:
+        Number(
+          target.protein
+        ) || 0,
+      hasData:
+        Boolean(data)
+    });
+  }
+
+  return days;
+}
+
+function fuelRenderWeeklyHistoryV61() {
+  fuelEnsureWeeklyStylesV61();
+  fuelSaveTodayTargetV61();
+
+  const panel =
+    document.getElementById(
+      "fuelV57Dashboard"
+    );
+
+  if (!panel) return;
+
+  panel
+    .querySelectorAll(
+      ".fuel-v61-week"
+    )
+    .forEach(
+      el => el.remove()
+    );
+
+  const days =
+    fuelBuildSevenDaysV61();
+
+  const loggedDays =
+    days.filter(
+      day =>
+        day.hasData &&
+        (
+          day.calories > 0 ||
+          day.protein > 0
+        )
+    );
+
+  const totalCalories =
+    loggedDays.reduce(
+      (sum, day) =>
+        sum + day.calories,
+      0
+    );
+
+  const totalProtein =
+    loggedDays.reduce(
+      (sum, day) =>
+        sum + day.protein,
+      0
+    );
+
+  const divisor =
+    loggedDays.length || 1;
+
+  const averageCalories =
+    Math.round(
+      totalCalories / divisor
+    );
+
+  const averageProtein =
+    Math.round(
+      totalProtein / divisor
+    );
+
+  const card =
+    document.createElement("div");
+
+  card.className =
+    "fuel-v61-week";
+
+  card.innerHTML = `
+    <div class="fuel-v61-title">
+      7-day nutrition
+    </div>
+
+    <div class="fuel-v61-sub">
+      Your weekly Fuel overview
+    </div>
+
+    <div class="fuel-v61-summary">
+
+      <div class="fuel-v61-summary-card">
+        <div class="fuel-v61-summary-label">
+          Avg calories
+        </div>
+
+        <div class="fuel-v61-summary-value">
+          ${averageCalories.toLocaleString()}
+        </div>
+      </div>
+
+      <div class="fuel-v61-summary-card">
+        <div class="fuel-v61-summary-label">
+          Avg protein
+        </div>
+
+        <div class="fuel-v61-summary-value">
+          ${averageProtein}g
+        </div>
+      </div>
+
+    </div>
+
+    <div class="fuel-v61-days">
+
+      ${days.map(day => {
+
+        const pct =
+          day.targetCalories > 0
+            ? Math.round(
+                day.calories /
+                day.targetCalories *
+                100
+              )
+            : 0;
+
+        const width =
+          Math.min(
+            100,
+            pct
+          );
+
+        return `
+          <div class="fuel-v61-day">
+
+            <div class="fuel-v61-row">
+
+              <div class="fuel-v61-day-name">
+                ${fuelDayLabelV61(
+                  day.date,
+                  day.offset
+                )}
+              </div>
+
+              <div class="fuel-v61-calories">
+                ${
+                  day.hasData
+                    ? `${day.calories.toLocaleString()} cal`
+                    : "—"
+                }
+              </div>
+
+            </div>
+
+            ${
+              day.hasData
+                ? `
+                  <div class="fuel-v61-meta">
+                    ${day.protein}g protein
+                    • ${pct}% of calorie target
+                  </div>
+
+                  <div class="fuel-v61-bar">
+                    <div
+                      class="fuel-v61-fill"
+                      style="width:${width}%"
+                    ></div>
+                  </div>
+                `
+                : `
+                  <div class="fuel-v61-meta">
+                    No meals logged
+                  </div>
+                `
+            }
+
+          </div>
+        `;
+      }).join("")}
+
+    </div>
+  `;
+
+  /*
+    Place Weekly History immediately
+    before Daily Progress.
+  */
+
+  const dailyProgress =
+    panel.querySelector(
+      ".fuel-v60-progress"
+    );
+
+  if (dailyProgress) {
+    dailyProgress.insertAdjacentElement(
+      "beforebegin",
+      card
+    );
+  }
+}
+
+/*
+  Refresh weekly history whenever
+  Fuel changes.
+*/
+
+const fuelRenderV61 =
+  fuelRender;
+
+fuelRender = function() {
+  fuelRenderV61();
+
+  setTimeout(
+    fuelRenderWeeklyHistoryV61,
+    60
+  );
+};
+
+setTimeout(
+  fuelRenderWeeklyHistoryV61,
+  180
 );  
 })();
