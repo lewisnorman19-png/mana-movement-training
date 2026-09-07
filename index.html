@@ -1476,15 +1476,17 @@
       <div class="row"><h3>Mana Movement Hub</h3><span class="pill">APP HOME</span></div>
       <div class="grid">
         <div class="metric" onclick="showClientProgramsView()" style="cursor:pointer"><span class="tiny muted">Programs</span><strong style="font-size:20px">Training</strong><span class="tiny">your plans ›</span></div>
-        <div class="metric" onclick="document.getElementById('weightInput')?.scrollIntoView({behavior:'smooth',block:'center'})" style="cursor:pointer"><span class="tiny muted">Coach</span><strong style="font-size:20px">Check-ins</strong><span class="tiny">support ›</span></div>
+        <div class="metric" onclick="document.getElementById('checkinForm')?.classList.remove('hide');document.getElementById('latestCheckinCard')?.scrollIntoView({behavior:'smooth',block:'center'})" style="cursor:pointer"><span class="tiny muted">Coach</span><strong style="font-size:20px">Check-ins</strong><span class="tiny">support ›</span></div>
         <div class="metric" onclick="showClientFuelView()" style="cursor:pointer"><span class="tiny muted">Fuel</span><strong style="font-size:20px">Nutrition</strong><span class="tiny">guidance ›</span></div>
         <div class="metric" onclick="showClientProgressView()" style="cursor:pointer"><span class="tiny muted">Results</span><strong style="font-size:20px">Progress</strong><span class="tiny">your journey ›</span></div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="latestCheckinCard">
       <h3>Latest check-in</h3>
-      <div class="grid">
+<button class="btn secondary" onclick="document.getElementById('checkinForm')?.classList.toggle('hide')">Check in with Lewis ›</button>
+      <div id="checkinForm" class="hide">
+     <div class="grid">
         <div><label>Weight (kg)</label><input id="weightInput" type="number" step=".1" placeholder="Optional"></div>
         <div><label>Energy / 10</label><input id="energyInput" type="number" min="1" max="10" placeholder="1–10"></div>
       </div>
