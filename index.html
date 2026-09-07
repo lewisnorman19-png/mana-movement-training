@@ -1466,7 +1466,7 @@
   <div class="row"><h3>Today</h3><span class="gold" id="weekLabel">Week 1</span></div>
 <h2 id="todayTitle">Full Body Strength A</h2>
 <p class="muted" id="todayDesc">Goblet Squat • DB Chest Press • Seated Cable Row • RDL • Shoulder Press • Dead Bug</p>
-<button class="btn secondary" onclick="showClientProgramsView()">Start today’s session ›</button>
+<button class="btn secondary" onclick="showClientProgramsView();setTimeout(()=>document.querySelector('#clientProgramsView [data-day=&quot;'+Math.min(Math.max(state.day,1),28)+'&quot;]')?.click(),150)">Start today’s session ›</button>
 <button id="completeToday" class="btn primary">Mark today complete</button>
 </div>
     <div class="card">
