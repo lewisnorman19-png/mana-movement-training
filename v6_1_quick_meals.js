@@ -1,13 +1,13 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v6.1
-   Faster meal logging
+   MANA MOVEMENT TRAINING v6.1.1
+   Visible quick meal controls
    ========================================= */
 
 (() => {
   "use strict";
 
-  const STYLE_ID = "mana-v61-quick-meals-style";
-  const CHIPS_ID = "fuelV61MealChips";
+  const STYLE_ID = "mana-v611-quick-meals-style";
+  const PANEL_ID = "fuelV611QuickPanel";
 
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -16,56 +16,55 @@
     style.id = STYLE_ID;
 
     style.textContent = `
-      #fuelV571Modal .fuel-v571-sheet{
-        max-height:88dvh;
-        overflow:auto;
+      #${PANEL_ID}{
+        margin:12px 0 16px;
+        padding:16px;
+        border-radius:20px;
+        border:1px solid #2b2b2b;
+        background:#101010;
       }
 
-      #fuelV571Meal{
-        display:none !important;
+      .fuel-v611-title{
+        font-size:20px;
+        font-weight:800;
+        margin-bottom:12px;
       }
 
-      #${CHIPS_ID}{
-        display:none;
+      .fuel-v611-grid{
+        display:grid;
         grid-template-columns:1fr 1fr;
         gap:8px;
-        margin:0 0 12px;
       }
 
-      #${CHIPS_ID}.show{
-        display:grid;
-      }
-
-      .fuel-v61-chip{
-        min-height:46px;
+      .fuel-v611-btn{
+        min-height:48px;
         border-radius:14px;
         border:1px solid #343434;
-        background:#101010;
-        color:#ddd;
+        background:#0b0b0b;
+        color:#f5d86e;
         font-size:14px;
         font-weight:800;
       }
 
-      .fuel-v61-chip.active{
-        border-color:#6b5a17;
-        background:#181406;
-        color:#f5d86e;
+      .fuel-v611-btn:active{
+        transform:scale(.98);
       }
 
-      #fuelV571Modal .fuel-v571-field{
-        margin-bottom:10px;
-        padding:14px;
+      .fuel-v611-add{
+        width:100%;
+        min-height:50px;
+        margin-top:10px;
+        border:0;
+        border-radius:15px;
+        background:#f5d86e;
+        color:#111;
+        font-size:16px;
+        font-weight:800;
       }
 
-      #fuelV571Modal .fuel-v571-sheet h2{
-        margin-bottom:14px;
-        font-size:24px;
-      }
-
-      @media(max-width:430px){
-        #fuelV571Modal .fuel-v571-sheet{
-          padding:20px 16px
-            calc(20px + env(safe-area-inset-bottom));
+      @media(max-width:360px){
+        .fuel-v611-grid{
+          grid-template-columns:1fr;
         }
       }
     `;
@@ -73,236 +72,168 @@
     document.head.appendChild(style);
   }
 
-  function ensureChips() {
-    const modal =
-      document.getElementById("fuelV571Modal");
+  function findVisibleMealsHeading() {
+    const candidates =
+      [...document.querySelectorAll("h1,h2,h3,h4,div")];
 
-    const select =
-      document.getElementById("fuelV571Meal");
+    return candidates.find(el => {
+      const text =
+        (el.textContent || "").trim();
 
-    if (
-      !modal ||
-      !select ||
-      document.getElementById(CHIPS_ID)
-    ) return;
+      return (
+        text === "Today's meals" &&
+        el.offsetParent !== null
+      );
+    });
+  }
 
-    const chips =
+  function buildQuickPanel() {
+    if (document.getElementById(PANEL_ID)) return;
+
+    const heading =
+      findVisibleMealsHeading();
+
+    if (!heading) return;
+
+    const panel =
       document.createElement("div");
 
-    chips.id = CHIPS_ID;
+    panel.id = PANEL_ID;
 
-    chips.innerHTML =
-      ["Breakfast", "Lunch", "Dinner", "Snacks"]
-        .map(name => `
-          <button
-            type="button"
-            class="fuel-v61-chip"
-            data-meal="${name}"
-          >
-            ${name}
-          </button>
-        `)
-        .join("");
+    panel.innerHTML = `
+      <div class="fuel-v611-title">
+        Quick add
+      </div>
 
-    select.insertAdjacentElement(
+      <div class="fuel-v611-grid">
+        <button
+          type="button"
+          class="fuel-v611-btn"
+          data-v611-meal="Breakfast"
+        >
+          Breakfast
+        </button>
+
+        <button
+          type="button"
+          class="fuel-v611-btn"
+          data-v611-meal="Lunch"
+        >
+          Lunch
+        </button>
+
+        <button
+          type="button"
+          class="fuel-v611-btn"
+          data-v611-meal="Dinner"
+        >
+          Dinner
+        </button>
+
+        <button
+          type="button"
+          class="fuel-v611-btn"
+          data-v611-meal="Snacks"
+        >
+          Snacks
+        </button>
+      </div>
+
+      <button
+        type="button"
+        class="fuel-v611-add"
+        id="fuelV611AddMeal"
+      >
+        + Add meal
+      </button>
+    `;
+
+    heading.insertAdjacentElement(
       "afterend",
-      chips
-    );
-
-    chips.addEventListener(
-      "click",
-      event => {
-        const button =
-          event.target.closest(
-            ".fuel-v61-chip"
-          );
-
-        if (!button) return;
-
-        select.value =
-          button.dataset.meal;
-
-        syncChipState();
-      }
+      panel
     );
   }
 
-  function syncChipState() {
+  function openExistingMealModal(mealName) {
     const select =
       document.getElementById(
         "fuelV571Meal"
       );
 
-    if (!select) return;
-
-    document
-      .querySelectorAll(
-        ".fuel-v61-chip"
-      )
-      .forEach(button => {
-        button.classList.toggle(
-          "active",
-          button.dataset.meal ===
-            select.value
-        );
-      });
-  }
-
-  function prepareDirectMeal(mealName) {
     const modal =
       document.getElementById(
         "fuelV571Modal"
       );
 
-    const select =
-      document.getElementById(
-        "fuelV571Meal"
-      );
+    if (!select || !modal) return;
 
-    const chips =
-      document.getElementById(
-        CHIPS_ID
-      );
+    select.value =
+      mealName || "Breakfast";
 
     const title =
-      modal?.querySelector(
+      modal.querySelector(
         ".fuel-v571-sheet h2"
       );
 
-    if (!modal || !select) return;
-
-    select.value = mealName;
-
-    chips?.classList.remove("show");
-
     if (title) {
       title.textContent =
-        `Add ${mealName.toLowerCase()}`;
+        mealName
+          ? `Add ${mealName.toLowerCase()}`
+          : "Add meal";
     }
 
-    syncChipState();
-  }
-
-  function prepareQuickAdd() {
-    const modal =
-      document.getElementById(
-        "fuelV571Modal"
-      );
-
-    const chips =
-      document.getElementById(
-        CHIPS_ID
-      );
-
-    const title =
-      modal?.querySelector(
-        ".fuel-v571-sheet h2"
-      );
-
-    if (!modal) return;
-
-    chips?.classList.add("show");
-
-    if (title) {
-      title.textContent =
-        "Add meal";
-    }
-
-    syncChipState();
-  }
-
-  function simplifyLabels() {
-    const quick =
-      document.querySelector(
-        "#fuelV57Dashboard .fuel-v57-primary"
-      );
-
-    if (quick) {
-      quick.textContent =
-        "+ Add meal";
-    }
-
-    document
-      .querySelectorAll(
-        "#fuelV57Dashboard .fuel-v57-meal .fuel-v57-btn"
-      )
-      .forEach(button => {
-        button.textContent = "+";
-        button.setAttribute(
-          "aria-label",
-          "Add meal item"
-        );
-
-        button.style.minWidth =
-          "44px";
-
-        button.style.fontSize =
-          "20px";
-
-        button.style.lineHeight =
-          "1";
-      });
-  }
-
-  function init() {
-    injectStyles();
+    modal.classList.add("open");
 
     setTimeout(() => {
-      ensureChips();
-      simplifyLabels();
-    }, 300);
-
-    setTimeout(() => {
-      ensureChips();
-      simplifyLabels();
-    }, 1000);
+      document
+        .getElementById(
+          "fuelV571Food"
+        )
+        ?.focus();
+    }, 100);
   }
 
   document.addEventListener(
     "click",
     event => {
 
-      const rowButton =
+      const mealButton =
         event.target.closest(
-          "#fuelV57Dashboard .fuel-v57-meal .fuel-v57-btn"
+          "[data-v611-meal]"
         );
 
-      if (rowButton) {
-        const mealName =
-          rowButton
-            .closest(
-              ".fuel-v57-meal"
-            )
-            ?.querySelector(
-              ".fuel-v57-meal-name"
-            )
-            ?.textContent
-            ?.trim();
-
-        if (mealName) {
-          setTimeout(() => {
-            ensureChips();
-            prepareDirectMeal(
-              mealName
-            );
-          }, 0);
-        }
-
+      if (mealButton) {
+        openExistingMealModal(
+          mealButton.dataset.v611Meal
+        );
         return;
       }
 
       if (
         event.target.closest(
-          "#fuelV57Dashboard .fuel-v57-primary"
+          "#fuelV611AddMeal"
         )
       ) {
-        setTimeout(() => {
-          ensureChips();
-          prepareQuickAdd();
-        }, 0);
+        openExistingMealModal(
+          "Breakfast"
+        );
       }
     }
   );
+
+  function init() {
+    injectStyles();
+
+    setTimeout(
+      buildQuickPanel,
+      300
+    );
+
+    setTimeout(
+      buildQuickPanel,
+      1000
+    );
+  }
 
   if (
     document.readyState === "loading"
