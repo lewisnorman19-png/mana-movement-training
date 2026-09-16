@@ -10,7 +10,33 @@
   const FUEL_STORE_KEY = "mana-fuel-v571";
   const TARGET_KEY = "mana-fuel-v58-targets";
   const SUMMARY_ID = "fuelV60Summary";
+function hideRedundantFuelSummary() {
+  const fuelView =
+    document.getElementById("clientFuelView");
 
+  if (!fuelView) return;
+
+  const candidates =
+    fuelView.querySelectorAll(
+      ".card, section, div"
+    );
+
+  candidates.forEach(el => {
+    const text =
+      el.textContent || "";
+
+    if (
+      text.includes("Calories remaining") &&
+      text.includes("Protein remaining") &&
+      text.includes("Breakfast") &&
+      text.includes("Lunch") &&
+      text.includes("Dinner") &&
+      text.includes("Snacks")
+    ) {
+      el.style.display = "none";
+    }
+  });
+}
   function safeJson(raw, fallback) {
     try {
       return JSON.parse(raw);
