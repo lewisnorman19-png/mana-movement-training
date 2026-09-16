@@ -18,14 +18,22 @@ function hideRedundantFuelSummary() {
 
   const candidates =
     fuelView.querySelectorAll(
-      ".card, section, div"
+      ".card, section"
     );
 
   candidates.forEach(el => {
     const text =
-      el.textContent || "";
+      (el.textContent || "").trim();
 
     if (
+      text.includes("Calories remaining") &&
+      text.includes("Protein remaining") &&
+      !text.includes("Today's meals")
+    ) {
+      el.style.display = "none";
+    }
+  });
+}
       text.includes("Calories remaining") &&
       text.includes("Protein remaining") &&
       text.includes("Breakfast") &&
@@ -41,16 +49,7 @@ function hideRedundantFuelSummary() {
     try {
       return JSON.parse(raw);
     } catch (_) {
-      return fallback;
-    }
-  }
-
-  function dateKey(date) {
-    return [
-      date.getFullYear(),
-      String(date.getMonth() + 1).padStart(2, "0"),
-      String(date.getDate()).padStart(2, "0")
-    ].join("-");
+     
   }
 
   function loadFuelStore() {
