@@ -566,6 +566,7 @@
       .getElementById(PROFILE_ID)
       .classList.add("open");
   }
+   window.openManaProfile = openProfile;
 
   function closeProfile() {
     document
