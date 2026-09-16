@@ -383,6 +383,7 @@
     setTimeout(() => {
       hideCarbFatFieldsFallback();
       simplifyTargetLabels();
+       hideRedundantFuelSummary();
       buildSummary();
       renderSummary();
     }, 300);
@@ -390,6 +391,7 @@
     setTimeout(() => {
       hideCarbFatFieldsFallback();
       simplifyTargetLabels();
+       hideRedundantFuelSummary();
       buildSummary();
       renderSummary();
     }, 1000);
