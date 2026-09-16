@@ -402,7 +402,29 @@ function hideRedundantFuelSummary() {
         "Edit targets";
     }
   }
+function hideNutritionPromo() {
+  const fuelView =
+    document.getElementById("clientFuelView");
 
+  if (!fuelView) return;
+
+  const candidates =
+    fuelView.querySelectorAll(
+      ".card, section, div"
+    );
+
+  candidates.forEach(el => {
+    const text =
+      (el.textContent || "").trim();
+
+    if (
+      text.includes("Nutrition") &&
+      text.includes("Simple foundations for better consistency")
+    ) {
+      el.style.display = "none";
+    }
+  });
+}
   function initFuelV60() {
     injectStyles();
 
@@ -410,6 +432,7 @@ function hideRedundantFuelSummary() {
       hideCarbFatFieldsFallback();
       simplifyTargetLabels();
        hideRedundantFuelSummary();
+       hideNutritionPromo();
       buildSummary();
       renderSummary();
     }, 300);
@@ -418,6 +441,7 @@ function hideRedundantFuelSummary() {
       hideCarbFatFieldsFallback();
       simplifyTargetLabels();
        hideRedundantFuelSummary();
+       hideNutritionPromo();
       buildSummary();
       renderSummary();
     }, 1000);
