@@ -244,7 +244,30 @@ function hideRedundantFuelSummary() {
         .fuel-v60-wide{
           grid-column:auto !important;
         }
-      }
+      }/* v6.0.5 hard cleanup */
+
+#fuelV58Targets [data-target-card="carbs"],
+#fuelV58Targets [data-target-card="fat"]{
+  display:none !important;
+}
+
+#fuelV58Targets .fuel-v58-grid{
+  grid-template-columns:1fr 1fr !important;
+}
+
+#fuelV58Targets [data-target-card="water"]{
+  grid-column:1 / -1 !important;
+}
+
+#nutritionProfile,
+[data-nutrition-profile]{
+  display:none !important;
+}
+
+#fuelCoachOverride,
+[data-coach-override]{
+  display:none !important;
+}
     `;
 
     document.head.appendChild(style);
