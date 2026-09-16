@@ -243,6 +243,68 @@
       init
     );
   } else {
-    init();
+     function hideOldMealProgressBlock() {
+  const fuelView =
+    document.getElementById("clientFuelView");
+
+  if (!fuelView) return;
+
+  [...fuelView.querySelectorAll("section, .card, div")]
+    .forEach(el => {
+      const text =
+        (el.textContent || "").trim();
+
+      if (
+        text.includes("Breakfast") &&
+        text.includes("Lunch") &&
+        text.includes("Dinner") &&
+        text.includes("Snacks") &&
+        text.includes("daily calories") &&
+        !text.includes("Today's meals")
+      ) {
+        el.style.display = "none";
+      }
+    });
+}
+
+function simplifyRecentMeals() {
+  const fuelView =
+    document.getElementById("clientFuelView");
+
+  if (!fuelView) return;
+
+  [...fuelView.querySelectorAll("*")]
+    .forEach(el => {
+      const text =
+        (el.textContent || "").trim();
+
+      if (
+        /\d+\s*cal/i.test(text) &&
+        /\d+\s*g\s*protein/i.test(text) &&
+        el.children.length === 0
+      ) {
+        el.style.display = "none";
+      }
+
+      if (text === "Tap to repeat") {
+        el.textContent = "Repeat meal";
+      }
+    });
+}
+    function init() {
+  injectStyles();
+
+  setTimeout(() => {
+    buildQuickPanel();
+    hideOldMealProgressBlock();
+    simplifyRecentMeals();
+  }, 300);
+
+  setTimeout(() => {
+    buildQuickPanel();
+    hideOldMealProgressBlock();
+    simplifyRecentMeals();
+  }, 1000);
+}
   }
 })();
