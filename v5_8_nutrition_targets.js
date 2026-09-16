@@ -461,15 +461,5 @@
     init();
   }
 
-  new MutationObserver(() => {
-    buildPanel();
-    render();
-  }).observe(document.documentElement, {
-    childList: true,
-    subtree: true
-  });
-
   window.addEventListener("storage", render);
-
-  setInterval(render, 1200);
 })();
