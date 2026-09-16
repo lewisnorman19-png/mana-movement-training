@@ -23,7 +23,7 @@
         bottom:0;
         z-index:30000;
         display:none;
-        grid-template-columns:repeat(4,1fr);
+        grid-template-columns:repeat(5,1fr);
         min-height:78px;
         padding:
           8px
@@ -112,7 +112,14 @@
         <span class="mana-v65-nav-icon">↗</span>
         <span>Progress</span>
       </button>
-
+<button
+  class="mana-v65-nav-btn"
+  type="button"
+  data-v65-page="profile"
+>
+  <span class="mana-v65-nav-icon">◎</span>
+  <span>Profile</span>
+</button>
       <button
         class="mana-v65-nav-btn active"
         type="button"
@@ -217,6 +224,11 @@
 
     if (page === "progress") {
       clickMainNav("Progress");
+     }
+     
+       if (page === "profile") {
+  clickMainNav("Profile");
+}
     }
 
     setTimeout(
