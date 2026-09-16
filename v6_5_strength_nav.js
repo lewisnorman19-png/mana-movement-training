@@ -229,7 +229,6 @@
        if (page === "profile") {
   clickMainNav("Profile");
 }
-    }
 
     setTimeout(
       updateVisibility,
