@@ -228,7 +228,41 @@
         #fuelV57Dashboard .fuel-v57-water-row{
           grid-template-columns:1fr;
         }
-      }
+      }/* v5.9.1 polish */
+
+@media(min-width:700px){
+  #clientFuelView{
+    max-width:460px;
+    margin-left:auto;
+    margin-right:auto;
+  }
+}
+
+#fuelV58Targets{
+  margin-bottom:10px !important;
+}
+
+#fuelV58Targets [data-target-card="water"]{
+  margin-bottom:0 !important;
+}
+
+#fuelV57Dashboard .fuel-v57-section:first-of-type{
+  margin-top:10px !important;
+}
+
+#fuelV57Dashboard .fuel-v57-title{
+  margin-bottom:6px !important;
+}
+
+@media(max-width:430px){
+  #fuelV58Targets{
+    padding-bottom:14px !important;
+  }
+
+  #fuelV57Dashboard .fuel-v57-section{
+    margin-top:10px !important;
+  }
+}
     `;
 
     document.head.appendChild(style);
