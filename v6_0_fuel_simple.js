@@ -9,7 +9,8 @@
   const STYLE_ID = "mana-v60-fuel-simple-style";
   const FUEL_STORE_KEY = "mana-fuel-v571";
   const TARGET_KEY = "mana-fuel-v58-targets";
-  const SUMMARY_ID = "fuelV60Summary";
+const SUMMARY_ID = "fuelV60Summary";
+
 function hideRedundantFuelSummary() {
   const fuelView =
     document.getElementById("clientFuelView");
@@ -34,25 +35,23 @@ function hideRedundantFuelSummary() {
     }
   });
 }
-      text.includes("Calories remaining") &&
-      text.includes("Protein remaining") &&
-      text.includes("Breakfast") &&
-      text.includes("Lunch") &&
-      text.includes("Dinner") &&
-      text.includes("Snacks")
-    ) {
-      el.style.display = "none";
-    }
-  });
-}
-  function safeJson(raw, fallback) {
-    try {
-      return JSON.parse(raw);
-    } catch (_) {
-     
-  }
 
-  function loadFuelStore() {
+function safeJson(raw, fallback) {
+  try {
+    return JSON.parse(raw);
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function dateKey(date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0")
+  ].join("-");
+}
+   function loadFuelStore() {
     return safeJson(
       localStorage.getItem(FUEL_STORE_KEY) || "{}",
       {}
