@@ -227,7 +227,11 @@
      }
      
        if (page === "profile") {
-  clickMainNav("Profile");
+  if (typeof window.openManaProfile === "function") {
+    window.openManaProfile();
+  } else {
+    clickMainNav("Profile");
+  }
 }
 
     setTimeout(
