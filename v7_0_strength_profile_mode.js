@@ -302,29 +302,30 @@
     modal.dataset
       .manaV70Observed = "1";
 
-    const observer =
-      new MutationObserver(() => {
-        if (
-          modal.classList.contains("open")
-        ) {
-          /*
-            Give v6.8 time to apply
-            Profile selections first.
-          */
-          setTimeout(
-            activateProfileMode,
-            100
-          );
-        }
-      });
+    let wasOpen = false;
 
-    observer.observe(
-      modal,
-      {
-        attributes:true,
-        attributeFilter:["class"]
-      }
-    );
+const observer =
+  new MutationObserver(() => {
+    const isOpen =
+      modal.classList.contains("open");
+
+    if (isOpen && !wasOpen) {
+      setTimeout(
+        activateProfileMode,
+        100
+      );
+    }
+
+    wasOpen = isOpen;
+  });
+
+observer.observe(
+  modal,
+  {
+    attributes: true,
+    attributeFilter: ["class"]
+  }
+);
   }
 
   function init() {
