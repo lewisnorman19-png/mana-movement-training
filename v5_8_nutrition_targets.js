@@ -256,11 +256,20 @@
 
     panel.innerHTML = `
       <div class="fuel-v58-head">
-        <h3>Daily targets</h3>
-        <button type="button" class="fuel-v58-edit" id="fuelV58EditTargets">
-          Set targets
-        </button>
-      </div>
+  <h3>Daily targets</h3>
+  <button type="button" class="fuel-v58-edit" id="fuelV58EditTargets">
+    Set targets
+  </button>
+</div>
+
+<button
+  type="button"
+  class="fuel-v58-edit"
+  id="fuelV58UpdateProfile"
+  style="width:100%;margin-bottom:14px;"
+>
+  Update nutrition profile
+</button>
 
       <div class="fuel-v58-grid">
         ${card("calories", "Calories", "")}
@@ -282,7 +291,20 @@
     document
       .getElementById("fuelV58EditTargets")
       ?.addEventListener("click", openModal);
+document
+  .getElementById("fuelV58UpdateProfile")
+  ?.addEventListener("click", () => {
+    const profile =
+      document.getElementById("nutritionProfile") ||
+      document.querySelector('[data-nutrition-profile]');
 
+    if (profile) {
+      profile.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+  });
     render();
   }
 
