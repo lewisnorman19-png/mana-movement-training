@@ -8,7 +8,6 @@
 
   const INTRO_ID = "manaV81Intro";
   const STYLE_ID = "mana-v81-intro-style";
-  const SEEN_KEY = "mana-v81-intro-seen";
 
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
@@ -561,10 +560,6 @@
       )
       .onclick = () => {
         localStorage.setItem(
-          SEEN_KEY,
-          "1"
-        );
-
         closeIntro();
       };
 
@@ -581,38 +576,32 @@
 
     const seen =
       localStorage.getItem(
-        SEEN_KEY
-      ) === "1";
+        function openIntro() {
+  createIntro();
 
-    if (
-      seen &&
-      !force
-    ) return;
+  document
+    .getElementById(
+      INTRO_ID
+    )
+    ?.classList.add(
+      "open"
+    );
 
-    document
-      .getElementById(
-        INTRO_ID
-      )
-      ?.classList.add(
-        "open"
-      );
+  document.body.style.overflow =
+    "hidden";
+}
+      function closeIntro() {
+  document
+    .getElementById(
+      INTRO_ID
+    )
+    ?.classList.remove(
+      "open"
+    );
 
-    document.body.style.overflow =
-      "hidden";
-  }
-
-  function closeIntro() {
-    document
-      .getElementById(
-        INTRO_ID
-      )
-      ?.classList.remove(
-        "open"
-      );
-
-    document.body.style.overflow =
-      "";
-  }
+  document.body.style.overflow =
+    "";
+}
 
   function clientIsLoggedIn() {
     const auth =
@@ -660,12 +649,13 @@
     const observer =
       new MutationObserver(() => {
         if (
-          clientIsLoggedIn()
-        ) {
-          setTimeout(
-            maybeShowIntro,
-            350
-          );
+  clientIsLoggedIn()
+) {
+  setTimeout(
+    maybeShowIntro,
+    350
+  );
+}
         }
       });
 
@@ -692,22 +682,22 @@
   }
 
   /*
-    Lets us open it later from
-    Profile / About Mana Movement.
-  */
-  window.openManaIntroduction =
-    () => openIntro(true);
+  Lets us open it later from
+  Profile / About Mana Movement.
+*/
+window.openManaIntroduction =
+  openIntro;
 
-  if (
-    document.readyState ===
-    "loading"
-  ) {
-    document.addEventListener(
-      "DOMContentLoaded",
-      init
-    );
-  } else {
-    init();
-  }
+if (
+  document.readyState ===
+  "loading"
+) {
+  document.addEventListener(
+    "DOMContentLoaded",
+    init
+  );
+} else {
+  init();
+}
 
 })();
