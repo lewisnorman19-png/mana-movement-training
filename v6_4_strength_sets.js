@@ -1894,7 +1894,8 @@
   /* =========================================
      INIT
      ========================================= */
-
+window.openManaStrengthWorkout =
+  openWorkout;
   function init() {
     injectStyles();
 
