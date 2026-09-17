@@ -1,6 +1,7 @@
 /* =========================================
    MANA MOVEMENT TRAINING v8.5
    STRENGTH PROGRAM CARDS
+   DIRECT WORKOUT LAUNCH
    ========================================= */
 
 (() => {
@@ -11,6 +12,7 @@
 
   const STYLE_ID =
     "mana-v85-strength-cards-style";
+
 
   function safeJson(
     raw,
@@ -23,6 +25,7 @@
     }
   }
 
+
   function loadProgram() {
     return safeJson(
       localStorage.getItem(
@@ -31,6 +34,7 @@
       null
     );
   }
+
 
   function injectStyles() {
     if (
@@ -48,53 +52,82 @@
       STYLE_ID;
 
     style.textContent = `
+
       .mana-v85-day{
         margin:12px 0;
-        border:1px solid #292929;
+
+        border:
+          1px solid #292929;
+
         border-radius:20px;
+
         background:
           linear-gradient(
             145deg,
             #111,
             #090909
           );
+
         overflow:hidden;
       }
+
 
       .mana-v85-head{
         padding:18px;
       }
 
+
       .mana-v85-top{
         display:flex;
+
         justify-content:
           space-between;
+
         align-items:center;
+
         gap:12px;
       }
 
+
       .mana-v85-day-label{
         color:#f3d875;
+
         font-size:11px;
+
         font-weight:900;
+
         letter-spacing:.1em;
       }
 
+
       .mana-v85-title{
         margin-top:5px;
+
         font-size:22px;
+
         font-weight:900;
       }
 
+
       .mana-v85-count{
         flex:0 0 auto;
-        padding:6px 10px;
+
+        padding:
+          6px
+          10px;
+
         border-radius:999px;
-        border:1px solid #333;
+
+        border:
+          1px solid #333;
+
         color:#999;
+
         font-size:11px;
+
         font-weight:800;
       }
+
 
       .mana-v85-exercises{
         padding:
@@ -103,56 +136,93 @@
           16px;
       }
 
+
       .mana-v85-exercise{
         display:flex;
+
         align-items:center;
+
         gap:10px;
-        padding:9px 0;
+
+        padding:
+          9px
+          0;
+
         border-top:
           1px solid #242424;
+
         color:#bbb;
+
         font-size:13px;
       }
+
 
       .mana-v85-num{
         width:24px;
         height:24px;
+
         border-radius:50%;
+
         display:grid;
+
         place-items:center;
+
         background:#181818;
+
         color:#f3d875;
+
         font-size:11px;
+
         font-weight:900;
+
         flex:0 0 auto;
       }
 
+
       .mana-v85-start{
-        width:calc(100% - 36px);
-        min-height:50px;
+        width:
+          calc(
+            100% - 36px
+          );
+
+        min-height:52px;
+
         margin:
           0
           18px
           18px;
+
         border:0;
+
         border-radius:15px;
+
         background:#f3d875;
+
         color:#111;
+
         font-size:14px;
+
         font-weight:900;
+
+        cursor:pointer;
       }
+
 
       .mana-v85-summary{
         color:#999;
+
         font-size:13px;
+
         margin-bottom:16px;
       }
+
     `;
 
     document.head.appendChild(
       style
     );
   }
+
 
   function strengthShellOpen() {
     const shell =
@@ -175,11 +245,13 @@
       shell
         ?.classList
         .contains("open") &&
+
       title
         ?.textContent
         .trim()
         .toUpperCase() ===
         "MANA STRENGTH" &&
+
       active
         ?.dataset
         ?.v83Tab ===
@@ -187,20 +259,73 @@
     );
   }
 
-  function exerciseName(ex) {
+
+  function exerciseName(
+    exercise
+  ) {
     if (
-      Array.isArray(ex)
+      Array.isArray(
+        exercise
+      )
     ) {
       return (
-        ex[0] ||
+        exercise[0] ||
         "Exercise"
       );
     }
 
     return String(
-      ex || "Exercise"
+      exercise ||
+      "Exercise"
     );
   }
+
+
+  function startWorkout(
+    dayIndex
+  ) {
+    const shell =
+      document.getElementById(
+        "manaV83ProgramShell"
+      );
+
+    /*
+      Close the v8 Strength shell.
+    */
+
+    shell
+      ?.classList
+      .remove("open");
+
+    document.body.style.overflow =
+      "";
+
+
+    /*
+      Directly open the real v6.4
+      set-by-set workout logger.
+    */
+
+    if (
+      typeof
+        window
+          .openManaStrengthWorkout ===
+      "function"
+    ) {
+      window
+        .openManaStrengthWorkout(
+          dayIndex
+        );
+
+      return;
+    }
+
+
+    console.error(
+      "Mana Strength workout logger unavailable."
+    );
+  }
+
 
   function renderCards() {
     if (
@@ -217,9 +342,11 @@
 
     if (
       !holder ||
-      !program?.sessions
+      !program
+        ?.sessions
         ?.length
     ) return;
+
 
     const cards =
       program.sessions
@@ -228,11 +355,13 @@
             session,
             dayIndex
           ) => {
+
             const name =
               session?.[0] ||
               `Workout ${
                 dayIndex + 1
               }`;
+
 
             const exercises =
               Array.isArray(
@@ -241,16 +370,19 @@
                 ? session[1]
                 : [];
 
+
             const rows =
               exercises
                 .map(
                   (
-                    ex,
+                    exercise,
                     index
                   ) => `
+
                     <div
                       class="mana-v85-exercise"
                     >
+
                       <span
                         class="mana-v85-num"
                       >
@@ -258,24 +390,36 @@
                       </span>
 
                       <span>
-                        ${exerciseName(ex)}
+                        ${
+                          exerciseName(
+                            exercise
+                          )
+                        }
                       </span>
+
                     </div>
+
                   `
                 )
                 .join("");
 
+
             return `
+
               <div
                 class="mana-v85-day"
               >
+
                 <div
                   class="mana-v85-head"
                 >
+
                   <div
                     class="mana-v85-top"
                   >
+
                     <div>
+
                       <div
                         class="mana-v85-day-label"
                       >
@@ -289,7 +433,9 @@
                       >
                         ${name}
                       </div>
+
                     </div>
+
 
                     <div
                       class="mana-v85-count"
@@ -299,14 +445,18 @@
                       }
                       EXERCISES
                     </div>
+
                   </div>
+
                 </div>
+
 
                 <div
                   class="mana-v85-exercises"
                 >
                   ${rows}
                 </div>
+
 
                 <button
                   type="button"
@@ -315,14 +465,20 @@
                 >
                   Start workout →
                 </button>
+
               </div>
+
             `;
           }
         )
         .join("");
 
+
     holder.innerHTML = `
-      <div class="mana-v85-summary">
+
+      <div
+        class="mana-v85-summary"
+      >
         ${program.goal}
         •
         ${program.days}
@@ -330,7 +486,9 @@
       </div>
 
       ${cards}
+
     `;
+
 
     holder
       .querySelectorAll(
@@ -338,93 +496,34 @@
       )
       .forEach(
         button => {
-          button.onclick =
-            () => {
-              startWorkout(
-                Number(
-                  button.dataset
-                    .v85Day
-                )
-              );
-            };
-        }
-      );
-  }
 
-  function startWorkout(
-    dayIndex
-  ) {
-    const shell =
-      document.getElementById(
-        "manaV83ProgramShell"
-      );
+          button
+            .addEventListener(
+              "click",
+              () => {
 
-    shell
-      ?.classList
-      .remove("open");
+                const dayIndex =
+                  Number(
+                    button
+                      .dataset
+                      .v85Day
+                  );
 
-    document.body.style.overflow =
-      "";
-
-    const client =
-      document.getElementById(
-        "clientView"
-      );
-
-    if (!client) return;
-
-    const target =
-      [
-        ...client
-          .querySelectorAll(
-            "button, .day, .card"
-          )
-      ].find(
-        el =>
-          (el.textContent || "")
-            .toUpperCase()
-            .includes(
-              "MANA STRENGTH"
-            )
-      );
-
-    if (!target) return;
-
-    target.click();
-
-    setTimeout(
-      () => {
-        const programHolder =
-          document.getElementById(
-            "manaStrengthProgram"
-          );
-
-        const days =
-          programHolder
-            ?.querySelectorAll(
-              ".mana-strength-day"
+                startWorkout(
+                  dayIndex
+                );
+              }
             );
-
-        const day =
-          days?.[dayIndex];
-
-        const start =
-          day?.querySelector(
-            ".mana-v63-start"
-          );
-
-        if (start) {
-          start.click();
         }
-      },
-      450
-    );
+      );
   }
+
 
   function watch() {
     document.addEventListener(
       "click",
       event => {
+
         if (
           event.target.closest(
             "#manaV83Tabs " +
@@ -437,6 +536,7 @@
           );
         }
 
+
         if (
           event.target.closest(
             "#manaV80Strength"
@@ -447,18 +547,23 @@
             250
           );
         }
+
       }
     );
+
 
     const shell =
       document.getElementById(
         "manaV83ProgramShell"
       );
 
+
     if (shell) {
+
       const observer =
         new MutationObserver(
           () => {
+
             if (
               strengthShellOpen()
             ) {
@@ -467,55 +572,71 @@
                 80
               );
             }
+
           }
         );
+
 
       observer.observe(
         shell,
         {
           attributes:true,
+
           attributeFilter:[
             "class"
           ]
         }
       );
     }
-     const holder =
-  document.getElementById(
-    "manaV83Content"
-  );
 
-if (holder) {
-  const contentObserver =
-    new MutationObserver(() => {
-      if (
-        !strengthShellOpen()
-      ) return;
 
-      if (
-        holder.querySelector(
-          ".mana-v85-day"
-        )
-      ) return;
-
-      setTimeout(
-        renderCards,
-        30
+    const holder =
+      document.getElementById(
+        "manaV83Content"
       );
-    });
 
-  contentObserver.observe(
-    holder,
-    {
-      childList:true,
-      subtree:true
+
+    if (holder) {
+
+      const contentObserver =
+        new MutationObserver(
+          () => {
+
+            if (
+              !strengthShellOpen()
+            ) return;
+
+
+            if (
+              holder.querySelector(
+                ".mana-v85-day"
+              )
+            ) return;
+
+
+            setTimeout(
+              renderCards,
+              30
+            );
+
+          }
+        );
+
+
+      contentObserver.observe(
+        holder,
+        {
+          childList:true,
+          subtree:true
+        }
+      );
     }
-  );
-}
   }
+
 
   function init() {
     injectStyles();
+
     watch();
 
     setTimeout(
@@ -523,6 +644,7 @@ if (holder) {
       1200
     );
   }
+
 
   if (
     document.readyState ===
