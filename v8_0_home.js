@@ -1,182 +1,355 @@
 /* =========================================
    MANA MOVEMENT TRAINING v8.0
-   NEW PROGRAM-FIRST HOME
+   HOME — PROGRAMS + PROFILE + INTRO NAV
    ========================================= */
 
 (() => {
   "use strict";
 
-  const HOME_ID = "manaV80Home";
-  const STYLE_ID = "mana-v80-home-style";
+  const HOME_ID =
+    "manaV80Home";
+
+  const STYLE_ID =
+    "mana-v80-home-style";
+
 
   function injectStyles() {
-    if (document.getElementById(STYLE_ID)) return;
+    if (
+      document.getElementById(
+        STYLE_ID
+      )
+    ) return;
 
     const style =
-      document.createElement("style");
+      document.createElement(
+        "style"
+      );
 
-    style.id = STYLE_ID;
+    style.id =
+      STYLE_ID;
 
     style.textContent = `
+
       #${HOME_ID}{
         width:min(520px,100%);
         margin:0 auto;
+
         padding:
           calc(env(safe-area-inset-top) + 18px)
           18px
-          calc(100px + env(safe-area-inset-bottom));
+          calc(105px + env(safe-area-inset-bottom));
       }
+
 
       .mana-v80-brand{
-        margin-bottom:22px;
+        margin-bottom:24px;
       }
 
-      .mana-v80-brand small{
-        display:block;
+
+      .mana-v80-brand-title{
         color:#f3d875;
-        letter-spacing:.18em;
-        font-size:11px;
-        font-weight:800;
+
+        font-size:14px;
+
+        font-weight:900;
+
+        letter-spacing:.16em;
+
+        text-transform:uppercase;
+
         margin-bottom:8px;
       }
 
+
       .mana-v80-brand h1{
         margin:0;
-        font-size:28px;
-        letter-spacing:.08em;
+
+        font-size:34px;
+
+        line-height:1.05;
+
+        letter-spacing:.04em;
       }
 
+
+      .mana-v80-brand-sub{
+        margin-top:7px;
+
+        color:#f3d875;
+
+        font-size:12px;
+
+        font-weight:800;
+
+        letter-spacing:.12em;
+
+        text-transform:uppercase;
+      }
+
+
       .mana-v80-welcome{
-        margin-top:8px;
+        margin-top:12px;
+
         color:#999;
+
         font-size:15px;
       }
 
-      .mana-v80-quote{
-        margin:22px 0;
+
+      /* ==========================
+         PROFILE CTA
+         ========================== */
+
+      .mana-v80-profile-cta{
+        width:100%;
+
+        min-height:116px;
+
+        margin:
+          20px
+          0
+          26px;
+
         padding:18px;
-        border:1px solid #3a321a;
-        border-radius:20px;
+
+        text-align:left;
+
+        border-radius:22px;
+
+        border:
+          1px solid
+          #4a3d12;
+
         background:
           linear-gradient(
             145deg,
-            #12110d,
+            #17150d,
             #0b0b0b
           );
+
+        color:#fff;
+
+        cursor:pointer;
       }
 
-      .mana-v80-quote-maori{
+
+      .mana-v80-profile-label{
         color:#f3d875;
-        font-family:Georgia,serif;
-        font-size:19px;
-        line-height:1.5;
-        font-style:italic;
+
+        font-size:11px;
+
+        font-weight:900;
+
+        letter-spacing:.12em;
+
+        text-transform:uppercase;
       }
 
-      .mana-v80-quote-en{
-        color:#999;
-        font-size:12px;
-        line-height:1.5;
-        margin-top:8px;
+
+      .mana-v80-profile-cta h2{
+        margin:
+          6px
+          0
+          6px;
+
+        font-size:24px;
       }
+
+
+      .mana-v80-profile-cta p{
+        margin:0;
+
+        color:#aaa;
+
+        font-size:13px;
+
+        line-height:1.45;
+      }
+
+
+      .mana-v80-profile-open{
+        margin-top:12px;
+
+        color:#f3d875;
+
+        font-size:13px;
+
+        font-weight:900;
+      }
+
+
+      /* ==========================
+         PROGRAMS
+         ========================== */
 
       .mana-v80-heading{
-        margin:26px 0 12px;
+        margin:
+          26px
+          0
+          12px;
+
         color:#aaa;
+
         font-size:12px;
+
         font-weight:900;
+
         letter-spacing:.12em;
       }
 
+
       .mana-v80-program{
         width:100%;
+
         min-height:142px;
+
         margin:12px 0;
+
         padding:20px;
+
         text-align:left;
+
         border-radius:24px;
-        border:1px solid #292310;
+
+        border:
+          1px solid
+          #292310;
+
         background:
           linear-gradient(
             145deg,
             #141414,
             #090909
           );
-        color:white;
+
+        color:#fff;
+
         cursor:pointer;
       }
 
-      .mana-v80-program:active{
+
+      .mana-v80-program:active,
+      .mana-v80-profile-cta:active{
         transform:scale(.99);
       }
 
+
       .mana-v80-program-label{
         color:#f3d875;
+
         font-size:12px;
+
         font-weight:900;
+
         letter-spacing:.12em;
+
         margin-bottom:8px;
       }
 
+
       .mana-v80-program h2{
         margin:0;
+
         font-size:28px;
+
         line-height:1;
       }
 
+
       .mana-v80-program p{
-        margin:9px 0 0;
+        margin:
+          9px
+          0
+          0;
+
         color:#aaa;
+
         font-size:14px;
+
         line-height:1.45;
       }
 
+
       .mana-v80-open{
         margin-top:14px;
+
         color:#f3d875;
+
         font-size:13px;
+
         font-weight:900;
       }
 
+
+      /* ==========================
+         BOTTOM NAV
+         ========================== */
+
       .mana-v80-bottom{
         position:fixed;
+
         z-index:19000;
+
         left:0;
         right:0;
         bottom:0;
+
         background:#050505f2;
-        border-top:1px solid #272727;
+
+        border-top:
+          1px solid
+          #272727;
+
         padding:
           8px
           16px
           calc(8px + env(safe-area-inset-bottom));
-        backdrop-filter:blur(14px);
+
+        backdrop-filter:
+          blur(14px);
       }
+
 
       .mana-v80-bottom-inner{
         width:min(520px,100%);
+
         margin:auto;
+
         display:grid;
-        grid-template-columns:1fr 1fr;
+
+        grid-template-columns:
+          repeat(3,1fr);
+
         gap:8px;
       }
 
+
       .mana-v80-nav{
         min-height:54px;
+
         border:0;
+
         background:none;
+
         color:#888;
+
         font-weight:800;
+
         font-size:12px;
       }
+
 
       .mana-v80-nav.active{
         color:#f3d875;
       }
+
     `;
 
-    document.head.appendChild(style);
+    document.head.appendChild(
+      style
+    );
   }
+
 
   function profileName() {
     try {
@@ -187,11 +360,15 @@
           ) || "{}"
         );
 
-      return profile.name || "";
+      return (
+        profile.name || ""
+      );
+
     } catch (_) {
       return "";
     }
   }
+
 
   function hideOldHome() {
     const client =
@@ -200,20 +377,26 @@
       );
 
     if (client) {
-      client.style.display = "none";
+      client.style.display =
+        "none";
     }
 
+
     const nav =
-  document.getElementById(
-    "bottomNav"
-  );
+      document.getElementById(
+        "bottomNav"
+      );
 
     if (nav) {
-      nav.style.display = "none";
+      nav.style.display =
+        "none";
     }
   }
 
-  function findByText(text) {
+
+  function findByText(
+    text
+  ) {
     const wanted =
       text.toUpperCase();
 
@@ -224,12 +407,16 @@
         )
       ];
 
-    return elements.find(el =>
-      (el.textContent || "")
-        .toUpperCase()
-        .includes(wanted)
+    return elements.find(
+      el =>
+        (el.textContent || "")
+          .toUpperCase()
+          .includes(
+            wanted
+          )
     );
   }
+
 
   function openStrength() {
     const target =
@@ -240,44 +427,41 @@
         "MANA STRONG"
       );
 
-    if (target) {
-      target.click();
-    }
+    target?.click();
   }
 
+
   function openMana28() {
-    /*
-      First try existing MANA 28 card.
-    */
     const target =
-      findByText("MANA 28");
+      findByText(
+        "MANA 28"
+      );
 
     if (target) {
       target.click();
       return;
     }
 
-    /*
-      Otherwise use the existing
-      Programs navigation.
-    */
+
     const programButton =
       [
         ...document.querySelectorAll(
           "[data-page]"
         )
-      ].find(btn =>
-        String(
-          btn.dataset.page || ""
-        )
-          .toLowerCase()
-          .includes("program")
+      ].find(
+        btn =>
+          String(
+            btn.dataset.page || ""
+          )
+            .toLowerCase()
+            .includes(
+              "program"
+            )
       );
 
-    if (programButton) {
-      programButton.click();
-    }
+    programButton?.click();
   }
+
 
   function openManaLife() {
     const target =
@@ -298,14 +482,28 @@
     );
   }
 
+
   function openProfile() {
     if (
-      typeof window.openManaProfile ===
+      typeof
+        window.openManaProfile ===
       "function"
     ) {
       window.openManaProfile();
     }
   }
+
+
+  function openIntro() {
+    if (
+      typeof
+        window.openManaIntroduction ===
+      "function"
+    ) {
+      window.openManaIntroduction();
+    }
+  }
+
 
   function buildHome() {
     if (
@@ -314,28 +512,48 @@
       )
     ) return;
 
+
     hideOldHome();
+
 
     const name =
       profileName();
 
-    const home =
-      document.createElement("div");
 
-    home.id = HOME_ID;
+    const home =
+      document.createElement(
+        "div"
+      );
+
+    home.id =
+      HOME_ID;
+
 
     home.innerHTML = `
-      <div class="mana-v80-brand">
 
-        <small>
+      <div
+        class="mana-v80-brand"
+      >
+
+        <div
+          class="mana-v80-brand-title"
+        >
           MANA MOVEMENT TRAINING
-        </small>
+        </div>
 
         <h1>
           Move with Purpose
         </h1>
 
-        <div class="mana-v80-welcome">
+        <div
+          class="mana-v80-brand-sub"
+        >
+          TRAINING • STRENGTH • LIFE
+        </div>
+
+        <div
+          class="mana-v80-welcome"
+        >
           ${
             name
               ? `Kia ora, ${name}`
@@ -345,32 +563,55 @@
 
       </div>
 
-      <div class="mana-v80-quote">
 
-        <div class="mana-v80-quote-maori">
-          “Whāia te iti kahurangi,
-          ki te tuohu koe,
-          me he maunga teitei.”
+      <button
+        type="button"
+        class="mana-v80-profile-cta"
+        id="manaV80ProfileSetup"
+      >
+
+        <div
+          class="mana-v80-profile-label"
+        >
+          YOUR PROFILE
         </div>
 
-        <div class="mana-v80-quote-en">
-          Pursue what is precious,
-          and if you bow your head,
-          let it be to a lofty mountain.
+        <h2>
+          Set your goals
+        </h2>
+
+        <p>
+          Tell Mana Movement your goal,
+          training days, experience and
+          equipment so your programs can
+          be built around you.
+        </p>
+
+        <div
+          class="mana-v80-profile-open"
+        >
+          Open profile →
         </div>
 
-      </div>
+      </button>
 
-      <div class="mana-v80-heading">
+
+      <div
+        class="mana-v80-heading"
+      >
         YOUR PROGRAMS
       </div>
+
 
       <button
         type="button"
         class="mana-v80-program"
         id="manaV80Mana28"
       >
-        <div class="mana-v80-program-label">
+
+        <div
+          class="mana-v80-program-label"
+        >
           MANA 28
         </div>
 
@@ -384,17 +625,24 @@
           moving with purpose.
         </p>
 
-        <div class="mana-v80-open">
+        <div
+          class="mana-v80-open"
+        >
           Open program →
         </div>
+
       </button>
+
 
       <button
         type="button"
         class="mana-v80-program"
         id="manaV80Strength"
       >
-        <div class="mana-v80-program-label">
+
+        <div
+          class="mana-v80-program-label"
+        >
           MANA STRENGTH
         </div>
 
@@ -408,17 +656,24 @@
           progress and performance.
         </p>
 
-        <div class="mana-v80-open">
+        <div
+          class="mana-v80-open"
+        >
           Open program →
         </div>
+
       </button>
+
 
       <button
         type="button"
         class="mana-v80-program"
         id="manaV80Life"
       >
-        <div class="mana-v80-program-label">
+
+        <div
+          class="mana-v80-program-label"
+        >
           MANA LIFE
         </div>
 
@@ -432,21 +687,40 @@
           to rebuild momentum.
         </p>
 
-        <div class="mana-v80-open">
+        <div
+          class="mana-v80-open"
+        >
           Open program →
         </div>
+
       </button>
 
-      <div class="mana-v80-bottom">
-        <div class="mana-v80-bottom-inner">
+
+      <div
+        class="mana-v80-bottom"
+      >
+
+        <div
+          class="mana-v80-bottom-inner"
+        >
 
           <button
             type="button"
             class="mana-v80-nav active"
             id="manaV80HomeBtn"
           >
-           ⌂<br>Home
+            ⌂<br>Home
           </button>
+
+
+          <button
+            type="button"
+            class="mana-v80-nav"
+            id="manaV80IntroBtn"
+          >
+            ◌<br>Intro
+          </button>
+
 
           <button
             type="button"
@@ -457,30 +731,48 @@
           </button>
 
         </div>
+
       </div>
+
     `;
-const wrap =
-  document.querySelector(
-    ".wrap"
-  );
 
-const header =
-  wrap?.querySelector(
-    ".brand"
-  );
+
+    const wrap =
+      document.querySelector(
+        ".wrap"
+      );
+
+    const header =
+      wrap?.querySelector(
+        ".brand"
+      );
+
+
     if (header) {
-  header.style.display =
-    "none";
 
-  header.insertAdjacentElement(
-    "afterend",
-    home
-  );
-} else if (wrap) {
-  wrap.appendChild(home);
-} else {
-  document.body.appendChild(home);
-}
+      header.style.display =
+        "none";
+
+      header
+        .insertAdjacentElement(
+          "afterend",
+          home
+        );
+
+    } else if (wrap) {
+
+      wrap.appendChild(
+        home
+      );
+
+    } else {
+
+      document.body.appendChild(
+        home
+      );
+
+    }
+
 
     document
       .getElementById(
@@ -489,12 +781,14 @@ const header =
       .onclick =
         openMana28;
 
+
     document
       .getElementById(
         "manaV80Strength"
       )
       .onclick =
         openStrength;
+
 
     document
       .getElementById(
@@ -503,13 +797,31 @@ const header =
       .onclick =
         openManaLife;
 
+
+    document
+      .getElementById(
+        "manaV80ProfileSetup"
+      )
+      .onclick =
+        openProfile;
+
+
     document
       .getElementById(
         "manaV80ProfileBtn"
       )
       .onclick =
         openProfile;
+
+
+    document
+      .getElementById(
+        "manaV80IntroBtn"
+      )
+      .onclick =
+        openIntro;
   }
+
 
   function refreshName() {
     const home =
@@ -519,13 +831,16 @@ const header =
 
     if (!home) return;
 
+
     const welcome =
       home.querySelector(
         ".mana-v80-welcome"
       );
 
+
     const name =
       profileName();
+
 
     if (welcome) {
       welcome.textContent =
@@ -535,18 +850,22 @@ const header =
     }
   }
 
+
   function init() {
     injectStyles();
+
 
     setTimeout(
       buildHome,
       600
     );
 
+
     setTimeout(
       buildHome,
       1500
     );
+
 
     window.addEventListener(
       "mana:profile-synced",
@@ -554,8 +873,10 @@ const header =
     );
   }
 
+
   if (
-    document.readyState === "loading"
+    document.readyState ===
+    "loading"
   ) {
     document.addEventListener(
       "DOMContentLoaded",
