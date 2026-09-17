@@ -204,9 +204,9 @@
     }
 
     const nav =
-      document.querySelector(
-        "body > .nav"
-      );
+  document.getElementById(
+    "bottomNav"
+  );
 
     if (nav) {
       nav.style.display = "none";
@@ -460,9 +460,26 @@
       </div>
     `;
 
-    document.body.appendChild(
-      home
-    );
+    const wrap =
+  document.querySelector(
+    ".wrap"
+  );
+
+const header =
+  wrap?.querySelector(
+    ".brand"
+  );
+
+if (header) {
+  header.insertAdjacentElement(
+    "afterend",
+    home
+  );
+} else if (wrap) {
+  wrap.appendChild(home);
+} else {
+  document.body.appendChild(home);
+}
 
     document
       .getElementById(
