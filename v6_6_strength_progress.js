@@ -1,286 +1,243 @@
 /* =========================================
    MANA MOVEMENT TRAINING v6.6
-   STRENGTH WORKOUT PROGRESS + TIMER
+   WORKOUT SUMMARY LAYOUT
    ========================================= */
 
 (() => {
   "use strict";
 
-  const STYLE_ID = "mana-strength-v66-style";
-  const SCREEN_ID = "manaStrengthV64Workout";
+  const STYLE_ID =
+    "mana-strength-v66-style";
 
-  let workoutStartedAt = null;
-  let timerInterval = null;
+  const SCREEN_ID =
+    "manaStrengthV64Workout";
+
 
   function injectStyles() {
-    if (document.getElementById(STYLE_ID)) return;
+    if (
+      document.getElementById(
+        STYLE_ID
+      )
+    ) return;
 
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
+    const style =
+      document.createElement(
+        "style"
+      );
+
+    style.id =
+      STYLE_ID;
 
     style.textContent = `
+
+      #${SCREEN_ID}
       .mana-v64-summary{
+        display:grid !important;
+
         grid-template-columns:
-          repeat(3, minmax(0,1fr))
+          repeat(
+            4,
+            minmax(0,1fr)
+          )
+          !important;
+
+        gap:10px !important;
+
+        margin:
+          14px
+          0
           !important;
       }
 
+
+      #${SCREEN_ID}
+      .mana-v64-stat{
+        min-width:0;
+        padding:14px;
+      }
+
+
+      #${SCREEN_ID}
+      .mana-v64-stat span{
+        font-size:10px;
+        line-height:1.25;
+      }
+
+
+      #${SCREEN_ID}
+      .mana-v64-stat strong{
+        font-size:21px;
+      }
+
+
       .mana-v66-sub{
         display:block;
+
         margin-top:4px;
+
         color:#777;
+
         font-size:10px;
-        line-height:1.2;
+
+        line-height:1.25;
       }
 
-      @media(max-width:430px){
+
+      @media(
+        max-width:700px
+      ){
+        #${SCREEN_ID}
         .mana-v64-summary{
           grid-template-columns:
-            1fr 1fr !important;
-        }
-
-        .mana-v64-summary
-        .mana-v64-stat:last-child{
-          grid-column:1 / -1;
+            1fr
+            1fr
+            !important;
         }
       }
+
+
+      @media(
+        max-width:360px
+      ){
+        #${SCREEN_ID}
+        .mana-v64-stat{
+          padding:12px;
+        }
+
+        #${SCREEN_ID}
+        .mana-v64-stat strong{
+          font-size:19px;
+        }
+      }
+
     `;
 
-    document.head.appendChild(style);
-  }
-
-  function formatTime(ms) {
-    const totalSeconds =
-      Math.max(
-        0,
-        Math.floor(ms / 1000)
-      );
-
-    const minutes =
-      Math.floor(
-        totalSeconds / 60
-      );
-
-    const seconds =
-      totalSeconds % 60;
-
-    return (
-      String(minutes).padStart(2, "0") +
-      ":" +
-      String(seconds).padStart(2, "0")
+    document.head.appendChild(
+      style
     );
   }
 
-  function totalSets() {
-    return document.querySelectorAll(
-      "#manaV64Exercises [data-v64-set]"
-    ).length;
-  }
-
-  function completedSets() {
-    return document.querySelectorAll(
-      "#manaV64Exercises " +
-      "[data-v64-check].done"
-    ).length;
-  }
-
-  function calculatePercent() {
-    const total =
-      totalSets();
-
-    if (!total) return 0;
-
-    return Math.round(
-      completedSets() /
-      total *
-      100
-    );
-  }
 
   function rebuildSummary() {
     const summary =
       document.querySelector(
-        "#manaStrengthV64Workout " +
+        `#${SCREEN_ID} ` +
         ".mana-v64-summary"
       );
 
     if (!summary) return;
 
-    if (
-      document.getElementById(
-        "manaV66Percent"
-      )
-    ) return;
+
+    /*
+      Use the v6.4 IDs directly.
+      v6.4 continues controlling all
+      timer / progress / volume logic.
+    */
 
     summary.innerHTML = `
-      <div class="mana-v64-stat">
-        <span>Workout complete</span>
 
-        <strong id="manaV66Percent">
+      <div class="mana-v64-stat">
+
+        <span>
+          Workout complete
+        </span>
+
+        <strong
+          id="manaV64Percent"
+        >
           0%
         </strong>
 
-        <small class="mana-v66-sub"
-          id="manaV66SetCount"
+        <small
+          class="mana-v66-sub"
         >
-          0 of 0 sets
+          Overall progress
         </small>
+
       </div>
 
-      <div class="mana-v64-stat">
-        <span>Elapsed time</span>
 
-        <strong id="manaV66Timer">
+      <div class="mana-v64-stat">
+
+        <span>
+          Elapsed time
+        </span>
+
+        <strong
+          id="manaV64Timer"
+        >
           00:00
         </strong>
 
-        <small class="mana-v66-sub">
+        <small
+          class="mana-v66-sub"
+        >
           Target 45–60 min
         </small>
+
       </div>
 
-      <div class="mana-v64-stat">
-        <span>Total volume</span>
 
-        <strong id="manaV64Volume">
+      <div class="mana-v64-stat">
+
+        <span>
+          Sets complete
+        </span>
+
+        <strong
+          id="manaV64Sets"
+        >
+          0 / 0
+        </strong>
+
+        <small
+          class="mana-v66-sub"
+        >
+          Completed / total
+        </small>
+
+      </div>
+
+
+      <div class="mana-v64-stat">
+
+        <span>
+          Total volume
+        </span>
+
+        <strong
+          id="manaV64Volume"
+        >
           0 kg
         </strong>
 
-        <small class="mana-v66-sub">
+        <small
+          class="mana-v66-sub"
+        >
           Completed sets only
         </small>
+
       </div>
+
     `;
   }
 
-  function updateProgress() {
-    const percentEl =
-      document.getElementById(
-        "manaV66Percent"
-      );
-
-    const countEl =
-      document.getElementById(
-        "manaV66SetCount"
-      );
-
-    if (percentEl) {
-      percentEl.textContent =
-        `${calculatePercent()}%`;
-    }
-
-    if (countEl) {
-      countEl.textContent =
-        `${completedSets()} of ` +
-        `${totalSets()} sets`;
-    }
-  }
-
-  function updateTimer() {
-    const timer =
-      document.getElementById(
-        "manaV66Timer"
-      );
-
-    if (
-      !timer ||
-      !workoutStartedAt
-    ) return;
-
-    timer.textContent =
-      formatTime(
-        Date.now() -
-        workoutStartedAt
-      );
-  }
-
-  function startTimer() {
-    if (!workoutStartedAt) {
-      workoutStartedAt =
-        Date.now();
-    }
-
-    if (timerInterval) {
-      clearInterval(
-        timerInterval
-      );
-    }
-
-    updateTimer();
-
-    timerInterval =
-      setInterval(
-        updateTimer,
-        1000
-      );
-  }
-
-  function stopTimer() {
-    if (timerInterval) {
-      clearInterval(
-        timerInterval
-      );
-
-      timerInterval = null;
-    }
-  }
-
-  function resetTimer() {
-    stopTimer();
-
-    workoutStartedAt = null;
-
-    const timer =
-      document.getElementById(
-        "manaV66Timer"
-      );
-
-    if (timer) {
-      timer.textContent =
-        "00:00";
-    }
-  }
 
   function workoutIsOpen() {
-    return document
-      .getElementById(
-        SCREEN_ID
-      )
-      ?.classList.contains(
-        "open"
-      );
-  }
-
-  function handleWorkoutState() {
-    if (!workoutIsOpen()) {
-      stopTimer();
-      return;
-    }
-
-    rebuildSummary();
-    startTimer();
-    updateProgress();
-  }
-
-  function watchChecks() {
-    document.addEventListener(
-      "click",
-      event => {
-        if (
-          !event.target.closest(
-            "[data-v64-check]"
-          )
-        ) return;
-
-        setTimeout(
-          updateProgress,
-          0
-        );
-      }
+    return Boolean(
+      document
+        .getElementById(
+          SCREEN_ID
+        )
+        ?.classList
+        .contains(
+          "open"
+        )
     );
   }
 
-  function watchWorkoutScreen() {
+
+  function handleWorkoutOpen() {
     const screen =
       document.getElementById(
         SCREEN_ID
@@ -288,93 +245,99 @@
 
     if (!screen) return;
 
+    let wasOpen =
+      screen.classList
+        .contains(
+          "open"
+        );
+
+
     const observer =
       new MutationObserver(
-        handleWorkoutState
+        () => {
+
+          const isOpen =
+            screen.classList
+              .contains(
+                "open"
+              );
+
+
+          if (
+            isOpen &&
+            !wasOpen
+          ) {
+            rebuildSummary();
+
+            /*
+              Ask the main logger to refresh
+              immediately after rebuilding
+              the summary elements.
+            */
+
+            setTimeout(
+              () => {
+
+                /*
+                  Triggering an input event
+                  makes v6.4 refresh if any
+                  inputs exist.
+                */
+
+                const input =
+                  screen.querySelector(
+                    "[data-v64-weight]"
+                  );
+
+                input?.dispatchEvent(
+                  new Event(
+                    "input",
+                    {
+                      bubbles:true
+                    }
+                  )
+                );
+
+              },
+              20
+            );
+          }
+
+
+          wasOpen =
+            isOpen;
+
+        }
       );
+
 
     observer.observe(
       screen,
       {
         attributes:true,
-        attributeFilter:["class"]
+        attributeFilter:[
+          "class"
+        ]
       }
     );
   }
 
-  function watchSetChanges() {
-    const holder =
-      document.getElementById(
-        "manaV64Exercises"
-      );
-
-    if (!holder) return;
-
-    const observer =
-      new MutationObserver(
-        () => {
-          updateProgress();
-        }
-      );
-
-    observer.observe(
-      holder,
-      {
-        childList:true,
-        subtree:true
-      }
-    );
-  }
-
-  function watchCompleteWorkout() {
-    document.addEventListener(
-      "click",
-      event => {
-        if (
-          !event.target.closest(
-            "#manaV64Complete"
-          )
-        ) return;
-
-        stopTimer();
-      }
-    );
-  }
-
-  function watchClose() {
-    document.addEventListener(
-      "click",
-      event => {
-        if (
-          !event.target.closest(
-            "#manaV64Close"
-          )
-        ) return;
-
-        resetTimer();
-      }
-    );
-  }
 
   function init() {
     injectStyles();
 
-    setTimeout(() => {
-      rebuildSummary();
-      watchWorkoutScreen();
-      watchSetChanges();
-      watchChecks();
-      watchCompleteWorkout();
-      watchClose();
+    rebuildSummary();
 
-      if (
-        workoutIsOpen()
-      ) {
-        startTimer();
-        updateProgress();
-      }
-    }, 300);
+    handleWorkoutOpen();
+
+
+    if (
+      workoutIsOpen()
+    ) {
+      rebuildSummary();
+    }
   }
+
 
   if (
     document.readyState ===
