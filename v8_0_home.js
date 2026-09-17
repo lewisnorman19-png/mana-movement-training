@@ -459,7 +459,15 @@
         </div>
       </div>
     `;
+const wrap =
+  document.querySelector(
+    ".wrap"
+  );
 
+const header =
+  wrap?.querySelector(
+    ".brand"
+  );
     if (header) {
   header.style.display =
     "none";
