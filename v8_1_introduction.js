@@ -555,28 +555,21 @@
     );
 
     document
-      .getElementById(
-        "manaV81Enter"
-      )
-      .onclick = () => {
-        localStorage.setItem(
-        closeIntro();
-      };
+  .getElementById(
+    "manaV81Enter"
+  )
+  .onclick =
+    closeIntro;
 
-    document
-      .getElementById(
-        "manaV81Close"
-      )
-      .onclick =
-        closeIntro;
-  }
+document
+  .getElementById(
+    "manaV81Close"
+  )
+  .onclick =
+    closeIntro;
+}
 
-  function openIntro(force = false) {
-    createIntro();
-
-    const seen =
-      localStorage.getItem(
-        function openIntro() {
+function openIntro() {
   createIntro();
 
   document
@@ -590,7 +583,8 @@
   document.body.style.overflow =
     "hidden";
 }
-      function closeIntro() {
+
+function closeIntro() {
   document
     .getElementById(
       INTRO_ID
@@ -603,90 +597,111 @@
     "";
 }
 
-  function clientIsLoggedIn() {
-    const auth =
-      document.getElementById(
-        "authView"
-      );
-
-    const client =
-      document.getElementById(
-        "clientView"
-      );
-
-    if (!client) return false;
-
-    const authHidden =
-      !auth ||
-      auth.classList.contains(
-        "hide"
-      );
-
-    return (
-      authHidden &&
-      !client.classList.contains(
-        "hide"
-      )
+function clientIsLoggedIn() {
+  const auth =
+    document.getElementById(
+      "authView"
     );
-  }
 
-  function maybeShowIntro() {
-    if (!clientIsLoggedIn()) {
-      return;
-    }
+  const client =
+    document.getElementById(
+      "clientView"
+    );
 
-    openIntro(false);
-  }
+  if (!client) return false;
 
-  function watchLoginState() {
-    const client =
-      document.getElementById(
-        "clientView"
-      );
+  const authHidden =
+    !auth ||
+    auth.classList.contains(
+      "hide"
+    );
 
-    if (!client) return;
-
-    const observer =
-      new MutationObserver(() => {
-        if (
-  clientIsLoggedIn()
-) {
-  setTimeout(
-    maybeShowIntro,
-    350
+  return (
+    authHidden &&
+    !client.classList.contains(
+      "hide"
+    )
   );
 }
-        }
-      });
 
+function maybeShowIntro() {
+  if (
+    clientIsLoggedIn()
+  ) {
+    openIntro();
+  }
+}
+
+function watchLoginState() {
+  const auth =
+    document.getElementById(
+      "authView"
+    );
+
+  const client =
+    document.getElementById(
+      "clientView"
+    );
+
+  if (!client) return;
+
+  let wasLoggedIn =
+    clientIsLoggedIn();
+
+  const observer =
+    new MutationObserver(() => {
+      const loggedIn =
+        clientIsLoggedIn();
+
+      if (
+        loggedIn &&
+        !wasLoggedIn
+      ) {
+        setTimeout(
+          openIntro,
+          250
+        );
+      }
+
+      wasLoggedIn =
+        loggedIn;
+    });
+
+  observer.observe(
+    client,
+    {
+      attributes:true,
+      attributeFilter:["class"]
+    }
+  );
+
+  if (auth) {
     observer.observe(
-      client,
+      auth,
       {
         attributes:true,
-        attributeFilter:[
-          "class"
-        ]
+        attributeFilter:["class"]
       }
     );
   }
+}
 
-  function init() {
-    injectStyles();
-    createIntro();
-    watchLoginState();
+function init() {
+  injectStyles();
+  createIntro();
+  watchLoginState();
 
-    setTimeout(
-      maybeShowIntro,
-      900
-    );
-  }
+  setTimeout(
+    maybeShowIntro,
+    900
+  );
+}
 
-  /*
-  Lets us open it later from
-  Profile / About Mana Movement.
-*/
 window.openManaIntroduction =
   openIntro;
+
+window.closeManaIntroduction =
+  closeIntro;
 
 if (
   document.readyState ===
