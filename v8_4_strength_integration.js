@@ -1041,17 +1041,84 @@
       }
     );
   }
+function watchStrengthShell() {
+  const shell =
+    document.getElementById(
+      SHELL_ID
+    );
 
-  function init() {
-    injectStyles();
-    wire();
+  const title =
+    document.getElementById(
+      "manaV83Title"
+    );
 
-    setTimeout(
-      renderStrengthTab,
-      1200
+  const tabs =
+    document.getElementById(
+      "manaV83Tabs"
+    );
+
+  if (!shell) return;
+
+  const refresh = () => {
+    if (shellIsStrength()) {
+      setTimeout(
+        renderStrengthTab,
+        60
+      );
+    }
+  };
+
+  const observer =
+    new MutationObserver(
+      refresh
+    );
+
+  observer.observe(
+    shell,
+    {
+      attributes:true,
+      attributeFilter:[
+        "class"
+      ]
+    }
+  );
+
+  if (title) {
+    observer.observe(
+      title,
+      {
+        childList:true,
+        subtree:true
+      }
     );
   }
 
+  if (tabs) {
+    observer.observe(
+      tabs,
+      {
+        childList:true,
+        subtree:true,
+        attributes:true,
+        attributeFilter:[
+          "class"
+        ]
+      }
+    );
+  }
+}
+  function init() {
+  injectStyles();
+  wire();
+  watchStrengthShell();
+
+  setTimeout(
+    renderStrengthTab,
+    1200
+  );
+}
+window.renderManaStrengthShell =
+  renderStrengthTab;
   if (
     document.readyState ===
     "loading"
