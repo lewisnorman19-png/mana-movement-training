@@ -480,6 +480,38 @@
         }
       );
     }
+     const holder =
+  document.getElementById(
+    "manaV83Content"
+  );
+
+if (holder) {
+  const contentObserver =
+    new MutationObserver(() => {
+      if (
+        !strengthShellOpen()
+      ) return;
+
+      if (
+        holder.querySelector(
+          ".mana-v85-day"
+        )
+      ) return;
+
+      setTimeout(
+        renderCards,
+        30
+      );
+    });
+
+  contentObserver.observe(
+    holder,
+    {
+      childList:true,
+      subtree:true
+    }
+  );
+}
   }
 
   function init() {
