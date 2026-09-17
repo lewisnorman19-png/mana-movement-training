@@ -460,17 +460,10 @@
       </div>
     `;
 
-    const wrap =
-  document.querySelector(
-    ".wrap"
-  );
+    if (header) {
+  header.style.display =
+    "none";
 
-const header =
-  wrap?.querySelector(
-    ".brand"
-  );
-
-if (header) {
   header.insertAdjacentElement(
     "afterend",
     home
