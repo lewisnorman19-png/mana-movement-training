@@ -125,11 +125,6 @@
     }
 
 
-    /*
-      Fallback to older v6.3
-      workout history.
-    */
-
     const oldLogs =
       safeJson(
         localStorage.getItem(
@@ -292,10 +287,6 @@
       }
 
 
-      /* ==========================
-         WORKOUT DASHBOARD
-         ========================== */
-
       .mana-v64-summary{
         display:grid;
 
@@ -384,10 +375,6 @@
           ease;
       }
 
-
-      /* ==========================
-         EXERCISES
-         ========================== */
 
       .mana-v64-card{
         background:#0e0e0e;
@@ -551,10 +538,6 @@
         font-weight:800;
       }
 
-
-      /* ==========================
-         COMPLETE WORKOUT
-         ========================== */
 
       .mana-v64-complete{
         width:100%;
@@ -1578,6 +1561,24 @@
 
 
   /* =========================================
+     RETURN TO MANA STRENGTH OVERVIEW
+     ========================================= */
+
+  function returnToStrengthOverview() {
+    if (
+      typeof
+        window
+          .openManaProgram ===
+      "function"
+    ) {
+      window.openManaProgram(
+        "strength"
+      );
+    }
+  }
+
+
+  /* =========================================
      CLOSE WORKOUT
      ========================================= */
 
@@ -1599,6 +1600,12 @@
 
     activeDayIndex =
       null;
+
+
+    setTimeout(
+      returnToStrengthOverview,
+      50
+    );
   }
 
 
@@ -1775,11 +1782,6 @@
     );
 
 
-    /*
-      Let other app layers know
-      Strength history changed.
-    */
-
     window.dispatchEvent(
       new CustomEvent(
         "mana:strength-synced"
@@ -1894,8 +1896,11 @@
   /* =========================================
      INIT
      ========================================= */
-window.openManaStrengthWorkout =
-  openWorkout;
+
+  window.openManaStrengthWorkout =
+    openWorkout;
+
+
   function init() {
     injectStyles();
 
