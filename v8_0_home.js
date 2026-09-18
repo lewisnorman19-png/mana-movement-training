@@ -1,6 +1,6 @@
 /* =========================================
    MANA MOVEMENT TRAINING v8.0
-   HOME — PROGRAMS + PROFILE + INTRO NAV
+   HOME — BRAND + PROGRAMS + PROFILE + INTRO
    ========================================= */
 
 (() => {
@@ -41,23 +41,75 @@
       }
 
 
+      /* ==========================
+         BRAND
+         ========================== */
+
       .mana-v80-brand{
         margin-bottom:24px;
       }
 
 
-      .mana-v80-brand-title{
+      .mana-v80-brand-row{
+        display:flex;
+        align-items:center;
+        gap:14px;
+        margin-bottom:16px;
+      }
+
+
+      .mana-v80-mark{
+        width:58px;
+        height:58px;
+
+        flex:0 0 58px;
+
+        display:grid;
+        place-items:center;
+
+        border:
+          2px solid
+          #d4af37;
+
         color:#f3d875;
 
-        font-size:14px;
+        font:
+          700
+          38px
+          Georgia,
+          serif;
+
+        background:#070707;
+      }
+
+
+      .mana-v80-brand-title{
+        color:#fff;
+
+        font-size:18px;
+
+        font-weight:900;
+
+        letter-spacing:.15em;
+
+        line-height:1.2;
+
+        text-transform:uppercase;
+      }
+
+
+      .mana-v80-brand-kicker{
+        margin-top:6px;
+
+        color:#f3d875;
+
+        font-size:11px;
 
         font-weight:900;
 
         letter-spacing:.16em;
 
         text-transform:uppercase;
-
-        margin-bottom:8px;
       }
 
 
@@ -68,12 +120,12 @@
 
         line-height:1.05;
 
-        letter-spacing:.04em;
+        letter-spacing:.03em;
       }
 
 
       .mana-v80-brand-sub{
-        margin-top:7px;
+        margin-top:8px;
 
         color:#f3d875;
 
@@ -536,20 +588,45 @@
       >
 
         <div
-          class="mana-v80-brand-title"
+          class="mana-v80-brand-row"
         >
-          MANA MOVEMENT TRAINING
+
+          <div
+            class="mana-v80-mark"
+          >
+            M
+          </div>
+
+          <div>
+
+            <div
+              class="mana-v80-brand-title"
+            >
+              MANA MOVEMENT
+            </div>
+
+            <div
+              class="mana-v80-brand-kicker"
+            >
+              TRAINING • MOVE WITH PURPOSE
+            </div>
+
+          </div>
+
         </div>
+
 
         <h1>
           Move with Purpose
         </h1>
+
 
         <div
           class="mana-v80-brand-sub"
         >
           TRAINING • STRENGTH • LIFE
         </div>
+
 
         <div
           class="mana-v80-welcome"
