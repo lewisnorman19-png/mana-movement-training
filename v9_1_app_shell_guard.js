@@ -1,10 +1,15 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.1.3
-   MOBILE SESSION + ROUTE GUARD
+   MANA MOVEMENT TRAINING v9.1.5
+   APP SHELL + ROUTE GUARD
 
-   PREVENT OLD CLIENT APP RETURNING
+   INTRO-SAFE ROUTING
+   PREVENT LEGACY CLIENT UI RETURNING
    REMEMBER CURRENT MANA SCREEN
-   RESTORE AFTER PHONE SLEEP / REFRESH
+   RESTORE AFTER PHONE SLEEP
+
+   IMPORTANT:
+   INTRO ALWAYS WINS WHILE OPEN
+   ENTERING FROM INTRO GOES TO HOME
    ========================================= */
 
 (() => {
@@ -14,6 +19,9 @@
   const HOME_ID =
     "manaV80Home";
 
+  const INTRO_ID =
+    "manaV81Intro";
+
   const SHELL_ID =
     "manaV83ProgramShell";
 
@@ -21,7 +29,7 @@
     "manaProfileScreen";
 
   const ROUTE_KEY =
-    "mana-v913-last-route";
+    "mana-v915-last-route";
 
 
   const OLD_CLIENT_IDS = [
@@ -53,6 +61,18 @@
   }
 
 
+  function introIsOpen() {
+    return Boolean(
+      document
+        .getElementById(
+          INTRO_ID
+        )
+        ?.classList
+        .contains("open")
+    );
+  }
+
+
   function coachIsOpen() {
     const coach =
       document.getElementById(
@@ -76,28 +96,53 @@
     }
 
 
-    OLD_CLIENT_IDS.forEach(
-      id => {
+    OLD_CLIENT_IDS
+      .forEach(
+        id => {
 
-        const el =
-          document.getElementById(
-            id
+          const el =
+            document.getElementById(
+              id
+            );
+
+
+          if (!el) {
+            return;
+          }
+
+
+          el.classList.add(
+            "hide"
           );
 
 
-        if (!el) return;
+          el.style.display =
+            "none";
+
+        }
+      );
+  }
 
 
-        el.classList.add(
-          "hide"
-        );
+  function hideModernOverlaysForHome() {
+    document
+      .getElementById(
+        SHELL_ID
+      )
+      ?.classList
+      .remove("open");
 
 
-        el.style.display =
-          "none";
+    document
+      .getElementById(
+        PROFILE_ID
+      )
+      ?.classList
+      .remove("open");
 
-      }
-    );
+
+    document.body.style.overflow =
+      "";
   }
 
 
@@ -115,6 +160,8 @@
 
     hideOldClientUI();
 
+    hideModernOverlaysForHome();
+
 
     home.style.display =
       "";
@@ -123,12 +170,13 @@
 
   function currentProgram() {
     const title =
-      document.getElementById(
-        "manaV83Title"
-      )
-      ?.textContent
-      ?.trim()
-      ?.toUpperCase();
+      document
+        .getElementById(
+          "manaV83Title"
+        )
+        ?.textContent
+        ?.trim()
+        ?.toUpperCase();
 
 
     if (
@@ -200,7 +248,8 @@
 
   function captureRoute() {
     if (
-      coachIsOpen()
+      coachIsOpen() ||
+      introIsOpen()
     ) {
       return;
     }
@@ -246,11 +295,15 @@
 
         saveRoute({
           screen:"program",
+
           program,
-          tab:currentTab()
+
+          tab:
+            currentTab()
         });
 
       }
+
 
       return;
     }
@@ -277,6 +330,19 @@
 
 
   function newManaScreenOpen() {
+    /*
+      CRITICAL:
+      Intro counts as an active screen.
+      Nothing is allowed to restore over it.
+    */
+
+    if (
+      introIsOpen()
+    ) {
+      return true;
+    }
+
+
     const shell =
       document.getElementById(
         SHELL_ID
@@ -315,6 +381,17 @@
     program,
     tab
   ) {
+    /*
+      NEVER open a program over Intro.
+    */
+
+    if (
+      introIsOpen()
+    ) {
+      return false;
+    }
+
+
     if (
       typeof
         window
@@ -329,9 +406,10 @@
       true;
 
 
-    window.openManaProgram(
-      program
-    );
+    window
+      .openManaProgram(
+        program
+      );
 
 
     hideOldClientUI();
@@ -345,6 +423,17 @@
 
       setTimeout(
         () => {
+
+          if (
+            introIsOpen()
+          ) {
+
+            restoring =
+              false;
+
+            return;
+          }
+
 
           const button =
             document.querySelector(
@@ -372,6 +461,7 @@
 
           hideOldClientUI();
 
+
           restoring =
             false;
 
@@ -389,6 +479,20 @@
   function restoreRoute(
     force = false
   ) {
+    /*
+      INTRO HAS ABSOLUTE PRIORITY.
+    */
+
+    if (
+      introIsOpen()
+    ) {
+
+      hideOldClientUI();
+
+      return;
+    }
+
+
     if (
       restoring ||
       coachIsOpen()
@@ -452,7 +556,7 @@
 
     if (
       route?.screen ===
-      "program" &&
+        "program" &&
       route.program
     ) {
 
@@ -484,6 +588,18 @@
       setTimeout(
         () => {
 
+          /*
+            Check Intro again when timer
+            actually fires.
+          */
+
+          if (
+            introIsOpen()
+          ) {
+            return;
+          }
+
+
           restoreRoute(
             force
           );
@@ -508,7 +624,7 @@
     if (
       window
         .openConnectedClient
-        .__manaV913
+        .__manaV915
     ) {
       return;
     }
@@ -532,6 +648,18 @@
         hideOldClientUI();
 
 
+        /*
+          If Intro is open after login,
+          do not restore any previous route.
+        */
+
+        if (
+          introIsOpen()
+        ) {
+          return;
+        }
+
+
         scheduleRestore(
           true,
           60
@@ -542,6 +670,14 @@
           () => {
 
             hideOldClientUI();
+
+
+            if (
+              introIsOpen()
+            ) {
+              return;
+            }
+
 
             restoreRoute(
               true
@@ -554,12 +690,41 @@
       };
 
 
-    replacement.__manaV913 =
+    replacement.__manaV915 =
       true;
 
 
     window.openConnectedClient =
       replacement;
+  }
+
+
+  function enterFromIntro() {
+    /*
+      Entering Mana Movement from Intro
+      should ALWAYS land on Home.
+
+      It must not restore the program
+      the client used previously.
+    */
+
+    saveRoute({
+      screen:"home"
+    });
+
+
+    setTimeout(
+      () => {
+
+        hideOldClientUI();
+
+        hideModernOverlaysForHome();
+
+        showHome();
+
+      },
+      80
+    );
   }
 
 
@@ -569,7 +734,8 @@
       () => {
 
         if (
-          restoring
+          restoring ||
+          introIsOpen()
         ) {
           return;
         }
@@ -587,6 +753,39 @@
     document.addEventListener(
       "click",
       event => {
+
+        /*
+          INTRO ENTER
+        */
+
+        if (
+          event.target.closest(
+            "#manaV81Enter"
+          )
+        ) {
+
+          enterFromIntro();
+
+          return;
+        }
+
+
+        /*
+          INTRO RETURN / CLOSE
+          Same rule: return to Home.
+        */
+
+        if (
+          event.target.closest(
+            "#manaV81Close"
+          )
+        ) {
+
+          enterFromIntro();
+
+          return;
+        }
+
 
         if (
           event.target.closest(
@@ -629,7 +828,8 @@
 
         }
 
-      }
+      },
+      true
     );
   }
 
@@ -641,10 +841,22 @@
 
         if (
           document.visibilityState ===
-          "hidden"
+            "hidden"
         ) {
 
-          captureRoute();
+          /*
+            Do not save a hidden program
+            behind the Intro page.
+          */
+
+          if (
+            !introIsOpen()
+          ) {
+
+            captureRoute();
+
+          }
+
 
           return;
         }
@@ -652,10 +864,17 @@
 
         if (
           document.visibilityState ===
-          "visible"
+            "visible"
         ) {
 
           hideOldClientUI();
+
+
+          if (
+            introIsOpen()
+          ) {
+            return;
+          }
 
 
           scheduleRestore(
@@ -668,6 +887,14 @@
             () => {
 
               hideOldClientUI();
+
+
+              if (
+                introIsOpen()
+              ) {
+                return;
+              }
+
 
               restoreRoute(
                 false
@@ -685,7 +912,17 @@
 
     window.addEventListener(
       "pagehide",
-      captureRoute
+      () => {
+
+        if (
+          !introIsOpen()
+        ) {
+
+          captureRoute();
+
+        }
+
+      }
     );
 
 
@@ -694,6 +931,14 @@
       () => {
 
         hideOldClientUI();
+
+
+        if (
+          introIsOpen()
+        ) {
+          return;
+        }
+
 
         scheduleRestore(
           false,
@@ -709,6 +954,14 @@
       () => {
 
         hideOldClientUI();
+
+
+        if (
+          introIsOpen()
+        ) {
+          return;
+        }
+
 
         scheduleRestore(
           false,
@@ -756,6 +1009,7 @@
         childList:true,
         subtree:true,
         attributes:true,
+
         attributeFilter:[
           "class",
           "style"
@@ -800,6 +1054,19 @@
     setTimeout(
       () => {
 
+        /*
+          Intro may have appeared during
+          login/session restoration.
+          Never override it.
+        */
+
+        if (
+          introIsOpen()
+        ) {
+          return;
+        }
+
+
         restoreRoute(
           false
         );
@@ -814,6 +1081,14 @@
     () => {
 
       hideOldClientUI();
+
+
+      if (
+        introIsOpen()
+      ) {
+        return;
+      }
+
 
       restoreRoute(
         false
