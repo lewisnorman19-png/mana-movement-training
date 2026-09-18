@@ -1,6 +1,7 @@
 /* =========================================
    MANA MOVEMENT TRAINING v8.3
    PROGRAM SHELLS — BOTTOM NAV + BRANDING
+   SMART BACK BUTTON
    ========================================= */
 
 (() => {
@@ -699,7 +700,71 @@
         "manaV83Back"
       )
       .onclick =
-        closeProgram;
+        handleBack;
+  }
+
+
+  function updateBackButton() {
+    const button =
+      document.getElementById(
+        "manaV83Back"
+      );
+
+    if (!button) return;
+
+
+    if (
+      activeProgram ===
+        "strength" &&
+      activeTab !==
+        "overview"
+    ) {
+      button.textContent =
+        "← Overview";
+
+      return;
+    }
+
+
+    button.textContent =
+      "← Home";
+  }
+
+
+  function goToOverview() {
+    activeTab =
+      "overview";
+
+
+    renderTabs();
+
+    renderContent();
+
+    updateBackButton();
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:program-tab-change"
+      )
+    );
+  }
+
+
+  function handleBack() {
+    if (
+      activeProgram ===
+        "strength" &&
+      activeTab !==
+        "overview"
+    ) {
+      goToOverview();
+
+      return;
+    }
+
+
+    closeProgram();
   }
 
 
@@ -760,16 +825,20 @@
                 button.dataset
                   .v83Tab;
 
+
               renderTabs();
 
               renderContent();
 
-              window
-                .dispatchEvent(
-                  new CustomEvent(
-                    "mana:program-tab-change"
-                  )
-                );
+              updateBackButton();
+
+
+              window.dispatchEvent(
+                new CustomEvent(
+                  "mana:program-tab-change"
+                )
+              );
+
             };
         }
       );
@@ -1161,6 +1230,9 @@
       )
       .textContent =
         subtitle || "";
+
+
+    updateBackButton();
   }
 
 
@@ -1190,6 +1262,8 @@
     renderTabs();
 
     renderContent();
+
+    updateBackButton();
 
 
     document
@@ -1278,81 +1352,4 @@
       );
 
 
-    if (mana28) {
-      mana28.onclick =
-        () =>
-          openProgram(
-            "mana28"
-          );
-    }
-
-
-    if (strength) {
-      strength.onclick =
-        () =>
-          openProgram(
-            "strength"
-          );
-    }
-
-
-    if (life) {
-      life.onclick =
-        () =>
-          openProgram(
-            "life"
-          );
-    }
-  }
-
-
-  function init() {
-    injectStyles();
-
-    ensureShell();
-
-
-    setTimeout(
-      wireHomeButtons,
-      900
-    );
-
-
-    setTimeout(
-      wireHomeButtons,
-      1800
-    );
-
-
-    window.addEventListener(
-      "mana:profile-synced",
-      () => {
-
-        if (
-          activeProgram ===
-          "strength"
-        ) {
-          updateHeader();
-        }
-      }
-    );
-  }
-
-
-  window.openManaProgram =
-    openProgram;
-
-
-  if (
-    document.readyState ===
-    "loading"
-  ) {
-    document.addEventListener(
-      "DOMContentLoaded",
-      init
-    );
-  } else {
-    init();
-  }
-
-})();
+    if (mana28
