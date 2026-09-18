@@ -1,18 +1,17 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.6.5
+   MANA MOVEMENT TRAINING v8.6.6
    MANA STRENGTH — OVERVIEW
 
    PERSONALISED WELCOME
-   REAL ACTIVITY
+   TODAY'S FOCUS CHECKLIST
    COACH ACTIVITY
    NEXT UP
    MEMBERSHIP LEVELS
-
-   NO START WORKOUT BUTTON
    ========================================= */
 
 (() => {
   "use strict";
+
 
   const PROGRAM_KEY =
     "mana-strength-v62-program";
@@ -26,14 +25,25 @@
   const FUEL_KEY =
     "mana-fuel-v571";
 
+  const TARGET_KEY =
+    "mana-fuel-v58-targets";
+
+  const DAILY_KEY =
+    "mana-strength-v866-daily";
+
   const STYLE_ID =
-    "mana-v865-strength-overview-style";
+    "mana-v866-strength-overview-style";
+
 
   let coachActivity = [];
 
   let coachActivityLoaded =
     false;
 
+
+  /* =========================================
+     HELPERS
+     ========================================= */
 
   function safeJson(
     raw,
@@ -69,6 +79,32 @@
         '"',
         "&quot;"
       );
+  }
+
+
+  function todayKey() {
+    const date =
+      new Date();
+
+
+    return [
+      date.getFullYear(),
+
+      String(
+        date.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      ),
+
+      String(
+        date.getDate()
+      ).padStart(
+        2,
+        "0"
+      )
+
+    ].join("-");
   }
 
 
@@ -112,28 +148,32 @@
   }
 
 
-  function todayKey() {
-    const date =
-      new Date();
+  function loadTargets() {
+    const saved =
+      safeJson(
+        localStorage.getItem(
+          TARGET_KEY
+        ) || "{}",
+        {}
+      );
 
-    return [
-      date.getFullYear(),
 
-      String(
-        date.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      ),
+    return {
+      calories:
+        Number(
+          saved.calories || 0
+        ),
 
-      String(
-        date.getDate()
-      ).padStart(
-        2,
-        "0"
-      )
+      protein:
+        Number(
+          saved.protein || 0
+        ),
 
-    ].join("-");
+      water:
+        Number(
+          saved.water || 0
+        )
+    };
   }
 
 
@@ -141,15 +181,18 @@
     const profile =
       loadProfile();
 
+
     const name =
       String(
         profile.name ||
         ""
       ).trim();
 
+
     if (!name) {
       return "";
     }
+
 
     return (
       name.split(/\s+/)[0]
@@ -163,15 +206,18 @@
         "manaV83ProgramShell"
       );
 
+
     const title =
       document.getElementById(
         "manaV83Title"
       );
 
+
     const active =
       document.querySelector(
         "#manaV83Tabs .mana-v83-tab.active"
       );
+
 
     return Boolean(
 
@@ -194,201 +240,133 @@
   }
 
 
-  function startOfWeek() {
-    const now =
-      new Date();
+  /* =========================================
+     DAILY FOUNDATION DATA
+     ========================================= */
 
-    const day =
-      now.getDay();
-
-    const diff =
-      day === 0
-        ? 6
-        : day - 1;
-
-    const start =
-      new Date(now);
-
-    start.setHours(
-      0,
-      0,
-      0,
-      0
-    );
-
-    start.setDate(
-      start.getDate() -
-      diff
-    );
-
-    return start;
-  }
+  function loadDailyState() {
+    const store =
+      safeJson(
+        localStorage.getItem(
+          DAILY_KEY
+        ) || "{}",
+        {}
+      );
 
 
-  function weekLogs(
-    logs
-  ) {
-    const start =
-      startOfWeek()
-        .getTime();
-
-    return logs.filter(
-      log => {
-
-        const value =
-          new Date(
-            log.date ||
-            log.created_at ||
-            0
-          ).getTime();
-
-        return (
-          Number.isFinite(value) &&
-          value >= start
-        );
-
+    return (
+      store[
+        todayKey()
+      ] || {
+        recovery:false
       }
     );
   }
 
 
-  function latestLog(
-    logs
+  function saveDailyState(
+    day
   ) {
-    if (!logs.length) {
-      return null;
-    }
+    const store =
+      safeJson(
+        localStorage.getItem(
+          DAILY_KEY
+        ) || "{}",
+        {}
+      );
 
-    return [
-      ...logs
-    ]
-      .sort(
-        (a, b) => {
 
-          const timeA =
-            new Date(
-              a.date ||
-              a.created_at ||
-              0
-            ).getTime();
+    store[
+      todayKey()
+    ] =
+      day;
 
-          const timeB =
-            new Date(
-              b.date ||
-              b.created_at ||
-              0
-            ).getTime();
+
+    localStorage.setItem(
+      DAILY_KEY,
+      JSON.stringify(
+        store
+      )
+    );
+  }
+
+
+  function toggleRecovery() {
+    const day =
+      loadDailyState();
+
+
+    day.recovery =
+      !day.recovery;
+
+
+    saveDailyState(
+      day
+    );
+
+
+    renderOverview();
+  }
+
+
+  function todayLogs() {
+    const today =
+      todayKey();
+
+
+    return loadLogs()
+      .filter(
+        log => {
+
+          const raw =
+            log.date ||
+            log.created_at;
+
+
+          if (!raw) {
+            return false;
+          }
+
+
+          const date =
+            new Date(raw);
+
+
+          if (
+            Number.isNaN(
+              date.getTime()
+            )
+          ) {
+            return false;
+          }
+
+
+          const key = [
+            date.getFullYear(),
+
+            String(
+              date.getMonth() + 1
+            ).padStart(
+              2,
+              "0"
+            ),
+
+            String(
+              date.getDate()
+            ).padStart(
+              2,
+              "0"
+            )
+
+          ].join("-");
+
 
           return (
-            timeB -
-            timeA
+            key === today
           );
 
         }
-      )[0];
-  }
-
-
-  function daysSince(
-    value
-  ) {
-    if (!value) {
-      return null;
-    }
-
-    const date =
-      new Date(value);
-
-    if (
-      Number.isNaN(
-        date.getTime()
-      )
-    ) {
-      return null;
-    }
-
-    const now =
-      new Date();
-
-    const today =
-      new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate()
       );
-
-    const then =
-      new Date(
-        date.getFullYear(),
-        date.getMonth(),
-        date.getDate()
-      );
-
-    return Math.max(
-      0,
-      Math.round(
-        (
-          today.getTime() -
-          then.getTime()
-        ) /
-        86400000
-      )
-    );
-  }
-
-
-  function lastWorkoutText(
-    log
-  ) {
-    if (!log) {
-      return "No workouts yet";
-    }
-
-    const ago =
-      daysSince(
-        log.date ||
-        log.created_at
-      );
-
-    if (ago === 0) {
-      return "Today";
-    }
-
-    if (ago === 1) {
-      return "Yesterday";
-    }
-
-    if (
-      Number.isFinite(
-        ago
-      )
-    ) {
-      return (
-        `${ago} days ago`
-      );
-    }
-
-    return "Recently";
-  }
-
-
-  function nextWorkoutIndex(
-    program,
-    logs
-  ) {
-    const total =
-      program
-        ?.sessions
-        ?.length || 0;
-
-    if (!total) {
-      return 0;
-    }
-
-    return (
-      logs.length %
-      total
-    );
   }
 
 
@@ -396,20 +374,25 @@
     const store =
       loadFuelStore();
 
+
     const day =
       store[
         todayKey()
       ] || {};
 
+
     const totals = {
       calories:0,
       protein:0,
+
       water:
         Number(
           day.water || 0
         ),
+
       meals:0
     };
+
 
     Object.values(
       day.meals || {}
@@ -423,10 +406,12 @@
 
             totals.meals += 1;
 
+
             totals.calories +=
               Number(
                 item.calories || 0
               );
+
 
             totals.protein +=
               Number(
@@ -439,180 +424,246 @@
       }
     );
 
+
     return totals;
   }
 
 
+  function dailyFoundations() {
+    const fuel =
+      todayFuelTotals();
+
+
+    const targets =
+      loadTargets();
+
+
+    const manual =
+      loadDailyState();
+
+
+    const workoutDone =
+      todayLogs()
+        .length > 0;
+
+
+    const waterDone =
+      targets.water > 0 &&
+      fuel.water >=
+        targets.water;
+
+
+    const proteinDone =
+      targets.protein > 0 &&
+      fuel.protein >=
+        targets.protein;
+
+
+    return {
+
+      workout:{
+        done:
+          workoutDone,
+
+        title:
+          "Training done",
+
+        detail:
+          workoutDone
+            ? "Strength session completed today"
+            : "Complete today's planned training"
+      },
+
+
+      water:{
+        done:
+          waterDone,
+
+        title:
+          "Water target",
+
+        detail:
+          targets.water
+            ? `${Math.round(
+                fuel.water
+              )} / ${Math.round(
+                targets.water
+              )} ml`
+            : "Set your water target in Fuel"
+      },
+
+
+      protein:{
+        done:
+          proteinDone,
+
+        title:
+          "Protein target",
+
+        detail:
+          targets.protein
+            ? `${Math.round(
+                fuel.protein
+              )} / ${Math.round(
+                targets.protein
+              )} g`
+            : "Set your protein target in Fuel"
+      },
+
+
+      recovery:{
+        done:
+          Boolean(
+            manual.recovery
+          ),
+
+        title:
+          "Recovery focus",
+
+        detail:
+          manual.recovery
+            ? "Recovery focus completed"
+            : "Mobility, walk, sleep or recovery work"
+      }
+
+    };
+  }
+
+
+  function foundationCount(
+    foundations
+  ) {
+    return Object
+      .values(
+        foundations
+      )
+      .filter(
+        item =>
+          item.done
+      )
+      .length;
+  }
+
+
+  /* =========================================
+     WELCOME MESSAGE
+     ========================================= */
+
   function welcomeMessage(
-    weeklyDone,
-    weeklyTarget,
-    latest,
-    nextName,
+    foundations,
     hasCoachRequest
   ) {
-    const remaining =
-      Math.max(
-        0,
-        weeklyTarget -
-        weeklyDone
+    const done =
+      foundationCount(
+        foundations
       );
 
-    const ago =
-      latest
-        ? daysSince(
-            latest.date ||
-            latest.created_at
-          )
-        : null;
 
-
-    if (hasCoachRequest) {
+    if (
+      hasCoachRequest
+    ) {
       return (
-        "You've got a coach check-in waiting. " +
-        "Have a look at your activity below, then complete your check-in when you're ready."
+        "Your coach has requested a check-in. " +
+        "Complete today's foundations and send your update when you're ready."
       );
     }
 
 
     if (
-      weeklyTarget &&
-      weeklyDone >=
-        weeklyTarget
+      done === 4
     ) {
       return (
-        "Strong week. You've completed your planned training. " +
-        "Use the rest of the week to recover well and keep your Fuel consistent."
+        "You've covered the foundations today. " +
+        "Recover well and carry the momentum into tomorrow."
       );
     }
 
 
     if (
-      ago === 0
+      foundations.workout.done &&
+      foundations.water.done &&
+      foundations.protein.done
     ) {
       return (
-        "Nice work getting a session done today. " +
-        (
-          nextName
-            ? `${nextName} is next when you're ready.`
-            : "Keep building on it."
-        )
+        "Training and Fuel are on track today. " +
+        "Finish with some recovery work and you've covered the foundations."
       );
     }
 
 
     if (
-      ago === 1
+      foundations.workout.done
     ) {
       return (
-        "You trained yesterday, so you're building good momentum. " +
-        (
-          remaining
-            ? `${remaining} planned session${remaining === 1 ? "" : "s"} left this week.`
-            : "Stay consistent with your recovery."
-        )
-      );
-    }
-
-
-    if (!latest) {
-      return (
-        "Your Mana Strength plan is ready. " +
-        "Head into Program when you're ready to begin your first session."
+        "Good work getting your training done. " +
+        "Keep your water and protein moving and finish the day strong."
       );
     }
 
 
     if (
-      Number.isFinite(
-        ago
-      ) &&
-      ago >= 4
+      foundations.water.done &&
+      foundations.protein.done
     ) {
       return (
-        `It's been ${ago} days since your last logged workout. ` +
-        "A good next step is to get back into your Program and rebuild the rhythm."
+        "Fuel is looking good today. " +
+        "Head into Program when you're ready for your training."
       );
     }
 
 
-    if (remaining) {
+    if (
+      done > 0
+    ) {
       return (
-        `You've completed ${weeklyDone} of ${weeklyTarget} planned sessions this week. ` +
-        `${remaining} to go — keep moving with purpose.`
+        `You've completed ${done} of 4 foundations today. ` +
+        "Keep building the day one action at a time."
       );
     }
 
 
     return (
-      "Keep building consistency. Your training, Fuel and progress are all connected here."
+      "Your focus today is simple — train with purpose, Fuel well, stay hydrated and make recovery count."
     );
   }
 
 
+  /* =========================================
+     PROGRAM
+     ========================================= */
+
+  function nextWorkoutIndex(
+    program,
+    logs
+  ) {
+    const total =
+      program
+        ?.sessions
+        ?.length || 0;
+
+
+    if (!total) {
+      return 0;
+    }
+
+
+    return (
+      logs.length %
+      total
+    );
+  }
+
+
+  /* =========================================
+     COACH ACTIVITY
+     ========================================= */
+
   async function loadCoachActivity() {
     coachActivity = [];
 
+
     const program =
       loadProgram();
-
-    const logs =
-      loadLogs();
-
-    const fuel =
-      todayFuelTotals();
-
-    const latest =
-      latestLog(
-        logs
-      );
-
-
-    if (program?.sessions?.length) {
-
-      coachActivity.push({
-        type:"program",
-        title:"Your strength program is ready",
-        text:
-          `${program.sessions.length} training day${program.sessions.length === 1 ? "" : "s"} available in Program.`,
-        time:null
-      });
-
-    }
-
-
-    if (latest) {
-
-      coachActivity.push({
-        type:"training",
-        title:"Workout logged",
-        text:
-          latest.sessionName ||
-          "Strength session completed",
-        time:
-          latest.date ||
-          latest.created_at ||
-          null
-      });
-
-    }
-
-
-    if (
-      fuel.meals ||
-      fuel.water
-    ) {
-
-      coachActivity.push({
-        type:"fuel",
-        title:"Fuel updated today",
-        text:
-          `${fuel.meals} meal${fuel.meals === 1 ? "" : "s"} logged • ${Math.round(fuel.protein)}g protein`,
-        time:
-          new Date()
-            .toISOString()
-      });
-
-    }
 
 
     try {
@@ -667,15 +718,20 @@
         ).forEach(
           request => {
 
-            coachActivity.unshift({
+            coachActivity.push({
+
               type:"coach",
+
               title:
                 "Coach check-in requested",
+
               text:
-                "Lewis has requested a check-in from you.",
+                "Lewis has requested an update from you.",
+
               time:
                 request.requested_at ||
                 null
+
             });
 
           }
@@ -693,8 +749,85 @@
     }
 
 
+    if (
+      program
+        ?.sessions
+        ?.length
+    ) {
+
+      coachActivity.push({
+
+        type:"program",
+
+        title:
+          "Your program is ready",
+
+        text:
+          `${program.sessions.length} personalised training day${program.sessions.length === 1 ? "" : "s"} available.`,
+
+        time:null
+
+      });
+
+    }
+
+
     coachActivityLoaded =
       true;
+  }
+
+
+  function daysSince(
+    value
+  ) {
+    if (!value) {
+      return null;
+    }
+
+
+    const date =
+      new Date(value);
+
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return null;
+    }
+
+
+    const now =
+      new Date();
+
+
+    const today =
+      new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+
+
+    const then =
+      new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
+
+
+    return Math.max(
+      0,
+      Math.round(
+        (
+          today.getTime() -
+          then.getTime()
+        ) /
+        86400000
+      )
+    );
   }
 
 
@@ -705,18 +838,22 @@
       return "";
     }
 
+
     const ago =
       daysSince(
         value
       );
 
+
     if (ago === 0) {
       return "Today";
     }
 
+
     if (ago === 1) {
       return "Yesterday";
     }
+
 
     if (
       Number.isFinite(
@@ -726,32 +863,8 @@
       return `${ago} days ago`;
     }
 
+
     return "";
-  }
-
-
-  function activityIcon(
-    type
-  ) {
-    if (
-      type === "coach"
-    ) {
-      return "C";
-    }
-
-    if (
-      type === "fuel"
-    ) {
-      return "F";
-    }
-
-    if (
-      type === "training"
-    ) {
-      return "S";
-    }
-
-    return "M";
   }
 
 
@@ -759,14 +872,11 @@
     if (
       !coachActivityLoaded
     ) {
+
       return `
-
-        <div
-          class="mana-v865-activity-empty"
-        >
-          Checking your latest activity…
+        <div class="mana-v866-empty">
+          Checking your latest coach activity…
         </div>
-
       `;
     }
 
@@ -774,14 +884,11 @@
     if (
       !coachActivity.length
     ) {
+
       return `
-
-        <div
-          class="mana-v865-activity-empty"
-        >
-          No new coach activity yet.
+        <div class="mana-v866-empty">
+          No new coach activity.
         </div>
-
       `;
     }
 
@@ -789,18 +896,18 @@
     return coachActivity
       .slice(
         0,
-        5
+        4
       )
       .map(
         item => `
 
           <div
-            class="mana-v865-feed-item"
+            class="mana-v866-feed-item"
           >
 
             <div
               class="
-                mana-v865-feed-icon
+                mana-v866-feed-icon
                 ${
                   item.type === "coach"
                     ? "coach"
@@ -808,14 +915,16 @@
                 }
               "
             >
-              ${activityIcon(
-                item.type
-              )}
+              ${
+                item.type === "coach"
+                  ? "C"
+                  : "M"
+              }
             </div>
 
 
             <div
-              class="mana-v865-feed-copy"
+              class="mana-v866-feed-copy"
             >
 
               <strong>
@@ -834,7 +943,7 @@
 
 
             <div
-              class="mana-v865-feed-time"
+              class="mana-v866-feed-time"
             >
               ${esc(
                 relativeTime(
@@ -850,6 +959,123 @@
       .join("");
   }
 
+
+  /* =========================================
+     CHECKLIST
+     ========================================= */
+
+  function focusRow(
+    item,
+    options = {}
+  ) {
+    const manual =
+      Boolean(
+        options.manual
+      );
+
+
+    return `
+
+      <button
+        type="button"
+        class="
+          mana-v866-focus-row
+          ${item.done ? "done" : ""}
+          ${manual ? "manual" : ""}
+        "
+        ${
+          manual
+            ? 'id="manaV866Recovery"'
+            : "disabled"
+        }
+      >
+
+        <span
+          class="mana-v866-check"
+        >
+          ${
+            item.done
+              ? "✓"
+              : ""
+          }
+        </span>
+
+
+        <span
+          class="mana-v866-focus-copy"
+        >
+
+          <strong>
+            ${esc(
+              item.title
+            )}
+          </strong>
+
+          <small>
+            ${esc(
+              item.detail
+            )}
+          </small>
+
+        </span>
+
+
+        ${
+          manual
+            ? `
+              <span
+                class="mana-v866-action"
+              >
+                ${item.done ? "Done" : "Tap"}
+              </span>
+            `
+            : `
+              <span
+                class="mana-v866-auto"
+              >
+                AUTO
+              </span>
+            `
+        }
+
+      </button>
+
+    `;
+  }
+
+
+  /* =========================================
+     PRICING
+     ========================================= */
+
+  function feature(
+    text
+  ) {
+    return `
+
+      <div
+        class="mana-v866-feature"
+      >
+
+        <span
+          class="mana-v866-feature-check"
+        >
+          ✓
+        </span>
+
+        <span>
+          ${text}
+        </span>
+
+      </div>
+
+    `;
+  }
+
+
+  /* =========================================
+     STYLES
+     ========================================= */
 
   function injectStyles() {
     if (
@@ -873,7 +1099,7 @@
 
     style.textContent = `
 
-      .mana-v865-welcome{
+      .mana-v866-welcome{
         margin-bottom:14px;
         padding:26px 21px;
         border:1px solid #5a4a18;
@@ -887,7 +1113,7 @@
       }
 
 
-      .mana-v865-kicker{
+      .mana-v866-kicker{
         color:#f3d875;
         font-size:10px;
         font-weight:900;
@@ -896,7 +1122,7 @@
       }
 
 
-      .mana-v865-welcome h2{
+      .mana-v866-welcome h2{
         margin:7px 0 10px;
         color:#fff;
         font-size:
@@ -909,7 +1135,7 @@
       }
 
 
-      .mana-v865-message{
+      .mana-v866-message{
         max-width:500px;
         color:#bbb;
         font-size:14px;
@@ -917,7 +1143,7 @@
       }
 
 
-      .mana-v865-section{
+      .mana-v866-section{
         margin:14px 0;
         padding:18px;
         border:1px solid #292929;
@@ -926,7 +1152,7 @@
       }
 
 
-      .mana-v865-section-head{
+      .mana-v866-section-head{
         display:flex;
         justify-content:space-between;
         align-items:flex-end;
@@ -935,13 +1161,13 @@
       }
 
 
-      .mana-v865-section-head h3{
+      .mana-v866-section-head h3{
         margin:0;
         font-size:20px;
       }
 
 
-      .mana-v865-section-head span{
+      .mana-v866-section-head span{
         color:#777;
         font-size:10px;
         text-transform:uppercase;
@@ -949,62 +1175,177 @@
       }
 
 
-      .mana-v865-activity{
+      /* ==========================
+         TODAY'S FOCUS
+         ========================== */
+
+      .mana-v866-focus{
         display:grid;
-        grid-template-columns:
-          1fr
-          1fr;
         gap:9px;
       }
 
 
-      .mana-v865-activity-card{
-        min-width:0;
-        padding:14px;
-        border:1px solid #282828;
+      .mana-v866-focus-row{
+        width:100%;
+        min-height:68px;
+        display:grid;
+        grid-template-columns:
+          38px
+          minmax(0,1fr)
+          auto;
+        gap:11px;
+        align-items:center;
+        padding:12px;
+        border:1px solid #292929;
         border-radius:16px;
         background:#090909;
+        color:#fff;
+        text-align:left;
       }
 
 
-      .mana-v865-activity-label{
-        color:#888;
-        font-size:10px;
-        font-weight:800;
-        text-transform:uppercase;
+      .mana-v866-focus-row:disabled{
+        opacity:1;
       }
 
 
-      .mana-v865-activity-value{
-        margin-top:6px;
-        color:#f3d875;
-        font-size:21px;
+      .mana-v866-focus-row.manual{
+        cursor:pointer;
+      }
+
+
+      .mana-v866-focus-row.done{
+        border-color:#57491c;
+        background:
+          linear-gradient(
+            145deg,
+            #171407,
+            #090909
+          );
+      }
+
+
+      .mana-v866-check{
+        width:34px;
+        height:34px;
+        display:grid;
+        place-items:center;
+        border:2px solid #464646;
+        border-radius:10px;
+        color:#111;
+        font-size:19px;
         font-weight:900;
-        line-height:1.1;
       }
 
 
-      .mana-v865-activity-sub{
-        margin-top:5px;
+      .mana-v866-focus-row.done
+      .mana-v866-check{
+        border-color:#f3d875;
+        background:#f3d875;
+      }
+
+
+      .mana-v866-focus-copy{
+        min-width:0;
+      }
+
+
+      .mana-v866-focus-copy strong{
+        display:block;
+        color:#eee;
+        font-size:13px;
+      }
+
+
+      .mana-v866-focus-row.done
+      .mana-v866-focus-copy strong{
+        color:#f3d875;
+      }
+
+
+      .mana-v866-focus-copy small{
+        display:block;
+        margin-top:4px;
         color:#777;
         font-size:10px;
         line-height:1.35;
       }
 
 
-      /* COACH ACTIVITY */
+      .mana-v866-auto,
+      .mana-v866-action{
+        padding:5px 7px;
+        border-radius:999px;
+        font-size:8px;
+        font-weight:900;
+        letter-spacing:.05em;
+      }
 
-      .mana-v865-coach{
+
+      .mana-v866-auto{
+        border:1px solid #303030;
+        color:#666;
+      }
+
+
+      .mana-v866-action{
+        border:1px solid #5b4c1c;
+        color:#f3d875;
+      }
+
+
+      .mana-v866-progress-wrap{
+        margin-bottom:14px;
+      }
+
+
+      .mana-v866-progress-row{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:10px;
+        margin-bottom:7px;
+      }
+
+
+      .mana-v866-progress-row strong{
+        color:#f3d875;
+        font-size:13px;
+      }
+
+
+      .mana-v866-progress-row span{
+        color:#777;
+        font-size:10px;
+      }
+
+
+      .mana-v866-progress{
+        width:100%;
+        height:7px;
+        overflow:hidden;
+        border-radius:999px;
+        background:#202020;
+      }
+
+
+      .mana-v866-progress-fill{
+        height:100%;
+        border-radius:999px;
+        background:#f3d875;
+      }
+
+
+      /* ==========================
+         COACH ACTIVITY
+         ========================== */
+
+      .mana-v866-coach{
         border-color:#40371a;
       }
 
 
-      .mana-v865-feed{
-        display:grid;
-      }
-
-
-      .mana-v865-feed-item{
+      .mana-v866-feed-item{
         display:grid;
         grid-template-columns:
           38px
@@ -1017,12 +1358,12 @@
       }
 
 
-      .mana-v865-feed-item:first-child{
+      .mana-v866-feed-item:first-child{
         border-top:0;
       }
 
 
-      .mana-v865-feed-icon{
+      .mana-v866-feed-icon{
         width:36px;
         height:36px;
         display:grid;
@@ -1036,26 +1377,21 @@
       }
 
 
-      .mana-v865-feed-icon.coach{
+      .mana-v866-feed-icon.coach{
         border-color:#6d5920;
         background:#191607;
         color:#f3d875;
       }
 
 
-      .mana-v865-feed-copy{
-        min-width:0;
-      }
-
-
-      .mana-v865-feed-copy strong{
+      .mana-v866-feed-copy strong{
         display:block;
         color:#eee;
         font-size:12px;
       }
 
 
-      .mana-v865-feed-copy span{
+      .mana-v866-feed-copy span{
         display:block;
         margin-top:3px;
         color:#888;
@@ -1064,23 +1400,25 @@
       }
 
 
-      .mana-v865-feed-time{
+      .mana-v866-feed-time{
         color:#666;
         font-size:9px;
         white-space:nowrap;
       }
 
 
-      .mana-v865-activity-empty{
+      .mana-v866-empty{
         color:#777;
         font-size:11px;
         padding:8px 0;
       }
 
 
-      /* NEXT */
+      /* ==========================
+         NEXT UP
+         ========================== */
 
-      .mana-v865-next{
+      .mana-v866-next{
         border-color:#4b401c;
         background:
           linear-gradient(
@@ -1091,22 +1429,21 @@
       }
 
 
-      .mana-v865-next-label{
+      .mana-v866-next-label{
         color:#f3d875;
         font-size:10px;
         font-weight:900;
         letter-spacing:.12em;
-        text-transform:uppercase;
       }
 
 
-      .mana-v865-next h3{
+      .mana-v866-next h3{
         margin:7px 0 5px;
         font-size:22px;
       }
 
 
-      .mana-v865-next p{
+      .mana-v866-next p{
         margin:0;
         color:#999;
         font-size:12px;
@@ -1114,7 +1451,7 @@
       }
 
 
-      .mana-v865-program-note{
+      .mana-v866-program-note{
         margin-top:12px;
         color:#f3d875;
         font-size:12px;
@@ -1122,9 +1459,11 @@
       }
 
 
-      /* PLANS */
+      /* ==========================
+         MEMBERSHIP
+         ========================== */
 
-      .mana-v865-pricing-intro{
+      .mana-v866-pricing-intro{
         margin-bottom:14px;
         color:#999;
         font-size:12px;
@@ -1132,13 +1471,13 @@
       }
 
 
-      .mana-v865-plans{
+      .mana-v866-plans{
         display:grid;
         gap:12px;
       }
 
 
-      .mana-v865-plan{
+      .mana-v866-plan{
         position:relative;
         padding:18px;
         border:1px solid #313131;
@@ -1147,7 +1486,7 @@
       }
 
 
-      .mana-v865-plan.featured{
+      .mana-v866-plan.featured{
         border-color:#766322;
         background:
           linear-gradient(
@@ -1158,7 +1497,7 @@
       }
 
 
-      .mana-v865-plan-badge{
+      .mana-v866-plan-badge{
         position:absolute;
         top:14px;
         right:14px;
@@ -1171,7 +1510,7 @@
       }
 
 
-      .mana-v865-plan-name{
+      .mana-v866-plan-name{
         color:#f3d875;
         font-size:11px;
         font-weight:900;
@@ -1179,7 +1518,7 @@
       }
 
 
-      .mana-v865-plan-title{
+      .mana-v866-plan-title{
         margin-top:5px;
         color:#fff;
         font-size:22px;
@@ -1187,31 +1526,31 @@
       }
 
 
-      .mana-v865-price{
+      .mana-v866-price{
         margin-top:8px;
       }
 
 
-      .mana-v865-price strong{
+      .mana-v866-price strong{
         color:#f3d875;
         font-size:28px;
       }
 
 
-      .mana-v865-price span{
+      .mana-v866-price span{
         color:#777;
         font-size:11px;
       }
 
 
-      .mana-v865-features{
+      .mana-v866-features{
         margin-top:14px;
         display:grid;
         gap:8px;
       }
 
 
-      .mana-v865-feature{
+      .mana-v866-feature{
         display:grid;
         grid-template-columns:
           18px
@@ -1223,13 +1562,13 @@
       }
 
 
-      .mana-v865-check{
+      .mana-v866-feature-check{
         color:#f3d875;
         font-weight:900;
       }
 
 
-      .mana-v865-plan-note{
+      .mana-v866-plan-note{
         margin-top:13px;
         padding-top:11px;
         border-top:1px solid #272727;
@@ -1241,14 +1580,14 @@
 
       @media(max-width:390px){
 
-        .mana-v865-feed-item{
+        .mana-v866-feed-item{
           grid-template-columns:
             36px
             minmax(0,1fr);
         }
 
 
-        .mana-v865-feed-time{
+        .mana-v866-feed-time{
           grid-column:2;
         }
 
@@ -1263,30 +1602,9 @@
   }
 
 
-  function feature(
-    text
-  ) {
-    return `
-
-      <div
-        class="mana-v865-feature"
-      >
-
-        <span
-          class="mana-v865-check"
-        >
-          ✓
-        </span>
-
-        <span>
-          ${text}
-        </span>
-
-      </div>
-
-    `;
-  }
-
+  /* =========================================
+     RENDER
+     ========================================= */
 
   function renderOverview() {
     if (
@@ -1319,30 +1637,47 @@
       loadLogs();
 
 
-    const week =
-      weekLogs(
-        logs
+    const foundations =
+      dailyFoundations();
+
+
+    const completed =
+      foundationCount(
+        foundations
       );
 
 
-    const latest =
-      latestLog(
-        logs
+    const percent =
+      Math.round(
+        completed /
+        4 *
+        100
       );
 
 
-    const fuel =
-      todayFuelTotals();
+    const name =
+      firstName();
 
 
-    const weeklyTarget =
-      Number(
-        profile.days ||
-        program?.days ||
-        program
-          ?.sessions
-          ?.length ||
-        0
+    const greeting =
+      name
+        ? `Kia ora, ${esc(name)}`
+        : "Kia ora";
+
+
+    const hasCoachRequest =
+      coachActivity
+        .some(
+          item =>
+            item.type ===
+            "coach"
+        );
+
+
+    const message =
+      welcomeMessage(
+        foundations,
+        hasCoachRequest
       );
 
 
@@ -1366,41 +1701,16 @@
       "Your next strength session";
 
 
-    const name =
-      firstName();
-
-
-    const greeting =
-      name
-        ? `Kia ora, ${esc(name)}`
-        : "Kia ora";
-
-
-    const hasCoachRequest =
-      coachActivity.some(
-        item =>
-          item.type === "coach"
-      );
-
-
-    const personalMessage =
-      welcomeMessage(
-        week.length,
-        weeklyTarget,
-        latest,
-        nextName,
-        hasCoachRequest
-      );
-
-
     holder.innerHTML = `
 
+      <!-- WELCOME -->
+
       <div
-        class="mana-v865-welcome"
+        class="mana-v866-welcome"
       >
 
         <div
-          class="mana-v865-kicker"
+          class="mana-v866-kicker"
         >
           MANA STRENGTH
         </div>
@@ -1412,171 +1722,114 @@
 
 
         <div
-          class="mana-v865-message"
+          class="mana-v866-message"
         >
           ${esc(
-            personalMessage
+            message
           )}
         </div>
 
       </div>
 
 
+      <!-- TODAY'S FOCUS -->
+
       <div
-        class="mana-v865-section"
+        class="mana-v866-section"
       >
 
         <div
-          class="mana-v865-section-head"
+          class="mana-v866-section-head"
         >
 
           <h3>
-            Your Activity
+            Today's Focus
           </h3>
 
           <span>
-            Today
+            DAILY FOUNDATIONS
           </span>
 
         </div>
 
 
         <div
-          class="mana-v865-activity"
+          class="mana-v866-progress-wrap"
         >
 
           <div
-            class="mana-v865-activity-card"
+            class="mana-v866-progress-row"
           >
 
-            <div
-              class="mana-v865-activity-label"
-            >
-              This week
-            </div>
+            <strong>
+              ${completed} of 4 complete
+            </strong>
 
-            <div
-              class="mana-v865-activity-value"
-            >
-              ${week.length}
-              ${
-                weeklyTarget
-                  ? `/ ${weeklyTarget}`
-                  : ""
-              }
-            </div>
-
-            <div
-              class="mana-v865-activity-sub"
-            >
-              Workouts completed
-            </div>
+            <span>
+              ${percent}%
+            </span>
 
           </div>
 
 
           <div
-            class="mana-v865-activity-card"
+            class="mana-v866-progress"
           >
 
             <div
-              class="mana-v865-activity-label"
-            >
-              Last workout
-            </div>
-
-            <div
-              class="mana-v865-activity-value"
-            >
-              ${esc(
-                lastWorkoutText(
-                  latest
-                )
-              )}
-            </div>
-
-            <div
-              class="mana-v865-activity-sub"
-            >
-              ${
-                latest?.sessionName
-                  ? esc(
-                      latest.sessionName
-                    )
-                  : "Training activity"
-              }
-            </div>
+              class="mana-v866-progress-fill"
+              style="
+                width:${percent}%;
+              "
+            ></div>
 
           </div>
 
-
-          <div
-            class="mana-v865-activity-card"
-          >
-
-            <div
-              class="mana-v865-activity-label"
-            >
-              Calories
-            </div>
-
-            <div
-              class="mana-v865-activity-value"
-            >
-              ${Math.round(
-                fuel.calories
-              )}
-            </div>
-
-            <div
-              class="mana-v865-activity-sub"
-            >
-              Logged today
-            </div>
-
-          </div>
+        </div>
 
 
-          <div
-            class="mana-v865-activity-card"
-          >
+        <div
+          class="mana-v866-focus"
+        >
 
-            <div
-              class="mana-v865-activity-label"
-            >
-              Protein
-            </div>
+          ${focusRow(
+            foundations.workout
+          )}
 
-            <div
-              class="mana-v865-activity-value"
-            >
-              ${Math.round(
-                fuel.protein
-              )}g
-            </div>
 
-            <div
-              class="mana-v865-activity-sub"
-            >
-              Logged today
-            </div>
+          ${focusRow(
+            foundations.water
+          )}
 
-          </div>
+
+          ${focusRow(
+            foundations.protein
+          )}
+
+
+          ${focusRow(
+            foundations.recovery,
+            {
+              manual:true
+            }
+          )}
 
         </div>
 
       </div>
 
 
+      <!-- COACH ACTIVITY -->
+
       <div
         class="
-          mana-v865-section
-          mana-v865-coach
+          mana-v866-section
+          mana-v866-coach
         "
       >
 
         <div
-          class="mana-v865-section-head"
+          class="mana-v866-section-head"
         >
 
           <h3>
@@ -1584,30 +1837,30 @@
           </h3>
 
           <span>
-            Live
+            LIVE
           </span>
 
         </div>
 
 
-        <div
-          class="mana-v865-feed"
-        >
+        <div>
           ${coachActivityHTML()}
         </div>
 
       </div>
 
 
+      <!-- NEXT UP -->
+
       <div
         class="
-          mana-v865-section
-          mana-v865-next
+          mana-v866-section
+          mana-v866-next
         "
       >
 
         <div
-          class="mana-v865-next-label"
+          class="mana-v866-next-label"
         >
           NEXT UP
         </div>
@@ -1632,7 +1885,7 @@
 
 
         <div
-          class="mana-v865-program-note"
+          class="mana-v866-program-note"
         >
           Open the Program tab when you're ready to train →
         </div>
@@ -1640,12 +1893,14 @@
       </div>
 
 
+      <!-- MEMBERSHIP -->
+
       <div
-        class="mana-v865-section"
+        class="mana-v866-section"
       >
 
         <div
-          class="mana-v865-section-head"
+          class="mana-v866-section-head"
         >
 
           <h3>
@@ -1653,43 +1908,47 @@
           </h3>
 
           <span>
-            Monthly
+            MONTHLY
           </span>
 
         </div>
 
 
         <div
-          class="mana-v865-pricing-intro"
+          class="mana-v866-pricing-intro"
         >
           Choose the level of coaching
-          and accountability you want.
+          and accountability that suits
+          you.
         </div>
 
 
         <div
-          class="mana-v865-plans"
+          class="mana-v866-plans"
         >
 
+          <!-- SELF-GUIDED -->
+
           <div
-            class="mana-v865-plan"
+            class="mana-v866-plan"
           >
 
             <div
-              class="mana-v865-plan-name"
+              class="mana-v866-plan-name"
             >
               MANA STRENGTH
             </div>
 
             <div
-              class="mana-v865-plan-title"
+              class="mana-v866-plan-title"
             >
               Self-Guided
             </div>
 
             <div
-              class="mana-v865-price"
+              class="mana-v866-price"
             >
+
               <strong>
                 $39.99
               </strong>
@@ -1697,11 +1956,13 @@
               <span>
                 AUD / month
               </span>
+
             </div>
 
             <div
-              class="mana-v865-features"
+              class="mana-v866-features"
             >
+
               ${feature(
                 "Personalised strength program"
               )}
@@ -1721,39 +1982,43 @@
               ${feature(
                 "Mana meal selections"
               )}
+
             </div>
 
           </div>
 
 
+          <!-- SUPPORT -->
+
           <div
             class="
-              mana-v865-plan
+              mana-v866-plan
               featured
             "
           >
 
             <div
-              class="mana-v865-plan-badge"
+              class="mana-v866-plan-badge"
             >
               MOST POPULAR
             </div>
 
             <div
-              class="mana-v865-plan-name"
+              class="mana-v866-plan-name"
             >
               MANA STRENGTH SUPPORT
             </div>
 
             <div
-              class="mana-v865-plan-title"
+              class="mana-v866-plan-title"
             >
               Coach Support
             </div>
 
             <div
-              class="mana-v865-price"
+              class="mana-v866-price"
             >
+
               <strong>
                 $79.99
               </strong>
@@ -1761,11 +2026,13 @@
               <span>
                 AUD / month
               </span>
+
             </div>
 
             <div
-              class="mana-v865-features"
+              class="mana-v866-features"
             >
+
               ${feature(
                 "Everything in Mana Strength"
               )}
@@ -1785,30 +2052,34 @@
               ${feature(
                 "Program adjustments when needed"
               )}
+
             </div>
 
           </div>
 
 
+          <!-- COACHING -->
+
           <div
-            class="mana-v865-plan"
+            class="mana-v866-plan"
           >
 
             <div
-              class="mana-v865-plan-name"
+              class="mana-v866-plan-name"
             >
               MANA STRENGTH COACHING
             </div>
 
             <div
-              class="mana-v865-plan-title"
+              class="mana-v866-plan-title"
             >
               Personal Coaching
             </div>
 
             <div
-              class="mana-v865-price"
+              class="mana-v866-price"
             >
+
               <strong>
                 $149.99
               </strong>
@@ -1816,11 +2087,13 @@
               <span>
                 AUD / month
               </span>
+
             </div>
 
             <div
-              class="mana-v865-features"
+              class="mana-v866-features"
             >
+
               ${feature(
                 "Everything in Coach Support"
               )}
@@ -1840,6 +2113,7 @@
               ${feature(
                 "Priority program adjustments"
               )}
+
             </div>
 
           </div>
@@ -1848,7 +2122,7 @@
 
 
         <div
-          class="mana-v865-plan-note"
+          class="mana-v866-plan-note"
         >
           Payments and membership access
           will be connected before paid
@@ -1858,8 +2132,22 @@
       </div>
 
     `;
+
+
+    document
+      .getElementById(
+        "manaV866Recovery"
+      )
+      ?.addEventListener(
+        "click",
+        toggleRecovery
+      );
   }
 
+
+  /* =========================================
+     REFRESH
+     ========================================= */
 
   async function refreshOverview() {
     if (
@@ -1880,30 +2168,6 @@
 
 
   function watch() {
-    document.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target.closest(
-            "#manaV83Tabs [data-v83-tab='overview']"
-          ) ||
-          event.target.closest(
-            "#manaV80Strength"
-          )
-        ) {
-
-          setTimeout(
-            refreshOverview,
-            80
-          );
-
-        }
-
-      }
-    );
-
-
     window.addEventListener(
       "mana:program-tab-change",
       () => {
@@ -1960,6 +2224,55 @@
 
       }
     );
+
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (
+          document.visibilityState ===
+            "visible" &&
+          strengthOverviewOpen()
+        ) {
+
+          setTimeout(
+            refreshOverview,
+            100
+          );
+
+        }
+
+      }
+    );
+
+
+    window.addEventListener(
+      "storage",
+      event => {
+
+        if (
+          [
+            PROFILE_KEY,
+            PROGRAM_KEY,
+            LOG_KEY,
+            FUEL_KEY,
+            TARGET_KEY,
+            DAILY_KEY
+          ].includes(
+            event.key
+          )
+        ) {
+
+          setTimeout(
+            renderOverview,
+            80
+          );
+
+        }
+
+      }
+    );
   }
 
 
@@ -1986,7 +2299,7 @@
 
   if (
     document.readyState ===
-    "loading"
+      "loading"
   ) {
 
     document.addEventListener(
