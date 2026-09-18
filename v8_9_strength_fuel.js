@@ -1,16 +1,21 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.9.5
+   MANA MOVEMENT TRAINING v8.9.6
    MANA STRENGTH — FUEL
 
-   PROFILE-DRIVEN TARGETS
+   PROFILE TARGETS
    DAILY PROGRESS
+   BALANCE LEFT
    MEAL SELECTION
-   WATER
-   DAILY FOUNDATIONS
+   TODAY'S MEALS
+   WATER TRACKING
+
+   ALSO RECLAIMS FUEL SCREEN IF AN OLDER
+   STRENGTH RENDERER TRIES TO REPLACE IT
    ========================================= */
 
 (() => {
   "use strict";
+
 
   const SHELL_ID =
     "manaV83ProgramShell";
@@ -28,11 +33,22 @@
     "mana-fuel-v571";
 
   const STYLE_ID =
-    "mana-v895-strength-fuel-style";
+    "mana-v896-strength-fuel-style";
 
   const MODAL_ID =
     "manaV89FuelTargets";
 
+
+  let renderTimer =
+    null;
+
+  let rendering =
+    false;
+
+
+  /* =========================================
+     HELPERS
+     ========================================= */
 
   function safeJson(
     raw,
@@ -46,18 +62,53 @@
   }
 
 
+  function esc(
+    value
+  ) {
+    return String(
+      value ?? ""
+    )
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      );
+  }
+
+
   function todayKey() {
     const date =
       new Date();
 
+
     return [
       date.getFullYear(),
+
       String(
         date.getMonth() + 1
-      ).padStart(2, "0"),
+      ).padStart(
+        2,
+        "0"
+      ),
+
       String(
         date.getDate()
-      ).padStart(2, "0")
+      ).padStart(
+        2,
+        "0"
+      )
+
     ].join("-");
   }
 
@@ -81,7 +132,9 @@
         {}
       );
 
+
     return {
+
       calories:
         Number(
           saved.calories || 0
@@ -106,6 +159,7 @@
         Number(
           saved.fat || 0
         )
+
     };
   }
 
@@ -132,22 +186,32 @@
   }
 
 
+  function blankDay() {
+    return {
+
+      meals:{
+        Breakfast:[],
+        Lunch:[],
+        Dinner:[],
+        Snacks:[]
+      },
+
+      water:0
+
+    };
+  }
+
+
   function loadToday() {
     const store =
       loadFuelStore();
 
 
     return (
-      store[todayKey()] ||
-      {
-        meals:{
-          Breakfast:[],
-          Lunch:[],
-          Dinner:[],
-          Snacks:[]
-        },
-        water:0
-      }
+      store[
+        todayKey()
+      ] ||
+      blankDay()
     );
   }
 
@@ -159,7 +223,9 @@
       loadFuelStore();
 
 
-    store[todayKey()] =
+    store[
+      todayKey()
+    ] =
       day;
 
 
@@ -178,12 +244,16 @@
 
 
     const totals = {
+
       calories:0,
+
       protein:0,
+
       water:
         Number(
           day.water || 0
         )
+
     };
 
 
@@ -219,7 +289,7 @@
   }
 
 
-  function mealTotals(
+  function mealInfo(
     meal
   ) {
     const day =
@@ -227,37 +297,46 @@
 
 
     const items =
-      day.meals?.[meal] ||
-      [];
+      Array.isArray(
+        day.meals?.[meal]
+      )
+        ? day.meals[meal]
+        : [];
 
 
-    return items.reduce(
-      (
-        result,
-        item
-      ) => {
+    const totals =
+      items.reduce(
+        (
+          result,
+          item
+        ) => {
 
-        result.count += 1;
+          result.calories +=
+            Number(
+              item.calories || 0
+            );
 
-        result.calories +=
-          Number(
-            item.calories || 0
-          );
 
-        result.protein +=
-          Number(
-            item.protein || 0
-          );
+          result.protein +=
+            Number(
+              item.protein || 0
+            );
 
-        return result;
 
-      },
-      {
-        count:0,
-        calories:0,
-        protein:0
-      }
-    );
+          return result;
+
+        },
+        {
+          calories:0,
+          protein:0
+        }
+      );
+
+
+    return {
+      items,
+      ...totals
+    };
   }
 
 
@@ -284,6 +363,20 @@
   }
 
 
+  function balance(
+    target,
+    current
+  ) {
+    return Math.max(
+      0,
+      Math.round(
+        Number(target || 0) -
+        Number(current || 0)
+      )
+    );
+  }
+
+
   function shellIsStrength() {
     const shell =
       document.getElementById(
@@ -298,15 +391,19 @@
 
 
     return Boolean(
+
       shell
         ?.classList
-        .contains("open") &&
+        .contains(
+          "open"
+        ) &&
 
       title
         ?.textContent
         .trim()
         .toUpperCase() ===
         "MANA STRENGTH"
+
     );
   }
 
@@ -323,6 +420,19 @@
     );
   }
 
+
+  function fuelIsOpen() {
+    return (
+      shellIsStrength() &&
+      activeTab() ===
+        "fuel"
+    );
+  }
+
+
+  /* =========================================
+     STYLES
+     ========================================= */
 
   function injectStyles() {
     if (
@@ -346,16 +456,25 @@
 
     style.textContent = `
 
-      .mana-v895-build{
+      .mana-v896-root{
+        width:100%;
+      }
+
+
+      .mana-v896-build{
         width:100%;
         min-height:54px;
-        margin:0 0 12px;
 
-        border-radius:16px;
+        margin:
+          0
+          0
+          12px;
 
         border:
           1px solid
           #5d5124;
+
+        border-radius:16px;
 
         background:
           linear-gradient(
@@ -367,27 +486,41 @@
         color:#f3d875;
 
         font-size:14px;
+
         font-weight:900;
 
         cursor:pointer;
-        touch-action:manipulation;
+
+        touch-action:
+          manipulation;
       }
 
 
-      .mana-v895-progress{
+      .mana-v896-card{
         padding:18px;
-        margin:12px 0;
+
+        margin:
+          12px
+          0;
 
         border:
           1px solid
+          #292929;
+
+        border-radius:20px;
+
+        background:#0d0d0d;
+      }
+
+
+      .mana-v896-progress{
+        border-color:
           rgba(
             243,
             216,
             117,
-            .25
+            .26
           );
-
-        border-radius:22px;
 
         background:
           linear-gradient(
@@ -398,42 +531,52 @@
       }
 
 
-      .mana-v895-head{
+      .mana-v896-head{
         display:flex;
-        justify-content:space-between;
+
         align-items:center;
+
+        justify-content:
+          space-between;
+
         gap:12px;
-        margin-bottom:15px;
+
+        margin-bottom:12px;
       }
 
 
-      .mana-v895-head h3{
+      .mana-v896-head h3{
         margin:0;
+
         font-size:20px;
       }
 
 
-      .mana-v895-edit{
-        min-height:40px;
-        padding:0 13px;
+      .mana-v896-edit{
+        min-height:38px;
 
-        border-radius:999px;
+        padding:
+          0
+          12px;
 
         border:
           1px solid
           #5d5124;
 
+        border-radius:999px;
+
         background:#15130b;
 
         color:#f3d875;
 
-        font-size:12px;
+        font-size:11px;
+
         font-weight:900;
       }
 
 
-      .mana-v895-goal{
-        margin:-4px 0 14px;
+      .mana-v896-goal{
+        margin-bottom:14px;
 
         color:#888;
 
@@ -441,12 +584,12 @@
       }
 
 
-      .mana-v895-goal strong{
+      .mana-v896-goal strong{
         color:#f3d875;
       }
 
 
-      .mana-v895-grid{
+      .mana-v896-grid{
         display:grid;
 
         grid-template-columns:
@@ -457,7 +600,7 @@
       }
 
 
-      .mana-v895-stat{
+      .mana-v896-stat{
         padding:14px;
 
         border:
@@ -470,27 +613,31 @@
       }
 
 
-      .mana-v895-stat.wide{
+      .mana-v896-stat.wide{
         grid-column:
           1 / -1;
       }
 
 
-      .mana-v895-label{
+      .mana-v896-label{
         color:#999;
+
         font-size:11px;
+
         margin-bottom:6px;
       }
 
 
-      .mana-v895-value{
+      .mana-v896-value{
         color:#f3d875;
+
         font-size:20px;
+
         font-weight:900;
       }
 
 
-      .mana-v895-track{
+      .mana-v896-track{
         height:6px;
 
         margin-top:10px;
@@ -503,7 +650,7 @@
       }
 
 
-      .mana-v895-fill{
+      .mana-v896-fill{
         height:100%;
 
         border-radius:999px;
@@ -512,7 +659,51 @@
       }
 
 
-      .mana-v895-water{
+      .mana-v896-balance{
+        display:grid;
+
+        grid-template-columns:
+          1fr
+          1fr;
+
+        gap:10px;
+      }
+
+
+      .mana-v896-balance-box{
+        padding:15px;
+
+        border:
+          1px solid
+          #463d1d;
+
+        border-radius:16px;
+
+        background:#15130b;
+      }
+
+
+      .mana-v896-balance-box span{
+        display:block;
+
+        color:#888;
+
+        font-size:11px;
+      }
+
+
+      .mana-v896-balance-box strong{
+        display:block;
+
+        margin-top:5px;
+
+        color:#f3d875;
+
+        font-size:22px;
+      }
+
+
+      .mana-v896-water{
         margin-top:14px;
 
         padding-top:14px;
@@ -523,17 +714,18 @@
       }
 
 
-      .mana-v895-water-label{
+      .mana-v896-water-title{
         margin-bottom:8px;
 
         color:#aaa;
 
         font-size:12px;
+
         font-weight:800;
       }
 
 
-      .mana-v895-water-grid{
+      .mana-v896-water-grid{
         display:grid;
 
         grid-template-columns:
@@ -546,48 +738,30 @@
       }
 
 
-      .mana-v895-water-btn{
+      .mana-v896-water-btn{
         min-height:46px;
-
-        border-radius:13px;
 
         border:
           1px solid
           #343434;
+
+        border-radius:13px;
 
         background:#111;
 
         color:#f3d875;
 
         font-size:13px;
+
         font-weight:900;
       }
 
 
-      .mana-v895-meals{
-        padding:18px;
-
-        margin:12px 0;
-
-        border:
-          1px solid
-          #292929;
-
-        border-radius:20px;
-
-        background:#0d0d0d;
-      }
-
-
-      .mana-v895-meals h3{
-        margin:0 0 5px;
-
-        font-size:20px;
-      }
-
-
-      .mana-v895-sub{
-        margin-bottom:14px;
+      .mana-v896-sub{
+        margin:
+          4px
+          0
+          14px;
 
         color:#888;
 
@@ -597,7 +771,7 @@
       }
 
 
-      .mana-v895-meal-grid{
+      .mana-v896-meal-grid{
         display:grid;
 
         grid-template-columns:
@@ -608,8 +782,8 @@
       }
 
 
-      .mana-v895-meal{
-        min-height:82px;
+      .mana-v896-meal{
+        min-height:78px;
 
         padding:12px;
 
@@ -626,11 +800,13 @@
         color:#fff;
 
         cursor:pointer;
-        touch-action:manipulation;
+
+        touch-action:
+          manipulation;
       }
 
 
-      .mana-v895-meal strong{
+      .mana-v896-meal strong{
         display:block;
 
         color:#f3d875;
@@ -639,7 +815,7 @@
       }
 
 
-      .mana-v895-meal span{
+      .mana-v896-meal span{
         display:block;
 
         margin-top:5px;
@@ -647,35 +823,48 @@
         color:#888;
 
         font-size:11px;
-
-        line-height:1.35;
       }
 
 
-      .mana-v895-foundations{
-        padding:18px;
+      .mana-v896-today{
+        padding:0;
 
-        margin:18px 0 8px;
-
-        border:
-          1px solid
-          #292929;
-
-        border-radius:20px;
-
-        background:#0d0d0d;
+        overflow:hidden;
       }
 
 
-      .mana-v895-foundations h3{
-        margin:0 0 4px;
-
-        font-size:19px;
+      .mana-v896-today-head{
+        padding:
+          18px
+          18px
+          12px;
       }
 
 
-      .mana-v895-guide{
-        padding:12px 0;
+      .mana-v896-today-head h3{
+        margin:0;
+
+        font-size:20px;
+      }
+
+
+      .mana-v896-meal-row{
+        display:grid;
+
+        grid-template-columns:
+          minmax(
+            0,
+            1fr
+          )
+          auto;
+
+        gap:14px;
+
+        align-items:center;
+
+        padding:
+          14px
+          18px;
 
         border-top:
           1px solid
@@ -683,35 +872,75 @@
       }
 
 
-      .mana-v895-guide:first-of-type{
-        border-top:0;
+      .mana-v896-meal-left{
+        min-width:0;
       }
 
 
-      .mana-v895-guide strong{
-        display:block;
+      .mana-v896-meal-name{
+        color:#f3d875;
 
-        color:#eee;
+        font-size:13px;
 
-        font-size:14px;
+        font-weight:900;
       }
 
 
-      .mana-v895-guide span{
-        display:block;
-
+      .mana-v896-foods{
         margin-top:4px;
 
-        color:#999;
+        overflow:hidden;
 
-        font-size:12px;
+        color:#aaa;
 
-        line-height:1.45;
+        font-size:11px;
+
+        line-height:1.4;
+
+        text-overflow:
+          ellipsis;
       }
 
 
-      .mana-v895-note{
-        margin-top:12px;
+      .mana-v896-meal-macros{
+        text-align:right;
+
+        white-space:nowrap;
+      }
+
+
+      .mana-v896-meal-macros strong{
+        display:block;
+
+        color:#fff;
+
+        font-size:13px;
+      }
+
+
+      .mana-v896-meal-macros span{
+        display:block;
+
+        margin-top:3px;
+
+        color:#888;
+
+        font-size:10px;
+      }
+
+
+      .mana-v896-empty{
+        color:#666;
+
+        font-size:11px;
+      }
+
+
+      .mana-v896-note{
+        margin:
+          12px
+          2px
+          0;
 
         color:#777;
 
@@ -723,7 +952,9 @@
 
       #${MODAL_ID}{
         position:fixed;
+
         inset:0;
+
         z-index:29000;
 
         display:none;
@@ -745,7 +976,7 @@
       }
 
 
-      .mana-v895-sheet{
+      .mana-v896-sheet{
         width:100%;
 
         max-height:92dvh;
@@ -776,7 +1007,7 @@
       }
 
 
-      .mana-v895-sheet-inner{
+      .mana-v896-sheet-inner{
         width:min(
           520px,
           100%
@@ -786,19 +1017,22 @@
       }
 
 
-      .mana-v895-sheet h2{
-        margin:0 0 16px;
+      .mana-v896-sheet h2{
+        margin:
+          0
+          0
+          16px;
 
         font-size:26px;
       }
 
 
-      .mana-v895-field{
+      .mana-v896-field{
         margin-bottom:12px;
       }
 
 
-      .mana-v895-field label{
+      .mana-v896-field label{
         display:block;
 
         margin-bottom:5px;
@@ -809,14 +1043,16 @@
       }
 
 
-      .mana-v895-field input{
+      .mana-v896-field input{
         width:100%;
 
         min-height:50px;
 
         margin:0 !important;
 
-        padding:12px 14px;
+        padding:
+          12px
+          14px;
 
         border:
           1px solid
@@ -832,7 +1068,7 @@
       }
 
 
-      .mana-v895-save{
+      .mana-v896-save{
         width:100%;
 
         min-height:54px;
@@ -846,28 +1082,30 @@
         color:#111;
 
         font-size:15px;
+
         font-weight:900;
       }
 
 
-      .mana-v895-secondary{
+      .mana-v896-secondary{
         width:100%;
 
         min-height:50px;
 
         margin-top:8px;
 
-        border-radius:15px;
-
         border:
           1px solid
           #383838;
+
+        border-radius:15px;
 
         background:#111;
 
         color:#f3d875;
 
         font-size:14px;
+
         font-weight:900;
       }
 
@@ -876,14 +1114,15 @@
         max-width:360px
       ){
 
-        .mana-v895-grid,
-        .mana-v895-meal-grid{
+        .mana-v896-grid,
+        .mana-v896-balance,
+        .mana-v896-meal-grid{
           grid-template-columns:
             1fr;
         }
 
 
-        .mana-v895-stat.wide{
+        .mana-v896-stat.wide{
           grid-column:auto;
         }
 
@@ -897,6 +1136,10 @@
     );
   }
 
+
+  /* =========================================
+     EDIT TARGET MODAL
+     ========================================= */
 
   function ensureModal() {
     if (
@@ -921,11 +1164,11 @@
     modal.innerHTML = `
 
       <div
-        class="mana-v895-sheet"
+        class="mana-v896-sheet"
       >
 
         <div
-          class="mana-v895-sheet-inner"
+          class="mana-v896-sheet-inner"
         >
 
           <h2>
@@ -934,7 +1177,7 @@
 
 
           <div
-            class="mana-v895-field"
+            class="mana-v896-field"
           >
 
             <label>
@@ -942,8 +1185,8 @@
             </label>
 
             <input
-              type="number"
               id="manaV89Calories"
+              type="number"
               min="0"
               inputmode="numeric"
             />
@@ -952,7 +1195,7 @@
 
 
           <div
-            class="mana-v895-field"
+            class="mana-v896-field"
           >
 
             <label>
@@ -960,8 +1203,8 @@
             </label>
 
             <input
-              type="number"
               id="manaV89Protein"
+              type="number"
               min="0"
               inputmode="numeric"
             />
@@ -970,7 +1213,7 @@
 
 
           <div
-            class="mana-v895-field"
+            class="mana-v896-field"
           >
 
             <label>
@@ -978,8 +1221,8 @@
             </label>
 
             <input
-              type="number"
               id="manaV89Water"
+              type="number"
               min="0"
               step="100"
               inputmode="numeric"
@@ -989,18 +1232,18 @@
 
 
           <button
-            type="button"
-            class="mana-v895-save"
             id="manaV89Save"
+            type="button"
+            class="mana-v896-save"
           >
             SAVE TARGETS
           </button>
 
 
           <button
-            type="button"
-            class="mana-v895-secondary"
             id="manaV89Cancel"
+            type="button"
+            class="mana-v896-secondary"
           >
             Cancel
           </button>
@@ -1041,7 +1284,6 @@
           event.target ===
           modal
         ) {
-
           closeModal();
         }
 
@@ -1058,22 +1300,28 @@
       loadTargets();
 
 
-    document.getElementById(
-      "manaV89Calories"
-    ).value =
-      targets.calories || "";
+    document
+      .getElementById(
+        "manaV89Calories"
+      )
+      .value =
+        targets.calories || "";
 
 
-    document.getElementById(
-      "manaV89Protein"
-    ).value =
-      targets.protein || "";
+    document
+      .getElementById(
+        "manaV89Protein"
+      )
+      .value =
+        targets.protein || "";
 
 
-    document.getElementById(
-      "manaV89Water"
-    ).value =
-      targets.water || "";
+    document
+      .getElementById(
+        "manaV89Water"
+      )
+      .value =
+        targets.water || "";
 
 
     document
@@ -1081,7 +1329,9 @@
         MODAL_ID
       )
       .classList
-      .add("open");
+      .add(
+        "open"
+      );
   }
 
 
@@ -1091,7 +1341,9 @@
         MODAL_ID
       )
       ?.classList
-      .remove("open");
+      .remove(
+        "open"
+      );
   }
 
 
@@ -1110,8 +1362,7 @@
               .getElementById(
                 "manaV89Calories"
               )
-              .value ||
-            0
+              .value || 0
           )
         ),
 
@@ -1123,8 +1374,7 @@
               .getElementById(
                 "manaV89Protein"
               )
-              .value ||
-            0
+              .value || 0
           )
         ),
 
@@ -1136,8 +1386,7 @@
               .getElementById(
                 "manaV89Water"
               )
-              .value ||
-            0
+              .value || 0
           )
         ),
 
@@ -1155,6 +1404,90 @@
     renderFuel();
   }
 
+
+  /* =========================================
+     TODAY'S MEALS
+     ========================================= */
+
+  function mealRow(
+    meal
+  ) {
+    const info =
+      mealInfo(
+        meal
+      );
+
+
+    const foods =
+      info.items.length
+        ? info.items
+            .map(
+              item =>
+                esc(
+                  item.food ||
+                  "Meal"
+                )
+            )
+            .join(", ")
+        : "Nothing logged yet";
+
+
+    return `
+
+      <div
+        class="mana-v896-meal-row"
+      >
+
+        <div
+          class="mana-v896-meal-left"
+        >
+
+          <div
+            class="mana-v896-meal-name"
+          >
+            ${meal}
+          </div>
+
+          <div
+            class="${
+              info.items.length
+                ? "mana-v896-foods"
+                : "mana-v896-empty"
+            }"
+          >
+            ${foods}
+          </div>
+
+        </div>
+
+
+        <div
+          class="mana-v896-meal-macros"
+        >
+
+          <strong>
+            ${Math.round(
+              info.calories
+            )} cal
+          </strong>
+
+          <span>
+            ${Math.round(
+              info.protein
+            )}g protein
+          </span>
+
+        </div>
+
+      </div>
+
+    `;
+  }
+
+
+  /* =========================================
+     WATER
+     ========================================= */
 
   function addWater(
     amount
@@ -1179,38 +1512,14 @@
   }
 
 
-  function mealSubtext(
-    meal
-  ) {
-    const totals =
-      mealTotals(
-        meal
-      );
-
-
-    if (!totals.count) {
-      return "3 Mana meal options";
-    }
-
-
-    return (
-      `${totals.calories} cal • ` +
-      `${totals.protein}g protein logged`
-    );
-  }
-
+  /* =========================================
+     RENDER
+     ========================================= */
 
   function renderFuel() {
     if (
-      !shellIsStrength()
-    ) {
-      return;
-    }
-
-
-    if (
-      activeTab() !==
-      "fuel"
+      rendering ||
+      !fuelIsOpen()
     ) {
       return;
     }
@@ -1227,6 +1536,10 @@
     }
 
 
+    rendering =
+      true;
+
+
     const profile =
       loadProfile();
 
@@ -1237,15 +1550,6 @@
 
     const totals =
       todayTotals();
-
-
-    const proteinPerMeal =
-      targets.protein
-        ? Math.round(
-            targets.protein /
-            4
-          )
-        : 0;
 
 
     const hasTargets =
@@ -1259,443 +1563,461 @@
       "Maintenance";
 
 
+    const caloriesLeft =
+      balance(
+        targets.calories,
+        totals.calories
+      );
+
+
+    const proteinLeft =
+      balance(
+        targets.protein,
+        totals.protein
+      );
+
+
     holder.innerHTML = `
 
-      <button
-        type="button"
-        class="mana-v895-build"
-        id="manaV89BuildTargets"
-      >
-        BUILD TARGETS FROM PROFILE
-      </button>
-
-
       <div
-        class="mana-v895-progress"
+        class="mana-v896-root"
       >
+
+        <button
+          id="manaV89BuildTargets"
+          type="button"
+          class="mana-v896-build"
+        >
+          BUILD TARGETS FROM PROFILE
+        </button>
+
 
         <div
-          class="mana-v895-head"
+          class="
+            mana-v896-card
+            mana-v896-progress
+          "
+        >
+
+          <div
+            class="mana-v896-head"
+          >
+
+            <h3>
+              Daily Progress
+            </h3>
+
+
+            <button
+              id="manaV89EditTargets"
+              type="button"
+              class="mana-v896-edit"
+            >
+              Edit targets
+            </button>
+
+          </div>
+
+
+          <div
+            class="mana-v896-goal"
+          >
+            Fuel goal:
+            <strong>
+              ${esc(
+                fuelGoal
+              )}
+            </strong>
+          </div>
+
+
+          ${
+            hasTargets
+              ? `
+
+                <div
+                  class="mana-v896-grid"
+                >
+
+                  <div
+                    class="mana-v896-stat"
+                  >
+
+                    <div
+                      class="mana-v896-label"
+                    >
+                      Calories
+                    </div>
+
+                    <div
+                      class="mana-v896-value"
+                    >
+                      ${Math.round(
+                        totals.calories
+                      )}
+                      /
+                      ${targets.calories}
+                    </div>
+
+                    <div
+                      class="mana-v896-track"
+                    >
+
+                      <div
+                        class="mana-v896-fill"
+                        style="
+                          width:
+                          ${pct(
+                            totals.calories,
+                            targets.calories
+                          )}%
+                        "
+                      ></div>
+
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    class="mana-v896-stat"
+                  >
+
+                    <div
+                      class="mana-v896-label"
+                    >
+                      Protein
+                    </div>
+
+                    <div
+                      class="mana-v896-value"
+                    >
+                      ${Math.round(
+                        totals.protein
+                      )}
+                      /
+                      ${targets.protein}g
+                    </div>
+
+                    <div
+                      class="mana-v896-track"
+                    >
+
+                      <div
+                        class="mana-v896-fill"
+                        style="
+                          width:
+                          ${pct(
+                            totals.protein,
+                            targets.protein
+                          )}%
+                        "
+                      ></div>
+
+                    </div>
+
+                  </div>
+
+
+                  <div
+                    class="
+                      mana-v896-stat
+                      wide
+                    "
+                  >
+
+                    <div
+                      class="mana-v896-label"
+                    >
+                      Water
+                    </div>
+
+                    <div
+                      class="mana-v896-value"
+                    >
+                      ${Math.round(
+                        totals.water
+                      )}
+                      /
+                      ${targets.water}ml
+                    </div>
+
+                    <div
+                      class="mana-v896-track"
+                    >
+
+                      <div
+                        class="mana-v896-fill"
+                        style="
+                          width:
+                          ${pct(
+                            totals.water,
+                            targets.water
+                          )}%
+                        "
+                      ></div>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              `
+              : `
+
+                <div
+                  class="mana-v896-sub"
+                >
+                  Complete your Profile and
+                  Fuel Goal to create your
+                  starting targets.
+                </div>
+
+              `
+          }
+
+
+          <div
+            class="mana-v896-water"
+          >
+
+            <div
+              class="mana-v896-water-title"
+            >
+              Quick add water
+            </div>
+
+
+            <div
+              class="mana-v896-water-grid"
+            >
+
+              <button
+                type="button"
+                class="mana-v896-water-btn"
+                data-mana-water="250"
+              >
+                +250ml
+              </button>
+
+              <button
+                type="button"
+                class="mana-v896-water-btn"
+                data-mana-water="500"
+              >
+                +500ml
+              </button>
+
+              <button
+                type="button"
+                class="mana-v896-water-btn"
+                data-mana-water="750"
+              >
+                +750ml
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="mana-v896-card"
+        >
+
+          <div
+            class="mana-v896-head"
+          >
+
+            <h3>
+              Balance Left Today
+            </h3>
+
+          </div>
+
+
+          <div
+            class="mana-v896-balance"
+          >
+
+            <div
+              class="mana-v896-balance-box"
+            >
+
+              <span>
+                Calories left
+              </span>
+
+              <strong>
+                ${hasTargets
+                  ? caloriesLeft
+                  : "—"}
+              </strong>
+
+            </div>
+
+
+            <div
+              class="mana-v896-balance-box"
+            >
+
+              <span>
+                Protein left
+              </span>
+
+              <strong>
+                ${hasTargets
+                  ? `${proteinLeft}g`
+                  : "—"}
+              </strong>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div
+          class="mana-v896-card"
         >
 
           <h3>
-            Daily Progress
+            Meal Selection
           </h3>
 
-
-          <button
-            type="button"
-            class="mana-v895-edit"
-            id="manaV89EditTargets"
-          >
-            Edit targets
-          </button>
-
-        </div>
-
-
-        <div
-          class="mana-v895-goal"
-        >
-          Fuel goal:
-          <strong>
-            ${fuelGoal}
-          </strong>
-        </div>
-
-
-        ${
-          hasTargets
-            ? `
-
-              <div
-                class="mana-v895-grid"
-              >
-
-                <div
-                  class="mana-v895-stat"
-                >
-
-                  <div
-                    class="mana-v895-label"
-                  >
-                    Calories
-                  </div>
-
-                  <div
-                    class="mana-v895-value"
-                  >
-                    ${Math.round(
-                      totals.calories
-                    )}
-                    /
-                    ${targets.calories}
-                  </div>
-
-                  <div
-                    class="mana-v895-track"
-                  >
-
-                    <div
-                      class="mana-v895-fill"
-                      style="
-                        width:
-                        ${pct(
-                          totals.calories,
-                          targets.calories
-                        )}%
-                      "
-                    ></div>
-
-                  </div>
-
-                </div>
-
-
-                <div
-                  class="mana-v895-stat"
-                >
-
-                  <div
-                    class="mana-v895-label"
-                  >
-                    Protein
-                  </div>
-
-                  <div
-                    class="mana-v895-value"
-                  >
-                    ${Math.round(
-                      totals.protein
-                    )}
-                    /
-                    ${targets.protein}g
-                  </div>
-
-                  <div
-                    class="mana-v895-track"
-                  >
-
-                    <div
-                      class="mana-v895-fill"
-                      style="
-                        width:
-                        ${pct(
-                          totals.protein,
-                          targets.protein
-                        )}%
-                      "
-                    ></div>
-
-                  </div>
-
-                </div>
-
-
-                <div
-                  class="
-                    mana-v895-stat
-                    wide
-                  "
-                >
-
-                  <div
-                    class="mana-v895-label"
-                  >
-                    Water
-                  </div>
-
-                  <div
-                    class="mana-v895-value"
-                  >
-                    ${Math.round(
-                      totals.water
-                    )}
-                    /
-                    ${targets.water}ml
-                  </div>
-
-                  <div
-                    class="mana-v895-track"
-                  >
-
-                    <div
-                      class="mana-v895-fill"
-                      style="
-                        width:
-                        ${pct(
-                          totals.water,
-                          targets.water
-                        )}%
-                      "
-                    ></div>
-
-                  </div>
-
-                </div>
-
-              </div>
-
-            `
-            : `
-
-              <div
-                class="mana-v895-sub"
-              >
-                Complete your personal details
-                and Fuel Goal in Profile to
-                create your starting targets.
-              </div>
-
-            `
-        }
-
-
-        <div
-          class="mana-v895-water"
-        >
-
           <div
-            class="mana-v895-water-label"
+            class="mana-v896-sub"
           >
-            Quick add water
+            Choose a meal to see your
+            three Mana options.
           </div>
 
 
           <div
-            class="mana-v895-water-grid"
+            class="mana-v896-meal-grid"
           >
 
             <button
               type="button"
-              class="mana-v895-water-btn"
-              data-mana-water="250"
+              class="mana-v896-meal"
+              data-mana-meal="Breakfast"
             >
-              +250ml
+              <strong>
+                Breakfast
+              </strong>
+
+              <span>
+                3 meal options
+              </span>
             </button>
 
 
             <button
               type="button"
-              class="mana-v895-water-btn"
-              data-mana-water="500"
+              class="mana-v896-meal"
+              data-mana-meal="Lunch"
             >
-              +500ml
+              <strong>
+                Lunch
+              </strong>
+
+              <span>
+                3 meal options
+              </span>
             </button>
 
 
             <button
               type="button"
-              class="mana-v895-water-btn"
-              data-mana-water="750"
+              class="mana-v896-meal"
+              data-mana-meal="Dinner"
             >
-              +750ml
+              <strong>
+                Dinner
+              </strong>
+
+              <span>
+                3 meal options
+              </span>
+            </button>
+
+
+            <button
+              type="button"
+              class="mana-v896-meal"
+              data-mana-meal="Snacks"
+            >
+              <strong>
+                Snacks
+              </strong>
+
+              <span>
+                3 meal options
+              </span>
             </button>
 
           </div>
 
         </div>
 
-      </div>
-
-
-      <div
-        class="mana-v895-meals"
-      >
-
-        <h3>
-          Meal Selection
-        </h3>
-
 
         <div
-          class="mana-v895-sub"
-        >
-          Choose Breakfast, Lunch,
-          Dinner or Snacks and select
-          one of the Mana meal options.
-        </div>
-
-
-        <div
-          class="mana-v895-meal-grid"
+          class="
+            mana-v896-card
+            mana-v896-today
+          "
         >
 
-          <button
-            type="button"
-            class="mana-v895-meal"
-            data-mana-meal="Breakfast"
+          <div
+            class="mana-v896-today-head"
           >
 
-            <strong>
-              Breakfast
-            </strong>
+            <h3>
+              Today's Meals
+            </h3>
 
-            <span>
-              ${mealSubtext(
-                "Breakfast"
-              )}
-            </span>
+            <div
+              class="mana-v896-sub"
+            >
+              Calories and protein logged
+              for each meal today.
+            </div>
 
-          </button>
-
-
-          <button
-            type="button"
-            class="mana-v895-meal"
-            data-mana-meal="Lunch"
-          >
-
-            <strong>
-              Lunch
-            </strong>
-
-            <span>
-              ${mealSubtext(
-                "Lunch"
-              )}
-            </span>
-
-          </button>
+          </div>
 
 
-          <button
-            type="button"
-            class="mana-v895-meal"
-            data-mana-meal="Dinner"
-          >
+          ${mealRow(
+            "Breakfast"
+          )}
 
-            <strong>
-              Dinner
-            </strong>
+          ${mealRow(
+            "Lunch"
+          )}
 
-            <span>
-              ${mealSubtext(
-                "Dinner"
-              )}
-            </span>
+          ${mealRow(
+            "Dinner"
+          )}
 
-          </button>
-
-
-          <button
-            type="button"
-            class="mana-v895-meal"
-            data-mana-meal="Snacks"
-          >
-
-            <strong>
-              Snacks
-            </strong>
-
-            <span>
-              ${mealSubtext(
-                "Snacks"
-              )}
-            </span>
-
-          </button>
-
-        </div>
-
-      </div>
-
-
-      <div
-        class="mana-v895-foundations"
-      >
-
-        <h3>
-          Daily Foundations
-        </h3>
-
-
-        <div
-          class="mana-v895-sub"
-        >
-          Keep the basics consistent.
-        </div>
-
-
-        <div
-          class="mana-v895-guide"
-        >
-
-          <strong>
-            Protein across the day
-          </strong>
-
-          <span>
-            ${
-              proteinPerMeal
-                ? `Aim for roughly ${proteinPerMeal}g across four meals or snacks.`
-                : "Build each main meal around a quality protein source."
-            }
-          </span>
+          ${mealRow(
+            "Snacks"
+          )}
 
         </div>
 
 
         <div
-          class="mana-v895-guide"
+          class="mana-v896-note"
         >
-
-          <strong>
-            Fuel around training
-          </strong>
-
-          <span>
-            Include carbohydrate and
-            protein around training
-            when practical.
-          </span>
-
+          Meal calories and protein are
+          practical estimates and can vary
+          with serving size, brand and
+          preparation.
         </div>
 
-
-        <div
-          class="mana-v895-guide"
-        >
-
-          <strong>
-            Hydrate consistently
-          </strong>
-
-          <span>
-            Spread water through the day
-            instead of trying to catch up
-            late.
-          </span>
-
-        </div>
-
-
-        <div
-          class="mana-v895-guide"
-        >
-
-          <strong>
-            Keep meals repeatable
-          </strong>
-
-          <span>
-            Simple meals you can sustain
-            consistently matter more than
-            perfect eating.
-          </span>
-
-        </div>
-
-      </div>
-
-
-      <div
-        class="mana-v895-note"
-      >
-        Mana Fuel targets and meal values
-        are practical starting estimates
-        and can be adjusted to suit the
-        individual.
       </div>
 
     `;
@@ -1721,6 +2043,7 @@
 
             window
               .openManaProfile();
+
           }
 
         }
@@ -1762,20 +2085,85 @@
       );
 
 
-    /*
-      Meal buttons are intentionally
-      left for v9.3 Fuel Meals to own.
-
-      This removes the old legacy
-      manual Food Tracker conflict.
-    */
+    rendering =
+      false;
   }
 
 
-  function scheduleRender() {
-    setTimeout(
-      renderFuel,
-      80
+  function scheduleRender(
+    delay = 50
+  ) {
+    clearTimeout(
+      renderTimer
+    );
+
+
+    renderTimer =
+      setTimeout(
+        renderFuel,
+        delay
+      );
+  }
+
+
+  /* =========================================
+     KEEP NEW FUEL SCREEN IN CONTROL
+
+     v8.4 can repaint the older
+     "Fuel for Strength / OPEN FUEL"
+     card after focus/session restore.
+
+     If that happens, immediately put
+     this Fuel screen back.
+     ========================================= */
+
+  function watchFuelContent() {
+    const holder =
+      document.getElementById(
+        CONTENT_ID
+      );
+
+
+    if (!holder) {
+      return;
+    }
+
+
+    const observer =
+      new MutationObserver(
+        () => {
+
+          if (
+            rendering ||
+            !fuelIsOpen()
+          ) {
+            return;
+          }
+
+
+          if (
+            holder.querySelector(
+              ".mana-v896-root"
+            )
+          ) {
+            return;
+          }
+
+
+          scheduleRender(
+            30
+          );
+
+        }
+      );
+
+
+    observer.observe(
+      holder,
+      {
+        childList:true,
+        subtree:true
+      }
     );
   }
 
@@ -1783,19 +2171,102 @@
   function wire() {
     window.addEventListener(
       "mana:program-tab-change",
-      scheduleRender
+      () => {
+
+        if (
+          fuelIsOpen()
+        ) {
+
+          scheduleRender(
+            80
+          );
+
+          setTimeout(
+            renderFuel,
+            220
+          );
+
+        }
+
+      }
     );
 
 
     window.addEventListener(
       "mana:profile-synced",
-      scheduleRender
+      () => {
+
+        scheduleRender(
+          80
+        );
+
+      }
     );
 
 
     window.addEventListener(
       "focus",
-      scheduleRender
+      () => {
+
+        if (
+          fuelIsOpen()
+        ) {
+
+          scheduleRender(
+            100
+          );
+
+          setTimeout(
+            renderFuel,
+            450
+          );
+
+        }
+
+      }
+    );
+
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (
+          document.visibilityState ===
+            "visible" &&
+          fuelIsOpen()
+        ) {
+
+          scheduleRender(
+            80
+          );
+
+          setTimeout(
+            renderFuel,
+            500
+          );
+
+        }
+
+      }
+    );
+
+
+    window.addEventListener(
+      "pageshow",
+      () => {
+
+        if (
+          fuelIsOpen()
+        ) {
+
+          scheduleRender(
+            100
+          );
+
+        }
+
+      }
     );
 
 
@@ -1804,17 +2275,19 @@
       event => {
 
         if (
-          event.key ===
-            TARGET_KEY ||
-
-          event.key ===
-            FUEL_KEY ||
-
-          event.key ===
-            PROFILE_KEY
+          [
+            PROFILE_KEY,
+            TARGET_KEY,
+            FUEL_KEY
+          ].includes(
+            event.key
+          )
         ) {
 
-          scheduleRender();
+          scheduleRender(
+            60
+          );
+
         }
 
       }
@@ -1828,6 +2301,8 @@
     ensureModal();
 
     wire();
+
+    watchFuelContent();
 
 
     setTimeout(
@@ -1843,7 +2318,7 @@
 
   if (
     document.readyState ===
-    "loading"
+      "loading"
   ) {
 
     document.addEventListener(
