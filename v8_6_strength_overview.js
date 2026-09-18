@@ -1,10 +1,18 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.6
-   STRENGTH OVERVIEW — DAILY WORKOUT
+   MANA MOVEMENT TRAINING v8.6.4
+   MANA STRENGTH — OVERVIEW
+
+   PERSONALISED WELCOME
+   ACTIVITY DASHBOARD
+   NEXT WORKOUT PREVIEW
+   MEMBERSHIP LEVELS
+
+   NO START WORKOUT BUTTON
    ========================================= */
 
 (() => {
   "use strict";
+
 
   const PROGRAM_KEY =
     "mana-strength-v62-program";
@@ -15,9 +23,16 @@
   const PROFILE_KEY =
     "mana-profile-v67";
 
-  const STYLE_ID =
-    "mana-v86-strength-overview-style";
+  const FUEL_KEY =
+    "mana-fuel-v571";
 
+  const STYLE_ID =
+    "mana-v864-strength-overview-style";
+
+
+  /* =========================================
+     HELPERS
+     ========================================= */
 
   function safeJson(
     raw,
@@ -31,11 +46,36 @@
   }
 
 
+  function esc(
+    value
+  ) {
+    return String(
+      value ?? ""
+    )
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      );
+  }
+
+
   function loadProgram() {
     return safeJson(
       localStorage.getItem(
         PROGRAM_KEY
-      ),
+      ) || "null",
       null
     );
   }
@@ -61,266 +101,68 @@
   }
 
 
-  function injectStyles() {
-    if (
-      document.getElementById(
-        STYLE_ID
-      )
-    ) return;
-
-    const style =
-      document.createElement(
-        "style"
-      );
-
-    style.id =
-      STYLE_ID;
-
-    style.textContent = `
-
-      .mana-v86-today{
-        border:
-          1px solid
-          #4a3d12;
-
-        border-radius:22px;
-
-        background:
-          linear-gradient(
-            145deg,
-            #17150d,
-            #0b0b0b
-          );
-
-        padding:18px;
-
-        margin-bottom:12px;
-      }
-
-
-      .mana-v86-label{
-        color:#f3d875;
-
-        font-size:11px;
-
-        font-weight:900;
-
-        text-transform:uppercase;
-
-        letter-spacing:.1em;
-      }
-
-
-      .mana-v86-today h2{
-        margin:
-          7px
-          0
-          5px;
-
-        font-size:26px;
-      }
-
-
-      .mana-v86-sub{
-        color:#999;
-
-        font-size:12px;
-
-        line-height:1.5;
-      }
-
-
-      .mana-v86-list{
-        margin-top:18px;
-
-        border-top:
-          1px solid
-          #2d2a1c;
-      }
-
-
-      .mana-v86-exercise{
-        display:grid;
-
-        grid-template-columns:
-          34px
-          1fr
-          auto;
-
-        gap:10px;
-
-        align-items:center;
-
-        padding:
-          13px
-          0;
-
-        border-bottom:
-          1px solid
-          #242424;
-      }
-
-
-      .mana-v86-number{
-        width:30px;
-        height:30px;
-
-        display:grid;
-
-        place-items:center;
-
-        border-radius:50%;
-
-        background:#111;
-
-        border:
-          1px solid
-          #3b3420;
-
-        color:#f3d875;
-
-        font-size:12px;
-
-        font-weight:900;
-      }
-
-
-      .mana-v86-name{
-        color:#eee;
-
-        font-size:14px;
-
-        font-weight:800;
-      }
-
-
-      .mana-v86-target{
-        color:#f3d875;
-
-        font-size:12px;
-
-        font-weight:800;
-
-        text-align:right;
-
-        white-space:nowrap;
-      }
-
-
-      .mana-v86-start{
-        width:100%;
-
-        min-height:58px;
-
-        margin-top:17px;
-
-        border:0;
-
-        border-radius:16px;
-
-        background:#f3d875;
-
-        color:#111;
-
-        font-size:16px;
-
-        font-weight:900;
-      }
-
-
-      .mana-v86-grid{
-        display:grid;
-
-        grid-template-columns:
-          1fr 1fr;
-
-        gap:10px;
-      }
-
-
-      .mana-v86-stat{
-        border:
-          1px solid
-          #292929;
-
-        border-radius:18px;
-
-        background:#0d0d0d;
-
-        padding:15px;
-      }
-
-
-      .mana-v86-stat-label{
-        color:#888;
-
-        font-size:11px;
-
-        text-transform:uppercase;
-
-        letter-spacing:.06em;
-      }
-
-
-      .mana-v86-stat strong{
-        display:block;
-
-        color:#f3d875;
-
-        font-size:21px;
-
-        margin-top:5px;
-      }
-
-
-      .mana-v86-progress{
-        height:8px;
-
-        margin-top:10px;
-
-        border-radius:999px;
-
-        background:#1a1a1a;
-
-        overflow:hidden;
-      }
-
-
-      .mana-v86-progress-fill{
-        height:100%;
-
-        border-radius:999px;
-
-        background:#f3d875;
-      }
-
-
-      @media(
-        max-width:390px
-      ){
-        .mana-v86-exercise{
-          grid-template-columns:
-            32px
-            1fr;
-        }
-
-
-        .mana-v86-target{
-          grid-column:2;
-
-          text-align:left;
-
-          margin-top:-4px;
-        }
-      }
-
-    `;
-
-    document.head.appendChild(
-      style
+  function loadFuelStore() {
+    return safeJson(
+      localStorage.getItem(
+        FUEL_KEY
+      ) || "{}",
+      {}
     );
   }
 
+
+  function todayKey() {
+    const date =
+      new Date();
+
+
+    return [
+      date.getFullYear(),
+
+      String(
+        date.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      ),
+
+      String(
+        date.getDate()
+      ).padStart(
+        2,
+        "0"
+      )
+
+    ].join("-");
+  }
+
+
+  function firstName() {
+    const profile =
+      loadProfile();
+
+
+    const name =
+      String(
+        profile.name ||
+        ""
+      ).trim();
+
+
+    if (!name) {
+      return "";
+    }
+
+
+    return (
+      name.split(/\s+/)[0]
+    );
+  }
+
+
+  /* =========================================
+     STRENGTH SCREEN
+     ========================================= */
 
   function strengthOverviewOpen() {
     const shell =
@@ -328,50 +170,62 @@
         "manaV83ProgramShell"
       );
 
+
     const title =
       document.getElementById(
         "manaV83Title"
       );
 
+
     const active =
       document.querySelector(
-        "#manaV83Tabs " +
-        ".mana-v83-tab.active"
+        "#manaV83Tabs .mana-v83-tab.active"
       );
 
+
     return Boolean(
+
       shell
         ?.classList
-        .contains(
-          "open"
-        ) &&
+        .contains("open") &&
+
       title
         ?.textContent
         .trim()
         .toUpperCase() ===
         "MANA STRENGTH" &&
+
       active
         ?.dataset
         ?.v83Tab ===
         "overview"
+
     );
   }
 
+
+  /* =========================================
+     WORKOUT ACTIVITY
+     ========================================= */
 
   function startOfWeek() {
     const now =
       new Date();
 
+
     const day =
       now.getDay();
+
 
     const diff =
       day === 0
         ? 6
         : day - 1;
 
+
     const start =
       new Date(now);
+
 
     start.setHours(
       0,
@@ -380,10 +234,12 @@
       0
     );
 
+
     start.setDate(
       start.getDate() -
       diff
     );
+
 
     return start;
   }
@@ -396,96 +252,848 @@
       startOfWeek()
         .getTime();
 
+
     return logs.filter(
-      log =>
-        new Date(
-          log.date || 0
-        ).getTime() >=
-        start
+      log => {
+
+        const value =
+          new Date(
+            log.date ||
+            log.created_at ||
+            0
+          ).getTime();
+
+
+        return (
+          Number.isFinite(value) &&
+          value >= start
+        );
+
+      }
     );
+  }
+
+
+  function latestLog(
+    logs
+  ) {
+    if (!logs.length) {
+      return null;
+    }
+
+
+    return [
+      ...logs
+    ]
+      .sort(
+        (a, b) => {
+
+          const timeA =
+            new Date(
+              a.date ||
+              a.created_at ||
+              0
+            ).getTime();
+
+
+          const timeB =
+            new Date(
+              b.date ||
+              b.created_at ||
+              0
+            ).getTime();
+
+
+          return (
+            timeB -
+            timeA
+          );
+
+        }
+      )[0];
+  }
+
+
+  function daysSince(
+    value
+  ) {
+    if (!value) {
+      return null;
+    }
+
+
+    const date =
+      new Date(
+        value
+      );
+
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return null;
+    }
+
+
+    const now =
+      new Date();
+
+
+    const today =
+      new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+
+
+    const then =
+      new Date(
+        date.getFullYear(),
+        date.getMonth(),
+        date.getDate()
+      );
+
+
+    return Math.max(
+      0,
+      Math.round(
+        (
+          today.getTime() -
+          then.getTime()
+        ) /
+        86400000
+      )
+    );
+  }
+
+
+  function lastWorkoutText(
+    log
+  ) {
+    if (!log) {
+      return "No workouts yet";
+    }
+
+
+    const ago =
+      daysSince(
+        log.date ||
+        log.created_at
+      );
+
+
+    if (ago === 0) {
+      return "Today";
+    }
+
+
+    if (ago === 1) {
+      return "Yesterday";
+    }
+
+
+    if (
+      Number.isFinite(
+        ago
+      )
+    ) {
+      return (
+        `${ago} days ago`
+      );
+    }
+
+
+    return "Recently";
   }
 
 
   function nextWorkoutIndex(
     program,
-    completed
+    logs
   ) {
     const total =
       program
         ?.sessions
         ?.length || 0;
 
+
     if (!total) {
       return 0;
     }
 
+
     return (
-      completed.length %
+      logs.length %
       total
     );
   }
 
 
-  function profileSummary() {
-    const profile =
-      loadProfile();
+  /* =========================================
+     FUEL ACTIVITY
+     ========================================= */
 
-    return [
-      profile.goal,
-      profile.days
-        ? `${profile.days} days/week`
-        : "",
-      profile.experience,
-      profile.equipment
-    ]
-      .filter(Boolean)
-      .join(" • ");
+  function todayFuelTotals() {
+    const store =
+      loadFuelStore();
+
+
+    const day =
+      store[
+        todayKey()
+      ] || {};
+
+
+    const totals = {
+      calories:0,
+      protein:0,
+      water:
+        Number(
+          day.water || 0
+        )
+    };
+
+
+    Object.values(
+      day.meals || {}
+    ).forEach(
+      items => {
+
+        (
+          items || []
+        ).forEach(
+          item => {
+
+            totals.calories +=
+              Number(
+                item.calories || 0
+              );
+
+
+            totals.protein +=
+              Number(
+                item.protein || 0
+              );
+
+          }
+        );
+
+      }
+    );
+
+
+    return totals;
   }
 
 
-  function startWorkout(
-    dayIndex
+  /* =========================================
+     PERSONALISED MESSAGE
+     ========================================= */
+
+  function welcomeMessage(
+    weeklyDone,
+    weeklyTarget,
+    latest,
+    nextName
   ) {
-    const shell =
-      document.getElementById(
-        "manaV83ProgramShell"
+    const remaining =
+      Math.max(
+        0,
+        weeklyTarget -
+        weeklyDone
       );
 
-    shell
-      ?.classList
-      .remove(
-        "open"
-      );
 
-    document.body.style.overflow =
-      "";
+    const ago =
+      latest
+        ? daysSince(
+            latest.date ||
+            latest.created_at
+          )
+        : null;
 
 
     if (
-      typeof
-        window
-          .openManaStrengthWorkout ===
-      "function"
+      weeklyTarget &&
+      weeklyDone >=
+        weeklyTarget
     ) {
-      window
-        .openManaStrengthWorkout(
-          dayIndex
-        );
 
-      return;
+      return (
+        "Strong week. You've completed your planned training. " +
+        "Use the rest of the week to recover well and keep your Fuel consistent."
+      );
     }
 
 
-    console.error(
-      "Mana Strength workout logger unavailable."
+    if (
+      ago === 0
+    ) {
+
+      return (
+        "Nice work getting a session done today. " +
+        (
+          nextName
+            ? `${nextName} is next when you're ready.`
+            : "Keep building on it."
+        )
+      );
+    }
+
+
+    if (
+      ago === 1
+    ) {
+
+      return (
+        "You trained yesterday, so you're building good momentum. " +
+        (
+          remaining
+            ? `${remaining} planned session${remaining === 1 ? "" : "s"} left this week.`
+            : "Stay consistent with your recovery."
+        )
+      );
+    }
+
+
+    if (!latest) {
+
+      return (
+        "Your Mana Strength plan is ready. " +
+        "Head into Program when you're ready to begin your first session."
+      );
+    }
+
+
+    if (
+      Number.isFinite(
+        ago
+      ) &&
+      ago >= 4
+    ) {
+
+      return (
+        `It's been ${ago} days since your last logged workout. ` +
+        "A good next step is to get back into your Program and rebuild the rhythm."
+      );
+    }
+
+
+    if (remaining) {
+
+      return (
+        `You've completed ${weeklyDone} of ${weeklyTarget} planned sessions this week. ` +
+        `${remaining} to go — keep moving with purpose.`
+      );
+    }
+
+
+    return (
+      "Keep building consistency. Your training, Fuel and progress are all connected here."
     );
   }
 
 
+  /* =========================================
+     STYLES
+     ========================================= */
+
+  function injectStyles() {
+    if (
+      document.getElementById(
+        STYLE_ID
+      )
+    ) {
+      return;
+    }
+
+
+    const style =
+      document.createElement(
+        "style"
+      );
+
+
+    style.id =
+      STYLE_ID;
+
+
+    style.textContent = `
+
+      .mana-v864-welcome{
+        margin-bottom:14px;
+
+        padding:
+          24px
+          20px;
+
+        border:
+          1px solid
+          #5a4a18;
+
+        border-radius:24px;
+
+        background:
+          linear-gradient(
+            145deg,
+            #1c1708,
+            #090909
+          );
+      }
+
+
+      .mana-v864-kicker{
+        color:#f3d875;
+
+        font-size:10px;
+
+        font-weight:900;
+
+        letter-spacing:.14em;
+
+        text-transform:uppercase;
+      }
+
+
+      .mana-v864-welcome h2{
+        margin:
+          7px
+          0
+          10px;
+
+        color:#fff;
+
+        font-size:
+          clamp(
+            30px,
+            8vw,
+            40px
+          );
+
+        line-height:1.04;
+      }
+
+
+      .mana-v864-message{
+        max-width:480px;
+
+        color:#bbb;
+
+        font-size:14px;
+
+        line-height:1.6;
+      }
+
+
+      .mana-v864-section{
+        margin:
+          14px
+          0;
+
+        padding:18px;
+
+        border:
+          1px solid
+          #292929;
+
+        border-radius:21px;
+
+        background:#0d0d0d;
+      }
+
+
+      .mana-v864-section-head{
+        display:flex;
+
+        justify-content:
+          space-between;
+
+        align-items:flex-end;
+
+        gap:10px;
+
+        margin-bottom:14px;
+      }
+
+
+      .mana-v864-section-head h3{
+        margin:0;
+
+        font-size:20px;
+      }
+
+
+      .mana-v864-section-head span{
+        color:#777;
+
+        font-size:10px;
+
+        text-transform:uppercase;
+
+        letter-spacing:.08em;
+      }
+
+
+      /* ACTIVITY */
+
+      .mana-v864-activity{
+        display:grid;
+
+        grid-template-columns:
+          1fr
+          1fr;
+
+        gap:9px;
+      }
+
+
+      .mana-v864-activity-card{
+        min-width:0;
+
+        padding:14px;
+
+        border:
+          1px solid
+          #282828;
+
+        border-radius:16px;
+
+        background:#090909;
+      }
+
+
+      .mana-v864-activity-label{
+        color:#888;
+
+        font-size:10px;
+
+        font-weight:800;
+
+        letter-spacing:.04em;
+
+        text-transform:uppercase;
+      }
+
+
+      .mana-v864-activity-value{
+        margin-top:6px;
+
+        color:#f3d875;
+
+        font-size:21px;
+
+        font-weight:900;
+
+        line-height:1.1;
+      }
+
+
+      .mana-v864-activity-sub{
+        margin-top:5px;
+
+        color:#777;
+
+        font-size:10px;
+
+        line-height:1.35;
+      }
+
+
+      /* NEXT UP */
+
+      .mana-v864-next{
+        border-color:#4b401c;
+
+        background:
+          linear-gradient(
+            145deg,
+            #16140b,
+            #0a0a0a
+          );
+      }
+
+
+      .mana-v864-next-label{
+        color:#f3d875;
+
+        font-size:10px;
+
+        font-weight:900;
+
+        letter-spacing:.12em;
+
+        text-transform:uppercase;
+      }
+
+
+      .mana-v864-next h3{
+        margin:
+          7px
+          0
+          5px;
+
+        font-size:22px;
+      }
+
+
+      .mana-v864-next p{
+        margin:0;
+
+        color:#999;
+
+        font-size:12px;
+
+        line-height:1.5;
+      }
+
+
+      .mana-v864-program-note{
+        margin-top:12px;
+
+        color:#f3d875;
+
+        font-size:12px;
+
+        font-weight:800;
+      }
+
+
+      /* PRICING */
+
+      .mana-v864-pricing-intro{
+        margin-bottom:14px;
+
+        color:#999;
+
+        font-size:12px;
+
+        line-height:1.5;
+      }
+
+
+      .mana-v864-plans{
+        display:grid;
+
+        gap:12px;
+      }
+
+
+      .mana-v864-plan{
+        position:relative;
+
+        padding:18px;
+
+        border:
+          1px solid
+          #313131;
+
+        border-radius:19px;
+
+        background:#0a0a0a;
+      }
+
+
+      .mana-v864-plan.featured{
+        border-color:#766322;
+
+        background:
+          linear-gradient(
+            145deg,
+            #191608,
+            #090909
+          );
+      }
+
+
+      .mana-v864-plan-badge{
+        position:absolute;
+
+        top:14px;
+        right:14px;
+
+        padding:
+          5px
+          8px;
+
+        border:
+          1px solid
+          #65551e;
+
+        border-radius:999px;
+
+        color:#f3d875;
+
+        font-size:9px;
+
+        font-weight:900;
+
+        text-transform:uppercase;
+      }
+
+
+      .mana-v864-plan-name{
+        color:#f3d875;
+
+        font-size:11px;
+
+        font-weight:900;
+
+        letter-spacing:.1em;
+
+        text-transform:uppercase;
+      }
+
+
+      .mana-v864-plan-title{
+        margin-top:5px;
+
+        color:#fff;
+
+        font-size:22px;
+
+        font-weight:900;
+      }
+
+
+      .mana-v864-price{
+        margin-top:8px;
+      }
+
+
+      .mana-v864-price strong{
+        color:#f3d875;
+
+        font-size:28px;
+      }
+
+
+      .mana-v864-price span{
+        color:#777;
+
+        font-size:11px;
+      }
+
+
+      .mana-v864-features{
+        margin-top:14px;
+
+        display:grid;
+
+        gap:8px;
+      }
+
+
+      .mana-v864-feature{
+        display:grid;
+
+        grid-template-columns:
+          18px
+          1fr;
+
+        gap:7px;
+
+        color:#aaa;
+
+        font-size:11px;
+
+        line-height:1.4;
+      }
+
+
+      .mana-v864-check{
+        color:#f3d875;
+
+        font-weight:900;
+      }
+
+
+      .mana-v864-plan-note{
+        margin-top:13px;
+
+        padding-top:11px;
+
+        border-top:
+          1px solid
+          #272727;
+
+        color:#777;
+
+        font-size:10px;
+
+        line-height:1.45;
+      }
+
+
+      @media(
+        max-width:390px
+      ){
+
+        .mana-v864-activity{
+          grid-template-columns:
+            1fr
+            1fr;
+        }
+
+
+        .mana-v864-welcome{
+          padding:
+            22px
+            18px;
+        }
+
+      }
+
+    `;
+
+
+    document.head.appendChild(
+      style
+    );
+  }
+
+
+  /* =========================================
+     PLAN FEATURE
+     ========================================= */
+
+  function feature(
+    text
+  ) {
+    return `
+
+      <div
+        class="mana-v864-feature"
+      >
+
+        <span
+          class="mana-v864-check"
+        >
+          ✓
+        </span>
+
+        <span>
+          ${text}
+        </span>
+
+      </div>
+
+    `;
+  }
+
+
+  /* =========================================
+     RENDER
+     ========================================= */
+
   function renderOverview() {
     if (
       !strengthOverviewOpen()
-    ) return;
+    ) {
+      return;
+    }
 
 
     const holder =
@@ -494,311 +1102,606 @@
       );
 
 
-    const program =
-      loadProgram();
-
-
-    if (
-      !holder ||
-      !program
-        ?.sessions
-        ?.length
-    ) {
+    if (!holder) {
       return;
     }
-
-
-    const logs =
-      loadLogs();
-
-
-    const completed =
-      weekLogs(
-        logs
-      );
-
-
-    const index =
-      nextWorkoutIndex(
-        program,
-        completed
-      );
-
-
-    const session =
-      program.sessions[
-        index
-      ];
-
-
-    const exercises =
-      Array.isArray(
-        session?.[1]
-      )
-        ? session[1]
-        : [];
-
-
-    const exerciseRows =
-      exercises
-        .map(
-          (
-            exercise,
-            exerciseIndex
-          ) => {
-
-            const name =
-              Array.isArray(
-                exercise
-              )
-                ? exercise[0]
-                : String(
-                    exercise
-                  );
-
-
-            const target =
-              Array.isArray(
-                exercise
-              )
-                ? exercise[1]
-                : "";
-
-
-            return `
-
-              <div
-                class="mana-v86-exercise"
-              >
-
-                <div
-                  class="mana-v86-number"
-                >
-                  ${exerciseIndex + 1}
-                </div>
-
-
-                <div
-                  class="mana-v86-name"
-                >
-                  ${name}
-                </div>
-
-
-                <div
-                  class="mana-v86-target"
-                >
-                  ${target || ""}
-                </div>
-
-              </div>
-
-            `;
-          }
-        )
-        .join("");
-
-
-    const weeklyTarget =
-      program.sessions.length;
-
-
-    const weekPercent =
-      weeklyTarget
-        ? Math.min(
-            100,
-            Math.round(
-              completed.length /
-              weeklyTarget *
-              100
-            )
-          )
-        : 0;
 
 
     const profile =
       loadProfile();
 
 
+    const program =
+      loadProgram();
+
+
+    const logs =
+      loadLogs();
+
+
+    const week =
+      weekLogs(
+        logs
+      );
+
+
+    const latest =
+      latestLog(
+        logs
+      );
+
+
+    const fuel =
+      todayFuelTotals();
+
+
+    const weeklyTarget =
+      Number(
+        profile.days ||
+        program?.days ||
+        program
+          ?.sessions
+          ?.length ||
+        0
+      );
+
+
+    const nextIndex =
+      nextWorkoutIndex(
+        program,
+        logs
+      );
+
+
+    const nextSession =
+      program
+        ?.sessions
+        ?.[
+          nextIndex
+        ];
+
+
+    const nextName =
+      nextSession?.[0] ||
+      "Your next strength session";
+
+
+    const name =
+      firstName();
+
+
+    const greeting =
+      name
+        ? `Kia ora, ${esc(name)}`
+        : "Kia ora";
+
+
+    const personalMessage =
+      welcomeMessage(
+        week.length,
+        weeklyTarget,
+        latest,
+        nextName
+      );
+
+
     holder.innerHTML = `
 
+      <!-- WELCOME -->
+
       <div
-        class="mana-v86-today"
+        class="mana-v864-welcome"
       >
 
         <div
-          class="mana-v86-label"
+          class="mana-v864-kicker"
         >
-          TODAY'S WORKOUT
+          MANA STRENGTH
         </div>
 
 
         <h2>
-          Day ${index + 1}
-          •
-          ${
-            session?.[0] ||
-            "Workout"
-          }
+          ${greeting}
         </h2>
 
 
         <div
-          class="mana-v86-sub"
+          class="mana-v864-message"
         >
-          ${
-            profileSummary() ||
-            "Personalised strength training"
-          }
+          ${esc(
+            personalMessage
+          )}
         </div>
-
-
-        <div
-          class="mana-v86-list"
-        >
-          ${exerciseRows}
-        </div>
-
-
-        <button
-          type="button"
-          class="mana-v86-start"
-          id="manaV86Start"
-        >
-          START WORKOUT →
-        </button>
 
       </div>
 
 
+      <!-- ACTIVITY -->
+
       <div
-        class="mana-v86-grid"
+        class="mana-v864-section"
       >
 
         <div
-          class="mana-v86-stat"
+          class="mana-v864-section-head"
+        >
+
+          <h3>
+            Your Activity
+          </h3>
+
+          <span>
+            Today
+          </span>
+
+        </div>
+
+
+        <div
+          class="mana-v864-activity"
         >
 
           <div
-            class="mana-v86-stat-label"
+            class="mana-v864-activity-card"
           >
-            This week
-          </div>
 
-          <strong>
-            ${completed.length}
-            /
-            ${weeklyTarget}
-          </strong>
-
-          <div
-            class="mana-v86-sub"
-          >
-            Workouts completed
-          </div>
-
-          <div
-            class="mana-v86-progress"
-          >
             <div
-              class="mana-v86-progress-fill"
-              style="
-                width:
-                ${weekPercent}%
-              "
-            ></div>
+              class="mana-v864-activity-label"
+            >
+              This week
+            </div>
+
+            <div
+              class="mana-v864-activity-value"
+            >
+              ${week.length}
+              ${
+                weeklyTarget
+                  ? `/ ${weeklyTarget}`
+                  : ""
+              }
+            </div>
+
+            <div
+              class="mana-v864-activity-sub"
+            >
+              Workouts completed
+            </div>
+
+          </div>
+
+
+          <div
+            class="mana-v864-activity-card"
+          >
+
+            <div
+              class="mana-v864-activity-label"
+            >
+              Last workout
+            </div>
+
+            <div
+              class="mana-v864-activity-value"
+            >
+              ${esc(
+                lastWorkoutText(
+                  latest
+                )
+              )}
+            </div>
+
+            <div
+              class="mana-v864-activity-sub"
+            >
+              ${
+                latest
+                  ?.sessionName
+                  ? esc(
+                      latest.sessionName
+                    )
+                  : "Training activity"
+              }
+            </div>
+
+          </div>
+
+
+          <div
+            class="mana-v864-activity-card"
+          >
+
+            <div
+              class="mana-v864-activity-label"
+            >
+              Calories today
+            </div>
+
+            <div
+              class="mana-v864-activity-value"
+            >
+              ${Math.round(
+                fuel.calories
+              )}
+            </div>
+
+            <div
+              class="mana-v864-activity-sub"
+            >
+              Logged in Fuel
+            </div>
+
+          </div>
+
+
+          <div
+            class="mana-v864-activity-card"
+          >
+
+            <div
+              class="mana-v864-activity-label"
+            >
+              Protein today
+            </div>
+
+            <div
+              class="mana-v864-activity-value"
+            >
+              ${Math.round(
+                fuel.protein
+              )}g
+            </div>
+
+            <div
+              class="mana-v864-activity-sub"
+            >
+              Logged in Fuel
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- NEXT UP -->
+
+      <div
+        class="
+          mana-v864-section
+          mana-v864-next
+        "
+      >
+
+        <div
+          class="mana-v864-next-label"
+        >
+          NEXT UP
+        </div>
+
+
+        <h3>
+          ${esc(
+            nextName
+          )}
+        </h3>
+
+
+        <p>
+          ${
+            profile.goal
+              ? `Built around your ${esc(
+                  profile.goal
+                ).toLowerCase()} goal.`
+              : "Your next personalised strength session."
+          }
+        </p>
+
+
+        <div
+          class="mana-v864-program-note"
+        >
+          Open the Program tab when you're ready to train →
+        </div>
+
+      </div>
+
+
+      <!-- MEMBERSHIP -->
+
+      <div
+        class="mana-v864-section"
+      >
+
+        <div
+          class="mana-v864-section-head"
+        >
+
+          <h3>
+            Mana Strength Membership
+          </h3>
+
+          <span>
+            Monthly
+          </span>
+
+        </div>
+
+
+        <div
+          class="mana-v864-pricing-intro"
+        >
+          Choose the level of support that
+          matches how much coaching and
+          accountability you want.
+        </div>
+
+
+        <div
+          class="mana-v864-plans"
+        >
+
+          <!-- BASE -->
+
+          <div
+            class="mana-v864-plan"
+          >
+
+            <div
+              class="mana-v864-plan-name"
+            >
+              MANA STRENGTH
+            </div>
+
+
+            <div
+              class="mana-v864-plan-title"
+            >
+              Self-Guided
+            </div>
+
+
+            <div
+              class="mana-v864-price"
+            >
+
+              <strong>
+                $39.99
+              </strong>
+
+              <span>
+                AUD / month
+              </span>
+
+            </div>
+
+
+            <div
+              class="mana-v864-features"
+            >
+
+              ${feature(
+                "Personalised strength program"
+              )}
+
+              ${feature(
+                "Workout logging and progression"
+              )}
+
+              ${feature(
+                "Strength progress tracking"
+              )}
+
+              ${feature(
+                "Personalised calorie and protein targets"
+              )}
+
+              ${feature(
+                "Mana meal selections"
+              )}
+
+              ${feature(
+                "Training education and guidance"
+              )}
+
+            </div>
+
+
+            <div
+              class="mana-v864-plan-note"
+            >
+              Best for clients who want
+              structure and a personalised
+              plan without regular coach contact.
+            </div>
+
+          </div>
+
+
+          <!-- SUPPORT -->
+
+          <div
+            class="
+              mana-v864-plan
+              featured
+            "
+          >
+
+            <div
+              class="mana-v864-plan-badge"
+            >
+              MOST POPULAR
+            </div>
+
+
+            <div
+              class="mana-v864-plan-name"
+            >
+              MANA STRENGTH SUPPORT
+            </div>
+
+
+            <div
+              class="mana-v864-plan-title"
+            >
+              Coach Support
+            </div>
+
+
+            <div
+              class="mana-v864-price"
+            >
+
+              <strong>
+                $79.99
+              </strong>
+
+              <span>
+                AUD / month
+              </span>
+
+            </div>
+
+
+            <div
+              class="mana-v864-features"
+            >
+
+              ${feature(
+                "Everything in Mana Strength"
+              )}
+
+              ${feature(
+                "Weekly chat check-in"
+              )}
+
+              ${feature(
+                "Coach feedback on training"
+              )}
+
+              ${feature(
+                "Monthly program review"
+              )}
+
+              ${feature(
+                "Program adjustments when needed"
+              )}
+
+              ${feature(
+                "Higher accountability and support"
+              )}
+
+            </div>
+
+
+            <div
+              class="mana-v864-plan-note"
+            >
+              Best for clients who want
+              ongoing contact and guidance
+              without full online coaching.
+            </div>
+
+          </div>
+
+
+          <!-- COACHING -->
+
+          <div
+            class="mana-v864-plan"
+          >
+
+            <div
+              class="mana-v864-plan-name"
+            >
+              MANA STRENGTH COACHING
+            </div>
+
+
+            <div
+              class="mana-v864-plan-title"
+            >
+              Personal Coaching
+            </div>
+
+
+            <div
+              class="mana-v864-price"
+            >
+
+              <strong>
+                $149.99
+              </strong>
+
+              <span>
+                AUD / month
+              </span>
+
+            </div>
+
+
+            <div
+              class="mana-v864-features"
+            >
+
+              ${feature(
+                "Everything in Mana Strength Support"
+              )}
+
+              ${feature(
+                "Fortnightly video check-in"
+              )}
+
+              ${feature(
+                "Weekly chat check-in"
+              )}
+
+              ${feature(
+                "Personal coach feedback"
+              )}
+
+              ${feature(
+                "Priority program adjustments"
+              )}
+
+              ${feature(
+                "Closer progress and accountability support"
+              )}
+
+            </div>
+
+
+            <div
+              class="mana-v864-plan-note"
+            >
+              Best for clients who want a
+              much more hands-on coaching
+              relationship.
+            </div>
+
           </div>
 
         </div>
 
 
         <div
-          class="mana-v86-stat"
+          class="mana-v864-plan-note"
         >
-
-          <div
-            class="mana-v86-stat-label"
-          >
-            Goal
-          </div>
-
-          <strong>
-            ${
-              profile.goal ||
-              program.goal ||
-              "Strength"
-            }
-          </strong>
-
-        </div>
-
-
-        <div
-          class="mana-v86-stat"
-        >
-
-          <div
-            class="mana-v86-stat-label"
-          >
-            Training
-          </div>
-
-          <strong>
-            ${
-              profile.days ||
-              program.days ||
-              "—"
-            }
-            days
-          </strong>
-
-          <div
-            class="mana-v86-sub"
-          >
-            Per week
-          </div>
-
-        </div>
-
-
-        <div
-          class="mana-v86-stat"
-        >
-
-          <div
-            class="mana-v86-stat-label"
-          >
-            Equipment
-          </div>
-
-          <strong>
-            ${
-              profile.equipment ||
-              program.equipment ||
-              "—"
-            }
-          </strong>
-
+          Membership payments and plan
+          management will be connected
+          before paid memberships go live.
         </div>
 
       </div>
 
     `;
-
-
-    document
-      .getElementById(
-        "manaV86Start"
-      )
-      ?.addEventListener(
-        "click",
-        () =>
-          startWorkout(
-            index
-          )
-      );
   }
 
+
+  /* =========================================
+     WATCHERS
+     ========================================= */
 
   function watch() {
     document.addEventListener(
@@ -811,10 +1714,12 @@
             "[data-v83-tab='overview']"
           )
         ) {
+
           setTimeout(
             renderOverview,
             80
           );
+
         }
 
 
@@ -823,10 +1728,12 @@
             "#manaV80Strength"
           )
         ) {
+
           setTimeout(
             renderOverview,
             200
           );
+
         }
 
       }
@@ -836,10 +1743,12 @@
     window.addEventListener(
       "mana:program-tab-change",
       () => {
+
         setTimeout(
           renderOverview,
-          30
+          40
         );
+
       }
     );
 
@@ -847,10 +1756,70 @@
     window.addEventListener(
       "mana:strength-synced",
       () => {
+
         setTimeout(
           renderOverview,
           100
         );
+
+      }
+    );
+
+
+    window.addEventListener(
+      "mana:profile-synced",
+      () => {
+
+        setTimeout(
+          renderOverview,
+          100
+        );
+
+      }
+    );
+
+
+    window.addEventListener(
+      "focus",
+      () => {
+
+        if (
+          strengthOverviewOpen()
+        ) {
+
+          setTimeout(
+            renderOverview,
+            100
+          );
+
+        }
+
+      }
+    );
+
+
+    window.addEventListener(
+      "storage",
+      event => {
+
+        if (
+          [
+            PROFILE_KEY,
+            PROGRAM_KEY,
+            LOG_KEY,
+            FUEL_KEY
+          ].includes(
+            event.key
+          )
+        ) {
+
+          setTimeout(
+            renderOverview,
+            80
+          );
+
+        }
+
       }
     );
   }
@@ -869,15 +1838,22 @@
   }
 
 
+  window.renderManaStrengthOverview =
+    renderOverview;
+
+
   if (
     document.readyState ===
     "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
+
   } else {
+
     init();
   }
 
