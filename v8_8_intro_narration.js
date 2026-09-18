@@ -1,7 +1,8 @@
 /* =========================================
    MANA MOVEMENT TRAINING v8.8
-   INTRO NARRATION
+   INTRO NARRATION v2
 
+   SPEECH ENGINE UNLOCK
    12 SECOND OPENING SPACE
    TE REO MĀORI + ENGLISH MEANING
    AMBIENT MUSIC DUCKING
@@ -25,6 +26,9 @@
     [];
 
   let sequenceActive =
+    false;
+
+  let speechUnlocked =
     false;
 
 
@@ -104,6 +108,23 @@
   }
 
 
+  function later(
+    milliseconds,
+    callback
+  ) {
+    const timer =
+      setTimeout(
+        callback,
+        milliseconds
+      );
+
+
+    timers.push(
+      timer
+    );
+  }
+
+
   function clearTimers() {
     timers.forEach(
       timer =>
@@ -123,9 +144,11 @@
       "speechSynthesis" in
       window
     ) {
+
       window
         .speechSynthesis
         .cancel();
+
     }
   }
 
@@ -145,20 +168,74 @@
   }
 
 
-  function later(
-    milliseconds,
-    callback
-  ) {
-    const timer =
-      setTimeout(
-        callback,
-        milliseconds
-      );
+  /* =========================================
+     SPEECH UNLOCK
+     ========================================= */
+
+  function unlockSpeech() {
+    if (
+      !(
+        "speechSynthesis" in
+        window
+      )
+    ) {
+      return;
+    }
 
 
-    timers.push(
-      timer
-    );
+    try {
+
+      const unlock =
+        new SpeechSynthesisUtterance(
+          " "
+        );
+
+
+      unlock.volume =
+        0;
+
+
+      unlock.rate =
+        10;
+
+
+      unlock.onend =
+        () => {
+          speechUnlocked =
+            true;
+        };
+
+
+      unlock.onerror =
+        () => {
+          /*
+            Still mark ready.
+            Some browsers reject
+            silent utterances but
+            initialise the engine.
+          */
+
+          speechUnlocked =
+            true;
+        };
+
+
+      window
+        .speechSynthesis
+        .speak(
+          unlock
+        );
+
+
+      speechUnlocked =
+        true;
+
+    } catch (_) {
+
+      speechUnlocked =
+        true;
+
+    }
   }
 
 
@@ -166,7 +243,7 @@
      VOICES
      ========================================= */
 
-  function voices() {
+  function getVoices() {
     if (
       !(
         "speechSynthesis" in
@@ -185,33 +262,30 @@
 
   function findMaoriVoice() {
     const list =
-      voices();
+      getVoices();
 
 
     return (
+
       list.find(
         voice =>
           /^mi[-_]/i.test(
             voice.lang ||
             ""
           )
-      ) ||
+      )
+
+      ||
 
       list.find(
         voice =>
-          /maori|māori/i.test(
+          /māori|maori/i.test(
             voice.name ||
             ""
           )
-      ) ||
+      )
 
-      list.find(
-        voice =>
-          /new zealand/i.test(
-            voice.name ||
-            ""
-          )
-      ) ||
+      ||
 
       list.find(
         voice =>
@@ -219,7 +293,33 @@
             voice.lang ||
             ""
           )
-      ) ||
+      )
+
+      ||
+
+      list.find(
+        voice =>
+          /new zealand/i.test(
+            voice.name ||
+            ""
+          )
+      )
+
+      ||
+
+      list.find(
+        voice =>
+          /^en[-_]AU/i.test(
+            voice.lang ||
+            ""
+          )
+      )
+
+      ||
+
+      list[0]
+
+      ||
 
       null
     );
@@ -228,17 +328,20 @@
 
   function findEnglishVoice() {
     const list =
-      voices();
+      getVoices();
 
 
     return (
+
       list.find(
         voice =>
           /^en[-_]NZ/i.test(
             voice.lang ||
             ""
           )
-      ) ||
+      )
+
+      ||
 
       list.find(
         voice =>
@@ -246,7 +349,9 @@
             voice.name ||
             ""
           )
-      ) ||
+      )
+
+      ||
 
       list.find(
         voice =>
@@ -254,7 +359,9 @@
             voice.lang ||
             ""
           )
-      ) ||
+      )
+
+      ||
 
       list.find(
         voice =>
@@ -262,7 +369,13 @@
             voice.lang ||
             ""
           )
-      ) ||
+      )
+
+      ||
+
+      list[0]
+
+      ||
 
       null
     );
@@ -280,6 +393,7 @@
     onEnd
   ) {
     if (
+      !sequenceActive ||
       !introIsOpen() ||
       !soundEnabled()
     ) {
@@ -297,6 +411,18 @@
     }
 
 
+    const synth =
+      window.speechSynthesis;
+
+
+    /*
+      Clear anything left in
+      the speech queue.
+    */
+
+    synth.cancel();
+
+
     const utterance =
       new SpeechSynthesisUtterance(
         text
@@ -309,12 +435,12 @@
 
     utterance.rate =
       type === "maori"
-        ? 0.72
-        : 0.82;
+        ? 0.74
+        : 0.84;
 
 
     utterance.pitch =
-      0.88;
+      0.9;
 
 
     utterance.volume =
@@ -336,14 +462,10 @@
     utterance.onstart =
       () => {
 
-        /*
-          Drop background ambience
-          while narration is speaking.
-        */
-
         setAmbientVolume(
-          0.025
+          0.02
         );
+
       };
 
 
@@ -359,13 +481,21 @@
           typeof onEnd ===
           "function"
         ) {
+
           onEnd();
+
         }
       };
 
 
     utterance.onerror =
-      () => {
+      event => {
+
+        console.warn(
+          "Mana narration speech error:",
+          event.error
+        );
+
 
         setAmbientVolume(
           0.08
@@ -376,32 +506,50 @@
           typeof onEnd ===
           "function"
         ) {
+
           onEnd();
+
         }
       };
 
 
-    window
-      .speechSynthesis
-      .speak(
-        utterance
-      );
+    /*
+      Small delay after cancel()
+      helps Edge / Chrome reliably
+      accept the next utterance.
+    */
+
+    setTimeout(
+      () => {
+
+        if (
+          sequenceActive &&
+          introIsOpen() &&
+          soundEnabled()
+        ) {
+
+          synth.speak(
+            utterance
+          );
+
+        }
+
+      },
+      80
+    );
   }
 
 
   /* =========================================
-     PAGE POSITION
+     SCROLL
      ========================================= */
 
   function scrollToWhakatauki() {
-    const intro =
-      document.getElementById(
-        INTRO_ID
-      );
-
-
     const quote =
-      intro
+      document
+        .getElementById(
+          INTRO_ID
+        )
         ?.querySelector(
           ".mana-v81-quote"
         );
@@ -419,14 +567,11 @@
 
 
   function scrollToKarakia() {
-    const intro =
-      document.getElementById(
-        INTRO_ID
-      );
-
-
     const karakia =
-      intro
+      document
+        .getElementById(
+          INTRO_ID
+        )
         ?.querySelector(
           ".mana-v81-karakia"
         );
@@ -444,11 +589,13 @@
 
 
   /* =========================================
-     NARRATION SEQUENCE
+     SEQUENCE
      ========================================= */
 
   function startSequence() {
-    stopSequence();
+    clearTimers();
+
+    cancelSpeech();
 
 
     if (
@@ -464,13 +611,8 @@
 
 
     /*
-      0–12 seconds:
-      ambience only.
-
-      Gives the client time to
-      read and settle into the intro.
+      12 seconds of ambience first.
     */
-
 
     later(
       12000,
@@ -492,12 +634,11 @@
           () => {
 
             /*
-              Short pause before
-              English meaning.
+              Pause before English.
             */
 
             later(
-              2200,
+              2500,
               () => {
 
                 speak(
@@ -508,13 +649,18 @@
                   () => {
 
                     /*
-                      Longer reflective
-                      space between sections.
+                      Reflective pause
+                      before karakia.
                     */
 
                     later(
                       9000,
                       () => {
+
+                        if (
+                          !sequenceActive
+                        ) return;
+
 
                         scrollToKarakia();
 
@@ -544,6 +690,7 @@
 
                                     sequenceActive =
                                       false;
+
                                   }
                                 );
 
@@ -571,7 +718,67 @@
 
 
   /* =========================================
-     WATCH INTRO
+     SOUND BUTTON
+     ========================================= */
+
+  function watchSoundButton() {
+    document.addEventListener(
+      "click",
+
+      event => {
+
+        const button =
+          event.target.closest(
+            "#manaV82Sound"
+          );
+
+
+        if (!button) {
+          return;
+        }
+
+
+        /*
+          IMPORTANT:
+          Unlock speech during the
+          physical user tap.
+        */
+
+        unlockSpeech();
+
+
+        /*
+          v8.2 toggles the sound state
+          during the same click.
+        */
+
+        later(
+          180,
+          () => {
+
+            if (
+              soundEnabled() &&
+              introIsOpen()
+            ) {
+
+              startSequence();
+
+            } else {
+
+              stopSequence();
+
+            }
+
+          }
+        );
+
+      }
+    );
+  }
+
+
+  /* =========================================
+     INTRO WATCH
      ========================================= */
 
   function watchIntro() {
@@ -605,10 +812,23 @@
             !wasOpen
           ) {
 
-            later(
-              350,
-              startSequence
-            );
+            /*
+              If speech has already been
+              unlocked during this visit,
+              restart automatically.
+            */
+
+            if (
+              soundEnabled() &&
+              speechUnlocked
+            ) {
+
+              later(
+                400,
+                startSequence
+              );
+
+            }
           }
 
 
@@ -618,6 +838,7 @@
           ) {
 
             stopSequence();
+
           }
 
 
@@ -639,71 +860,6 @@
         ]
       }
     );
-
-
-    /*
-      Intro may already be open
-      when this file loads.
-    */
-
-    if (
-      wasOpen &&
-      soundEnabled()
-    ) {
-
-      later(
-        600,
-        startSequence
-      );
-    }
-  }
-
-
-  /* =========================================
-     SOUND BUTTON
-     ========================================= */
-
-  function watchSoundButton() {
-    document.addEventListener(
-      "click",
-
-      event => {
-
-        if (
-          !event.target.closest(
-            "#manaV82Sound"
-          )
-        ) {
-          return;
-        }
-
-
-        /*
-          v8.2 changes localStorage
-          during the same click.
-        */
-
-        later(
-          150,
-          () => {
-
-            if (
-              soundEnabled() &&
-              introIsOpen()
-            ) {
-
-              startSequence();
-
-            } else {
-
-              stopSequence();
-            }
-
-          }
-        );
-
-      }
-    );
   }
 
 
@@ -715,20 +871,11 @@
     watchSoundButton();
 
 
-    /*
-      v8.1 creates the intro
-      shortly after DOM load.
-    */
-
     later(
       1100,
       watchIntro
     );
 
-
-    /*
-      Load browser voices.
-    */
 
     if (
       "speechSynthesis" in
@@ -744,16 +891,19 @@
         .speechSynthesis
         .addEventListener(
           "voiceschanged",
-          () => {
-            voices();
-          }
+          getVoices
         );
+
     }
   }
 
 
   window.stopManaIntroNarration =
     stopSequence;
+
+
+  window.startManaIntroNarration =
+    startSequence;
 
 
   if (
@@ -769,6 +919,7 @@
   } else {
 
     init();
+
   }
 
 })();
