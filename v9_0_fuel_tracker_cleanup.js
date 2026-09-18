@@ -1,10 +1,11 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.0
-   CLEAN FUEL TRACKER
+   MANA MOVEMENT TRAINING v9.0.2
+   FUEL TRACKER CLEANUP
 
+   FIX HOME PAGE LEAK
    DAILY PROGRESS
    MEAL SELECTION
-   REMOVE DIARY / HISTORY CLUTTER
+   REMOVE OLD DIARY / HISTORY
    ========================================= */
 
 (() => {
@@ -14,12 +15,17 @@
   const FUEL_VIEW_ID =
     "clientFuelView";
 
+  const TARGETS_ID =
+    "fuelV58Targets";
+
+  const QUICK_ID =
+    "fuelV611QuickPanel";
+
   const STYLE_ID =
-    "mana-v90-fuel-clean-style";
+    "mana-v902-fuel-clean-style";
 
 
-  let cleanTimer =
-    null;
+  let cleanTimer = null;
 
 
   /* =========================================
@@ -47,32 +53,17 @@
     style.textContent = `
 
       /* ==========================
-         FUEL SCREEN
+         FUEL PAGE
          ========================== */
 
       #${FUEL_VIEW_ID}{
-        width:min(
-          520px,
-          100%
-        );
-
-        min-height:100vh;
-
+        width:min(520px,100%);
         margin:auto;
 
         padding:
-          calc(
-            env(
-              safe-area-inset-top
-            ) + 18px
-          )
+          calc(env(safe-area-inset-top) + 18px)
           18px
-          calc(
-            110px +
-            env(
-              safe-area-inset-bottom
-            )
-          );
+          calc(110px + env(safe-area-inset-bottom));
 
         background:#050505;
       }
@@ -87,36 +78,41 @@
          DAILY PROGRESS
          ========================== */
 
-      #${FUEL_VIEW_ID}
-      #fuelV58Targets{
-        margin:
-          16px
-          0
-          12px
-          !important;
+      #${FUEL_VIEW_ID} #${TARGETS_ID}{
+        display:block !important;
 
+        margin:16px 0 12px !important;
         padding:18px !important;
 
         border-radius:22px !important;
 
         border:
           1px solid
-          #4a3d12
+          rgba(243,216,117,.25)
           !important;
 
         background:
           linear-gradient(
             145deg,
-            #17150d,
-            #0b0b0b
+            #15130c,
+            #0a0a0a
           )
           !important;
       }
 
 
       #${FUEL_VIEW_ID}
-      #fuelV58Targets
+      #${TARGETS_ID}
+      .fuel-v58-head{
+        margin-bottom:15px !important;
+      }
+
+
+      #${FUEL_VIEW_ID}
+      #${TARGETS_ID}
       .fuel-v58-head h3{
+        margin:0 !important;
+
         font-size:21px !important;
       }
 
@@ -127,18 +123,18 @@
 
 
       #${FUEL_VIEW_ID}
-      #fuelV58Targets
+      #${TARGETS_ID}
       [data-target-card="carbs"],
 
       #${FUEL_VIEW_ID}
-      #fuelV58Targets
+      #${TARGETS_ID}
       [data-target-card="fat"]{
         display:none !important;
       }
 
 
       #${FUEL_VIEW_ID}
-      #fuelV58Targets
+      #${TARGETS_ID}
       .fuel-v58-grid{
         display:grid !important;
 
@@ -152,7 +148,7 @@
 
 
       #${FUEL_VIEW_ID}
-      #fuelV58Targets
+      #${TARGETS_ID}
       [data-target-card="water"]{
         grid-column:
           1 / -1
@@ -164,14 +160,10 @@
          MEAL SELECTION
          ========================== */
 
-      #${FUEL_VIEW_ID}
-      #fuelV611QuickPanel{
-        margin:
-          12px
-          0
-          0
-          !important;
+      #${FUEL_VIEW_ID} #${QUICK_ID}{
+        display:block !important;
 
+        margin:12px 0 !important;
         padding:18px !important;
 
         border-radius:20px !important;
@@ -186,22 +178,33 @@
 
 
       #${FUEL_VIEW_ID}
-      #fuelV611QuickPanel
+      #${QUICK_ID}
       .fuel-v611-title{
-        margin-bottom:12px;
+        margin-bottom:5px !important;
 
-        color:#fff;
+        font-size:20px !important;
 
-        font-size:20px;
+        font-weight:900 !important;
 
-        font-weight:900;
+        color:#fff !important;
+      }
+
+
+      .mana-v902-meal-sub{
+        margin-bottom:14px;
+
+        color:#888;
+
+        font-size:12px;
+
+        line-height:1.45;
       }
 
 
       #${FUEL_VIEW_ID}
-      #fuelV611QuickPanel
+      #${QUICK_ID}
       .fuel-v611-grid{
-        display:grid;
+        display:grid !important;
 
         grid-template-columns:
           1fr
@@ -212,30 +215,26 @@
 
 
       #${FUEL_VIEW_ID}
-      #fuelV611QuickPanel
+      #${QUICK_ID}
       .fuel-v611-btn{
-        min-height:56px;
+        min-height:58px !important;
 
         border:
           1px solid
-          #3b3420;
+          #413819
+          !important;
 
-        border-radius:15px;
+        border-radius:15px !important;
 
-        background:#111;
+        background:#111 !important;
 
-        color:#f3d875;
+        color:#f3d875 !important;
 
-        font-size:14px;
+        font-size:14px !important;
 
-        font-weight:900;
+        font-weight:900 !important;
       }
 
-
-      /*
-        Generic add-meal button is not needed.
-        The four Mana meal selectors remain.
-      */
 
       #fuelV611AddMeal{
         display:none !important;
@@ -243,38 +242,18 @@
 
 
       /* ==========================
-         REMOVE OLD TRACKER CLUTTER
+         OLD TRACKER
          ========================== */
 
-      #${FUEL_VIEW_ID}
-      #fuelV57Dashboard{
-        display:none !important;
-      }
-
-
-      #${FUEL_VIEW_ID}
+      #fuelV57Dashboard,
       #fuelV60Summary{
         display:none !important;
       }
 
 
-      /*
-        Old diary rows.
-      */
-
-      #${FUEL_VIEW_ID}
-      .fuel-v57-meal,
-
-      #${FUEL_VIEW_ID}
       .fuel-v57-history,
-
-      #${FUEL_VIEW_ID}
       .fuel-v57-recent,
-
-      #${FUEL_VIEW_ID}
       .fuel-v57-favourite,
-
-      #${FUEL_VIEW_ID}
       .fuel-v57-favorite{
         display:none !important;
       }
@@ -283,20 +262,18 @@
       @media(max-width:360px){
 
         #${FUEL_VIEW_ID}
-        #fuelV58Targets
+        #${TARGETS_ID}
         .fuel-v58-grid,
 
         #${FUEL_VIEW_ID}
-        #fuelV611QuickPanel
+        #${QUICK_ID}
         .fuel-v611-grid{
-          grid-template-columns:
-            1fr
-            !important;
+          grid-template-columns:1fr !important;
         }
 
 
         #${FUEL_VIEW_ID}
-        #fuelV58Targets
+        #${TARGETS_ID}
         [data-target-card="water"]{
           grid-column:auto !important;
         }
@@ -313,83 +290,70 @@
 
 
   /* =========================================
-     HIDE OLD STATIC FUEL CARDS
+     FUEL HEADER
      ========================================= */
 
-  function hideOldFuelCards(
+  function fuelHeader(
     fuelView
   ) {
-    [
-      ...fuelView.children
-    ].forEach(
-      child => {
-
-        if (
-          child.id ===
-            "fuelV58Targets" ||
-          child.id ===
-            "fuelV611QuickPanel"
-        ) {
-          return;
-        }
-
-
-        const text =
-          (
-            child.textContent ||
-            ""
-          )
-            .trim()
-            .toLowerCase();
-
-
-        if (
-          text.includes(
-            "move with purpose. fuel with purpose"
-          ) ||
-
-          text.includes(
-            "daily foundations"
-          ) ||
-
-          text.includes(
-            "food history"
-          ) ||
-
-          text.includes(
-            "favourite meals"
-          ) ||
-
-          text.includes(
-            "favorite meals"
-          ) ||
-
-          text.includes(
-            "recent meals"
-          )
-        ) {
-
-          child.style.display =
-            "none";
-        }
-
-      }
+    return (
+      fuelView.querySelector(
+        ":scope > .row"
+      )
     );
   }
 
 
   /* =========================================
-     CLEAN TARGET PANEL
+     MOVE DAILY PROGRESS INTO FUEL
      ========================================= */
 
-  function cleanTargets() {
+  function moveTargetsIntoFuel(
+    fuelView
+  ) {
     const targets =
       document.getElementById(
-        "fuelV58Targets"
+        TARGETS_ID
       );
 
 
     if (!targets) return;
+
+
+    /*
+      v5.8 sometimes inserts this
+      beside the old dashboard,
+      which can place it on Home.
+
+      Force it back into Fuel.
+    */
+
+    if (
+      targets.parentElement !==
+      fuelView
+    ) {
+
+      const header =
+        fuelHeader(
+          fuelView
+        );
+
+
+      if (header) {
+
+        header.insertAdjacentElement(
+          "afterend",
+          targets
+        );
+
+      } else {
+
+        fuelView.prepend(
+          targets
+        );
+
+      }
+    }
 
 
     const heading =
@@ -421,44 +385,125 @@
      MEAL SELECTION
      ========================================= */
 
-  function cleanMealSelection(
+  function ensureMealSelection(
     fuelView
   ) {
-    const panel =
+    let panel =
       document.getElementById(
-        "fuelV611QuickPanel"
+        QUICK_ID
       );
 
 
+    /*
+      If the old script never managed
+      to build the panel because the
+      old diary was hidden, create it.
+    */
+
     if (!panel) {
-      return;
+
+      panel =
+        document.createElement(
+          "div"
+        );
+
+
+      panel.id =
+        QUICK_ID;
+
+
+      panel.innerHTML = `
+
+        <div
+          class="fuel-v611-title"
+        >
+          Meal Selection
+        </div>
+
+        <div
+          class="mana-v902-meal-sub"
+        >
+          Choose where you want to
+          add your meal.
+        </div>
+
+
+        <div
+          class="fuel-v611-grid"
+        >
+
+          <button
+            type="button"
+            class="fuel-v611-btn"
+            data-v611-meal="Breakfast"
+          >
+            Breakfast
+          </button>
+
+
+          <button
+            type="button"
+            class="fuel-v611-btn"
+            data-v611-meal="Lunch"
+          >
+            Lunch
+          </button>
+
+
+          <button
+            type="button"
+            class="fuel-v611-btn"
+            data-v611-meal="Dinner"
+          >
+            Dinner
+          </button>
+
+
+          <button
+            type="button"
+            class="fuel-v611-btn"
+            data-v611-meal="Snacks"
+          >
+            Snacks
+          </button>
+
+        </div>
+
+      `;
+
     }
 
 
     /*
-      v6.1 originally creates this
-      inside the old food dashboard.
-
-      Move it out before hiding
-      that old dashboard.
+      Force Meal Selection into
+      the Fuel screen too.
     */
 
     const targets =
       document.getElementById(
-        "fuelV58Targets"
+        TARGETS_ID
       );
 
 
     if (
-      targets &&
       panel.parentElement !==
-        fuelView
+      fuelView
     ) {
 
-      targets.insertAdjacentElement(
-        "afterend",
-        panel
-      );
+      if (targets) {
+
+        targets.insertAdjacentElement(
+          "afterend",
+          panel
+        );
+
+      } else {
+
+        fuelView.appendChild(
+          panel
+        );
+
+      }
     }
 
 
@@ -474,40 +519,125 @@
     }
 
 
-    const labels = {
-      Breakfast:
-        "Breakfast",
+    /*
+      Add subtitle once.
+    */
 
-      Lunch:
-        "Lunch",
+    if (
+      !panel.querySelector(
+        ".mana-v902-meal-sub"
+      )
+    ) {
 
-      Dinner:
-        "Dinner",
-
-      Snacks:
-        "Snacks"
-    };
+      const subtitle =
+        document.createElement(
+          "div"
+        );
 
 
-    Object.entries(
-      labels
-    ).forEach(
-      (
-        [
-          meal,
-          label
-        ]
-      ) => {
+      subtitle.className =
+        "mana-v902-meal-sub";
 
-        const button =
-          panel.querySelector(
-            `[data-v611-meal="${meal}"]`
+
+      subtitle.textContent =
+        "Choose where you want to add your meal.";
+
+
+      title
+        ?.insertAdjacentElement(
+          "afterend",
+          subtitle
+        );
+    }
+  }
+
+
+  /* =========================================
+     REMOVE OLD STATIC CARDS
+     ========================================= */
+
+  function removeOldFuelCards(
+    fuelView
+  ) {
+    [
+      ...fuelView.children
+    ].forEach(
+      child => {
+
+        if (
+          child.id === TARGETS_ID ||
+          child.id === QUICK_ID
+        ) {
+          return;
+        }
+
+
+        /*
+          Keep the actual Fuel
+          page heading.
+        */
+
+        if (
+          child.classList
+            .contains(
+              "row"
+            )
+        ) {
+          return;
+        }
+
+
+        const text =
+          (
+            child.textContent ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
+
+
+        const remove =
+          text.includes(
+            "move with purpose. fuel with purpose"
+          ) ||
+
+          text.includes(
+            "daily foundations"
+          ) ||
+
+          text.includes(
+            "today's meals"
+          ) ||
+
+          text.includes(
+            "daily meal record"
+          ) ||
+
+          text.includes(
+            "food history"
+          ) ||
+
+          text.includes(
+            "favourite meals"
+          ) ||
+
+          text.includes(
+            "favorite meals"
+          ) ||
+
+          text.includes(
+            "recent meals"
+          ) ||
+
+          text.includes(
+            "last 7 days"
           );
 
 
-        if (button) {
-          button.textContent =
-            label;
+        if (remove) {
+
+          child.style.display =
+            "none";
         }
 
       }
@@ -516,35 +646,58 @@
 
 
   /* =========================================
-     REMOVE TEXT-BASED SECTIONS
+     GLOBAL OLD TRACKER CLEANUP
      ========================================= */
 
-  function hideUnwantedSections(
-    fuelView
-  ) {
-    const unwanted = [
-      "today's meals",
-      "daily meal record",
-      "food history",
-      "favourite meals",
-      "favorite meals",
-      "recent meals",
-      "last 7 days"
-    ];
+  function hideOldGlobalTracker() {
+    const dashboard =
+      document.getElementById(
+        "fuelV57Dashboard"
+      );
 
+
+    if (dashboard) {
+      dashboard.style.display =
+        "none";
+    }
+
+
+    const summary =
+      document.getElementById(
+        "fuelV60Summary"
+      );
+
+
+    if (summary) {
+      summary.style.display =
+        "none";
+    }
+
+
+    /*
+      Catch old sections even if
+      older Fuel code placed them
+      outside clientFuelView.
+    */
 
     [
-      ...fuelView.querySelectorAll(
-        "section, .card, .fuel-v57-section"
+      ...document.querySelectorAll(
+        ".card, section"
       )
     ].forEach(
       element => {
 
+        const fuelView =
+          document.getElementById(
+            FUEL_VIEW_ID
+          );
+
+
         if (
-          element.id ===
-            "fuelV58Targets" ||
-          element.id ===
-            "fuelV611QuickPanel"
+          fuelView &&
+          fuelView.contains(
+            element
+          )
         ) {
           return;
         }
@@ -560,11 +713,20 @@
 
 
         if (
-          unwanted.some(
-            phrase =>
-              text.includes(
-                phrase
-              )
+          text.includes(
+            "food history"
+          ) ||
+
+          text.includes(
+            "favourite meals"
+          ) ||
+
+          text.includes(
+            "favorite meals"
+          ) ||
+
+          text.includes(
+            "recent meals"
           )
         ) {
 
@@ -578,7 +740,7 @@
 
 
   /* =========================================
-     CLEAN FUEL SCREEN
+     CLEAN
      ========================================= */
 
   function cleanFuelScreen() {
@@ -591,56 +753,33 @@
     if (!fuelView) return;
 
 
-    cleanTargets();
-
-
-    cleanMealSelection(
-      fuelView
-    );
-
-
-    hideOldFuelCards(
-      fuelView
-    );
-
-
-    hideUnwantedSections(
-      fuelView
-    );
-
-
     /*
-      Old seven-day summary.
+      Important order:
+      move panels FIRST,
+      then hide old tracker.
     */
 
-    document
-      .getElementById(
-        "fuelV60Summary"
-      )
-      ?.remove();
+    moveTargetsIntoFuel(
+      fuelView
+    );
 
 
-    /*
-      Keep the old dashboard hidden.
-      Its modal can still be used
-      by Meal Selection buttons.
-    */
-
-    const dashboard =
-      document.getElementById(
-        "fuelV57Dashboard"
-      );
+    ensureMealSelection(
+      fuelView
+    );
 
 
-    if (dashboard) {
-      dashboard.style.display =
-        "none";
-    }
+    removeOldFuelCards(
+      fuelView
+    );
+
+
+    hideOldGlobalTracker();
   }
 
 
   /* =========================================
-     WATCH FOR OLD FUEL SCRIPTS
+     WATCHER
      ========================================= */
 
   function scheduleClean() {
@@ -657,16 +796,7 @@
   }
 
 
-  function watchFuel() {
-    const fuelView =
-      document.getElementById(
-        FUEL_VIEW_ID
-      );
-
-
-    if (!fuelView) return;
-
-
+  function watchPage() {
     const observer =
       new MutationObserver(
         scheduleClean
@@ -674,7 +804,7 @@
 
 
     observer.observe(
-      fuelView,
+      document.body,
       {
         childList:true,
         subtree:true
@@ -693,23 +823,23 @@
 
     setTimeout(
       cleanFuelScreen,
-      350
+      250
     );
 
 
     setTimeout(
       cleanFuelScreen,
-      1100
+      800
     );
 
 
     setTimeout(
       cleanFuelScreen,
-      2000
+      1600
     );
 
 
-    watchFuel();
+    watchPage();
 
 
     document.addEventListener(
@@ -724,8 +854,28 @@
 
           setTimeout(
             cleanFuelScreen,
-            120
+            80
           );
+
+        }
+
+
+        if (
+          event.target.closest(
+            '[data-page="home"]'
+          )
+        ) {
+
+          /*
+            Re-check that nothing
+            has escaped back to Home.
+          */
+
+          setTimeout(
+            cleanFuelScreen,
+            80
+          );
+
         }
 
       }
