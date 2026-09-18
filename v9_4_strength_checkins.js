@@ -962,7 +962,7 @@
 
     const coachSection =
       document.querySelector(
-        ".mana-v865-coach"
+        ".mana-v866-coach"
       );
 
 
