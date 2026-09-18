@@ -1,16 +1,14 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.0.2
-   FUEL TRACKER CLEANUP
+   MANA MOVEMENT TRAINING v9.0.3
+   CLEAN FUEL TRACKER
 
-   FIX HOME PAGE LEAK
    DAILY PROGRESS
    MEAL SELECTION
-   REMOVE OLD DIARY / HISTORY
+   BACK TO STRENGTH OVERVIEW
    ========================================= */
 
 (() => {
   "use strict";
-
 
   const FUEL_VIEW_ID =
     "clientFuelView";
@@ -21,9 +19,11 @@
   const QUICK_ID =
     "fuelV611QuickPanel";
 
-  const STYLE_ID =
-    "mana-v902-fuel-clean-style";
+  const BACK_ID =
+    "manaFuelBackOverview";
 
+  const STYLE_ID =
+    "mana-v903-fuel-clean-style";
 
   let cleanTimer = null;
 
@@ -52,10 +52,6 @@
 
     style.textContent = `
 
-      /* ==========================
-         FUEL PAGE
-         ========================== */
-
       #${FUEL_VIEW_ID}{
         width:min(520px,100%);
         margin:auto;
@@ -75,13 +71,67 @@
 
 
       /* ==========================
+         BACK BUTTON
+         ========================== */
+
+      .mana-v903-back-row{
+        width:100%;
+
+        margin:
+          0
+          0
+          18px;
+
+        display:flex;
+
+        justify-content:flex-start;
+      }
+
+
+      .mana-v903-back{
+        min-height:44px;
+
+        padding:
+          0
+          16px;
+
+        border-radius:14px;
+
+        border:
+          1px solid
+          #383838;
+
+        background:#111;
+
+        color:#f3d875;
+
+        font-size:13px;
+
+        font-weight:900;
+
+        cursor:pointer;
+      }
+
+
+      .mana-v903-back:active{
+        transform:scale(.98);
+      }
+
+
+      /* ==========================
          DAILY PROGRESS
          ========================== */
 
-      #${FUEL_VIEW_ID} #${TARGETS_ID}{
+      #${FUEL_VIEW_ID}
+      #${TARGETS_ID}{
         display:block !important;
 
-        margin:16px 0 12px !important;
+        margin:
+          16px
+          0
+          12px
+          !important;
+
         padding:18px !important;
 
         border-radius:22px !important;
@@ -160,10 +210,15 @@
          MEAL SELECTION
          ========================== */
 
-      #${FUEL_VIEW_ID} #${QUICK_ID}{
+      #${FUEL_VIEW_ID}
+      #${QUICK_ID}{
         display:block !important;
 
-        margin:12px 0 !important;
+        margin:
+          12px
+          0
+          !important;
+
         padding:18px !important;
 
         border-radius:20px !important;
@@ -190,7 +245,7 @@
       }
 
 
-      .mana-v902-meal-sub{
+      .mana-v903-meal-sub{
         margin-bottom:14px;
 
         color:#888;
@@ -242,7 +297,7 @@
 
 
       /* ==========================
-         OLD TRACKER
+         REMOVE OLD TRACKER
          ========================== */
 
       #fuelV57Dashboard,
@@ -268,7 +323,9 @@
         #${FUEL_VIEW_ID}
         #${QUICK_ID}
         .fuel-v611-grid{
-          grid-template-columns:1fr !important;
+          grid-template-columns:
+            1fr
+            !important;
         }
 
 
@@ -290,17 +347,126 @@
 
 
   /* =========================================
-     FUEL HEADER
+     BACK TO STRENGTH OVERVIEW
      ========================================= */
 
-  function fuelHeader(
+  function returnToOverview() {
+    const fuelView =
+      document.getElementById(
+        FUEL_VIEW_ID
+      );
+
+
+    const home =
+      document.getElementById(
+        "manaV80Home"
+      );
+
+
+    const oldNav =
+      document.getElementById(
+        "bottomNav"
+      );
+
+
+    fuelView
+      ?.classList
+      .add(
+        "hide"
+      );
+
+
+    /*
+      Restore Mana Home underneath
+      the program shell.
+    */
+
+    if (home) {
+      home.style.display =
+        "";
+    }
+
+
+    /*
+      Keep old navigation hidden.
+    */
+
+    if (oldNav) {
+      oldNav.style.display =
+        "none";
+    }
+
+
+    /*
+      openManaProgram always opens
+      Mana Strength at Overview.
+    */
+
+    if (
+      typeof
+        window.openManaProgram ===
+      "function"
+    ) {
+
+      window.openManaProgram(
+        "strength"
+      );
+    }
+
+
+    window.scrollTo({
+      top:0,
+      behavior:"instant"
+    });
+  }
+
+
+  function ensureBackButton(
     fuelView
   ) {
-    return (
-      fuelView.querySelector(
-        ":scope > .row"
+    if (
+      document.getElementById(
+        BACK_ID
       )
+    ) return;
+
+
+    const row =
+      document.createElement(
+        "div"
+      );
+
+
+    row.className =
+      "mana-v903-back-row";
+
+
+    row.innerHTML = `
+
+      <button
+        type="button"
+        class="mana-v903-back"
+        id="${BACK_ID}"
+      >
+        ← OVERVIEW
+      </button>
+
+    `;
+
+
+    fuelView.prepend(
+      row
     );
+
+
+    document
+      .getElementById(
+        BACK_ID
+      )
+      ?.addEventListener(
+        "click",
+        returnToOverview
+      );
   }
 
 
@@ -320,22 +486,20 @@
     if (!targets) return;
 
 
-    /*
-      v5.8 sometimes inserts this
-      beside the old dashboard,
-      which can place it on Home.
-
-      Force it back into Fuel.
-    */
-
     if (
       targets.parentElement !==
       fuelView
     ) {
 
+      const backRow =
+        fuelView.querySelector(
+          ".mana-v903-back-row"
+        );
+
+
       const header =
-        fuelHeader(
-          fuelView
+        fuelView.querySelector(
+          ":scope > .row"
         );
 
 
@@ -346,12 +510,18 @@
           targets
         );
 
+      } else if (backRow) {
+
+        backRow.insertAdjacentElement(
+          "afterend",
+          targets
+        );
+
       } else {
 
         fuelView.prepend(
           targets
         );
-
       }
     }
 
@@ -394,12 +564,6 @@
       );
 
 
-    /*
-      If the old script never managed
-      to build the panel because the
-      old diary was hidden, create it.
-    */
-
     if (!panel) {
 
       panel =
@@ -421,10 +585,10 @@
         </div>
 
         <div
-          class="mana-v902-meal-sub"
+          class="mana-v903-meal-sub"
         >
-          Choose where you want to
-          add your meal.
+          Choose a meal to view
+          your Mana Fuel options.
         </div>
 
 
@@ -470,14 +634,8 @@
         </div>
 
       `;
-
     }
 
-
-    /*
-      Force Meal Selection into
-      the Fuel screen too.
-    */
 
     const targets =
       document.getElementById(
@@ -502,7 +660,6 @@
         fuelView.appendChild(
           panel
         );
-
       }
     }
 
@@ -519,13 +676,9 @@
     }
 
 
-    /*
-      Add subtitle once.
-    */
-
     if (
       !panel.querySelector(
-        ".mana-v902-meal-sub"
+        ".mana-v903-meal-sub"
       )
     ) {
 
@@ -536,11 +689,11 @@
 
 
       subtitle.className =
-        "mana-v902-meal-sub";
+        "mana-v903-meal-sub";
 
 
       subtitle.textContent =
-        "Choose where you want to add your meal.";
+        "Choose a meal to view your Mana Fuel options.";
 
 
       title
@@ -553,7 +706,7 @@
 
 
   /* =========================================
-     REMOVE OLD STATIC CARDS
+     REMOVE OLD STATIC FUEL CARDS
      ========================================= */
 
   function removeOldFuelCards(
@@ -566,22 +719,23 @@
 
         if (
           child.id === TARGETS_ID ||
-          child.id === QUICK_ID
+          child.id === QUICK_ID ||
+          child.classList.contains(
+            "mana-v903-back-row"
+          )
         ) {
           return;
         }
 
 
         /*
-          Keep the actual Fuel
-          page heading.
+          Keep main Fuel heading.
         */
 
         if (
-          child.classList
-            .contains(
-              "row"
-            )
+          child.classList.contains(
+            "row"
+          )
         ) {
           return;
         }
@@ -635,7 +789,6 @@
 
 
         if (remove) {
-
           child.style.display =
             "none";
         }
@@ -646,7 +799,7 @@
 
 
   /* =========================================
-     GLOBAL OLD TRACKER CLEANUP
+     GLOBAL CLEANUP
      ========================================= */
 
   function hideOldGlobalTracker() {
@@ -672,75 +825,11 @@
       summary.style.display =
         "none";
     }
-
-
-    /*
-      Catch old sections even if
-      older Fuel code placed them
-      outside clientFuelView.
-    */
-
-    [
-      ...document.querySelectorAll(
-        ".card, section"
-      )
-    ].forEach(
-      element => {
-
-        const fuelView =
-          document.getElementById(
-            FUEL_VIEW_ID
-          );
-
-
-        if (
-          fuelView &&
-          fuelView.contains(
-            element
-          )
-        ) {
-          return;
-        }
-
-
-        const text =
-          (
-            element.textContent ||
-            ""
-          )
-            .trim()
-            .toLowerCase();
-
-
-        if (
-          text.includes(
-            "food history"
-          ) ||
-
-          text.includes(
-            "favourite meals"
-          ) ||
-
-          text.includes(
-            "favorite meals"
-          ) ||
-
-          text.includes(
-            "recent meals"
-          )
-        ) {
-
-          element.style.display =
-            "none";
-        }
-
-      }
-    );
   }
 
 
   /* =========================================
-     CLEAN
+     CLEAN FUEL SCREEN
      ========================================= */
 
   function cleanFuelScreen() {
@@ -753,11 +842,10 @@
     if (!fuelView) return;
 
 
-    /*
-      Important order:
-      move panels FIRST,
-      then hide old tracker.
-    */
+    ensureBackButton(
+      fuelView
+    );
+
 
     moveTargetsIntoFuel(
       fuelView
@@ -856,26 +944,6 @@
             cleanFuelScreen,
             80
           );
-
-        }
-
-
-        if (
-          event.target.closest(
-            '[data-page="home"]'
-          )
-        ) {
-
-          /*
-            Re-check that nothing
-            has escaped back to Home.
-          */
-
-          setTimeout(
-            cleanFuelScreen,
-            80
-          );
-
         }
 
       }
@@ -885,6 +953,10 @@
 
   window.cleanManaFuelTracker =
     cleanFuelScreen;
+
+
+  window.returnManaFuelToOverview =
+    returnToOverview;
 
 
   if (
