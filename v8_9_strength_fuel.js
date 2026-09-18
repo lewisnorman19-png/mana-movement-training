@@ -1,11 +1,11 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.9
+   MANA MOVEMENT TRAINING v8.9.2
    MANA STRENGTH — FUEL
 
    PERSONALISED TARGETS
    DAILY PROGRESS
    TRAINING-DAY GUIDANCE
-   EXISTING FUEL TRACKER INTEGRATION
+   CLEAN FOOD TRACKER TRANSITION
    ========================================= */
 
 (() => {
@@ -404,7 +404,6 @@
       calories,
       protein,
       water,
-
       carbs:0,
       fat:0
     };
@@ -448,185 +447,122 @@
           );
 
         border-radius:22px;
-
         padding:18px;
-
         margin-bottom:12px;
       }
 
 
       .mana-v89-kicker{
         color:#f3d875;
-
         font-size:10px;
-
         font-weight:900;
-
         letter-spacing:.14em;
-
         text-transform:uppercase;
       }
 
 
       .mana-v89-hero h2{
-        margin:
-          7px
-          0
-          5px;
-
+        margin:7px 0 5px;
         font-size:25px;
       }
 
 
       .mana-v89-hero p{
         margin:0;
-
         color:#999;
-
         font-size:12px;
-
         line-height:1.55;
       }
 
 
       .mana-v89-grid{
         display:grid;
-
-        grid-template-columns:
-          1fr
-          1fr;
-
+        grid-template-columns:1fr 1fr;
         gap:10px;
-
-        margin:
-          12px
-          0;
+        margin:12px 0;
       }
 
 
       .mana-v89-stat{
         padding:15px;
-
         background:#0d0d0d;
-
-        border:
-          1px solid
-          #292929;
-
+        border:1px solid #292929;
         border-radius:18px;
       }
 
 
       .mana-v89-stat.wide{
-        grid-column:
-          1 / -1;
+        grid-column:1 / -1;
       }
 
 
       .mana-v89-label{
         color:#888;
-
         font-size:10px;
-
         font-weight:800;
-
-        text-transform:
-          uppercase;
-
+        text-transform:uppercase;
         letter-spacing:.07em;
       }
 
 
       .mana-v89-value{
         margin-top:5px;
-
         color:#f3d875;
-
         font-size:22px;
-
         font-weight:900;
       }
 
 
       .mana-v89-sub{
         margin-top:4px;
-
         color:#888;
-
         font-size:11px;
-
         line-height:1.4;
       }
 
 
       .mana-v89-track{
         height:7px;
-
         margin-top:10px;
-
         overflow:hidden;
-
         border-radius:999px;
-
         background:#222;
       }
 
 
       .mana-v89-fill{
         height:100%;
-
         border-radius:999px;
-
         background:#f3d875;
       }
 
 
       .mana-v89-section{
         padding:17px;
-
-        margin:
-          12px
-          0;
-
-        border:
-          1px solid
-          #292929;
-
+        margin:12px 0;
+        border:1px solid #292929;
         border-radius:20px;
-
         background:#0d0d0d;
       }
 
 
       .mana-v89-section h3{
-        margin:
-          0
-          0
-          5px;
-
+        margin:0 0 5px;
         font-size:19px;
       }
 
 
       .mana-v89-section-intro{
         margin-bottom:12px;
-
         color:#888;
-
         font-size:12px;
-
         line-height:1.5;
       }
 
 
       .mana-v89-guide{
-        padding:
-          12px
-          0;
-
-        border-top:
-          1px solid
-          #262626;
+        padding:12px 0;
+        border-top:1px solid #262626;
       }
 
 
@@ -637,103 +573,61 @@
 
       .mana-v89-guide strong{
         display:block;
-
         color:#eee;
-
         font-size:14px;
       }
 
 
       .mana-v89-guide span{
         display:block;
-
         margin-top:4px;
-
         color:#999;
-
         font-size:12px;
-
         line-height:1.5;
       }
 
 
       .mana-v89-button{
         width:100%;
-
         min-height:56px;
-
         margin-top:10px;
-
         border:0;
-
         border-radius:16px;
-
         background:#f3d875;
-
         color:#111;
-
         font-size:15px;
-
         font-weight:900;
       }
 
 
       .mana-v89-secondary{
         width:100%;
-
         min-height:50px;
-
         margin-top:8px;
-
         border-radius:15px;
-
-        border:
-          1px solid
-          #383838;
-
+        border:1px solid #383838;
         background:#111;
-
         color:#f3d875;
-
         font-size:14px;
-
         font-weight:900;
       }
 
 
       .mana-v89-note{
         margin-top:12px;
-
         color:#777;
-
         font-size:10px;
-
         line-height:1.45;
       }
 
 
-      /* ==========================
-         TARGET MODAL
-         ========================== */
-
       #${MODAL_ID}{
         position:fixed;
-
         inset:0;
-
         z-index:29000;
-
         display:none;
-
         align-items:flex-end;
-
-        background:
-          rgba(
-            0,
-            0,
-            0,
-            .82
-          );
+        background:rgba(0,0,0,.82);
       }
 
 
@@ -744,11 +638,8 @@
 
       .mana-v89-sheet{
         width:100%;
-
         max-height:92dvh;
-
         overflow:auto;
-
         padding:
           24px
           20px
@@ -758,37 +649,20 @@
               safe-area-inset-bottom
             )
           );
-
-        border:
-          1px solid
-          #333;
-
-        border-radius:
-          26px
-          26px
-          0
-          0;
-
+        border:1px solid #333;
+        border-radius:26px 26px 0 0;
         background:#101010;
       }
 
 
       .mana-v89-sheet-inner{
-        width:min(
-          520px,
-          100%
-        );
-
+        width:min(520px,100%);
         margin:auto;
       }
 
 
       .mana-v89-sheet h2{
-        margin:
-          0
-          0
-          16px;
-
+        margin:0 0 16px;
         font-size:26px;
       }
 
@@ -800,34 +674,21 @@
 
       .mana-v89-field label{
         display:block;
-
         margin-bottom:5px;
-
         color:#aaa;
-
         font-size:12px;
       }
 
 
       .mana-v89-field input{
         width:100%;
-
         min-height:50px;
-
         margin:0 !important;
-
         padding:12px 14px;
-
-        border:
-          1px solid
-          #333;
-
+        border:1px solid #333;
         border-radius:13px;
-
         background:#080808;
-
         color:#fff;
-
         font-size:16px;
       }
 
@@ -835,15 +696,13 @@
       @media(max-width:360px){
 
         .mana-v89-grid{
-          grid-template-columns:
-            1fr;
+          grid-template-columns:1fr;
         }
 
 
         .mana-v89-stat.wide{
           grid-column:auto;
         }
-
       }
 
     `;
@@ -879,23 +738,16 @@
 
     modal.innerHTML = `
 
-      <div
-        class="mana-v89-sheet"
-      >
+      <div class="mana-v89-sheet">
 
-        <div
-          class="mana-v89-sheet-inner"
-        >
+        <div class="mana-v89-sheet-inner">
 
           <h2>
             Daily Fuel Targets
           </h2>
 
 
-          <div
-            class="mana-v89-field"
-          >
-
+          <div class="mana-v89-field">
             <label>
               Calories
             </label>
@@ -906,14 +758,10 @@
               min="0"
               inputmode="numeric"
             />
-
           </div>
 
 
-          <div
-            class="mana-v89-field"
-          >
-
+          <div class="mana-v89-field">
             <label>
               Protein grams
             </label>
@@ -924,14 +772,10 @@
               min="0"
               inputmode="numeric"
             />
-
           </div>
 
 
-          <div
-            class="mana-v89-field"
-          >
-
+          <div class="mana-v89-field">
             <label>
               Water ml
             </label>
@@ -943,7 +787,6 @@
               step="100"
               inputmode="numeric"
             />
-
           </div>
 
 
@@ -1134,7 +977,7 @@
 
 
   /* =========================================
-     OPEN EXISTING TRACKER
+     OPEN FOOD TRACKER
      ========================================= */
 
   function openFoodTracker() {
@@ -1144,6 +987,34 @@
       );
 
 
+    const home =
+      document.getElementById(
+        "manaV80Home"
+      );
+
+
+    const clientFuel =
+      document.getElementById(
+        "clientFuelView"
+      );
+
+
+    const oldClient =
+      document.getElementById(
+        "clientView"
+      );
+
+
+    const oldNav =
+      document.getElementById(
+        "bottomNav"
+      );
+
+
+    /*
+      Close Mana Strength.
+    */
+
     shell
       ?.classList
       .remove(
@@ -1151,38 +1022,111 @@
       );
 
 
+    /*
+      Hide Mana Home completely
+      while Food Tracker is open.
+    */
+
+    if (home) {
+      home.style.display =
+        "none";
+    }
+
+
+    /*
+      Hide old client dashboard.
+    */
+
+    if (oldClient) {
+      oldClient.style.display =
+        "none";
+    }
+
+
+    /*
+      Hide old navigation.
+    */
+
+    if (oldNav) {
+      oldNav.style.display =
+        "none";
+    }
+
+
+    /*
+      Hide all suite screens.
+    */
+
+    [
+      "clientProgramsView",
+      "clientFuelView",
+      "clientProgressView",
+      "clientProfileView"
+    ].forEach(
+      id => {
+
+        document
+          .getElementById(
+            id
+          )
+          ?.classList
+          .add(
+            "hide"
+          );
+
+      }
+    );
+
+
+    /*
+      Show Fuel only.
+    */
+
+    clientFuel
+      ?.classList
+      .remove(
+        "hide"
+      );
+
+
     document.body.style.overflow =
       "";
 
 
-    const candidates =
-      [
-        ...document.querySelectorAll(
-          "[data-page], button"
-        )
-      ];
+    window.scrollTo({
+      top:0,
+      behavior:"instant"
+    });
 
 
-    const fuel =
-      candidates.find(
-        element =>
-          (
-            element.dataset.page ||
-            element.textContent ||
-            ""
-          )
-            .trim()
-            .toLowerCase() ===
-          "fuel"
-      );
+    /*
+      Force cleanup after
+      Fuel becomes visible.
+    */
 
+    setTimeout(
+      () => {
 
-    fuel?.click();
+        if (
+          typeof
+            window
+              .cleanManaFuelTracker ===
+          "function"
+        ) {
+
+          window
+            .cleanManaFuelTracker();
+
+        }
+
+      },
+      100
+    );
   }
 
 
   /* =========================================
-     RENDER
+     RENDER FUEL
      ========================================= */
 
   function renderFuel() {
@@ -1204,10 +1148,6 @@
 
 
     if (!holder) return;
-
-
-    const profile =
-      loadProfile();
 
 
     const targets =
@@ -1238,21 +1178,15 @@
 
     holder.innerHTML = `
 
-      <div
-        class="mana-v89-hero"
-      >
+      <div class="mana-v89-hero">
 
-        <div
-          class="mana-v89-kicker"
-        >
+        <div class="mana-v89-kicker">
           MANA FUEL
         </div>
-
 
         <h2>
           Fuel your training.
         </h2>
-
 
         <p>
           Keep it simple:
@@ -1269,158 +1203,95 @@
         hasTargets
           ? `
 
-            <div
-              class="mana-v89-grid"
-            >
+            <div class="mana-v89-grid">
 
-              <div
-                class="mana-v89-stat"
-              >
+              <div class="mana-v89-stat">
 
-                <div
-                  class="mana-v89-label"
-                >
+                <div class="mana-v89-label">
                   Calories
                 </div>
 
-                <div
-                  class="mana-v89-value"
-                >
-                  ${
-                    Math.round(
-                      totals.calories
-                    )
-                  }
+                <div class="mana-v89-value">
+                  ${Math.round(totals.calories)}
                   /
-                  ${
-                    targets.calories
-                  }
+                  ${targets.calories}
                 </div>
 
-                <div
-                  class="mana-v89-sub"
-                >
+                <div class="mana-v89-sub">
                   kcal today
                 </div>
 
-                <div
-                  class="mana-v89-track"
-                >
-
+                <div class="mana-v89-track">
                   <div
                     class="mana-v89-fill"
                     style="
                       width:
-                      ${
-                        pct(
-                          totals.calories,
-                          targets.calories
-                        )
-                      }%
+                      ${pct(
+                        totals.calories,
+                        targets.calories
+                      )}%
                     "
                   ></div>
-
                 </div>
 
               </div>
 
 
-              <div
-                class="mana-v89-stat"
-              >
+              <div class="mana-v89-stat">
 
-                <div
-                  class="mana-v89-label"
-                >
+                <div class="mana-v89-label">
                   Protein
                 </div>
 
-                <div
-                  class="mana-v89-value"
-                >
-                  ${
-                    Math.round(
-                      totals.protein
-                    )
-                  }
+                <div class="mana-v89-value">
+                  ${Math.round(totals.protein)}
                   /
-                  ${
-                    targets.protein
-                  }g
+                  ${targets.protein}g
                 </div>
 
-                <div
-                  class="mana-v89-sub"
-                >
+                <div class="mana-v89-sub">
                   today
                 </div>
 
-                <div
-                  class="mana-v89-track"
-                >
-
+                <div class="mana-v89-track">
                   <div
                     class="mana-v89-fill"
                     style="
                       width:
-                      ${
-                        pct(
-                          totals.protein,
-                          targets.protein
-                        )
-                      }%
+                      ${pct(
+                        totals.protein,
+                        targets.protein
+                      )}%
                     "
                   ></div>
-
                 </div>
 
               </div>
 
 
-              <div
-                class="
-                  mana-v89-stat
-                  wide
-                "
-              >
+              <div class="mana-v89-stat wide">
 
-                <div
-                  class="mana-v89-label"
-                >
+                <div class="mana-v89-label">
                   Water
                 </div>
 
-                <div
-                  class="mana-v89-value"
-                >
-                  ${
-                    Math.round(
-                      totals.water
-                    )
-                  }
+                <div class="mana-v89-value">
+                  ${Math.round(totals.water)}
                   /
-                  ${
-                    targets.water
-                  } ml
+                  ${targets.water} ml
                 </div>
 
-                <div
-                  class="mana-v89-track"
-                >
-
+                <div class="mana-v89-track">
                   <div
                     class="mana-v89-fill"
                     style="
                       width:
-                      ${
-                        pct(
-                          totals.water,
-                          targets.water
-                        )
-                      }%
+                      ${pct(
+                        totals.water,
+                        targets.water
+                      )}%
                     "
                   ></div>
-
                 </div>
 
               </div>
@@ -1430,17 +1301,13 @@
           `
           : `
 
-            <div
-              class="mana-v89-section"
-            >
+            <div class="mana-v89-section">
 
               <h3>
                 Set your Fuel targets
               </h3>
 
-              <div
-                class="mana-v89-section-intro"
-              >
+              <div class="mana-v89-section-intro">
                 Add your body weight to
                 Profile and Mana can build
                 a simple starting point.
@@ -1452,26 +1319,19 @@
       }
 
 
-      <div
-        class="mana-v89-section"
-      >
+      <div class="mana-v89-section">
 
         <h3>
           Daily Foundations
         </h3>
 
-
-        <div
-          class="mana-v89-section-intro"
-        >
+        <div class="mana-v89-section-intro">
           A simple structure you can
           repeat consistently.
         </div>
 
 
-        <div
-          class="mana-v89-guide"
-        >
+        <div class="mana-v89-guide">
 
           <strong>
             1 • Protein across the day
@@ -1488,9 +1348,7 @@
         </div>
 
 
-        <div
-          class="mana-v89-guide"
-        >
+        <div class="mana-v89-guide">
 
           <strong>
             2 • Fuel around training
@@ -1506,35 +1364,31 @@
         </div>
 
 
-        <div
-          class="mana-v89-guide"
-        >
+        <div class="mana-v89-guide">
 
           <strong>
             3 • Hydrate consistently
           </strong>
 
           <span>
-            Spread water through the
-            day rather than trying to
-            catch up late.
+            Spread water through the day
+            rather than trying to catch
+            up late.
           </span>
 
         </div>
 
 
-        <div
-          class="mana-v89-guide"
-        >
+        <div class="mana-v89-guide">
 
           <strong>
             4 • Keep meals repeatable
           </strong>
 
           <span>
-            Simple meals you enjoy and
-            can prepare consistently beat
-            a perfect plan you cannot sustain.
+            Simple meals you enjoy and can
+            prepare consistently beat a
+            perfect plan you cannot sustain.
           </span>
 
         </div>
@@ -1569,9 +1423,7 @@
       </button>
 
 
-      <div
-        class="mana-v89-note"
-      >
+      <div class="mana-v89-note">
         Mana Fuel targets are a practical
         starting estimate and can be adjusted
         to suit the individual.
@@ -1661,8 +1513,7 @@
 
         if (
           event.target.closest(
-            '#manaV83Tabs ' +
-            '[data-v83-tab="fuel"]'
+            '#manaV83Tabs [data-v83-tab="fuel"]'
           )
         ) {
 
