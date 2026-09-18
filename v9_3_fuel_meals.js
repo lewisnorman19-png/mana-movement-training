@@ -1,352 +1,190 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.3
-   MANA FUEL — MEAL SELECTION
+   MANA MOVEMENT TRAINING v9.3.2
+   FUEL MEALS
 
-   3 PRESET OPTIONS PER MEAL
-   PRE-CALCULATED CALORIES + PROTEIN
-   LOGS INTO EXISTING FUEL STORE
+   3 PRESET OPTIONS
+   ADD / CHANGE / REMOVE SUPPORT
    ========================================= */
 
 (() => {
   "use strict";
 
+  const PROFILE_KEY = "mana-profile-v67";
+  const FUEL_KEY = "mana-fuel-v571";
+  const MODAL_ID = "manaV93MealModal";
+  const STYLE_ID = "mana-v932-meals-style";
 
-  const PROFILE_KEY =
-    "mana-profile-v67";
-
-  const FUEL_KEY =
-    "mana-fuel-v571";
-
-  const MODAL_ID =
-    "manaV93MealModal";
-
-  const STYLE_ID =
-    "mana-v93-meals-style";
-
-
-  /* =========================================
-     MEAL LIBRARY
-     ========================================= */
+  let editMeal = null;
+  let editIndex = null;
 
   const MEALS = {
-
     Breakfast: [
-
       {
-        name:
-          "Eggs, sourdough & spinach",
-
-        description:
-          "3 eggs, 2 slices sourdough and spinach",
-
-        calories:430,
-
-        protein:28
+        name: "Eggs, sourdough & spinach",
+        description: "3 eggs, 2 slices sourdough and spinach",
+        calories: 430,
+        protein: 28
       },
-
-
       {
-        name:
-          "Protein oats",
-
-        description:
-          "Oats, Greek yoghurt, banana and milk",
-
-        calories:500,
-
-        protein:32
+        name: "Protein oats",
+        description: "Oats, Greek yoghurt, banana and milk",
+        calories: 500,
+        protein: 32
       },
-
-
       {
-        name:
-          "Greek yoghurt bowl",
-
-        description:
-          "Greek yoghurt, oats, berries and banana",
-
-        calories:390,
-
-        protein:30
+        name: "Greek yoghurt bowl",
+        description: "Greek yoghurt, oats, berries and banana",
+        calories: 390,
+        protein: 30
       }
-
     ],
-
 
     Lunch: [
-
       {
-        name:
-          "Chicken rice bowl",
-
-        description:
-          "Chicken breast, rice and vegetables",
-
-        calories:560,
-
-        protein:46
+        name: "Chicken rice bowl",
+        description: "Chicken breast, rice and vegetables",
+        calories: 560,
+        protein: 46
       },
-
-
       {
-        name:
-          "Chicken wrap",
-
-        description:
-          "Chicken, wholegrain wrap, salad and light dressing",
-
-        calories:480,
-
-        protein:40
+        name: "Chicken wrap",
+        description: "Chicken, wholegrain wrap, salad and light dressing",
+        calories: 480,
+        protein: 40
       },
-
-
       {
-        name:
-          "Tuna rice bowl",
-
-        description:
-          "Tuna, rice and mixed vegetables",
-
-        calories:510,
-
-        protein:38
+        name: "Tuna rice bowl",
+        description: "Tuna, rice and mixed vegetables",
+        calories: 510,
+        protein: 38
       }
-
     ],
-
 
     Dinner: [
-
       {
-        name:
-          "Chicken, sweet potato & broccoli",
-
-        description:
-          "Chicken breast, sweet potato and broccoli",
-
-        calories:590,
-
-        protein:52
+        name: "Chicken, sweet potato & broccoli",
+        description: "Chicken breast, sweet potato and broccoli",
+        calories: 590,
+        protein: 52
       },
-
-
       {
-        name:
-          "Lean mince, rice & vegetables",
-
-        description:
-          "Lean beef mince, rice and mixed vegetables",
-
-        calories:620,
-
-        protein:45
+        name: "Lean mince, rice & vegetables",
+        description: "Lean beef mince, rice and mixed vegetables",
+        calories: 620,
+        protein: 45
       },
-
-
       {
-        name:
-          "Salmon, potatoes & greens",
-
-        description:
-          "Salmon, potatoes and green vegetables",
-
-        calories:640,
-
-        protein:42
+        name: "Salmon, potatoes & greens",
+        description: "Salmon, potatoes and green vegetables",
+        calories: 640,
+        protein: 42
       }
-
     ],
 
-
     Snacks: [
-
       {
-        name:
-          "Greek yoghurt & fruit",
-
-        description:
-          "High-protein Greek yoghurt with fruit",
-
-        calories:250,
-
-        protein:20
+        name: "Greek yoghurt & fruit",
+        description: "High-protein Greek yoghurt with fruit",
+        calories: 250,
+        protein: 20
       },
-
-
       {
-        name:
-          "Protein shake & banana",
-
-        description:
-          "Protein shake with one banana",
-
-        calories:280,
-
-        protein:28
+        name: "Protein shake & banana",
+        description: "Protein shake with one banana",
+        calories: 280,
+        protein: 28
       },
-
-
       {
-        name:
-          "Eggs & toast",
-
-        description:
-          "2 eggs with one slice of toast",
-
-        calories:300,
-
-        protein:19
+        name: "Eggs & toast",
+        description: "2 eggs with one slice of toast",
+        calories: 300,
+        protein: 19
       }
-
     ]
-
   };
 
 
-  /* =========================================
-     HELPERS
-     ========================================= */
-
-  function safeJson(
-    raw,
-    fallback
-  ) {
-
+  function safeJson(raw, fallback) {
     try {
-
-      return JSON.parse(
-        raw
-      );
-
+      return JSON.parse(raw);
     } catch (_) {
-
       return fallback;
     }
   }
 
 
   function todayKey() {
-
-    const date =
-      new Date();
-
+    const date = new Date();
 
     return [
-
       date.getFullYear(),
-
-      String(
-        date.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      ),
-
-      String(
-        date.getDate()
-      ).padStart(
-        2,
-        "0"
-      )
-
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0")
     ].join("-");
   }
 
 
   function loadProfile() {
-
     return safeJson(
-      localStorage.getItem(
-        PROFILE_KEY
-      ) || "{}",
+      localStorage.getItem(PROFILE_KEY) || "{}",
       {}
     );
   }
 
 
   function loadStore() {
-
     return safeJson(
-      localStorage.getItem(
-        FUEL_KEY
-      ) || "{}",
+      localStorage.getItem(FUEL_KEY) || "{}",
       {}
     );
   }
 
 
+  function blankDay() {
+    return {
+      meals: {
+        Breakfast: [],
+        Lunch: [],
+        Dinner: [],
+        Snacks: []
+      },
+      water: 0
+    };
+  }
+
+
   function loadToday() {
-
-    const store =
-      loadStore();
-
+    const store = loadStore();
 
     return (
-      store[
-        todayKey()
-      ] ||
-      {
-        meals:{
-          Breakfast:[],
-          Lunch:[],
-          Dinner:[],
-          Snacks:[]
-        },
-
-        water:0
-      }
+      store[todayKey()] ||
+      blankDay()
     );
   }
 
 
-  function saveToday(
-    day
-  ) {
+  function saveToday(day) {
+    const store = loadStore();
 
-    const store =
-      loadStore();
-
-
-    store[
-      todayKey()
-    ] =
-      day;
-
+    store[todayKey()] = day;
 
     localStorage.setItem(
       FUEL_KEY,
-      JSON.stringify(
-        store
-      )
+      JSON.stringify(store)
     );
   }
 
 
-  /* =========================================
-     STYLES
-     ========================================= */
-
   function injectStyles() {
-
     if (
-      document.getElementById(
-        STYLE_ID
-      )
+      document.getElementById(STYLE_ID)
     ) {
       return;
     }
 
+    const style = document.createElement("style");
 
-    const style =
-      document.createElement(
-        "style"
-      );
-
-
-    style.id =
-      STYLE_ID;
-
+    style.id = STYLE_ID;
 
     style.textContent = `
 
@@ -354,361 +192,207 @@
         position:fixed;
         inset:0;
         z-index:31000;
-
         display:none;
-
         align-items:flex-end;
-
-        background:
-          rgba(
-            0,
-            0,
-            0,
-            .86
-          );
+        background:rgba(0,0,0,.86);
       }
-
 
       #${MODAL_ID}.open{
         display:flex;
       }
 
-
-      .mana-v93-sheet{
+      .mana-v932-sheet{
         width:100%;
-
-        max-height:
-          90dvh;
-
+        max-height:90dvh;
         overflow:auto;
-
         padding:
           22px
           18px
-          calc(
-            28px +
-            env(
-              safe-area-inset-bottom
-            )
-          );
-
-        border:
-          1px solid
-          #363636;
-
-        border-radius:
-          28px
-          28px
-          0
-          0;
-
+          calc(28px + env(safe-area-inset-bottom));
+        border:1px solid #363636;
+        border-radius:28px 28px 0 0;
         background:#0d0d0d;
       }
 
-
-      .mana-v93-inner{
-        width:min(
-          520px,
-          100%
-        );
-
+      .mana-v932-inner{
+        width:min(520px,100%);
         margin:auto;
       }
 
-
-      .mana-v93-top{
+      .mana-v932-top{
         display:flex;
-
-        justify-content:
-          space-between;
-
-        align-items:
-          flex-start;
-
+        justify-content:space-between;
+        align-items:flex-start;
         gap:14px;
       }
 
-
-      .mana-v93-kicker{
+      .mana-v932-kicker{
         color:#f3d875;
-
         font-size:10px;
-
         font-weight:900;
-
         letter-spacing:.14em;
       }
 
-
-      .mana-v93-title{
-        margin:
-          5px
-          0
-          4px;
-
+      .mana-v932-title{
+        margin:5px 0 4px;
         font-size:27px;
       }
 
-
-      .mana-v93-sub{
+      .mana-v932-sub{
         color:#888;
-
         font-size:12px;
-
         line-height:1.45;
       }
 
-
-      .mana-v93-close{
+      .mana-v932-close{
         width:42px;
         height:42px;
-
-        flex:
-          0
-          0
-          42px;
-
+        flex:0 0 42px;
         border-radius:50%;
-
-        border:
-          1px solid
-          #333;
-
+        border:1px solid #333;
         background:#111;
-
         color:#fff;
-
         font-size:22px;
       }
 
-
-      .mana-v93-goal{
-        margin:
-          16px
-          0;
-
-        padding:
-          12px
-          14px;
-
-        border:
-          1px solid
-          #4a3e18;
-
+      .mana-v932-goal{
+        margin:16px 0;
+        padding:12px 14px;
+        border:1px solid #4a3e18;
         border-radius:14px;
-
         background:#15130b;
-
         color:#aaa;
-
         font-size:12px;
       }
 
-
-      .mana-v93-goal strong{
+      .mana-v932-goal strong{
         color:#f3d875;
       }
 
-
-      .mana-v93-options{
+      .mana-v932-options{
         display:grid;
-
         gap:10px;
-
-        margin-top:14px;
       }
 
-
-      .mana-v93-option{
+      .mana-v932-option{
         width:100%;
-
         padding:16px;
-
         text-align:left;
-
-        border:
-          1px solid
-          #343434;
-
+        border:1px solid #343434;
         border-radius:18px;
-
         background:
           linear-gradient(
             145deg,
             #141414,
             #0a0a0a
           );
-
         color:#fff;
+        touch-action:manipulation;
       }
 
-
-      .mana-v93-option:active{
+      .mana-v932-option:active{
         border-color:#7a6726;
-
         background:#17150d;
       }
 
-
-      .mana-v93-option-name{
+      .mana-v932-name{
         color:#fff;
-
         font-size:16px;
-
         font-weight:900;
       }
 
-
-      .mana-v93-option-desc{
+      .mana-v932-desc{
         margin-top:5px;
-
         color:#888;
-
         font-size:12px;
-
         line-height:1.4;
       }
 
-
-      .mana-v93-macros{
+      .mana-v932-macros{
         display:flex;
-
         gap:8px;
-
         flex-wrap:wrap;
-
         margin-top:11px;
       }
 
-
-      .mana-v93-chip{
-        padding:
-          6px
-          9px;
-
-        border:
-          1px solid
-          #4b411f;
-
+      .mana-v932-chip{
+        padding:6px 9px;
+        border:1px solid #4b411f;
         border-radius:999px;
-
         color:#f3d875;
-
         font-size:11px;
-
         font-weight:900;
       }
 
-
-      .mana-v93-footer{
-        margin-top:15px;
-
-        color:#707070;
-
-        font-size:10px;
-
-        line-height:1.45;
+      .mana-v932-confirm{
+        margin-top:12px;
+        padding:12px;
+        text-align:center;
+        border:1px solid #37513c;
+        border-radius:14px;
+        background:#0d1710;
+        color:#8ed49a;
+        font-size:12px;
+        font-weight:800;
       }
 
-
-      .mana-v93-confirm{
-        margin-top:12px;
-
-        padding:12px;
-
-        text-align:center;
-
-        border:
-          1px solid
-          #37513c;
-
-        border-radius:14px;
-
-        background:#0d1710;
-
-        color:#8ed49a;
-
-        font-size:12px;
-
-        font-weight:800;
+      .mana-v932-footer{
+        margin-top:15px;
+        color:#707070;
+        font-size:10px;
+        line-height:1.45;
       }
 
     `;
 
-
-    document.head.appendChild(
-      style
-    );
+    document.head.appendChild(style);
   }
 
 
-  /* =========================================
-     MODAL
-     ========================================= */
-
   function ensureModal() {
-
     if (
-      document.getElementById(
-        MODAL_ID
-      )
+      document.getElementById(MODAL_ID)
     ) {
       return;
     }
 
+    const modal = document.createElement("div");
 
-    const modal =
-      document.createElement(
-        "div"
-      );
-
-
-    modal.id =
-      MODAL_ID;
-
+    modal.id = MODAL_ID;
 
     modal.innerHTML = `
 
-      <div
-        class="mana-v93-sheet"
-      >
+      <div class="mana-v932-sheet">
 
-        <div
-          class="mana-v93-inner"
-        >
+        <div class="mana-v932-inner">
 
-          <div
-            class="mana-v93-top"
-          >
+          <div class="mana-v932-top">
 
             <div>
 
-              <div
-                class="mana-v93-kicker"
-              >
+              <div class="mana-v932-kicker">
                 MANA FUEL
               </div>
 
               <h2
-                class="mana-v93-title"
+                class="mana-v932-title"
                 id="manaV93Title"
               >
                 Meal
               </h2>
 
               <div
-                class="mana-v93-sub"
+                class="mana-v932-sub"
+                id="manaV93Sub"
               >
-                Choose one option to add
-                it to today's Fuel total.
+                Choose an option.
               </div>
 
             </div>
 
-
             <button
               type="button"
-              class="mana-v93-close"
+              class="mana-v932-close"
               id="manaV93Close"
             >
               ×
@@ -716,31 +400,23 @@
 
           </div>
 
-
           <div
-            class="mana-v93-goal"
+            class="mana-v932-goal"
             id="manaV93Goal"
           ></div>
 
-
           <div
-            class="mana-v93-options"
+            class="mana-v932-options"
             id="manaV93Options"
           ></div>
-
 
           <div
             id="manaV93Confirmation"
           ></div>
 
-
-          <div
-            class="mana-v93-footer"
-          >
+          <div class="mana-v932-footer">
             Calories and protein are practical
             estimates based on the listed serving.
-            Actual values vary by brand, portion
-            and preparation.
           </div>
 
         </div>
@@ -749,29 +425,19 @@
 
     `;
 
-
-    document.body.appendChild(
-      modal
-    );
-
+    document.body.appendChild(modal);
 
     document
-      .getElementById(
-        "manaV93Close"
-      )
-      .onclick =
-        closeModal;
-
+      .getElementById("manaV93Close")
+      .onclick = closeModal;
 
     modal.addEventListener(
       "click",
       event => {
 
         if (
-          event.target ===
-          modal
+          event.target === modal
         ) {
-
           closeModal();
         }
 
@@ -781,252 +447,187 @@
 
 
   function closeModal() {
-
     document
-      .getElementById(
-        MODAL_ID
-      )
+      .getElementById(MODAL_ID)
       ?.classList
-      .remove(
-        "open"
-      );
+      .remove("open");
+
+    editMeal = null;
+    editIndex = null;
   }
 
 
   function openMealOptions(
-    meal
+    meal,
+    index = null
   ) {
-
     ensureModal();
 
-
-    const profile =
-      loadProfile();
-
+    const profile = loadProfile();
 
     const goal =
       profile.fuelGoal ||
       "Maintenance";
 
+    editMeal =
+      index === null
+        ? null
+        : meal;
 
-    const title =
-      document.getElementById(
-        "manaV93Title"
-      );
+    editIndex =
+      index === null
+        ? null
+        : Number(index);
 
-
-    const goalHolder =
-      document.getElementById(
-        "manaV93Goal"
-      );
-
-
-    const optionsHolder =
-      document.getElementById(
-        "manaV93Options"
-      );
-
-
-    const confirmation =
-      document.getElementById(
-        "manaV93Confirmation"
-      );
-
-
-    if (title) {
-
-      title.textContent =
+    document
+      .getElementById("manaV93Title")
+      .textContent =
         meal;
-    }
 
+    document
+      .getElementById("manaV93Sub")
+      .textContent =
+        editMeal !== null
+          ? "Choose a replacement for this meal."
+          : "Choose one option to add to today.";
 
-    if (goalHolder) {
-
-      goalHolder.innerHTML = `
+    document
+      .getElementById("manaV93Goal")
+      .innerHTML = `
         Fuel goal:
         <strong>
           ${goal}
         </strong>
       `;
-    }
-
-
-    if (confirmation) {
-
-      confirmation.innerHTML =
-        "";
-    }
-
-
-    const options =
-      MEALS[
-        meal
-      ] || [];
-
-
-    if (optionsHolder) {
-
-      optionsHolder.innerHTML =
-        options
-          .map(
-            (item, index) => `
-
-              <button
-                type="button"
-                class="mana-v93-option"
-                data-v93-meal="${meal}"
-                data-v93-index="${index}"
-              >
-
-                <div
-                  class="mana-v93-option-name"
-                >
-                  ${item.name}
-                </div>
-
-
-                <div
-                  class="mana-v93-option-desc"
-                >
-                  ${item.description}
-                </div>
-
-
-                <div
-                  class="mana-v93-macros"
-                >
-
-                  <span
-                    class="mana-v93-chip"
-                  >
-                    ${item.calories} CAL
-                  </span>
-
-                  <span
-                    class="mana-v93-chip"
-                  >
-                    ${item.protein}G PROTEIN
-                  </span>
-
-                </div>
-
-              </button>
-
-            `
-          )
-          .join("");
-    }
-
 
     document
-      .getElementById(
-        MODAL_ID
-      )
-      .classList
-      .add(
-        "open"
+      .getElementById("manaV93Confirmation")
+      .innerHTML = "";
+
+    const holder =
+      document.getElementById(
+        "manaV93Options"
       );
+
+    holder.innerHTML =
+      (MEALS[meal] || [])
+        .map(
+          (item, optionIndex) => `
+
+            <button
+              type="button"
+              class="mana-v932-option"
+              data-v932-meal="${meal}"
+              data-v932-index="${optionIndex}"
+            >
+
+              <div class="mana-v932-name">
+                ${item.name}
+              </div>
+
+              <div class="mana-v932-desc">
+                ${item.description}
+              </div>
+
+              <div class="mana-v932-macros">
+
+                <span class="mana-v932-chip">
+                  ${item.calories} CAL
+                </span>
+
+                <span class="mana-v932-chip">
+                  ${item.protein}G PROTEIN
+                </span>
+
+              </div>
+
+            </button>
+
+          `
+        )
+        .join("");
+
+    document
+      .getElementById(MODAL_ID)
+      .classList
+      .add("open");
   }
 
 
-  /* =========================================
-     LOG SELECTED MEAL
-     ========================================= */
-
-  function logMeal(
+  function selectMeal(
     meal,
-    index
+    optionIndex
   ) {
-
     const item =
-      MEALS[
-        meal
-      ]?.[
-        index
+      MEALS[meal]?.[
+        optionIndex
       ];
 
-
-    if (!item) return;
-
+    if (!item) {
+      return;
+    }
 
     const day =
       loadToday();
 
+    day.meals =
+      day.meals ||
+      blankDay().meals;
 
-    if (
-      !day.meals
-    ) {
-
-      day.meals = {
-        Breakfast:[],
-        Lunch:[],
-        Dinner:[],
-        Snacks:[]
-      };
-    }
-
-
-    if (
-      !Array.isArray(
-        day.meals[
-          meal
-        ]
+    day.meals[meal] =
+      Array.isArray(
+        day.meals[meal]
       )
-    ) {
+        ? day.meals[meal]
+        : [];
 
-      day.meals[
-        meal
-      ] = [];
-    }
-
-
-    day.meals[
-      meal
-    ].push({
-
-      food:
-        item.name,
-
-      calories:
-        item.calories,
-
-      protein:
-        item.protein,
-
-      source:
-        "mana-preset",
-
+    const logged = {
+      food: item.name,
+      calories: item.calories,
+      protein: item.protein,
+      source: "mana-preset",
       created_at:
-        new Date()
-          .toISOString()
+        new Date().toISOString()
+    };
 
-    });
+    const replacing =
+      editMeal === meal &&
+      Number.isInteger(editIndex) &&
+      editIndex >= 0 &&
+      editIndex <
+        day.meals[meal].length;
 
+    if (replacing) {
 
-    saveToday(
-      day
-    );
+      day.meals[meal][
+        editIndex
+      ] = logged;
 
+    } else {
 
-    const confirmation =
-      document.getElementById(
-        "manaV93Confirmation"
+      day.meals[meal].push(
+        logged
       );
 
+    }
 
-    if (confirmation) {
+    saveToday(day);
 
-      confirmation.innerHTML = `
+    document
+      .getElementById(
+        "manaV93Confirmation"
+      )
+      .innerHTML = `
 
-        <div
-          class="mana-v93-confirm"
-        >
-          ${item.name} added ✓
+        <div class="mana-v932-confirm">
+          ${
+            replacing
+              ? "Meal changed"
+              : "Meal added"
+          } ✓
         </div>
 
       `;
-    }
-
 
     if (
       typeof
@@ -1034,77 +635,26 @@
           .renderManaStrengthFuel ===
       "function"
     ) {
-
       window
         .renderManaStrengthFuel();
     }
 
-
     setTimeout(
       closeModal,
-      500
+      450
     );
   }
 
 
-  /* =========================================
-     MAIN CLICK HANDLER
-     ========================================= */
-
   function wireClicks() {
-
     document.addEventListener(
       "click",
       event => {
-
-        /*
-          BUILD TARGETS FROM PROFILE
-
-          This runs in capture mode so
-          it beats the older v8.9 handler.
-        */
-
-        const profileButton =
-          event.target.closest(
-            "#manaV89BuildTargets"
-          );
-
-
-        if (profileButton) {
-
-          event.preventDefault();
-
-          event.stopPropagation();
-
-          event.stopImmediatePropagation();
-
-
-          if (
-            typeof
-              window
-                .openManaProfile ===
-            "function"
-          ) {
-
-            window
-              .openManaProfile();
-          }
-
-
-          return;
-        }
-
-
-        /*
-          BREAKFAST / LUNCH /
-          DINNER / SNACKS
-        */
 
         const mealButton =
           event.target.closest(
             "[data-mana-meal]"
           );
-
 
         if (mealButton) {
 
@@ -1112,28 +662,44 @@
 
           event.stopPropagation();
 
-          event.stopImmediatePropagation();
-
-
           openMealOptions(
             mealButton.dataset
               .manaMeal
           );
 
+          return;
+        }
+
+
+        const changeButton =
+          event.target.closest(
+            "[data-mana-change-meal]"
+          );
+
+        if (changeButton) {
+
+          event.preventDefault();
+
+          event.stopPropagation();
+
+          openMealOptions(
+            changeButton.dataset
+              .manaChangeMeal,
+
+            Number(
+              changeButton.dataset
+                .manaChangeIndex
+            )
+          );
 
           return;
         }
 
 
-        /*
-          SELECT PRESET MEAL
-        */
-
         const option =
           event.target.closest(
-            "[data-v93-meal]"
+            "[data-v932-meal]"
           );
-
 
         if (option) {
 
@@ -1141,31 +707,24 @@
 
           event.stopPropagation();
 
-
-          logMeal(
+          selectMeal(
             option.dataset
-              .v93Meal,
+              .v932Meal,
 
             Number(
               option.dataset
-                .v93Index
+                .v932Index
             )
           );
 
         }
 
-      },
-      true
+      }
     );
   }
 
 
-  /* =========================================
-     INIT
-     ========================================= */
-
   function init() {
-
     injectStyles();
 
     ensureModal();
