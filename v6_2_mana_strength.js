@@ -48,11 +48,9 @@
         opacity:1 !important;
       }
 
-
       .mana-strength-card:active{
         transform:scale(.99);
       }
-
 
       .mana-strength-arrow{
         color:#f3d875;
@@ -60,17 +58,12 @@
         line-height:1;
       }
 
-
       #${MODAL_ID}{
         position:fixed;
         inset:0;
-
         z-index:20000;
-
         display:none;
-
         background:#050505;
-
         overflow:auto;
 
         padding:
@@ -79,201 +72,130 @@
           calc(100px + env(safe-area-inset-bottom));
       }
 
-
       #${MODAL_ID}.open{
         display:block;
       }
-
 
       .mana-strength-shell{
         width:min(520px,100%);
         margin:auto;
       }
 
-
       .mana-strength-head{
         display:flex;
         justify-content:space-between;
         align-items:flex-start;
-
         gap:16px;
-
         margin-bottom:20px;
       }
-
 
       .mana-strength-head h1{
         margin:6px 0 4px;
         font-size:34px;
       }
 
-
       .mana-strength-close{
         width:44px;
         height:44px;
-
         flex:0 0 44px;
-
         border-radius:50%;
-
         border:1px solid #333;
-
         background:#111;
-
         color:white;
-
         font-size:24px;
       }
 
-
       .mana-strength-section{
         background:#101010;
-
-        border:
-          1px solid
-          #292310;
-
+        border:1px solid #292310;
         border-radius:22px;
-
         padding:18px;
-
         margin:14px 0;
       }
-
 
       .mana-strength-section h3{
         margin:0 0 12px;
       }
 
-
       .mana-strength-options{
         display:grid;
-
-        grid-template-columns:
-          1fr 1fr;
-
+        grid-template-columns:1fr 1fr;
         gap:10px;
       }
 
-
       .mana-strength-option{
         min-height:52px;
-
         border-radius:14px;
-
-        border:
-          1px solid
-          #333;
-
+        border:1px solid #333;
         background:#0b0b0b;
-
         color:#ddd;
-
         font-weight:700;
-
         padding:10px;
       }
 
-
       .mana-strength-option.active{
         background:#f3d875;
-
         border-color:#f3d875;
-
         color:#090909;
       }
 
-
       .mana-strength-build{
         width:100%;
-
         min-height:58px;
-
         border:0;
-
         border-radius:16px;
-
         background:#f3d875;
-
         color:#111;
-
         font-size:17px;
-
         font-weight:900;
-
         margin-top:12px;
       }
-
 
       .mana-strength-program{
         margin-top:18px;
       }
 
-
       .mana-strength-day{
-        border:
-          1px solid
-          #292929;
-
+        border:1px solid #292929;
         background:#0b0b0b;
-
         border-radius:18px;
-
         padding:16px;
-
         margin-top:10px;
       }
 
-
       .mana-strength-day h3{
         margin:0 0 10px;
-
         color:#f3d875;
       }
 
-
       .mana-strength-exercise{
         padding:10px 0;
-
-        border-top:
-          1px solid
-          #242424;
+        border-top:1px solid #242424;
       }
-
 
       .mana-strength-exercise:first-of-type{
         border-top:0;
       }
 
-
       .mana-strength-exercise strong{
         display:block;
       }
 
-
       .mana-strength-exercise span{
         color:#999;
-
         font-size:13px;
       }
 
-
       .mana-strength-summary{
         color:#aaa;
-
         font-size:14px;
-
         line-height:1.5;
       }
 
-
       @media(max-width:380px){
-
         .mana-strength-options{
-          grid-template-columns:
-            1fr;
+          grid-template-columns:1fr;
         }
-
       }
 
     `;
@@ -292,10 +214,9 @@
   function findStrengthCard() {
     const candidates =
       [
-        ...document
-          .querySelectorAll(
-            "#clientView .day"
-          )
+        ...document.querySelectorAll(
+          "#clientView .day"
+        )
       ];
 
 
@@ -306,8 +227,7 @@
           (
             el.textContent ||
             ""
-          )
-            .toUpperCase();
+          ).toUpperCase();
 
 
         return (
@@ -749,7 +669,7 @@
 
 
   /* =========================================
-     EQUIPMENT EXERCISE LIBRARIES
+     EQUIPMENT LIBRARIES
      ========================================= */
 
   const LIBRARIES = {
@@ -1026,6 +946,21 @@
 
   /* =========================================
      GOAL TARGETS
+
+     Strength:
+       6–8 reps
+
+     Muscle:
+       10–12 reps
+
+     General:
+       8–12 reps
+
+     Return:
+       8–10 reps
+
+     Experience changes volume / sets,
+     not the goal-specific rep range.
      ========================================= */
 
   function targetStyle(
@@ -1033,7 +968,7 @@
     experience
   ) {
 
-    const easier =
+    const lowerVolume =
       experience ===
         "Beginner" ||
       experience ===
@@ -1044,24 +979,29 @@
       goal ===
       "Get stronger"
     ) {
+
       return {
+
         main:
-          easier
-            ? "3 × 5–6"
-            : "4 × 4–6",
+          lowerVolume
+            ? "3 × 6–8"
+            : "4 × 6–8",
 
         secondary:
-          easier
-            ? "3 × 8"
+          lowerVolume
+            ? "2 × 6–8"
             : "3 × 6–8",
 
         accessory:
-          easier
-            ? "2 × 10–12"
-            : "3 × 8–12",
+          lowerVolume
+            ? "2 × 8–10"
+            : "3 × 8–10",
 
         core:
-          "3 sets"
+          lowerVolume
+            ? "2 sets"
+            : "3 sets"
+
       };
     }
 
@@ -1070,24 +1010,29 @@
       goal ===
       "General fitness"
     ) {
+
       return {
+
         main:
-          easier
-            ? "2 × 10"
-            : "3 × 8–10",
+          lowerVolume
+            ? "2 × 8–12"
+            : "3 × 8–12",
 
         secondary:
-          easier
-            ? "2 × 10–12"
-            : "3 × 10",
+          lowerVolume
+            ? "2 × 8–12"
+            : "3 × 8–12",
 
         accessory:
-          easier
-            ? "2 × 12"
-            : "2 × 12–15",
+          lowerVolume
+            ? "2 × 10–12"
+            : "3 × 10–12",
 
         core:
-          "3 sets"
+          lowerVolume
+            ? "2 sets"
+            : "3 sets"
+
       };
     }
 
@@ -1096,18 +1041,21 @@
       goal ===
       "Return to training"
     ) {
+
       return {
+
         main:
           "2 × 8–10",
 
         secondary:
-          "2 × 10",
+          "2 × 8–10",
 
         accessory:
-          "2 × 12",
+          "2 × 10–12",
 
         core:
           "2 sets"
+
       };
     }
 
@@ -1118,23 +1066,27 @@
     */
 
     return {
+
       main:
-        easier
-          ? "3 × 8–10"
-          : "4 × 6–10",
+        lowerVolume
+          ? "3 × 10–12"
+          : "4 × 10–12",
 
       secondary:
-        easier
-          ? "3 × 10"
-          : "3 × 8–12",
+        lowerVolume
+          ? "2 × 10–12"
+          : "3 × 10–12",
 
       accessory:
-        easier
+        lowerVolume
           ? "2 × 12–15"
-          : "3 × 10–15",
+          : "3 × 12–15",
 
       core:
-        "3 sets"
+        lowerVolume
+          ? "2 sets"
+          : "3 sets"
+
     };
   }
 
@@ -1147,33 +1099,41 @@
     ex,
     t
   ) {
+
     return [
       "Full Body A",
       [
+
         [
           ex.squat,
           t.main
         ],
+
         [
           ex.horizontalPush,
           t.main
         ],
+
         [
           ex.horizontalPull,
           t.secondary
         ],
+
         [
           ex.hinge,
           t.secondary
         ],
+
         [
           ex.verticalPush,
           t.accessory
         ],
+
         [
           ex.core2,
           t.core
         ]
+
       ]
     ];
   }
@@ -1183,33 +1143,41 @@
     ex,
     t
   ) {
+
     return [
       "Full Body B",
       [
+
         [
           ex.hinge2,
           t.main
         ],
+
         [
           ex.horizontalPush2,
           t.secondary
         ],
+
         [
           ex.verticalPull,
           t.secondary
         ],
+
         [
           ex.quad,
           t.secondary
         ],
+
         [
           ex.sideDelt,
           t.accessory
         ],
+
         [
           ex.core,
           t.core
         ]
+
       ]
     ];
   }
@@ -1219,33 +1187,41 @@
     ex,
     t
   ) {
+
     return [
       "Full Body C",
       [
+
         [
           ex.squat2,
           t.main
         ],
+
         [
           ex.horizontalPush2,
           t.secondary
         ],
+
         [
           ex.horizontalPull2,
           t.secondary
         ],
+
         [
           ex.glute,
           t.secondary
         ],
+
         [
           ex.biceps,
           t.accessory
         ],
+
         [
           ex.triceps,
           t.accessory
         ]
+
       ]
     ];
   }
@@ -1255,33 +1231,41 @@
     ex,
     t
   ) {
+
     return [
       "Upper A",
       [
+
         [
           ex.horizontalPush,
           t.main
         ],
+
         [
           ex.horizontalPull,
           t.main
         ],
+
         [
           ex.verticalPush,
           t.secondary
         ],
+
         [
           ex.verticalPull,
           t.secondary
         ],
+
         [
           ex.biceps,
           t.accessory
         ],
+
         [
           ex.triceps,
           t.accessory
         ]
+
       ]
     ];
   }
@@ -1291,33 +1275,41 @@
     ex,
     t
   ) {
+
     return [
       "Lower A",
       [
+
         [
           ex.squat,
           t.main
         ],
+
         [
           ex.hinge,
           t.main
         ],
+
         [
           ex.quad,
           t.secondary
         ],
+
         [
           ex.hamstring,
           t.secondary
         ],
+
         [
           ex.calf,
           t.accessory
         ],
+
         [
           ex.core2,
           t.core
         ]
+
       ]
     ];
   }
@@ -1327,33 +1319,41 @@
     ex,
     t
   ) {
+
     return [
       "Upper B",
       [
+
         [
           ex.horizontalPush2,
           t.secondary
         ],
+
         [
           ex.horizontalPull2,
           t.secondary
         ],
+
         [
           ex.verticalPush,
           t.secondary
         ],
+
         [
           ex.verticalPull,
           t.secondary
         ],
+
         [
           ex.sideDelt,
           t.accessory
         ],
+
         [
           ex.rearDelt,
           t.accessory
         ]
+
       ]
     ];
   }
@@ -1363,33 +1363,41 @@
     ex,
     t
   ) {
+
     return [
       "Lower B",
       [
+
         [
           ex.hinge2,
           t.main
         ],
+
         [
           ex.squat2,
           t.secondary
         ],
+
         [
           ex.glute,
           t.secondary
         ],
+
         [
           ex.singleLeg,
           t.secondary
         ],
+
         [
           ex.calf,
           t.accessory
         ],
+
         [
           ex.core,
           t.core
         ]
+
       ]
     ];
   }
@@ -1399,29 +1407,36 @@
     ex,
     t
   ) {
+
     return [
       "Push",
       [
+
         [
           ex.horizontalPush,
           t.main
         ],
+
         [
           ex.horizontalPush2,
           t.secondary
         ],
+
         [
           ex.verticalPush,
           t.secondary
         ],
+
         [
           ex.sideDelt,
           t.accessory
         ],
+
         [
           ex.triceps,
           t.accessory
         ]
+
       ]
     ];
   }
@@ -1431,29 +1446,36 @@
     ex,
     t
   ) {
+
     return [
       "Pull",
       [
+
         [
           ex.hinge2,
           t.main
         ],
+
         [
           ex.verticalPull,
           t.secondary
         ],
+
         [
           ex.horizontalPull,
           t.secondary
         ],
+
         [
           ex.rearDelt,
           t.accessory
         ],
+
         [
           ex.biceps,
           t.accessory
         ]
+
       ]
     ];
   }
@@ -1463,29 +1485,36 @@
     ex,
     t
   ) {
+
     return [
       "Legs",
       [
+
         [
           ex.squat,
           t.main
         ],
+
         [
           ex.hinge,
           t.secondary
         ],
+
         [
           ex.quad,
           t.secondary
         ],
+
         [
           ex.hamstring,
           t.secondary
         ],
+
         [
           ex.calf,
           t.accessory
         ]
+
       ]
     ];
   }
@@ -1495,33 +1524,41 @@
     ex,
     t
   ) {
+
     return [
       "Upper",
       [
+
         [
           ex.horizontalPush2,
           t.secondary
         ],
+
         [
           ex.horizontalPull2,
           t.secondary
         ],
+
         [
           ex.verticalPush,
           t.secondary
         ],
+
         [
           ex.verticalPull,
           t.secondary
         ],
+
         [
           ex.biceps,
           t.accessory
         ],
+
         [
           ex.triceps,
           t.accessory
         ]
+
       ]
     ];
   }
@@ -1531,33 +1568,41 @@
     ex,
     t
   ) {
+
     return [
       "Lower",
       [
+
         [
           ex.squat2,
           t.secondary
         ],
+
         [
           ex.glute,
           t.secondary
         ],
+
         [
           ex.singleLeg,
           t.secondary
         ],
+
         [
           ex.hamstring,
           t.secondary
         ],
+
         [
           ex.calf,
           t.accessory
         ],
+
         [
           ex.core,
           t.core
         ]
+
       ]
     ];
   }
@@ -1591,9 +1636,12 @@
 
 
     if (
-      days === 2
+      days ===
+      2
     ) {
+
       return [
+
         fullBodyA(
           exercises,
           targets
@@ -1603,14 +1651,18 @@
           exercises,
           targets
         )
+
       ];
     }
 
 
     if (
-      days === 3
+      days ===
+      3
     ) {
+
       return [
+
         fullBodyA(
           exercises,
           targets
@@ -1625,14 +1677,18 @@
           exercises,
           targets
         )
+
       ];
     }
 
 
     if (
-      days === 4
+      days ===
+      4
     ) {
+
       return [
+
         upperA(
           exercises,
           targets
@@ -1652,11 +1708,13 @@
           exercises,
           targets
         )
+
       ];
     }
 
 
     return [
+
       push(
         exercises,
         targets
@@ -1681,6 +1739,7 @@
         exercises,
         targets
       )
+
     ];
   }
 
@@ -1787,6 +1846,7 @@
   function renderProgram(
     program
   ) {
+
     const container =
       document.getElementById(
         "manaStrengthProgram"
@@ -1884,6 +1944,7 @@
 
 
   function restoreProgram() {
+
     try {
 
       const saved =
@@ -1897,6 +1958,7 @@
       if (
         saved?.sessions
       ) {
+
         renderProgram(
           saved
         );
@@ -1911,6 +1973,7 @@
      ========================================= */
 
   function openModal() {
+
     buildModal();
 
 
@@ -1929,6 +1992,7 @@
 
 
   function closeModal() {
+
     document
       .getElementById(
         MODAL_ID
@@ -1939,24 +2003,21 @@
       );
 
 
-    /*
-      If this old builder is opened from
-      Mana Strength, return to the new
-      Strength Overview.
-    */
-
     if (
       typeof
         window
           .openManaProgram ===
       "function"
     ) {
+
       setTimeout(
         () => {
+
           window
             .openManaProgram(
               "strength"
             );
+
         },
         50
       );
@@ -1969,6 +2030,7 @@
      ========================================= */
 
   function init() {
+
     injectStyles();
 
     buildModal();
@@ -1995,11 +2057,14 @@
     document.readyState ===
     "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
+
   } else {
+
     init();
   }
 
