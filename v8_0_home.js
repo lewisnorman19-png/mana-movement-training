@@ -1,10 +1,9 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.0.9
+   MANA MOVEMENT TRAINING v8.0.10
    HOME
 
-   WIDER PROGRAM CARDS
-   CURRENT PROGRAM HIGHLIGHT
-   MANA 28 FREE
+   FULLER PROGRAM CARDS
+   STRONG ACTIVE PROGRAM HIGHLIGHT
    MANA STRENGTH PRICING
    ========================================= */
 
@@ -16,7 +15,7 @@
     "manaV80Home";
 
   const STYLE_ID =
-    "mana-v809-home-style";
+    "mana-v8010-home-style";
 
   const CURRENT_PROGRAM_KEY =
     "mana-current-program";
@@ -46,7 +45,7 @@
 
       #${HOME_ID}{
         width:min(
-          620px,
+          680px,
           100%
         );
 
@@ -58,11 +57,11 @@
           calc(
             env(
               safe-area-inset-top
-            ) + 16px
+            ) + 14px
           )
-          10px
+          4px
           calc(
-            105px +
+            110px +
             env(
               safe-area-inset-bottom
             )
@@ -74,16 +73,16 @@
          BRAND
          ========================== */
 
-      .mana-v809-brand{
+      .mana-v8010-brand{
         padding:
           0
-          8px;
+          12px;
 
-        margin-bottom:20px;
+        margin-bottom:22px;
       }
 
 
-      .mana-v809-brand-row{
+      .mana-v8010-brand-row{
         display:flex;
 
         align-items:center;
@@ -94,7 +93,7 @@
       }
 
 
-      .mana-v809-mark{
+      .mana-v8010-mark{
         width:58px;
         height:58px;
 
@@ -123,7 +122,7 @@
       }
 
 
-      .mana-v809-brand-title{
+      .mana-v8010-brand-title{
         color:#fff;
 
         font-size:18px;
@@ -138,7 +137,7 @@
       }
 
 
-      .mana-v809-brand-kicker{
+      .mana-v8010-brand-kicker{
         margin-top:6px;
 
         color:#f3d875;
@@ -153,16 +152,16 @@
       }
 
 
-      .mana-v809-brand h1{
+      .mana-v8010-brand h1{
         margin:0;
 
-        font-size:34px;
+        font-size:35px;
 
         line-height:1.05;
       }
 
 
-      .mana-v809-sub{
+      .mana-v8010-sub{
         margin-top:8px;
 
         color:#f3d875;
@@ -177,7 +176,7 @@
       }
 
 
-      .mana-v809-welcome{
+      .mana-v8010-welcome{
         margin-top:12px;
 
         color:#999;
@@ -190,18 +189,18 @@
          PROFILE
          ========================== */
 
-      .mana-v809-profile{
+      .mana-v8010-profile{
         width:
           calc(
-            100% - 8px
+            100% - 12px
           );
 
         margin:
           18px
-          4px
-          22px;
+          6px
+          24px;
 
-        padding:18px;
+        padding:19px;
 
         text-align:left;
 
@@ -224,7 +223,7 @@
       }
 
 
-      .mana-v809-profile-label{
+      .mana-v8010-profile-label{
         color:#f3d875;
 
         font-size:10px;
@@ -237,7 +236,7 @@
       }
 
 
-      .mana-v809-profile h2{
+      .mana-v8010-profile h2{
         margin:
           6px
           0;
@@ -246,7 +245,7 @@
       }
 
 
-      .mana-v809-profile p{
+      .mana-v8010-profile p{
         margin:0;
 
         color:#aaa;
@@ -257,7 +256,7 @@
       }
 
 
-      .mana-v809-profile-open{
+      .mana-v8010-profile-open{
         margin-top:12px;
 
         color:#f3d875;
@@ -272,11 +271,16 @@
          SELECT
          ========================== */
 
-      .mana-v809-select{
+      .mana-v8010-select{
+        width:
+          calc(
+            100% - 12px
+          );
+
         margin:
-          26px
-          4px
-          14px;
+          28px
+          6px
+          18px;
 
         padding:
           18px
@@ -294,7 +298,7 @@
       }
 
 
-      .mana-v809-select strong{
+      .mana-v8010-select strong{
         display:block;
 
         color:#f3d875;
@@ -309,7 +313,7 @@
       }
 
 
-      .mana-v809-select span{
+      .mana-v8010-select span{
         display:block;
 
         margin-top:6px;
@@ -321,10 +325,10 @@
 
 
       /* ==========================
-         PROGRAMS
+         PROGRAM CARDS
          ========================== */
 
-      .mana-v809-program{
+      .mana-v8010-program{
         position:relative;
 
         width:
@@ -332,15 +336,15 @@
             100% - 8px
           );
 
-        min-height:166px;
+        min-height:178px;
 
         margin:
-          12px
+          16px
           4px;
 
         padding:
-          22px
-          20px;
+          24px
+          22px;
 
         text-align:left;
 
@@ -348,7 +352,7 @@
           1px solid
           #302915;
 
-        border-radius:24px;
+        border-radius:26px;
 
         background:
           linear-gradient(
@@ -371,30 +375,33 @@
       }
 
 
-      .mana-v809-program:active,
-      .mana-v809-profile:active{
+      .mana-v8010-program:active,
+      .mana-v8010-profile:active{
         transform:
           scale(.99);
       }
 
 
-      .mana-v809-program.current{
+      /* ACTIVE PROGRAM */
+
+      .mana-v8010-program.current{
         border:
-          1px solid
-          #b99832;
+          2px solid
+          #f3d875;
 
         background:
           linear-gradient(
             145deg,
-            #1e1909,
-            #0a0a08
+            #2a230b,
+            #171207 48%,
+            #090909
           );
 
         box-shadow:
           0
           0
           0
-          1px
+          2px
           rgba(
             243,
             216,
@@ -402,18 +409,39 @@
             .08
           ),
           0
-          8px
-          30px
+          10px
+          32px
           rgba(
             212,
             175,
             55,
-            .08
+            .16
           );
       }
 
 
-      .mana-v809-program-label{
+      .mana-v8010-program.current::before{
+        content:"";
+
+        position:absolute;
+
+        top:0;
+        left:0;
+        right:0;
+
+        height:4px;
+
+        background:
+          linear-gradient(
+            90deg,
+            #b98d2b,
+            #f3d875,
+            #b98d2b
+          );
+      }
+
+
+      .mana-v8010-program-label{
         color:#f3d875;
 
         font-size:11px;
@@ -428,33 +456,33 @@
       }
 
 
-      .mana-v809-program h2{
+      .mana-v8010-program h2{
         margin:0;
 
-        font-size:30px;
+        font-size:31px;
 
         line-height:1;
       }
 
 
-      .mana-v809-program p{
+      .mana-v8010-program p{
         margin:
-          10px
+          11px
           0
           0;
 
-        max-width:90%;
+        max-width:92%;
 
         color:#aaa;
 
         font-size:14px;
 
-        line-height:1.5;
+        line-height:1.55;
       }
 
 
-      .mana-v809-open{
-        margin-top:15px;
+      .mana-v8010-open{
+        margin-top:17px;
 
         color:#f3d875;
 
@@ -464,11 +492,11 @@
       }
 
 
-      .mana-v809-badge{
+      .mana-v8010-badge{
         position:absolute;
 
-        top:16px;
-        right:16px;
+        top:18px;
+        right:18px;
 
         padding:
           7px
@@ -494,26 +522,26 @@
       }
 
 
-      .mana-v809-current-badge{
+      .mana-v8010-current-badge{
         display:none;
 
-        margin-top:12px;
+        margin-top:13px;
 
         width:max-content;
 
         padding:
-          6px
-          9px;
+          7px
+          10px;
 
         border-radius:999px;
 
         border:
           1px solid
-          #8b742a;
+          #f3d875;
 
-        background:#211b08;
+        background:#f3d875;
 
-        color:#f3d875;
+        color:#111;
 
         font-size:10px;
 
@@ -525,13 +553,25 @@
       }
 
 
-      .mana-v809-program.current
-      .mana-v809-current-badge{
+      .mana-v8010-program.current
+      .mana-v8010-current-badge{
         display:block;
       }
 
 
-      .mana-v809-free-note{
+      .mana-v8010-program.current
+      .mana-v8010-program-label{
+        color:#ffe79b;
+      }
+
+
+      .mana-v8010-program.current
+      h2{
+        color:#fff7da;
+      }
+
+
+      .mana-v8010-free-note{
         margin-top:10px;
 
         color:#d9c36d;
@@ -542,23 +582,23 @@
       }
 
 
-      .mana-v809-price{
+      .mana-v8010-price{
         margin-top:11px;
 
         color:#fff;
       }
 
 
-      .mana-v809-price strong{
+      .mana-v8010-price strong{
         color:#f3d875;
 
-        font-size:23px;
+        font-size:24px;
 
         font-weight:900;
       }
 
 
-      .mana-v809-price span{
+      .mana-v8010-price span{
         color:#888;
 
         font-size:12px;
@@ -567,22 +607,11 @@
       }
 
 
-      .mana-v809-coming{
-        color:#888;
-
-        font-size:12px;
-
-        font-weight:800;
-
-        margin-top:11px;
-      }
-
-
       /* ==========================
          BOTTOM NAV
          ========================== */
 
-      .mana-v809-bottom{
+      .mana-v8010-bottom{
         position:fixed;
 
         z-index:19000;
@@ -593,7 +622,7 @@
 
         padding:
           8px
-          10px
+          8px
           calc(
             8px +
             env(
@@ -612,9 +641,9 @@
       }
 
 
-      .mana-v809-bottom-inner{
+      .mana-v8010-bottom-inner{
         width:min(
-          620px,
+          680px,
           100%
         );
 
@@ -628,16 +657,16 @@
             1fr
           );
 
-        gap:6px;
+        gap:9px;
       }
 
 
-      .mana-v809-nav{
-        min-height:58px;
+      .mana-v8010-nav{
+        min-height:60px;
 
         border:0;
 
-        border-radius:14px;
+        border-radius:15px;
 
         background:#0d0d0d;
 
@@ -649,7 +678,7 @@
       }
 
 
-      .mana-v809-nav.active{
+      .mana-v8010-nav.active{
         background:#191607;
 
         color:#f3d875;
@@ -665,12 +694,12 @@
       ){
 
         #${HOME_ID}{
-          padding-left:6px;
-          padding-right:6px;
+          padding-left:2px;
+          padding-right:2px;
         }
 
 
-        .mana-v809-program{
+        .mana-v8010-program{
           width:
             calc(
               100% - 4px
@@ -680,19 +709,31 @@
           margin-right:2px;
 
           padding:
-            20px
-            17px;
+            22px
+            18px;
         }
 
 
-        .mana-v809-program h2{
-          font-size:27px;
+        .mana-v8010-profile,
+        .mana-v8010-select{
+          width:
+            calc(
+              100% - 8px
+            );
+
+          margin-left:4px;
+          margin-right:4px;
         }
 
 
-        .mana-v809-badge{
-          top:14px;
-          right:12px;
+        .mana-v8010-program h2{
+          font-size:28px;
+        }
+
+
+        .mana-v8010-badge{
+          top:15px;
+          right:13px;
 
           font-size:9px;
         }
@@ -772,7 +813,7 @@
 
     document
       .querySelectorAll(
-        ".mana-v809-program"
+        ".mana-v8010-program"
       )
       .forEach(
         card => {
@@ -909,15 +950,15 @@
     home.innerHTML = `
 
       <div
-        class="mana-v809-brand"
+        class="mana-v8010-brand"
       >
 
         <div
-          class="mana-v809-brand-row"
+          class="mana-v8010-brand-row"
         >
 
           <div
-            class="mana-v809-mark"
+            class="mana-v8010-mark"
           >
             M
           </div>
@@ -926,14 +967,14 @@
           <div>
 
             <div
-              class="mana-v809-brand-title"
+              class="mana-v8010-brand-title"
             >
               MANA MOVEMENT
             </div>
 
 
             <div
-              class="mana-v809-brand-kicker"
+              class="mana-v8010-brand-kicker"
             >
               TRAINING • MOVE WITH PURPOSE
             </div>
@@ -949,14 +990,14 @@
 
 
         <div
-          class="mana-v809-sub"
+          class="mana-v8010-sub"
         >
           TRAINING • STRENGTH • LIFE
         </div>
 
 
         <div
-          class="mana-v809-welcome"
+          class="mana-v8010-welcome"
         >
           ${
             name
@@ -970,12 +1011,12 @@
 
       <button
         type="button"
-        class="mana-v809-profile"
+        class="mana-v8010-profile"
         id="manaV80ProfileSetup"
       >
 
         <div
-          class="mana-v809-profile-label"
+          class="mana-v8010-profile-label"
         >
           YOUR PROFILE
         </div>
@@ -995,7 +1036,7 @@
 
 
         <div
-          class="mana-v809-profile-open"
+          class="mana-v8010-profile-open"
         >
           Open profile →
         </div>
@@ -1004,7 +1045,7 @@
 
 
       <div
-        class="mana-v809-select"
+        class="mana-v8010-select"
       >
 
         <strong>
@@ -1013,8 +1054,8 @@
 
 
         <span>
-          Choose the program you want
-          to work in.
+          Your active program is
+          highlighted in gold.
         </span>
 
       </div>
@@ -1022,20 +1063,20 @@
 
       <button
         type="button"
-        class="mana-v809-program"
+        class="mana-v8010-program"
         id="manaV80Mana28"
         data-program="mana28"
       >
 
         <div
-          class="mana-v809-badge"
+          class="mana-v8010-badge"
         >
           FREE
         </div>
 
 
         <div
-          class="mana-v809-program-label"
+          class="mana-v8010-program-label"
         >
           MANA 28
         </div>
@@ -1054,23 +1095,23 @@
 
 
         <div
-          class="mana-v809-free-note"
+          class="mana-v8010-free-note"
         >
           Free access • No payment required
         </div>
 
 
         <div
-          class="mana-v809-current-badge"
+          class="mana-v8010-current-badge"
         >
-          Current program
+          Active program
         </div>
 
 
         <div
-          class="mana-v809-open"
+          class="mana-v8010-open"
         >
-          Select MANA 28 →
+          Open MANA 28 →
         </div>
 
       </button>
@@ -1078,20 +1119,20 @@
 
       <button
         type="button"
-        class="mana-v809-program"
+        class="mana-v8010-program"
         id="manaV80Strength"
         data-program="strength"
       >
 
         <div
-          class="mana-v809-badge"
+          class="mana-v8010-badge"
         >
           MEMBERSHIP
         </div>
 
 
         <div
-          class="mana-v809-program-label"
+          class="mana-v8010-program-label"
         >
           MANA STRENGTH
         </div>
@@ -1103,7 +1144,7 @@
 
 
         <div
-          class="mana-v809-price"
+          class="mana-v8010-price"
         >
           <strong>
             $39.99
@@ -1123,16 +1164,16 @@
 
 
         <div
-          class="mana-v809-current-badge"
+          class="mana-v8010-current-badge"
         >
-          Current program
+          Active program
         </div>
 
 
         <div
-          class="mana-v809-open"
+          class="mana-v8010-open"
         >
-          Select MANA STRENGTH →
+          Open MANA STRENGTH →
         </div>
 
       </button>
@@ -1140,20 +1181,20 @@
 
       <button
         type="button"
-        class="mana-v809-program"
+        class="mana-v8010-program"
         id="manaV80Life"
         data-program="life"
       >
 
         <div
-          class="mana-v809-badge"
+          class="mana-v8010-badge"
         >
           COMING SOON
         </div>
 
 
         <div
-          class="mana-v809-program-label"
+          class="mana-v8010-program-label"
         >
           MANA LIFE
         </div>
@@ -1172,33 +1213,33 @@
 
 
         <div
-          class="mana-v809-current-badge"
+          class="mana-v8010-current-badge"
         >
-          Current program
+          Active program
         </div>
 
 
         <div
-          class="mana-v809-open"
+          class="mana-v8010-open"
         >
-          Select MANA LIFE →
+          Open MANA LIFE →
         </div>
 
       </button>
 
 
       <div
-        class="mana-v809-bottom"
+        class="mana-v8010-bottom"
       >
 
         <div
-          class="mana-v809-bottom-inner"
+          class="mana-v8010-bottom-inner"
         >
 
           <button
             type="button"
             class="
-              mana-v809-nav
+              mana-v8010-nav
               active
             "
             id="manaV80HomeBtn"
@@ -1211,7 +1252,7 @@
 
           <button
             type="button"
-            class="mana-v809-nav"
+            class="mana-v8010-nav"
             id="manaV80IntroBtn"
           >
             ◌
@@ -1222,7 +1263,7 @@
 
           <button
             type="button"
-            class="mana-v809-nav"
+            class="mana-v8010-nav"
             id="manaV80ProfileBtn"
           >
             ◎
@@ -1353,7 +1394,7 @@
 
     const welcome =
       home.querySelector(
-        ".mana-v809-welcome"
+        ".mana-v8010-welcome"
       );
 
 
