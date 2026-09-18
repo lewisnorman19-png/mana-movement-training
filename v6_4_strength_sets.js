@@ -1,11 +1,15 @@
 /* =========================================
    MANA MOVEMENT TRAINING v6.4
    MANA STRENGTH — WORKOUT LOGGER
+
+   GOAL BASED REPS
+   LAST WORKOUT PREFILL
    SETS • REPS • LOAD • TIMER • PROGRESS
    ========================================= */
 
 (() => {
   "use strict";
+
 
   const STYLE_ID =
     "mana-strength-v64-style";
@@ -22,9 +26,15 @@
   const LOG_KEY =
     "mana-strength-v64-logs";
 
-  let activeDayIndex = null;
-  let workoutStartedAt = null;
-  let workoutTimerId = null;
+
+  let activeDayIndex =
+    null;
+
+  let workoutStartedAt =
+    null;
+
+  let workoutTimerId =
+    null;
 
 
   /* =========================================
@@ -63,10 +73,14 @@
   }
 
 
-  function saveLogs(logs) {
+  function saveLogs(
+    logs
+  ) {
     localStorage.setItem(
       LOG_KEY,
-      JSON.stringify(logs)
+      JSON.stringify(
+        logs
+      )
     );
   }
 
@@ -75,7 +89,10 @@
     target
   ) {
     const text =
-      String(target || "");
+      String(
+        target || ""
+      );
+
 
     const match =
       text.match(
@@ -85,12 +102,110 @@
         /(\d+)\s*sets?/i
       );
 
+
     return match
       ? Math.max(
           1,
-          Number(match[1])
+          Number(
+            match[1]
+          )
         )
       : 3;
+  }
+
+
+  /* =========================================
+     GOAL DEFAULT REPS
+     ========================================= */
+
+  function goalDefaultReps(
+    goal
+  ) {
+
+    if (
+      goal ===
+      "Get stronger"
+    ) {
+      return 8;
+    }
+
+
+    if (
+      goal ===
+      "Build muscle"
+    ) {
+      return 12;
+    }
+
+
+    if (
+      goal ===
+      "Return to training"
+    ) {
+      return 10;
+    }
+
+
+    /*
+      General fitness
+    */
+
+    return 10;
+  }
+
+
+  /*
+    If the exercise prescription
+    contains a clear numeric range,
+    use the upper end as the starting
+    editable rep number.
+
+    Examples:
+
+    4 × 6–8  -> 8
+    3 × 10–12 -> 12
+    3 × 10 -> 10
+  */
+
+  function targetDefaultReps(
+    target,
+    goal
+  ) {
+    const text =
+      String(
+        target || ""
+      );
+
+
+    const range =
+      text.match(
+        /[×x]\s*(\d+)\s*[–-]\s*(\d+)/
+      );
+
+
+    if (range) {
+      return Number(
+        range[2]
+      );
+    }
+
+
+    const single =
+      text.match(
+        /[×x]\s*(\d+)/
+      );
+
+
+    if (single) {
+      return Number(
+        single[1]
+      );
+    }
+
+
+    return goalDefaultReps(
+      goal
+    );
   }
 
 
@@ -104,26 +219,34 @@
     const logs =
       loadLogs();
 
+
     for (
       let i =
         logs.length - 1;
       i >= 0;
       i--
     ) {
+
       const exercise =
         (
           logs[i].exercises ||
           []
         ).find(
           item =>
-            item.name === name
+            item.name ===
+            name
         );
+
 
       if (exercise) {
         return exercise;
       }
     }
 
+
+    /*
+      Older v6.3 history fallback.
+    */
 
     const oldLogs =
       safeJson(
@@ -133,46 +256,57 @@
         []
       );
 
+
     for (
       let i =
         oldLogs.length - 1;
       i >= 0;
       i--
     ) {
+
       const old =
         (
           oldLogs[i].exercises ||
           []
         ).find(
           item =>
-            item.name === name
+            item.name ===
+            name
         );
+
 
       if (old) {
         return {
+
           name,
 
           sets: [
             {
+
               weight:
                 Number(
-                  old.weight || 0
+                  old.weight ||
+                  0
                 ),
 
               reps:
                 Number(
-                  old.reps || 0
+                  old.reps ||
+                  0
                 ),
 
               done:
                 Boolean(
                   old.done
                 )
+
             }
           ]
+
         };
       }
     }
+
 
     return null;
   }
@@ -189,22 +323,27 @@
       )
     ) return;
 
+
     const style =
       document.createElement(
         "style"
       );
 
+
     style.id =
       STYLE_ID;
+
 
     style.textContent = `
 
       #${SCREEN_ID}{
         position:fixed;
         inset:0;
+
         z-index:26000;
 
         display:none;
+
         overflow:auto;
 
         background:#050505;
@@ -281,6 +420,7 @@
           #333;
 
         background:#111;
+
         color:#fff;
 
         font-size:24px;
@@ -291,14 +431,12 @@
         display:grid;
 
         grid-template-columns:
-          1fr
-          1fr;
+          1fr 1fr;
 
         gap:10px;
 
         margin:
-          14px
-          0;
+          14px 0;
       }
 
 
@@ -325,8 +463,7 @@
         text-transform:
           uppercase;
 
-        letter-spacing:
-          .05em;
+        letter-spacing:.05em;
 
         margin-bottom:5px;
       }
@@ -351,8 +488,7 @@
           0
           18px;
 
-        border-radius:
-          999px;
+        border-radius:999px;
 
         background:#1a1a1a;
 
@@ -362,10 +498,10 @@
 
       .mana-v64-progress-fill{
         width:0%;
+
         height:100%;
 
-        border-radius:
-          999px;
+        border-radius:999px;
 
         background:#f3d875;
 
@@ -573,11 +709,11 @@
       }
 
 
-      @media(
-        max-width:380px
-      ){
+      @media(max-width:380px){
+
         .mana-v64-table-head,
         .mana-v64-set{
+
           grid-template-columns:
             32px
             1fr
@@ -590,6 +726,7 @@
 
     `;
 
+
     document.head.appendChild(
       style
     );
@@ -597,7 +734,7 @@
 
 
   /* =========================================
-     BUILD WORKOUT SCREEN
+     BUILD SCREEN
      ========================================= */
 
   function ensureScreen() {
@@ -607,13 +744,16 @@
       )
     ) return;
 
+
     const screen =
       document.createElement(
         "div"
       );
 
+
     screen.id =
       SCREEN_ID;
+
 
     screen.innerHTML = `
 
@@ -627,7 +767,9 @@
               MANA STRENGTH
             </span>
 
-            <h1 id="manaV64Title">
+            <h1
+              id="manaV64Title"
+            >
               Workout
             </h1>
 
@@ -637,6 +779,7 @@
             ></div>
 
           </div>
+
 
           <button
             type="button"
@@ -716,7 +859,6 @@
 
         <div
           class="mana-v64-progress"
-          aria-hidden="true"
         >
 
           <div
@@ -744,12 +886,12 @@
         <div
           id="manaV64Status"
           class="mana-v64-status"
-          aria-live="polite"
         ></div>
 
       </div>
 
     `;
+
 
     document.body.appendChild(
       screen
@@ -785,8 +927,10 @@
         seconds / 60
       );
 
+
     const secs =
       seconds % 60;
+
 
     return (
       String(mins)
@@ -811,6 +955,7 @@
       return 0;
     }
 
+
     return Math.max(
       0,
       Math.floor(
@@ -829,7 +974,9 @@
         "manaV64Timer"
       );
 
+
     if (!timer) return;
+
 
     timer.textContent =
       formatWorkoutTime(
@@ -841,10 +988,13 @@
   function startWorkoutTimer() {
     stopWorkoutTimer();
 
+
     workoutStartedAt =
       Date.now();
 
+
     updateWorkoutTimer();
+
 
     workoutTimerId =
       setInterval(
@@ -858,9 +1008,11 @@
     if (
       workoutTimerId
     ) {
+
       clearInterval(
         workoutTimerId
       );
+
 
       workoutTimerId =
         null;
@@ -869,7 +1021,7 @@
 
 
   /* =========================================
-     PREVIOUS SET DISPLAY
+     PREVIOUS DISPLAY
      ========================================= */
 
   function previousText(
@@ -883,12 +1035,12 @@
       !previous.sets.length
     ) {
       return (
-        "No previous set history"
+        "First session — suggested reps preloaded"
       );
     }
 
-    return (
-      "Previous: " +
+
+    const used =
       previous.sets
         .filter(
           set =>
@@ -898,7 +1050,19 @@
             Number(
               set.reps
             )
-        )
+        );
+
+
+    if (!used.length) {
+      return (
+        "Previous session found"
+      );
+    }
+
+
+    return (
+      "Last workout: " +
+      used
         .map(
           (
             set,
@@ -923,15 +1087,39 @@
 
   function createSetRow(
     number,
-    previousSet = null
+    previousSet,
+    defaultReps
   ) {
+
+    const previousWeight =
+      Number(
+        previousSet?.weight ||
+        0
+      );
+
+
+    const previousReps =
+      Number(
+        previousSet?.reps ||
+        0
+      );
+
+
+    const startingReps =
+      previousReps ||
+      defaultReps ||
+      10;
+
+
     const row =
       document.createElement(
         "div"
       );
 
+
     row.className =
       "mana-v64-set";
+
 
     row.dataset.v64Set =
       "1";
@@ -948,43 +1136,50 @@
 
       <input
         type="number"
+
         min="0"
+
         step="0.5"
+
         inputmode="decimal"
 
-        placeholder="${
-          previousSet?.weight
-            ? previousSet.weight +
-              " kg"
-            : "kg"
+        placeholder="kg"
+
+        value="${
+          previousWeight ||
+          ""
         }"
 
         data-v64-weight
+
         aria-label="Weight in kilograms"
       />
 
 
       <input
         type="number"
+
         min="0"
+
         step="1"
+
         inputmode="numeric"
 
-        placeholder="${
-          previousSet?.reps
-            ? previousSet.reps
-            : "reps"
-        }"
+        value="${startingReps}"
 
         data-v64-reps
+
         aria-label="Repetitions"
       />
 
 
       <button
         type="button"
+
         class="mana-v64-check"
+
         data-v64-check
+
         aria-label="Complete set"
       >
         ✓
@@ -997,21 +1192,21 @@
       .querySelector(
         "[data-v64-check]"
       )
-      .onclick = () => {
+      .onclick =
+        () => {
 
-        const check =
-          row.querySelector(
-            "[data-v64-check]"
-          );
+          row
+            .querySelector(
+              "[data-v64-check]"
+            )
+            ?.classList
+            .toggle(
+              "done"
+            );
 
-        check
-          .classList
-          .toggle(
-            "done"
-          );
 
-        updateSummary();
-      };
+          updateSummary();
+        };
 
 
     row
@@ -1020,10 +1215,12 @@
       )
       .forEach(
         input => {
+
           input.addEventListener(
             "input",
             updateSummary
           );
+
         }
       );
 
@@ -1039,6 +1236,7 @@
   function renumberSets(
     card
   ) {
+
     card
       .querySelectorAll(
         "[data-v64-set]"
@@ -1054,10 +1252,12 @@
               ".mana-v64-set-number"
             );
 
+
           if (number) {
             number.textContent =
               index + 1;
           }
+
         }
       );
   }
@@ -1069,37 +1269,54 @@
 
   function buildExerciseCard(
     exercise,
-    exerciseIndex
+    exerciseIndex,
+    goal
   ) {
+
     const name =
       exercise[0];
 
+
     const target =
       exercise[1];
+
 
     const previous =
       latestExercise(
         name
       );
 
+
     const setCount =
       parseSetCount(
         target
       );
+
+
+    const defaultReps =
+      targetDefaultReps(
+        target,
+        goal
+      );
+
 
     const card =
       document.createElement(
         "div"
       );
 
+
     card.className =
       "mana-v64-card";
+
 
     card.dataset.v64Exercise =
       exerciseIndex;
 
+
     card.dataset.exerciseName =
       name;
+
 
     card.dataset.exerciseTarget =
       target;
@@ -1136,10 +1353,15 @@
       <div
         class="mana-v64-table-head"
       >
+
         <span>Set</span>
+
         <span>Weight</span>
+
         <span>Reps</span>
+
         <span>Done</span>
+
       </div>
 
 
@@ -1154,7 +1376,9 @@
 
         <button
           type="button"
+
           class="mana-v64-small"
+
           data-v64-add
         >
           + Add set
@@ -1163,7 +1387,9 @@
 
         <button
           type="button"
+
           class="mana-v64-small"
+
           data-v64-remove
         >
           − Remove set
@@ -1185,13 +1411,18 @@
       i < setCount;
       i++
     ) {
+
       list.appendChild(
         createSetRow(
+
           i + 1,
+
           previous
             ?.sets
             ?.[i] ||
-            null
+          null,
+
+          defaultReps
         )
       );
     }
@@ -1201,60 +1432,73 @@
       .querySelector(
         "[data-v64-add]"
       )
-      .onclick = () => {
+      .onclick =
+        () => {
 
-        const count =
-          list
-            .querySelectorAll(
-              "[data-v64-set]"
+          const count =
+            list
+              .querySelectorAll(
+                "[data-v64-set]"
+              )
+              .length;
+
+
+          list.appendChild(
+            createSetRow(
+
+              count + 1,
+
+              previous
+                ?.sets
+                ?.[count] ||
+              null,
+
+              defaultReps
             )
-            .length;
+          );
 
-        list.appendChild(
-          createSetRow(
-            count + 1,
 
-            previous
-              ?.sets
-              ?.[count] ||
-              null
-          )
-        );
+          renumberSets(
+            card
+          );
 
-        renumberSets(
-          card
-        );
 
-        updateSummary();
-      };
+          updateSummary();
+        };
 
 
     card
       .querySelector(
         "[data-v64-remove]"
       )
-      .onclick = () => {
+      .onclick =
+        () => {
 
-        const rows =
-          list
-            .querySelectorAll(
-              "[data-v64-set]"
-            );
+          const rows =
+            list
+              .querySelectorAll(
+                "[data-v64-set]"
+              );
 
-        if (
-          rows.length <= 1
-        ) return;
 
-        rows[
-          rows.length - 1
-        ].remove();
+          if (
+            rows.length <=
+            1
+          ) return;
 
-        renumberSets(
-          card
-        );
 
-        updateSummary();
-      };
+          rows[
+            rows.length - 1
+          ].remove();
+
+
+          renumberSets(
+            card
+          );
+
+
+          updateSummary();
+        };
 
 
     return card;
@@ -1266,94 +1510,108 @@
      ========================================= */
 
   function collectExercises() {
+
     return [
       ...document
         .querySelectorAll(
           "#manaV64Exercises " +
           ".mana-v64-card"
         )
-    ].map(
-      card => {
+    ]
+      .map(
+        card => {
 
-        const sets =
-          [
-            ...card
-              .querySelectorAll(
-                "[data-v64-set]"
-              )
-          ].map(
-            (
-              row,
-              index
-            ) => ({
+          const sets =
+            [
+              ...card
+                .querySelectorAll(
+                  "[data-v64-set]"
+                )
+            ]
+              .map(
+                (
+                  row,
+                  index
+                ) => ({
 
-              set:
-                index + 1,
-
-              weight:
-                Number(
-                  row
-                    .querySelector(
-                      "[data-v64-weight]"
-                    )
-                    ?.value ||
-                  0
-                ),
-
-              reps:
-                Number(
-                  row
-                    .querySelector(
-                      "[data-v64-reps]"
-                    )
-                    ?.value ||
-                  0
-                ),
-
-              done:
-                row
-                  .querySelector(
-                    "[data-v64-check]"
-                  )
-                  ?.classList
-                  .contains(
-                    "done"
-                  ) ||
-                false
-
-            })
-          );
+                  set:
+                    index + 1,
 
 
-        return {
+                  weight:
+                    Number(
+                      row
+                        .querySelector(
+                          "[data-v64-weight]"
+                        )
+                        ?.value ||
+                      0
+                    ),
 
-          name:
-            card.dataset
-              .exerciseName,
 
-          target:
-            card.dataset
-              .exerciseTarget,
+                  reps:
+                    Number(
+                      row
+                        .querySelector(
+                          "[data-v64-reps]"
+                        )
+                        ?.value ||
+                      0
+                    ),
 
-          sets
 
-        };
-      }
-    );
+                  done:
+                    row
+                      .querySelector(
+                        "[data-v64-check]"
+                      )
+                      ?.classList
+                      .contains(
+                        "done"
+                      ) ||
+                    false
+
+                })
+              );
+
+
+          return {
+
+            name:
+              card.dataset
+                .exerciseName,
+
+            target:
+              card.dataset
+                .exerciseTarget,
+
+            sets
+
+          };
+
+        }
+      );
   }
 
 
   /* =========================================
-     SUMMARY + PROGRESS
+     SUMMARY
      ========================================= */
 
   function updateSummary() {
+
     const exercises =
       collectExercises();
 
-    let completeSets = 0;
-    let totalSets = 0;
-    let volume = 0;
+
+    let completeSets =
+      0;
+
+    let totalSets =
+      0;
+
+    let volume =
+      0;
 
 
     exercises.forEach(
@@ -1365,21 +1623,28 @@
 
               totalSets++;
 
+
               if (
                 set.done
               ) {
+
                 completeSets++;
+
 
                 volume +=
                   Number(
-                    set.weight || 0
+                    set.weight ||
+                    0
                   ) *
                   Number(
-                    set.reps || 0
+                    set.reps ||
+                    0
                   );
               }
+
             }
           );
+
       }
     );
 
@@ -1387,10 +1652,9 @@
     const percent =
       totalSets
         ? Math.round(
-            (
-              completeSets /
-              totalSets
-            ) * 100
+            completeSets /
+            totalSets *
+            100
           )
         : 0;
 
@@ -1413,7 +1677,7 @@
       );
 
 
-    const progressFill =
+    const fill =
       document.getElementById(
         "manaV64ProgressFill"
       );
@@ -1426,10 +1690,12 @@
 
 
     if (volumeEl) {
+
       volumeEl.textContent =
         `${Math.round(
           volume
         ).toLocaleString()} kg`;
+
     }
 
 
@@ -1439,8 +1705,8 @@
     }
 
 
-    if (progressFill) {
-      progressFill.style.width =
+    if (fill) {
+      fill.style.width =
         `${percent}%`;
     }
   }
@@ -1453,6 +1719,7 @@
   function openWorkout(
     dayIndex
   ) {
+
     const program =
       loadProgram();
 
@@ -1516,10 +1783,15 @@
 
           holder.appendChild(
             buildExerciseCard(
+
               exercise,
-              index
+
+              index,
+
+              program.goal
             )
           );
+
         }
       );
 
@@ -1528,6 +1800,7 @@
       document.getElementById(
         "manaV64Status"
       );
+
 
     if (status) {
       status.textContent =
@@ -1561,16 +1834,18 @@
 
 
   /* =========================================
-     RETURN TO MANA STRENGTH OVERVIEW
+     RETURN TO STRENGTH OVERVIEW
      ========================================= */
 
   function returnToStrengthOverview() {
+
     if (
       typeof
         window
           .openManaProgram ===
       "function"
     ) {
+
       window.openManaProgram(
         "strength"
       );
@@ -1583,6 +1858,7 @@
      ========================================= */
 
   function closeWorkout() {
+
     document
       .getElementById(
         SCREEN_ID
@@ -1595,8 +1871,10 @@
 
     stopWorkoutTimer();
 
+
     workoutStartedAt =
       null;
+
 
     activeDayIndex =
       null;
@@ -1614,6 +1892,7 @@
      ========================================= */
 
   function completeWorkout() {
+
     const program =
       loadProgram();
 
@@ -1638,7 +1917,8 @@
           exercise
         ) =>
           total +
-          exercise.sets
+          exercise
+            .sets
             .filter(
               set =>
                 set.done
@@ -1655,7 +1935,9 @@
           exercise
         ) =>
           total +
-          exercise.sets.length,
+          exercise
+            .sets
+            .length,
         0
       );
 
@@ -1663,15 +1945,18 @@
     if (
       !completedSets
     ) {
+
       const status =
         document.getElementById(
           "manaV64Status"
         );
 
+
       if (status) {
         status.textContent =
           "Complete at least one set first.";
       }
+
 
       return;
     }
@@ -1690,7 +1975,8 @@
           exercise
         ) =>
           workoutTotal +
-          exercise.sets
+          exercise
+            .sets
             .reduce(
               (
                 exerciseTotal,
@@ -1722,10 +2008,9 @@
     const completionPercent =
       totalSets
         ? Math.round(
-            (
-              completedSets /
-              totalSets
-            ) * 100
+            completedSets /
+            totalSets *
+            100
           )
         : 0;
 
@@ -1740,37 +2025,49 @@
         Date.now()
           .toString(),
 
+
       date:
         new Date()
           .toISOString(),
 
+
       dayIndex:
         activeDayIndex,
+
 
       sessionName:
         session[0],
 
+
       goal:
         program.goal,
+
 
       equipment:
         program.equipment,
 
+
       completedSets,
+
 
       totalSets,
 
+
       completionPercent,
+
 
       totalVolume,
 
+
       durationSeconds,
+
 
       durationMinutes:
         Math.round(
           durationSeconds /
           60
         ),
+
 
       exercises
 
@@ -1799,6 +2096,7 @@
 
 
     if (status) {
+
       status.textContent =
         `Workout saved ✓ • ` +
         `${completedSets}/${totalSets} sets • ` +
@@ -1817,10 +2115,11 @@
 
 
   /* =========================================
-     EXISTING START WORKOUT BUTTONS
+     EXISTING START BUTTONS
      ========================================= */
 
   function interceptStartButtons() {
+
     document.addEventListener(
       "click",
 
@@ -1871,7 +2170,8 @@
 
 
         if (
-          dayIndex < 0
+          dayIndex <
+          0
         ) return;
 
 
@@ -1886,6 +2186,7 @@
         openWorkout(
           dayIndex
         );
+
       },
 
       true
@@ -1902,6 +2203,7 @@
 
 
   function init() {
+
     injectStyles();
 
     ensureScreen();
@@ -1914,12 +2216,16 @@
     document.readyState ===
     "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
+
   } else {
+
     init();
+
   }
 
 })();
