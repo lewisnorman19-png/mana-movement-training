@@ -1,7 +1,7 @@
 /* =========================================
    MANA MOVEMENT TRAINING v8.3
-   PROGRAM SHELLS — BOTTOM NAV + BRANDING
-   SMART BACK BUTTON
+   PROGRAM SHELLS
+   BOTTOM NAV + SMART BACK BUTTON
    ========================================= */
 
 (() => {
@@ -158,6 +158,7 @@
       )
     ) return;
 
+
     const style =
       document.createElement(
         "style"
@@ -166,11 +167,11 @@
     style.id =
       STYLE_ID;
 
+
     style.textContent = `
 
       #${SHELL_ID}{
         position:fixed;
-
         inset:0;
 
         z-index:24000;
@@ -213,10 +214,6 @@
         margin:auto;
       }
 
-
-      /* ==========================
-         BRAND HEADER
-         ========================== */
 
       .mana-v83-head{
         display:flex;
@@ -327,10 +324,6 @@
       }
 
 
-      /* ==========================
-         CONTENT
-         ========================== */
-
       .mana-v83-card{
         border:
           1px solid
@@ -385,33 +378,11 @@
       }
 
 
-      .mana-v83-secondary{
-        width:100%;
-
-        min-height:48px;
-
-        border-radius:15px;
-
-        border:
-          1px solid
-          #333;
-
-        background:#111;
-
-        color:#f3d875;
-
-        font-weight:900;
-
-        margin-top:10px;
-      }
-
-
       .mana-v83-grid{
         display:grid;
 
         grid-template-columns:
-          1fr
-          1fr;
+          1fr 1fr;
 
         gap:10px;
       }
@@ -451,7 +422,7 @@
 
 
       /* ==========================
-         BOTTOM PROGRAM NAV
+         BOTTOM NAV
          ========================== */
 
       .mana-v83-tabs{
@@ -470,8 +441,6 @@
             5,
             1fr
           );
-
-        gap:0;
 
         min-height:74px;
 
@@ -528,8 +497,6 @@
         font-size:11px;
 
         font-weight:800;
-
-        line-height:1.2;
       }
 
 
@@ -562,9 +529,8 @@
       }
 
 
-      @media(
-        max-width:390px
-      ){
+      @media(max-width:390px){
+
         .mana-v83-grid{
           grid-template-columns:
             1fr;
@@ -592,6 +558,7 @@
       }
 
     `;
+
 
     document.head.appendChild(
       style
@@ -641,7 +608,6 @@
 
               <div
                 class="mana-v83-kicker"
-                id="manaV83Kicker"
               >
                 MANA MOVEMENT
               </div>
@@ -793,6 +759,7 @@
 
             <button
               type="button"
+
               class="
                 mana-v83-tab
                 ${
@@ -801,6 +768,7 @@
                     : ""
                 }
               "
+
               data-v83-tab="${key}"
             >
               ${label}
@@ -838,120 +806,9 @@
                   "mana:program-tab-change"
                 )
               );
-
             };
         }
       );
-  }
-
-
-  function mana28Overview() {
-    return `
-
-      <div
-        class="mana-v83-card"
-      >
-
-        <h2>
-          28 Days to Move With Purpose
-        </h2>
-
-        <p>
-          A structured 28-day journey
-          combining training, habits,
-          nutrition and daily action.
-        </p>
-
-        <button
-          type="button"
-          class="mana-v83-primary"
-          id="manaV83Open28"
-        >
-          Open today’s program
-        </button>
-
-      </div>
-
-
-      <div
-        class="mana-v83-grid"
-      >
-
-        <div
-          class="mana-v83-stat"
-        >
-          <span>
-            Program length
-          </span>
-
-          <strong>
-            28 days
-          </strong>
-        </div>
-
-
-        <div
-          class="mana-v83-stat"
-        >
-          <span>
-            Focus
-          </span>
-
-          <strong>
-            Consistency
-          </strong>
-        </div>
-
-      </div>
-
-    `;
-  }
-
-
-  function strengthOverview() {
-    return `
-
-      <div
-        class="mana-v83-card"
-      >
-
-        <h2>
-          Your Strength Program
-        </h2>
-
-        <p>
-          Personalised training based
-          on your profile, goals,
-          experience and available
-          equipment.
-        </p>
-
-      </div>
-
-    `;
-  }
-
-
-  function lifeOverview() {
-    return `
-
-      <div
-        class="mana-v83-card"
-      >
-
-        <h2>
-          Reclaim your momentum
-        </h2>
-
-        <p>
-          Mana Life brings together
-          routine, reflection, mindset
-          and practical daily action.
-        </p>
-
-      </div>
-
-    `;
   }
 
 
@@ -998,15 +855,9 @@
         "overview"
       ) {
         holder.innerHTML =
-          mana28Overview();
-
-        document
-          .getElementById(
-            "manaV83Open28"
-          )
-          ?.addEventListener(
-            "click",
-            openOldMana28
+          genericCard(
+            "28 Days to Move With Purpose",
+            "Training, habits, nutrition and daily action."
           );
 
         return;
@@ -1020,7 +871,7 @@
         holder.innerHTML =
           genericCard(
             "Your MANA 28 Program",
-            "Your existing 28-day day-by-day program lives here."
+            "Your 28-day program."
           );
 
         return;
@@ -1034,7 +885,7 @@
         holder.innerHTML =
           genericCard(
             "Fuel",
-            "Simple nutrition guidance, meal structure and consistency tools for MANA 28."
+            "Nutrition guidance for MANA 28."
           );
 
         return;
@@ -1048,7 +899,7 @@
         holder.innerHTML =
           genericCard(
             "Progress",
-            "Program completion, habits, check-ins and results will live here."
+            "Your MANA 28 progress."
           );
 
         return;
@@ -1058,7 +909,7 @@
       holder.innerHTML =
         genericCard(
           "Learn",
-          "Understand the principles behind MANA 28, training, recovery, habits and nutrition."
+          "Understand the principles behind MANA 28."
         );
 
       return;
@@ -1075,7 +926,10 @@
         "overview"
       ) {
         holder.innerHTML =
-          strengthOverview();
+          genericCard(
+            "Your Strength Program",
+            "Personalised training built from your Profile."
+          );
 
         return;
       }
@@ -1088,7 +942,7 @@
         holder.innerHTML =
           genericCard(
             "Your Program",
-            "Your personalised strength sessions and current workout plan."
+            "Your personalised strength sessions."
           );
 
         return;
@@ -1102,7 +956,7 @@
         holder.innerHTML =
           genericCard(
             "Fuel for Strength",
-            "Protein, calories, recovery and simple nutrition guidance supporting your current goal."
+            "Nutrition supporting your training and recovery."
           );
 
         return;
@@ -1116,7 +970,7 @@
         holder.innerHTML =
           genericCard(
             "Strength Progress",
-            "Completed workouts, volume, previous loads and performance trends."
+            "Your training history and performance."
           );
 
         return;
@@ -1126,10 +980,10 @@
       holder.innerHTML =
         genericCard(
           "Learn",
-          "Training principles, progression, recovery, technique and building strength safely."
+          "Strength training principles and progression."
         );
 
-        return;
+      return;
     }
 
 
@@ -1143,7 +997,10 @@
         "overview"
       ) {
         holder.innerHTML =
-          lifeOverview();
+          genericCard(
+            "Reclaim your momentum",
+            "Mindset, routine and daily action."
+          );
 
         return;
       }
@@ -1156,7 +1013,7 @@
         holder.innerHTML =
           genericCard(
             "Daily Routine",
-            "Build structure around sleep, movement, training, food, reflection and daily priorities."
+            "Build structure into your day."
           );
 
         return;
@@ -1170,7 +1027,7 @@
         holder.innerHTML =
           genericCard(
             "Reclaim",
-            "Mindset tools, affirmations, reflection and practical steps for rebuilding momentum."
+            "Mindset and reflection tools."
           );
 
         return;
@@ -1184,7 +1041,7 @@
         holder.innerHTML =
           genericCard(
             "Life Progress",
-            "Track routines, consistency, reflections and personal wins over time."
+            "Track your consistency."
           );
 
         return;
@@ -1194,7 +1051,7 @@
       holder.innerHTML =
         genericCard(
           "Learn",
-          "Mindset, resilience, identity, purpose and building a stronger daily life."
+          "Mindset, resilience and purpose."
         );
     }
   }
@@ -1304,37 +1161,6 @@
   }
 
 
-  function openOldMana28() {
-    closeProgram();
-
-
-    if (
-      typeof
-        window
-          .showClientProgramsView ===
-      "function"
-    ) {
-      window
-        .showClientProgramsView();
-
-      return;
-    }
-
-
-    const old =
-      document.querySelector(
-        "#clientProgramsView"
-      );
-
-
-    if (old) {
-      old.classList.remove(
-        "hide"
-      );
-    }
-  }
-
-
   function wireHomeButtons() {
     const mana28 =
       document.getElementById(
@@ -1352,4 +1178,87 @@
       );
 
 
-    if (mana28
+    if (mana28) {
+      mana28.onclick =
+        () =>
+          openProgram(
+            "mana28"
+          );
+    }
+
+
+    if (strength) {
+      strength.onclick =
+        () =>
+          openProgram(
+            "strength"
+          );
+    }
+
+
+    if (life) {
+      life.onclick =
+        () =>
+          openProgram(
+            "life"
+          );
+    }
+  }
+
+
+  function init() {
+    injectStyles();
+
+    ensureShell();
+
+
+    setTimeout(
+      wireHomeButtons,
+      500
+    );
+
+
+    setTimeout(
+      wireHomeButtons,
+      1200
+    );
+
+
+    setTimeout(
+      wireHomeButtons,
+      2200
+    );
+
+
+    window.addEventListener(
+      "mana:profile-synced",
+      () => {
+
+        if (
+          activeProgram ===
+          "strength"
+        ) {
+          updateHeader();
+        }
+      }
+    );
+  }
+
+
+  window.openManaProgram =
+    openProgram;
+
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      init
+    );
+  } else {
+    init();
+  }
+
+})();
