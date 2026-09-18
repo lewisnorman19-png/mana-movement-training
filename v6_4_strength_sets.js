@@ -1,9 +1,10 @@
 /* =========================================
    MANA MOVEMENT TRAINING v6.4
-   MANA STRENGTH — WORKOUT LOGGER
+   SMART STRENGTH WORKOUT LOGGER
 
    GOAL BASED REPS
-   LAST WORKOUT PREFILL
+   PREVIOUS WORKOUT PREFILL
+   SMART LOAD PROGRESSION
    SETS • REPS • LOAD • TIMER • PROGRESS
    ========================================= */
 
@@ -46,7 +47,9 @@
     fallback
   ) {
     try {
-      return JSON.parse(raw);
+      return JSON.parse(
+        raw
+      );
     } catch (_) {
       return fallback;
     }
@@ -85,6 +88,72 @@
   }
 
 
+  function roundLoad(
+    value
+  ) {
+    return (
+      Math.round(
+        Number(
+          value || 0
+        ) * 2
+      ) / 2
+    );
+  }
+
+
+  function median(
+    numbers
+  ) {
+    const list =
+      numbers
+        .map(Number)
+        .filter(
+          n =>
+            Number.isFinite(
+              n
+            )
+        )
+        .sort(
+          (a, b) =>
+            a - b
+        );
+
+
+    if (!list.length) {
+      return 0;
+    }
+
+
+    const middle =
+      Math.floor(
+        list.length / 2
+      );
+
+
+    if (
+      list.length % 2
+    ) {
+      return list[
+        middle
+      ];
+    }
+
+
+    return (
+      list[
+        middle - 1
+      ] +
+      list[
+        middle
+      ]
+    ) / 2;
+  }
+
+
+  /* =========================================
+     TARGET PARSING
+     ========================================= */
+
   function parseSetCount(
     target
   ) {
@@ -114,60 +183,7 @@
   }
 
 
-  /* =========================================
-     GOAL DEFAULT REPS
-     ========================================= */
-
-  function goalDefaultReps(
-    goal
-  ) {
-
-    if (
-      goal ===
-      "Get stronger"
-    ) {
-      return 8;
-    }
-
-
-    if (
-      goal ===
-      "Build muscle"
-    ) {
-      return 12;
-    }
-
-
-    if (
-      goal ===
-      "Return to training"
-    ) {
-      return 10;
-    }
-
-
-    /*
-      General fitness
-    */
-
-    return 10;
-  }
-
-
-  /*
-    If the exercise prescription
-    contains a clear numeric range,
-    use the upper end as the starting
-    editable rep number.
-
-    Examples:
-
-    4 × 6–8  -> 8
-    3 × 10–12 -> 12
-    3 × 10 -> 10
-  */
-
-  function targetDefaultReps(
+  function parseRepRange(
     target,
     goal
   ) {
@@ -184,9 +200,17 @@
 
 
     if (range) {
-      return Number(
-        range[2]
-      );
+      return {
+        min:
+          Number(
+            range[1]
+          ),
+
+        max:
+          Number(
+            range[2]
+          )
+      };
     }
 
 
@@ -197,20 +221,75 @@
 
 
     if (single) {
-      return Number(
-        single[1]
-      );
+      const reps =
+        Number(
+          single[1]
+        );
+
+
+      return {
+        min:
+          reps,
+
+        max:
+          reps
+      };
     }
 
 
-    return goalDefaultReps(
+    if (
+      goal ===
+      "Get stronger"
+    ) {
+      return {
+        min:6,
+        max:8
+      };
+    }
+
+
+    if (
+      goal ===
+      "Build muscle"
+    ) {
+      return {
+        min:10,
+        max:12
+      };
+    }
+
+
+    if (
+      goal ===
+      "Return to training"
+    ) {
+      return {
+        min:8,
+        max:10
+      };
+    }
+
+
+    return {
+      min:8,
+      max:12
+    };
+  }
+
+
+  function defaultReps(
+    target,
+    goal
+  ) {
+    return parseRepRange(
+      target,
       goal
-    );
+    ).max;
   }
 
 
   /* =========================================
-     PREVIOUS TRAINING HISTORY
+     PREVIOUS TRAINING
      ========================================= */
 
   function latestExercise(
@@ -229,7 +308,8 @@
 
       const exercise =
         (
-          logs[i].exercises ||
+          logs[i]
+            .exercises ||
           []
         ).find(
           item =>
@@ -245,7 +325,7 @@
 
 
     /*
-      Older v6.3 history fallback.
+      Older logger fallback.
     */
 
     const oldLogs =
@@ -266,7 +346,8 @@
 
       const old =
         (
-          oldLogs[i].exercises ||
+          oldLogs[i]
+            .exercises ||
           []
         ).find(
           item =>
@@ -276,13 +357,13 @@
 
 
       if (old) {
+
         return {
 
           name,
 
-          sets: [
+          sets:[
             {
-
               weight:
                 Number(
                   old.weight ||
@@ -299,7 +380,6 @@
                 Boolean(
                   old.done
                 )
-
             }
           ]
 
@@ -309,6 +389,362 @@
 
 
     return null;
+  }
+
+
+  /* =========================================
+     SMART PROGRESSION
+     ========================================= */
+
+  function completedPreviousSets(
+    previous
+  ) {
+    if (
+      !previous ||
+      !Array.isArray(
+        previous.sets
+      )
+    ) {
+      return [];
+    }
+
+
+    const completed =
+      previous.sets.filter(
+        set =>
+          set.done &&
+          Number(
+            set.reps
+          ) > 0
+      );
+
+
+    /*
+      Older data may not have
+      reliable done flags.
+    */
+
+    if (completed.length) {
+      return completed;
+    }
+
+
+    return previous.sets
+      .filter(
+        set =>
+          Number(
+            set.reps
+          ) > 0 ||
+          Number(
+            set.weight
+          ) > 0
+      );
+  }
+
+
+  function previousLoad(
+    previous
+  ) {
+    const sets =
+      completedPreviousSets(
+        previous
+      );
+
+
+    const weights =
+      sets
+        .map(
+          set =>
+            Number(
+              set.weight ||
+              0
+            )
+        )
+        .filter(
+          weight =>
+            weight > 0
+        );
+
+
+    if (!weights.length) {
+      return 0;
+    }
+
+
+    return roundLoad(
+      median(
+        weights
+      )
+    );
+  }
+
+
+  function progressionAdvice(
+    previous,
+    target,
+    goal
+  ) {
+    const range =
+      parseRepRange(
+        target,
+        goal
+      );
+
+
+    const sets =
+      completedPreviousSets(
+        previous
+      );
+
+
+    if (!sets.length) {
+
+      return {
+        type:
+          "first",
+
+        weight:
+          0,
+
+        text:
+          `Suggested today: ${range.min}–${range.max} reps`
+      };
+    }
+
+
+    const reps =
+      sets
+        .map(
+          set =>
+            Number(
+              set.reps ||
+              0
+            )
+        )
+        .filter(
+          value =>
+            value > 0
+        );
+
+
+    const load =
+      previousLoad(
+        previous
+      );
+
+
+    if (!reps.length) {
+
+      return {
+        type:
+          "hold",
+
+        weight:
+          load,
+
+        text:
+          `Suggested today: ${range.min}–${range.max} reps`
+      };
+    }
+
+
+    const allAtTop =
+      reps.every(
+        rep =>
+          rep >=
+          range.max
+      );
+
+
+    const anyBelowRange =
+      reps.some(
+        rep =>
+          rep <
+          range.min
+      );
+
+
+    /*
+      No external load recorded —
+      useful for bodyweight exercises.
+    */
+
+    if (!load) {
+
+      if (allAtTop) {
+        return {
+          type:
+            "progress",
+
+          weight:
+            0,
+
+          text:
+            `Suggested today: ${range.min}–${range.max} reps • ready to progress the exercise`
+        };
+      }
+
+
+      if (anyBelowRange) {
+        return {
+          type:
+            "build",
+
+          weight:
+            0,
+
+          text:
+            `Suggested today: aim to reach ${range.min}–${range.max} reps`
+        };
+      }
+
+
+      return {
+        type:
+          "hold",
+
+        weight:
+          0,
+
+        text:
+          `Suggested today: repeat ${range.min}–${range.max} reps`
+      };
+    }
+
+
+    /*
+      Double progression:
+      once every completed set reaches
+      the top of the range, add 2.5 kg.
+    */
+
+    if (allAtTop) {
+
+      const suggested =
+        roundLoad(
+          load +
+          2.5
+        );
+
+
+      return {
+        type:
+          "progress",
+
+        weight:
+          suggested,
+
+        text:
+          `Suggested today: ${suggested} kg • ${range.min}–${range.max} reps`
+      };
+    }
+
+
+    /*
+      Below the prescribed rep range:
+      don't force a heavier load.
+    */
+
+    if (anyBelowRange) {
+
+      return {
+        type:
+          "build",
+
+        weight:
+          load,
+
+        text:
+          `Suggested today: ${load} kg • build back to ${range.min}–${range.max} reps`
+      };
+    }
+
+
+    /*
+      Inside the range:
+      repeat the same load and aim
+      toward the top of the range.
+    */
+
+    return {
+      type:
+        "hold",
+
+      weight:
+        load,
+
+      text:
+        `Suggested today: ${load} kg • aim for ${range.max} reps`
+    };
+  }
+
+
+  /* =========================================
+     PREVIOUS TEXT
+     ========================================= */
+
+  function previousText(
+    previous
+  ) {
+    if (
+      !previous ||
+      !Array.isArray(
+        previous.sets
+      ) ||
+      !previous.sets.length
+    ) {
+
+      return (
+        "First session — goal-based reps loaded"
+      );
+    }
+
+
+    const used =
+      previous.sets.filter(
+        set =>
+          Number(
+            set.weight
+          ) ||
+          Number(
+            set.reps
+          )
+      );
+
+
+    if (!used.length) {
+      return (
+        "Previous session found"
+      );
+    }
+
+
+    return (
+      "Last workout: " +
+      used
+        .map(
+          (
+            set,
+            index
+          ) =>
+            `S${index + 1} ` +
+            `${
+              Number(
+                set.weight ||
+                0
+              )
+            }kg × ` +
+            `${
+              Number(
+                set.reps ||
+                0
+              )
+            }`
+        )
+        .join(
+          " • "
+        )
+    );
   }
 
 
@@ -339,13 +775,9 @@
       #${SCREEN_ID}{
         position:fixed;
         inset:0;
-
         z-index:26000;
-
         display:none;
-
         overflow:auto;
-
         background:#050505;
 
         padding:
@@ -381,25 +813,15 @@
 
       .mana-v64-head{
         display:flex;
-
-        justify-content:
-          space-between;
-
-        align-items:
-          flex-start;
-
+        justify-content:space-between;
+        align-items:flex-start;
         gap:16px;
-
         margin-bottom:18px;
       }
 
 
       .mana-v64-head h1{
-        margin:
-          6px
-          0
-          4px;
-
+        margin:6px 0 4px;
         font-size:30px;
       }
 
@@ -407,152 +829,124 @@
       .mana-v64-close{
         width:44px;
         height:44px;
-
-        flex:
-          0
-          0
-          44px;
-
+        flex:0 0 44px;
         border-radius:50%;
-
-        border:
-          1px solid
-          #333;
-
+        border:1px solid #333;
         background:#111;
-
         color:#fff;
-
         font-size:24px;
       }
 
 
       .mana-v64-summary{
         display:grid;
-
-        grid-template-columns:
-          1fr 1fr;
-
+        grid-template-columns:1fr 1fr;
         gap:10px;
-
-        margin:
-          14px 0;
+        margin:14px 0;
       }
 
 
       .mana-v64-stat{
         background:#0d0d0d;
-
-        border:
-          1px solid
-          #292929;
-
+        border:1px solid #292929;
         border-radius:16px;
-
         padding:14px;
       }
 
 
       .mana-v64-stat span{
         display:block;
-
         color:#999;
-
         font-size:11px;
-
-        text-transform:
-          uppercase;
-
+        text-transform:uppercase;
         letter-spacing:.05em;
-
         margin-bottom:5px;
       }
 
 
       .mana-v64-stat strong{
         display:block;
-
         color:#f3d875;
-
         font-size:22px;
-
         font-weight:900;
       }
 
 
       .mana-v64-progress{
         height:10px;
-
-        margin:
-          0
-          0
-          18px;
-
+        margin:0 0 18px;
         border-radius:999px;
-
         background:#1a1a1a;
-
         overflow:hidden;
       }
 
 
       .mana-v64-progress-fill{
         width:0%;
-
         height:100%;
-
         border-radius:999px;
-
         background:#f3d875;
-
-        transition:
-          width
-          .25s
-          ease;
+        transition:width .25s ease;
       }
 
 
       .mana-v64-card{
         background:#0e0e0e;
-
-        border:
-          1px solid
-          #292929;
-
+        border:1px solid #292929;
         border-radius:20px;
-
         padding:16px;
-
-        margin:
-          12px
-          0;
+        margin:12px 0;
       }
 
 
       .mana-v64-name{
         font-size:19px;
-
         font-weight:900;
       }
 
 
       .mana-v64-target{
         color:#aaa;
-
         font-size:13px;
-
         margin-top:4px;
       }
 
 
       .mana-v64-previous{
+        color:#aaa;
+        font-size:12px;
+        margin-top:7px;
+        line-height:1.45;
+      }
+
+
+      .mana-v64-suggestion{
+        margin-top:9px;
+        padding:10px 12px;
+
+        border:
+          1px solid
+          #4a3d12;
+
+        border-radius:12px;
+
+        background:
+          linear-gradient(
+            145deg,
+            #18150d,
+            #0b0b0b
+          );
+
         color:#f3d875;
 
-        font-size:12px;
+        font-size:13px;
+        font-weight:800;
+        line-height:1.4;
+      }
 
-        margin-top:6px;
 
-        line-height:1.45;
+      .mana-v64-suggestion::before{
+        content:"↗ ";
       }
 
 
@@ -574,13 +968,9 @@
 
       .mana-v64-table-head{
         margin-top:14px;
-
         color:#888;
-
         font-size:11px;
-
-        text-transform:
-          uppercase;
+        text-transform:uppercase;
       }
 
 
@@ -591,29 +981,16 @@
 
       .mana-v64-set-number{
         color:#aaa;
-
         font-size:13px;
-
         text-align:center;
       }
 
 
       .mana-v64-set input{
         width:100%;
-
-        margin:
-          0
-          !important;
-
-        padding:
-          12px
-          10px
-          !important;
-
-        border-radius:
-          12px
-          !important;
-
+        margin:0 !important;
+        padding:12px 10px !important;
+        border-radius:12px !important;
         text-align:center;
       }
 
@@ -621,90 +998,58 @@
       .mana-v64-check{
         width:40px;
         height:40px;
-
         border-radius:12px;
-
-        border:
-          1px solid
-          #3b3b3b;
-
+        border:1px solid #3b3b3b;
         background:#111;
-
         color:#999;
-
         font-size:18px;
-
         font-weight:900;
       }
 
 
       .mana-v64-check.done{
         background:#f3d875;
-
         border-color:#f3d875;
-
         color:#111;
       }
 
 
       .mana-v64-controls{
         display:flex;
-
         gap:8px;
-
         margin-top:12px;
       }
 
 
       .mana-v64-small{
         flex:1;
-
         min-height:42px;
-
         border-radius:12px;
-
-        border:
-          1px solid
-          #333;
-
+        border:1px solid #333;
         background:#111;
-
         color:#ddd;
-
         font-weight:800;
       }
 
 
       .mana-v64-complete{
         width:100%;
-
         min-height:60px;
-
         margin-top:18px;
-
         border:0;
-
         border-radius:17px;
-
         background:#f3d875;
-
         color:#111;
-
         font-size:17px;
-
         font-weight:900;
       }
 
 
       .mana-v64-status{
         min-height:24px;
-
         margin-top:10px;
-
         color:#aaa;
-
         font-size:13px;
-
         text-align:center;
       }
 
@@ -713,7 +1058,6 @@
 
         .mana-v64-table-head,
         .mana-v64-set{
-
           grid-template-columns:
             32px
             1fr
@@ -722,6 +1066,7 @@
 
           gap:6px;
         }
+
       }
 
     `;
@@ -767,9 +1112,7 @@
               MANA STRENGTH
             </span>
 
-            <h1
-              id="manaV64Title"
-            >
+            <h1 id="manaV64Title">
               Workout
             </h1>
 
@@ -801,9 +1144,7 @@
               Workout time
             </span>
 
-            <strong
-              id="manaV64Timer"
-            >
+            <strong id="manaV64Timer">
               00:00
             </strong>
 
@@ -816,9 +1157,7 @@
               Sets complete
             </span>
 
-            <strong
-              id="manaV64Sets"
-            >
+            <strong id="manaV64Sets">
               0 / 0
             </strong>
 
@@ -831,9 +1170,7 @@
               Total volume
             </span>
 
-            <strong
-              id="manaV64Volume"
-            >
+            <strong id="manaV64Volume">
               0 kg
             </strong>
 
@@ -846,9 +1183,7 @@
               Workout complete
             </span>
 
-            <strong
-              id="manaV64Percent"
-            >
+            <strong id="manaV64Percent">
               0%
             </strong>
 
@@ -857,9 +1192,7 @@
         </div>
 
 
-        <div
-          class="mana-v64-progress"
-        >
+        <div class="mana-v64-progress">
 
           <div
             class="mana-v64-progress-fill"
@@ -869,9 +1202,7 @@
         </div>
 
 
-        <div
-          id="manaV64Exercises"
-        ></div>
+        <div id="manaV64Exercises"></div>
 
 
         <button
@@ -933,17 +1264,19 @@
 
 
     return (
-      String(mins)
-        .padStart(
-          2,
-          "0"
-        ) +
+      String(
+        mins
+      ).padStart(
+        2,
+        "0"
+      ) +
       ":" +
-      String(secs)
-        .padStart(
-          2,
-          "0"
-        )
+      String(
+        secs
+      ).padStart(
+        2,
+        "0"
+      )
     );
   }
 
@@ -958,6 +1291,7 @@
 
     return Math.max(
       0,
+
       Math.floor(
         (
           Date.now() -
@@ -1021,93 +1355,33 @@
 
 
   /* =========================================
-     PREVIOUS DISPLAY
-     ========================================= */
-
-  function previousText(
-    previous
-  ) {
-    if (
-      !previous ||
-      !Array.isArray(
-        previous.sets
-      ) ||
-      !previous.sets.length
-    ) {
-      return (
-        "First session — suggested reps preloaded"
-      );
-    }
-
-
-    const used =
-      previous.sets
-        .filter(
-          set =>
-            Number(
-              set.weight
-            ) ||
-            Number(
-              set.reps
-            )
-        );
-
-
-    if (!used.length) {
-      return (
-        "Previous session found"
-      );
-    }
-
-
-    return (
-      "Last workout: " +
-      used
-        .map(
-          (
-            set,
-            index
-          ) =>
-            `S${index + 1} ` +
-            `${Number(
-              set.weight || 0
-            )}kg × ` +
-            `${Number(
-              set.reps || 0
-            )}`
-        )
-        .join(" • ")
-    );
-  }
-
-
-  /* =========================================
      SET ROW
      ========================================= */
 
   function createSetRow(
     number,
     previousSet,
-    defaultReps
+    defaultRepCount
   ) {
-
     const previousWeight =
       Number(
-        previousSet?.weight ||
+        previousSet
+          ?.weight ||
         0
       );
 
 
     const previousReps =
       Number(
-        previousSet?.reps ||
+        previousSet
+          ?.reps ||
         0
       );
 
 
     const startingReps =
       previousReps ||
-      defaultReps ||
+      defaultRepCount ||
       10;
 
 
@@ -1127,20 +1401,15 @@
 
     row.innerHTML = `
 
-      <div
-        class="mana-v64-set-number"
-      >
+      <div class="mana-v64-set-number">
         ${number}
       </div>
 
 
       <input
         type="number"
-
         min="0"
-
         step="0.5"
-
         inputmode="decimal"
 
         placeholder="kg"
@@ -1151,35 +1420,27 @@
         }"
 
         data-v64-weight
-
         aria-label="Weight in kilograms"
       />
 
 
       <input
         type="number"
-
         min="0"
-
         step="1"
-
         inputmode="numeric"
 
         value="${startingReps}"
 
         data-v64-reps
-
         aria-label="Repetitions"
       />
 
 
       <button
         type="button"
-
         class="mana-v64-check"
-
         data-v64-check
-
         aria-label="Complete set"
       >
         ✓
@@ -1236,7 +1497,6 @@
   function renumberSets(
     card
   ) {
-
     card
       .querySelectorAll(
         "[data-v64-set]"
@@ -1272,7 +1532,6 @@
     exerciseIndex,
     goal
   ) {
-
     const name =
       exercise[0];
 
@@ -1293,8 +1552,16 @@
       );
 
 
-    const defaultReps =
-      targetDefaultReps(
+    const reps =
+      defaultReps(
+        target,
+        goal
+      );
+
+
+    const advice =
+      progressionAdvice(
+        previous,
         target,
         goal
       );
@@ -1324,24 +1591,18 @@
 
     card.innerHTML = `
 
-      <div
-        class="mana-v64-name"
-      >
+      <div class="mana-v64-name">
         ${name}
       </div>
 
 
-      <div
-        class="mana-v64-target"
-      >
+      <div class="mana-v64-target">
         Target:
         ${target}
       </div>
 
 
-      <div
-        class="mana-v64-previous"
-      >
+      <div class="mana-v64-previous">
         ${
           previousText(
             previous
@@ -1350,9 +1611,12 @@
       </div>
 
 
-      <div
-        class="mana-v64-table-head"
-      >
+      <div class="mana-v64-suggestion">
+        ${advice.text}
+      </div>
+
+
+      <div class="mana-v64-table-head">
 
         <span>Set</span>
 
@@ -1370,15 +1634,11 @@
       ></div>
 
 
-      <div
-        class="mana-v64-controls"
-      >
+      <div class="mana-v64-controls">
 
         <button
           type="button"
-
           class="mana-v64-small"
-
           data-v64-add
         >
           + Add set
@@ -1387,9 +1647,7 @@
 
         <button
           type="button"
-
           class="mana-v64-small"
-
           data-v64-remove
         >
           − Remove set
@@ -1422,7 +1680,7 @@
             ?.[i] ||
           null,
 
-          defaultReps
+          reps
         )
       );
     }
@@ -1453,7 +1711,7 @@
                 ?.[count] ||
               null,
 
-              defaultReps
+              reps
             )
           );
 
@@ -1510,87 +1768,81 @@
      ========================================= */
 
   function collectExercises() {
-
     return [
-      ...document
-        .querySelectorAll(
-          "#manaV64Exercises " +
-          ".mana-v64-card"
-        )
-    ]
-      .map(
-        card => {
+      ...document.querySelectorAll(
+        "#manaV64Exercises .mana-v64-card"
+      )
+    ].map(
+      card => {
 
-          const sets =
-            [
-              ...card
-                .querySelectorAll(
-                  "[data-v64-set]"
-                )
-            ]
-              .map(
-                (
-                  row,
-                  index
-                ) => ({
+        const sets =
+          [
+            ...card.querySelectorAll(
+              "[data-v64-set]"
+            )
+          ].map(
+            (
+              row,
+              index
+            ) => ({
 
-                  set:
-                    index + 1,
+              set:
+                index + 1,
 
 
-                  weight:
-                    Number(
-                      row
-                        .querySelector(
-                          "[data-v64-weight]"
-                        )
-                        ?.value ||
-                      0
-                    ),
+              weight:
+                Number(
+                  row
+                    .querySelector(
+                      "[data-v64-weight]"
+                    )
+                    ?.value ||
+                  0
+                ),
 
 
-                  reps:
-                    Number(
-                      row
-                        .querySelector(
-                          "[data-v64-reps]"
-                        )
-                        ?.value ||
-                      0
-                    ),
+              reps:
+                Number(
+                  row
+                    .querySelector(
+                      "[data-v64-reps]"
+                    )
+                    ?.value ||
+                  0
+                ),
 
 
-                  done:
-                    row
-                      .querySelector(
-                        "[data-v64-check]"
-                      )
-                      ?.classList
-                      .contains(
-                        "done"
-                      ) ||
-                    false
+              done:
+                row
+                  .querySelector(
+                    "[data-v64-check]"
+                  )
+                  ?.classList
+                  .contains(
+                    "done"
+                  ) ||
+                false
 
-                })
-              );
+            })
+          );
 
 
-          return {
+        return {
 
-            name:
-              card.dataset
-                .exerciseName,
+          name:
+            card.dataset
+              .exerciseName,
 
-            target:
-              card.dataset
-                .exerciseTarget,
+          target:
+            card.dataset
+              .exerciseTarget,
 
-            sets
+          sets
 
-          };
+        };
 
-        }
-      );
+      }
+    );
   }
 
 
@@ -1599,7 +1851,6 @@
      ========================================= */
 
   function updateSummary() {
-
     const exercises =
       collectExercises();
 
@@ -1652,14 +1903,15 @@
     const percent =
       totalSets
         ? Math.round(
-            completeSets /
-            totalSets *
-            100
+            (
+              completeSets /
+              totalSets
+            ) * 100
           )
         : 0;
 
 
-    const setsEl =
+    const sets =
       document.getElementById(
         "manaV64Sets"
       );
@@ -1683,8 +1935,8 @@
       );
 
 
-    if (setsEl) {
-      setsEl.textContent =
+    if (sets) {
+      sets.textContent =
         `${completeSets} / ${totalSets}`;
     }
 
@@ -1719,7 +1971,6 @@
   function openWorkout(
     dayIndex
   ) {
-
     const program =
       loadProgram();
 
@@ -1783,11 +2034,8 @@
 
           holder.appendChild(
             buildExerciseCard(
-
               exercise,
-
               index,
-
               program.goal
             )
           );
@@ -1838,7 +2086,6 @@
      ========================================= */
 
   function returnToStrengthOverview() {
-
     if (
       typeof
         window
@@ -1858,7 +2105,6 @@
      ========================================= */
 
   function closeWorkout() {
-
     document
       .getElementById(
         SCREEN_ID
@@ -1892,7 +2138,6 @@
      ========================================= */
 
   function completeWorkout() {
-
     const program =
       loadProgram();
 
@@ -2008,9 +2253,10 @@
     const completionPercent =
       totalSets
         ? Math.round(
-            completedSets /
-            totalSets *
-            100
+            (
+              completedSets /
+              totalSets
+            ) * 100
           )
         : 0;
 
@@ -2119,7 +2365,6 @@
      ========================================= */
 
   function interceptStartButtons() {
-
     document.addEventListener(
       "click",
 
@@ -2156,10 +2401,9 @@
 
         const days =
           [
-            ...program
-              .querySelectorAll(
-                ".mana-strength-day"
-              )
+            ...program.querySelectorAll(
+              ".mana-strength-day"
+            )
           ];
 
 
@@ -2203,7 +2447,6 @@
 
 
   function init() {
-
     injectStyles();
 
     ensureScreen();
@@ -2225,7 +2468,6 @@
   } else {
 
     init();
-
   }
 
 })();
