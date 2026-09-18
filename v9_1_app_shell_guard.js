@@ -1,17 +1,30 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.1.2
-   APP SHELL + SESSION RESTORE FIX
+   MANA MOVEMENT TRAINING v9.1.3
+   MOBILE SESSION + ROUTE GUARD
+
+   PREVENT OLD CLIENT APP RETURNING
+   REMEMBER CURRENT MANA SCREEN
+   RESTORE AFTER PHONE SLEEP / REFRESH
    ========================================= */
 
 (() => {
   "use strict";
 
 
-  const NEW_HOME_ID =
+  const HOME_ID =
     "manaV80Home";
 
+  const SHELL_ID =
+    "manaV83ProgramShell";
 
-  const OLD_IDS = [
+  const PROFILE_ID =
+    "manaProfileScreen";
+
+  const ROUTE_KEY =
+    "mana-v913-last-route";
+
+
+  const OLD_CLIENT_IDS = [
     "clientView",
     "clientProgramsView",
     "clientFuelView",
@@ -21,21 +34,49 @@
   ];
 
 
-  /* =========================================
-     HIDE OLD CLIENT UI
-     ========================================= */
+  let restoring =
+    false;
+
+  let restoreTimer =
+    null;
+
+
+  function safeJson(
+    raw,
+    fallback
+  ) {
+    try {
+      return JSON.parse(raw);
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+
+  function coachIsOpen() {
+    const coach =
+      document.getElementById(
+        "coachView"
+      );
+
+
+    return Boolean(
+      coach &&
+      !coach.classList
+        .contains("hide")
+    );
+  }
+
 
   function hideOldClientUI() {
     if (
-      !document.getElementById(
-        NEW_HOME_ID
-      )
+      coachIsOpen()
     ) {
       return;
     }
 
 
-    OLD_IDS.forEach(
+    OLD_CLIENT_IDS.forEach(
       id => {
 
         const el =
@@ -60,207 +101,580 @@
   }
 
 
-  /* =========================================
-     SHOW NEW MANA HOME
-     ========================================= */
-
-  function showNewHome() {
+  function showHome() {
     const home =
       document.getElementById(
-        NEW_HOME_ID
+        HOME_ID
       );
 
 
-    if (!home) return;
+    if (!home) {
+      return;
+    }
 
 
-    const strengthShell =
+    hideOldClientUI();
+
+
+    home.style.display =
+      "";
+  }
+
+
+  function currentProgram() {
+    const title =
       document.getElementById(
-        "manaV83ProgramShell"
+        "manaV83Title"
+      )
+      ?.textContent
+      ?.trim()
+      ?.toUpperCase();
+
+
+    if (
+      title ===
+      "MANA STRENGTH"
+    ) {
+      return "strength";
+    }
+
+
+    if (
+      title ===
+      "MANA 28"
+    ) {
+      return "mana28";
+    }
+
+
+    if (
+      title ===
+      "MANA LIFE"
+    ) {
+      return "life";
+    }
+
+
+    return "";
+  }
+
+
+  function currentTab() {
+    return (
+      document
+        .querySelector(
+          "#manaV83Tabs .mana-v83-tab.active"
+        )
+        ?.dataset
+        ?.v83Tab ||
+      "overview"
+    );
+  }
+
+
+  function saveRoute(
+    route
+  ) {
+    try {
+
+      localStorage.setItem(
+        ROUTE_KEY,
+        JSON.stringify(
+          route
+        )
       );
+
+    } catch (_) {}
+  }
+
+
+  function loadRoute() {
+    return safeJson(
+      localStorage.getItem(
+        ROUTE_KEY
+      ) || "null",
+      null
+    );
+  }
+
+
+  function captureRoute() {
+    if (
+      coachIsOpen()
+    ) {
+      return;
+    }
 
 
     const profile =
       document.getElementById(
-        "manaV67Profile"
+        PROFILE_ID
       );
-
-
-    const intro =
-      document.getElementById(
-        "manaV81Intro"
-      );
-
-
-    const anotherScreenOpen =
-      strengthShell
-        ?.classList
-        .contains(
-          "open"
-        ) ||
-
-      profile
-        ?.classList
-        .contains(
-          "open"
-        ) ||
-
-      intro
-        ?.classList
-        .contains(
-          "open"
-        );
 
 
     if (
-      !anotherScreenOpen
+      profile
+        ?.classList
+        .contains("open")
     ) {
 
-      home.style.display =
-        "";
+      saveRoute({
+        screen:"profile"
+      });
+
+      return;
+    }
+
+
+    const shell =
+      document.getElementById(
+        SHELL_ID
+      );
+
+
+    if (
+      shell
+        ?.classList
+        .contains("open")
+    ) {
+
+      const program =
+        currentProgram();
+
+
+      if (program) {
+
+        saveRoute({
+          screen:"program",
+          program,
+          tab:currentTab()
+        });
+
+      }
+
+      return;
+    }
+
+
+    const home =
+      document.getElementById(
+        HOME_ID
+      );
+
+
+    if (
+      home &&
+      home.style.display !==
+        "none"
+    ) {
+
+      saveRoute({
+        screen:"home"
+      });
 
     }
   }
 
 
-  /* =========================================
-     OVERRIDE OLD CLIENT RESTORE
-     ========================================= */
+  function newManaScreenOpen() {
+    const shell =
+      document.getElementById(
+        SHELL_ID
+      );
 
-  function overrideOldClientRestore() {
 
     if (
+      shell
+        ?.classList
+        .contains("open")
+    ) {
+      return true;
+    }
+
+
+    const profile =
+      document.getElementById(
+        PROFILE_ID
+      );
+
+
+    if (
+      profile
+        ?.classList
+        .contains("open")
+    ) {
+      return true;
+    }
+
+
+    return false;
+  }
+
+
+  function restoreProgram(
+    program,
+    tab
+  ) {
+    if (
       typeof
-        window.openConnectedClient !==
+        window
+          .openManaProgram !==
       "function"
     ) {
       return false;
     }
 
 
-    if (
-      window
-        .openConnectedClient
-        .__manaNewShell
-    ) {
-      return true;
-    }
-
-
-    const original =
-      window.openConnectedClient;
-
-
-    const replacement =
-      async function(profile) {
-
-        /*
-          Let the old function load
-          cloud data / user details.
-        */
-
-        await original(
-          profile
-        );
-
-
-        /*
-          Immediately remove the
-          old client shell it opened.
-        */
-
-        hideOldClientUI();
-
-
-        showNewHome();
-
-
-        /*
-          Re-wire the new Home cards
-          after a session restore.
-        */
-
-        setTimeout(
-          () => {
-
-            hideOldClientUI();
-
-            showNewHome();
-
-          },
-          100
-        );
-
-
-        setTimeout(
-          () => {
-
-            hideOldClientUI();
-
-            showNewHome();
-
-          },
-          500
-        );
-
-      };
-
-
-    replacement.__manaNewShell =
+    restoring =
       true;
 
 
-    window.openConnectedClient =
-      replacement;
+    window.openManaProgram(
+      program
+    );
+
+
+    hideOldClientUI();
+
+
+    if (
+      tab &&
+      tab !==
+        "overview"
+    ) {
+
+      setTimeout(
+        () => {
+
+          const button =
+            document.querySelector(
+              `#manaV83Tabs [data-v83-tab="${tab}"]`
+            );
+
+
+          button?.click();
+
+
+          hideOldClientUI();
+
+
+          restoring =
+            false;
+
+        },
+        140
+      );
+
+    } else {
+
+      setTimeout(
+        () => {
+
+          hideOldClientUI();
+
+          restoring =
+            false;
+
+        },
+        140
+      );
+
+    }
 
 
     return true;
   }
 
 
-  /* =========================================
-     ENFORCE
-     ========================================= */
+  function restoreRoute(
+    force = false
+  ) {
+    if (
+      restoring ||
+      coachIsOpen()
+    ) {
+      return;
+    }
 
-  function enforce() {
+
     hideOldClientUI();
 
-    showNewHome();
 
-    overrideOldClientRestore();
+    if (
+      !force &&
+      newManaScreenOpen()
+    ) {
+      return;
+    }
+
+
+    const route =
+      loadRoute();
+
+
+    if (
+      route?.screen ===
+      "profile"
+    ) {
+
+      if (
+        typeof
+          window
+            .openManaProfile ===
+        "function"
+      ) {
+
+        restoring =
+          true;
+
+
+        window
+          .openManaProfile();
+
+
+        setTimeout(
+          () => {
+
+            hideOldClientUI();
+
+            restoring =
+              false;
+
+          },
+          120
+        );
+
+
+        return;
+      }
+    }
+
+
+    if (
+      route?.screen ===
+      "program" &&
+      route.program
+    ) {
+
+      if (
+        restoreProgram(
+          route.program,
+          route.tab
+        )
+      ) {
+        return;
+      }
+    }
+
+
+    showHome();
   }
 
 
-  /* =========================================
-     PHONE WAKE
-     ========================================= */
+  function scheduleRestore(
+    force = false,
+    delay = 100
+  ) {
+    clearTimeout(
+      restoreTimer
+    );
 
-  function wireResume() {
 
+    restoreTimer =
+      setTimeout(
+        () => {
+
+          restoreRoute(
+            force
+          );
+
+        },
+        delay
+      );
+  }
+
+
+  function overrideOldClientRestore() {
+    if (
+      typeof
+        window
+          .openConnectedClient !==
+      "function"
+    ) {
+      return;
+    }
+
+
+    if (
+      window
+        .openConnectedClient
+        .__manaV913
+    ) {
+      return;
+    }
+
+
+    const original =
+      window
+        .openConnectedClient;
+
+
+    const replacement =
+      async function(
+        profile
+      ) {
+
+        await original(
+          profile
+        );
+
+
+        hideOldClientUI();
+
+
+        scheduleRestore(
+          true,
+          60
+        );
+
+
+        setTimeout(
+          () => {
+
+            hideOldClientUI();
+
+            restoreRoute(
+              true
+            );
+
+          },
+          350
+        );
+
+      };
+
+
+    replacement.__manaV913 =
+      true;
+
+
+    window.openConnectedClient =
+      replacement;
+  }
+
+
+  function wireRouteTracking() {
+    window.addEventListener(
+      "mana:program-tab-change",
+      () => {
+
+        if (
+          restoring
+        ) {
+          return;
+        }
+
+
+        setTimeout(
+          captureRoute,
+          60
+        );
+
+      }
+    );
+
+
+    document.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target.closest(
+            "#manaV80Home"
+          )
+        ) {
+
+          setTimeout(
+            captureRoute,
+            120
+          );
+
+        }
+
+
+        if (
+          event.target.closest(
+            "#manaV83Back"
+          )
+        ) {
+
+          setTimeout(
+            captureRoute,
+            180
+          );
+
+        }
+
+
+        if (
+          event.target.closest(
+            "#manaProfileClose"
+          )
+        ) {
+
+          setTimeout(
+            captureRoute,
+            180
+          );
+
+        }
+
+      }
+    );
+  }
+
+
+  function wirePhoneResume() {
     document.addEventListener(
       "visibilitychange",
       () => {
 
         if (
           document.visibilityState ===
+          "hidden"
+        ) {
+
+          captureRoute();
+
+          return;
+        }
+
+
+        if (
+          document.visibilityState ===
           "visible"
         ) {
 
-          setTimeout(
-            enforce,
-            50
+          hideOldClientUI();
+
+
+          scheduleRestore(
+            false,
+            80
           );
 
 
           setTimeout(
-            enforce,
-            300
-          );
+            () => {
 
+              hideOldClientUI();
 
-          setTimeout(
-            enforce,
-            900
+              restoreRoute(
+                false
+              );
+
+            },
+            500
           );
 
         }
@@ -270,11 +684,19 @@
 
 
     window.addEventListener(
+      "pagehide",
+      captureRoute
+    );
+
+
+    window.addEventListener(
       "pageshow",
       () => {
 
-        setTimeout(
-          enforce,
+        hideOldClientUI();
+
+        scheduleRestore(
+          false,
           100
         );
 
@@ -286,8 +708,10 @@
       "focus",
       () => {
 
-        setTimeout(
-          enforce,
+        hideOldClientUI();
+
+        scheduleRestore(
+          false,
           100
         );
 
@@ -296,13 +720,9 @@
   }
 
 
-  /* =========================================
-     OBSERVER
-     ========================================= */
-
-  function watchDOM() {
-
-    let timer = null;
+  function observeOldUI() {
+    let timer =
+      null;
 
 
     const observer =
@@ -316,7 +736,13 @@
 
           timer =
             setTimeout(
-              enforce,
+              () => {
+
+                hideOldClientUI();
+
+                overrideOldClientRestore();
+
+              },
               60
             );
 
@@ -327,8 +753,8 @@
     observer.observe(
       document.body,
       {
-        subtree:true,
         childList:true,
+        subtree:true,
         attributes:true,
         attributeFilter:[
           "class",
@@ -339,32 +765,31 @@
   }
 
 
-  /* =========================================
-     INIT
-     ========================================= */
-
   function init() {
+    wireRouteTracking();
 
-    /*
-      openConnectedClient is defined
-      by the large inline app script,
-      so check a few times until it exists.
-    */
+    wirePhoneResume();
 
-    const tries = [
+    observeOldUI();
+
+
+    [
       100,
       400,
       900,
       1600,
-      2500
-    ];
-
-
-    tries.forEach(
+      2600
+    ].forEach(
       delay => {
 
         setTimeout(
-          enforce,
+          () => {
+
+            hideOldClientUI();
+
+            overrideOldClientRestore();
+
+          },
           delay
         );
 
@@ -372,14 +797,28 @@
     );
 
 
-    wireResume();
+    setTimeout(
+      () => {
 
-    watchDOM();
+        restoreRoute(
+          false
+        );
+
+      },
+      1200
+    );
   }
 
 
   window.enforceManaAppShell =
-    enforce;
+    () => {
+
+      hideOldClientUI();
+
+      restoreRoute(
+        false
+      );
+    };
 
 
   if (
