@@ -1,14 +1,17 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v6.7.4
-   CLIENT PROFILE
-   CLEAN PROFILE LAYOUT
+   MANA MOVEMENT TRAINING v6.7.5
+   MASTER PROFILE
+
+   PERSONAL DETAILS
+   TRAINING SETUP
+   FUEL GOALS
    ========================================= */
 
 (() => {
   "use strict";
 
   const STYLE_ID =
-    "mana-profile-v674-style";
+    "mana-profile-v675-style";
 
   const PROFILE_ID =
     "manaProfileScreen";
@@ -16,14 +19,14 @@
   const STORE_KEY =
     "mana-profile-v67";
 
+  const TARGET_KEY =
+    "mana-fuel-v58-targets";
+
   let returnTo =
     "home";
 
 
-  function safeJson(
-    raw,
-    fallback
-  ) {
+  function safeJson(raw, fallback) {
     try {
       return JSON.parse(raw);
     } catch (_) {
@@ -42,17 +45,284 @@
   }
 
 
-  function saveProfile(
-    profile
-  ) {
+  function saveProfile(profile) {
     localStorage.setItem(
       STORE_KEY,
-      JSON.stringify(
-        profile
-      )
+      JSON.stringify(profile)
     );
   }
 
+
+  function saveFuelTargets(targets) {
+    localStorage.setItem(
+      TARGET_KEY,
+      JSON.stringify(targets)
+    );
+  }
+
+
+  /* =========================================
+     FUEL TARGET CALCULATION
+     ========================================= */
+
+  function calculateFuelTargets(profile) {
+    const age =
+      Number(profile.age || 0);
+
+    const height =
+      Number(profile.height || 0);
+
+    const weight =
+      Number(profile.weight || 0);
+
+    const days =
+      Number(profile.days || 0);
+
+    const gender =
+      profile.gender || "";
+
+    const fuelGoal =
+      profile.fuelGoal ||
+      "Maintenance";
+
+
+    if (
+      !age ||
+      !height ||
+      !weight
+    ) {
+      return null;
+    }
+
+
+    /*
+      Mifflin-St Jeor starting estimate.
+
+      Male:
+      10W + 6.25H - 5A + 5
+
+      Female:
+      10W + 6.25H - 5A - 161
+
+      For non-binary / prefer not to say,
+      use the midpoint between both equations.
+    */
+
+    const base =
+      10 * weight +
+      6.25 * height -
+      5 * age;
+
+
+    let bmr;
+
+    if (
+      gender === "Male"
+    ) {
+
+      bmr =
+        base + 5;
+
+    } else if (
+      gender === "Female"
+    ) {
+
+      bmr =
+        base - 161;
+
+    } else {
+
+      bmr =
+        base - 78;
+    }
+
+
+    let activity =
+      1.4;
+
+
+    if (days === 3) {
+      activity = 1.5;
+    }
+
+    if (days === 4) {
+      activity = 1.6;
+    }
+
+    if (days >= 5) {
+      activity = 1.7;
+    }
+
+
+    let calories =
+      bmr * activity;
+
+
+    let proteinPerKg =
+      1.6;
+
+
+    if (
+      fuelGoal ===
+      "Weight loss"
+    ) {
+
+      calories *=
+        0.85;
+
+      proteinPerKg =
+        2.0;
+
+    }
+
+
+    if (
+      fuelGoal ===
+      "Build muscle"
+    ) {
+
+      calories *=
+        1.08;
+
+      proteinPerKg =
+        1.8;
+
+    }
+
+
+    const protein =
+      Math.round(
+        weight *
+        proteinPerKg
+      );
+
+
+    return {
+      calories:
+        Math.round(
+          calories /
+          50
+        ) * 50,
+
+      protein,
+
+      water:
+        Math.round(
+          weight *
+          35 /
+          100
+        ) * 100,
+
+      carbs:0,
+      fat:0
+    };
+  }
+
+
+  function updateFuelPreview() {
+    const age =
+      Number(
+        document
+          .getElementById(
+            "manaProfileAge"
+          )
+          ?.value || 0
+      );
+
+    const gender =
+      document
+        .getElementById(
+          "manaProfileGender"
+        )
+        ?.value || "";
+
+    const height =
+      Number(
+        document
+          .getElementById(
+            "manaProfileHeight"
+          )
+          ?.value || 0
+      );
+
+    const weight =
+      Number(
+        document
+          .getElementById(
+            "manaProfileWeight"
+          )
+          ?.value || 0
+      );
+
+    const days =
+      document
+        .getElementById(
+          "manaProfileDays"
+        )
+        ?.value || "";
+
+    const fuelGoal =
+      document
+        .getElementById(
+          "manaProfileFuelGoal"
+        )
+        ?.value || "";
+
+
+    const targets =
+      calculateFuelTargets({
+        age,
+        gender,
+        height,
+        weight,
+        days,
+        fuelGoal
+      });
+
+
+    const calories =
+      document.getElementById(
+        "manaProfileFuelCalories"
+      );
+
+    const protein =
+      document.getElementById(
+        "manaProfileFuelProtein"
+      );
+
+
+    if (!targets) {
+
+      if (calories) {
+        calories.textContent =
+          "Complete personal details";
+      }
+
+      if (protein) {
+        protein.textContent =
+          "—";
+      }
+
+      return;
+    }
+
+
+    if (calories) {
+      calories.textContent =
+        `${targets.calories.toLocaleString()} cal`;
+    }
+
+
+    if (protein) {
+      protein.textContent =
+        `${targets.protein}g`;
+    }
+  }
+
+
+  /* =========================================
+     STYLES
+     ========================================= */
 
   function injectStyles() {
     if (
@@ -78,26 +348,14 @@
         position:fixed;
         inset:0;
         z-index:25000;
-
         display:none;
-
         overflow:auto;
-
         background:#050505;
 
         padding:
-          calc(
-            env(
-              safe-area-inset-top
-            ) + 18px
-          )
+          calc(env(safe-area-inset-top) + 18px)
           18px
-          calc(
-            105px +
-            env(
-              safe-area-inset-bottom
-            )
-          );
+          calc(105px + env(safe-area-inset-bottom));
       }
 
 
@@ -107,36 +365,22 @@
 
 
       .mana-profile-shell{
-        width:min(
-          520px,
-          100%
-        );
-
+        width:min(520px,100%);
         margin:auto;
       }
 
 
       .mana-profile-head{
         display:flex;
-
-        justify-content:
-          space-between;
-
-        align-items:
-          flex-start;
-
+        justify-content:space-between;
+        align-items:flex-start;
         gap:16px;
-
         margin-bottom:18px;
       }
 
 
       .mana-profile-head h1{
-        margin:
-          6px
-          0
-          4px;
-
+        margin:6px 0 4px;
         font-size:32px;
       }
 
@@ -144,60 +388,34 @@
       .mana-profile-close{
         width:44px;
         height:44px;
-
-        flex:
-          0
-          0
-          44px;
-
+        flex:0 0 44px;
         border-radius:50%;
-
-        border:
-          1px solid
-          #333;
-
+        border:1px solid #333;
         background:#111;
-
         color:#fff;
-
         font-size:24px;
       }
 
 
       .mana-profile-card{
         background:#101010;
-
-        border:
-          1px solid
-          #292929;
-
+        border:1px solid #292929;
         border-radius:20px;
-
         padding:16px;
-
-        margin:
-          12px
-          0;
+        margin:12px 0;
       }
 
 
       .mana-profile-card h3{
-        margin:
-          0
-          0
-          12px;
+        margin:0 0 12px;
       }
 
 
-      .mana-profile-training{
+      .mana-profile-training,
+      .mana-profile-fuel{
         border:
           1px solid
-          rgba(
-            243,
-            216,
-            117,
-            .35
-          );
+          rgba(243,216,117,.35);
 
         background:
           linear-gradient(
@@ -208,22 +426,17 @@
       }
 
 
-      .mana-profile-training h3{
+      .mana-profile-training h3,
+      .mana-profile-fuel h3{
         color:#f3d875;
-
         text-transform:uppercase;
-
         letter-spacing:.05em;
       }
 
 
       .mana-profile-grid{
         display:grid;
-
-        grid-template-columns:
-          1fr
-          1fr;
-
+        grid-template-columns:1fr 1fr;
         gap:10px;
       }
 
@@ -235,13 +448,9 @@
 
       .mana-profile-field label{
         display:block;
-
         margin-bottom:6px;
-
         color:#aaa;
-
         font-size:12px;
-
         font-weight:700;
       }
 
@@ -249,84 +458,83 @@
       .mana-profile-field input,
       .mana-profile-field select{
         width:100%;
-
         min-height:50px;
-
         margin:0 !important;
-
-        padding:
-          12px
-          14px;
-
+        padding:12px 14px;
         border-radius:13px;
-
-        border:
-          1px solid
-          #333;
-
+        border:1px solid #333;
         background:#090909;
-
         color:#fff;
-
         font-size:15px;
+      }
+
+
+      .mana-profile-fuel-targets{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:10px;
+        margin-top:4px;
+      }
+
+
+      .mana-profile-fuel-target{
+        padding:14px;
+        border:1px solid #292929;
+        border-radius:15px;
+        background:#090909;
+      }
+
+
+      .mana-profile-fuel-target span{
+        display:block;
+        color:#888;
+        font-size:11px;
+        margin-bottom:5px;
+      }
+
+
+      .mana-profile-fuel-target strong{
+        display:block;
+        color:#f3d875;
+        font-size:20px;
+      }
+
+
+      .mana-profile-fuel-note{
+        margin-top:10px;
+        color:#777;
+        font-size:10px;
+        line-height:1.45;
       }
 
 
       .mana-profile-save{
         width:100%;
-
         min-height:58px;
-
         border:0;
-
         border-radius:16px;
-
         margin-top:8px;
-
         background:#f3d875;
-
         color:#111;
-
         font-size:17px;
-
         font-weight:900;
       }
 
 
       .mana-profile-status{
         min-height:22px;
-
         margin-top:8px;
-
         text-align:center;
-
         color:#f3d875;
-
         font-size:13px;
-      }
-
-
-      @media(max-width:390px){
-
-        /*
-          Keep these paired fields
-          side-by-side on phone.
-        */
-
-        .mana-profile-grid{
-          grid-template-columns:
-            1fr
-            1fr;
-        }
-
       }
 
 
       @media(max-width:330px){
 
-        .mana-profile-grid{
-          grid-template-columns:
-            1fr;
+        .mana-profile-grid,
+        .mana-profile-fuel-targets{
+          grid-template-columns:1fr;
         }
 
       }
@@ -339,6 +547,10 @@
     );
   }
 
+
+  /* =========================================
+     BUILD PROFILE
+     ========================================= */
 
   function ensureProfileScreen() {
     if (
@@ -360,19 +572,14 @@
 
     screen.innerHTML = `
 
-      <div
-        class="mana-profile-shell"
-      >
+      <div class="mana-profile-shell">
 
-        <div
-          class="mana-profile-head"
-        >
+
+        <div class="mana-profile-head">
 
           <div>
 
-            <span
-              class="pill"
-            >
+            <span class="pill">
               MANA PROFILE
             </span>
 
@@ -380,10 +587,8 @@
               Your profile
             </h1>
 
-            <div
-              class="muted"
-            >
-              Your training setup in one place.
+            <div class="muted">
+              Your personal, training and fuel setup.
             </div>
 
           </div>
@@ -402,18 +607,14 @@
 
         <!-- PERSONAL DETAILS -->
 
-        <div
-          class="mana-profile-card"
-        >
+        <div class="mana-profile-card">
 
           <h3>
             Personal details
           </h3>
 
 
-          <div
-            class="mana-profile-field"
-          >
+          <div class="mana-profile-field">
 
             <label>
               Name
@@ -428,13 +629,10 @@
           </div>
 
 
-          <div
-            class="mana-profile-grid"
-          >
+          <div class="mana-profile-grid">
 
-            <div
-              class="mana-profile-field"
-            >
+
+            <div class="mana-profile-field">
 
               <label>
                 Age
@@ -451,9 +649,7 @@
             </div>
 
 
-            <div
-              class="mana-profile-field"
-            >
+            <div class="mana-profile-field">
 
               <label>
                 Gender
@@ -488,9 +684,7 @@
             </div>
 
 
-            <div
-              class="mana-profile-field"
-            >
+            <div class="mana-profile-field">
 
               <label>
                 Height cm
@@ -507,9 +701,7 @@
             </div>
 
 
-            <div
-              class="mana-profile-field"
-            >
+            <div class="mana-profile-field">
 
               <label>
                 Weight kg
@@ -531,7 +723,7 @@
         </div>
 
 
-        <!-- TRAINING SETUP -->
+        <!-- TRAINING -->
 
         <div
           class="
@@ -545,16 +737,13 @@
           </h3>
 
 
-          <div
-            class="mana-profile-grid"
-          >
+          <div class="mana-profile-grid">
 
-            <div
-              class="mana-profile-field"
-            >
+
+            <div class="mana-profile-field">
 
               <label>
-                Goal
+                Training goal
               </label>
 
               <select
@@ -567,10 +756,6 @@
 
                 <option value="Build muscle">
                   Build muscle
-                </option>
-
-                <option value="Weight loss">
-                  Weight loss
                 </option>
 
                 <option value="Get stronger">
@@ -590,9 +775,7 @@
             </div>
 
 
-            <div
-              class="mana-profile-field"
-            >
+            <div class="mana-profile-field">
 
               <label>
                 Training days
@@ -627,9 +810,7 @@
             </div>
 
 
-            <div
-              class="mana-profile-field"
-            >
+            <div class="mana-profile-field">
 
               <label>
                 Experience
@@ -664,9 +845,7 @@
             </div>
 
 
-            <div
-              class="mana-profile-field"
-            >
+            <div class="mana-profile-field">
 
               <label>
                 Equipment
@@ -705,6 +884,90 @@
         </div>
 
 
+        <!-- FUEL -->
+
+        <div
+          class="
+            mana-profile-card
+            mana-profile-fuel
+          "
+        >
+
+          <h3>
+            Fuel goals
+          </h3>
+
+
+          <div class="mana-profile-field">
+
+            <label>
+              Food goal
+            </label>
+
+            <select
+              id="manaProfileFuelGoal"
+            >
+
+              <option value="Maintenance">
+                Maintenance
+              </option>
+
+              <option value="Weight loss">
+                Weight loss
+              </option>
+
+              <option value="Build muscle">
+                Build muscle
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <div class="mana-profile-fuel-targets">
+
+            <div class="mana-profile-fuel-target">
+
+              <span>
+                Daily calories
+              </span>
+
+              <strong
+                id="manaProfileFuelCalories"
+              >
+                —
+              </strong>
+
+            </div>
+
+
+            <div class="mana-profile-fuel-target">
+
+              <span>
+                Daily protein
+              </span>
+
+              <strong
+                id="manaProfileFuelProtein"
+              >
+                —
+              </strong>
+
+            </div>
+
+          </div>
+
+
+          <div class="mana-profile-fuel-note">
+            These are practical starting estimates
+            based on your profile and can be
+            adjusted in Fuel.
+          </div>
+
+        </div>
+
+
         <button
           type="button"
           class="mana-profile-save"
@@ -718,6 +981,7 @@
           class="mana-profile-status"
           id="manaProfileStatus"
         ></div>
+
 
       </div>
 
@@ -743,6 +1007,34 @@
       )
       .onclick =
         handleSave;
+
+
+    [
+      "manaProfileAge",
+      "manaProfileGender",
+      "manaProfileHeight",
+      "manaProfileWeight",
+      "manaProfileDays",
+      "manaProfileFuelGoal"
+    ].forEach(
+      id => {
+
+        document
+          .getElementById(id)
+          ?.addEventListener(
+            "change",
+            updateFuelPreview
+          );
+
+        document
+          .getElementById(id)
+          ?.addEventListener(
+            "input",
+            updateFuelPreview
+          );
+
+      }
+    );
   }
 
 
@@ -751,76 +1043,68 @@
       loadProfile();
 
 
-    document
-      .getElementById(
-        "manaProfileName"
-      )
-      .value =
-        profile.name || "";
+    document.getElementById(
+      "manaProfileName"
+    ).value =
+      profile.name || "";
 
 
-    document
-      .getElementById(
-        "manaProfileAge"
-      )
-      .value =
-        profile.age || "";
+    document.getElementById(
+      "manaProfileAge"
+    ).value =
+      profile.age || "";
 
 
-    document
-      .getElementById(
-        "manaProfileGender"
-      )
-      .value =
-        profile.gender || "";
+    document.getElementById(
+      "manaProfileGender"
+    ).value =
+      profile.gender || "";
 
 
-    document
-      .getElementById(
-        "manaProfileHeight"
-      )
-      .value =
-        profile.height || "";
+    document.getElementById(
+      "manaProfileHeight"
+    ).value =
+      profile.height || "";
 
 
-    document
-      .getElementById(
-        "manaProfileWeight"
-      )
-      .value =
-        profile.weight || "";
+    document.getElementById(
+      "manaProfileWeight"
+    ).value =
+      profile.weight || "";
 
 
-    document
-      .getElementById(
-        "manaProfileGoal"
-      )
-      .value =
-        profile.goal || "";
+    document.getElementById(
+      "manaProfileGoal"
+    ).value =
+      profile.goal || "";
 
 
-    document
-      .getElementById(
-        "manaProfileDays"
-      )
-      .value =
-        profile.days || "";
+    document.getElementById(
+      "manaProfileDays"
+    ).value =
+      profile.days || "";
 
 
-    document
-      .getElementById(
-        "manaProfileExperience"
-      )
-      .value =
-        profile.experience || "";
+    document.getElementById(
+      "manaProfileExperience"
+    ).value =
+      profile.experience || "";
 
 
-    document
-      .getElementById(
-        "manaProfileEquipment"
-      )
-      .value =
-        profile.equipment || "";
+    document.getElementById(
+      "manaProfileEquipment"
+    ).value =
+      profile.equipment || "";
+
+
+    document.getElementById(
+      "manaProfileFuelGoal"
+    ).value =
+      profile.fuelGoal ||
+      "Maintenance";
+
+
+    updateFuelPreview();
   }
 
 
@@ -847,8 +1131,7 @@
             .getElementById(
               "manaProfileAge"
             )
-            .value ||
-            0
+            .value || 0
         ),
 
       gender:
@@ -864,8 +1147,7 @@
             .getElementById(
               "manaProfileHeight"
             )
-            .value ||
-            0
+            .value || 0
         ),
 
       weight:
@@ -874,8 +1156,7 @@
             .getElementById(
               "manaProfileWeight"
             )
-            .value ||
-            0
+            .value || 0
         ),
 
       goal:
@@ -906,6 +1187,13 @@
           )
           .value,
 
+      fuelGoal:
+        document
+          .getElementById(
+            "manaProfileFuelGoal"
+          )
+          .value,
+
       updatedAt:
         new Date()
           .toISOString()
@@ -913,9 +1201,20 @@
     };
 
 
-    saveProfile(
-      profile
-    );
+    saveProfile(profile);
+
+
+    const targets =
+      calculateFuelTargets(
+        profile
+      );
+
+
+    if (targets) {
+      saveFuelTargets(
+        targets
+      );
+    }
 
 
     const status =
@@ -927,7 +1226,7 @@
     if (status) {
 
       status.textContent =
-        "Profile saved ✓";
+        "Profile and Fuel targets saved ✓";
 
 
       setTimeout(
@@ -937,7 +1236,7 @@
             "";
 
         },
-        1500
+        1600
       );
     }
 
@@ -947,6 +1246,22 @@
         "mana:profile-synced"
       )
     );
+
+
+    if (
+      typeof
+        window
+          .renderManaStrengthFuel ===
+      "function"
+    ) {
+
+      setTimeout(
+        () =>
+          window
+            .renderManaStrengthFuel(),
+        80
+      );
+    }
   }
 
 
@@ -955,7 +1270,6 @@
       document.getElementById(
         "manaV83ProgramShell"
       );
-
 
     const title =
       document.getElementById(
@@ -1020,22 +1334,16 @@
 
     if (
       returnTo ===
-      "strength"
+      "strength" &&
+      typeof
+        window
+          .openManaProgram ===
+      "function"
     ) {
 
-      if (
-        typeof
-          window
-            .openManaProgram ===
-        "function"
-      ) {
-
-        window
-          .openManaProgram(
-            "strength"
-          );
-
-      }
+      window.openManaProgram(
+        "strength"
+      );
     }
 
 
@@ -1047,56 +1355,46 @@
   function findProfileTab() {
     const candidates =
       [
-        ...document
-          .querySelectorAll(
-            "button, [role='button'], nav *"
-          )
+        ...document.querySelectorAll(
+          "button, [role='button'], nav *"
+        )
       ];
 
 
     return candidates.find(
-      el => {
-
-        const text =
-          (
-            el.textContent ||
-            ""
-          )
-            .trim()
-            .toLowerCase();
-
-
-        return (
-          text ===
-          "profile"
-        );
-
-      }
+      el =>
+        (
+          el.textContent ||
+          ""
+        )
+          .trim()
+          .toLowerCase() ===
+        "profile"
     );
   }
 
 
   function wireExistingProfileTab() {
-    const profileTab =
+    const tab =
       findProfileTab();
 
 
-    if (!profileTab) return;
-
-
     if (
-      profileTab.dataset
+      !tab ||
+      tab.dataset
         .manaProfileWired ===
       "1"
-    ) return;
+    ) {
+      return;
+    }
 
 
-    profileTab.dataset
+    tab.dataset
       .manaProfileWired =
-        "1";
+      "1";
 
 
-    profileTab.addEventListener(
+    tab.addEventListener(
       "click",
       event => {
 
