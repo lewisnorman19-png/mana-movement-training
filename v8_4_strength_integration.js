@@ -1,6 +1,7 @@
 /* =========================================
    MANA MOVEMENT TRAINING v8.4
    STRENGTH SHELL INTEGRATION
+   DAILY WORKOUT OVERVIEW
    ========================================= */
 
 (() => {
@@ -24,6 +25,7 @@
   const STYLE_ID =
     "mana-v84-strength-style";
 
+
   function safeJson(
     raw,
     fallback
@@ -35,6 +37,7 @@
     }
   }
 
+
   function loadProgram() {
     return safeJson(
       localStorage.getItem(
@@ -43,6 +46,7 @@
       null
     );
   }
+
 
   function loadLogs() {
     return safeJson(
@@ -53,6 +57,7 @@
     );
   }
 
+
   function loadProfile() {
     return safeJson(
       localStorage.getItem(
@@ -61,6 +66,7 @@
       {}
     );
   }
+
 
   function injectStyles() {
     if (
@@ -78,130 +84,366 @@
       STYLE_ID;
 
     style.textContent = `
+
       .mana-v84-grid{
         display:grid;
+
         grid-template-columns:
           1fr 1fr;
+
         gap:10px;
       }
 
+
       .mana-v84-card{
-        border:1px solid #292929;
+        border:
+          1px solid
+          #292929;
+
         background:#0d0d0d;
+
         border-radius:18px;
+
         padding:15px;
       }
 
+
       .mana-v84-card.wide{
-        grid-column:1 / -1;
+        grid-column:
+          1 / -1;
       }
+
 
       .mana-v84-label{
         color:#888;
+
         font-size:11px;
-        text-transform:uppercase;
-        letter-spacing:.05em;
+
+        text-transform:
+          uppercase;
+
+        letter-spacing:.07em;
+
         margin-bottom:5px;
       }
 
+
       .mana-v84-value{
         color:#f3d875;
+
         font-weight:900;
+
         font-size:21px;
+
+        line-height:1.25;
       }
+
 
       .mana-v84-sub{
         color:#999;
+
         font-size:12px;
+
         line-height:1.5;
+
         margin-top:5px;
       }
 
+
       .mana-v84-button{
         width:100%;
-        min-height:54px;
-        margin-top:14px;
+
+        min-height:58px;
+
+        margin-top:16px;
+
         border:0;
+
         border-radius:16px;
+
         background:#f3d875;
+
         color:#111;
-        font-size:15px;
+
+        font-size:16px;
+
         font-weight:900;
       }
 
-      .mana-v84-secondary{
-        width:100%;
-        min-height:48px;
-        margin-top:10px;
-        border-radius:15px;
-        border:1px solid #353535;
-        background:#111;
+
+      /* ==========================
+         TODAY'S WORKOUT
+         ========================== */
+
+      .mana-v84-today{
+        border:
+          1px solid
+          #4a3d12;
+
+        background:
+          linear-gradient(
+            145deg,
+            #17150d,
+            #0b0b0b
+          );
+
+        border-radius:22px;
+
+        padding:18px;
+
+        margin-bottom:14px;
+      }
+
+
+      .mana-v84-today-kicker{
         color:#f3d875;
+
+        font-size:11px;
+
+        font-weight:900;
+
+        letter-spacing:.13em;
+
+        text-transform:uppercase;
+      }
+
+
+      .mana-v84-today h2{
+        margin:
+          7px
+          0
+          4px;
+
+        font-size:26px;
+      }
+
+
+      .mana-v84-today-meta{
+        color:#999;
+
+        font-size:12px;
+
+        line-height:1.5;
+      }
+
+
+      .mana-v84-exercise-list{
+        margin-top:18px;
+
+        border-top:
+          1px solid
+          #2d2a1c;
+      }
+
+
+      .mana-v84-exercise-row{
+        display:grid;
+
+        grid-template-columns:
+          36px
+          1fr
+          auto;
+
+        gap:10px;
+
+        align-items:center;
+
+        padding:
+          13px
+          0;
+
+        border-bottom:
+          1px solid
+          #242424;
+      }
+
+
+      .mana-v84-exercise-number{
+        width:30px;
+        height:30px;
+
+        display:grid;
+
+        place-items:center;
+
+        border-radius:50%;
+
+        background:#111;
+
+        border:
+          1px solid
+          #3b3420;
+
+        color:#f3d875;
+
+        font-size:12px;
+
         font-weight:900;
       }
+
+
+      .mana-v84-exercise-name{
+        color:#eee;
+
+        font-size:14px;
+
+        font-weight:800;
+      }
+
+
+      .mana-v84-exercise-target{
+        color:#f3d875;
+
+        font-size:12px;
+
+        font-weight:800;
+
+        text-align:right;
+
+        white-space:nowrap;
+      }
+
+
+      .mana-v84-week-progress{
+        height:8px;
+
+        margin-top:10px;
+
+        border-radius:999px;
+
+        overflow:hidden;
+
+        background:#1a1a1a;
+      }
+
+
+      .mana-v84-week-fill{
+        height:100%;
+
+        border-radius:999px;
+
+        background:#f3d875;
+      }
+
+
+      /* ==========================
+         PROGRAM
+         ========================== */
 
       .mana-v84-session{
         padding:14px 0;
-        border-top:1px solid #292929;
+
+        border-top:
+          1px solid
+          #292929;
       }
+
 
       .mana-v84-session:first-child{
         border-top:0;
       }
 
+
       .mana-v84-session strong{
         color:#eee;
       }
 
+
       .mana-v84-exercise{
         color:#999;
+
         font-size:12px;
+
         line-height:1.55;
+
         margin-top:6px;
       }
 
+
+      /* ==========================
+         PROGRESS
+         ========================== */
+
       .mana-v84-history{
         display:flex;
-        justify-content:space-between;
+
+        justify-content:
+          space-between;
+
         gap:12px;
+
         padding:11px 0;
-        border-top:1px solid #292929;
+
+        border-top:
+          1px solid
+          #292929;
       }
+
 
       .mana-v84-history:first-child{
         border-top:0;
       }
 
+
       .mana-v84-history span{
         color:#888;
+
         font-size:12px;
       }
 
+
+      /* ==========================
+         LEARN
+         ========================== */
+
       .mana-v84-learn h3{
         color:#f3d875;
+
         margin-bottom:6px;
       }
 
+
       .mana-v84-learn p{
         color:#aaa;
+
         line-height:1.6;
       }
 
-      @media(max-width:390px){
+
+      @media(
+        max-width:390px
+      ){
         .mana-v84-grid{
-          grid-template-columns:1fr;
+          grid-template-columns:
+            1fr 1fr;
         }
 
-        .mana-v84-card.wide{
-          grid-column:auto;
+
+        .mana-v84-exercise-row{
+          grid-template-columns:
+            32px
+            1fr;
+
+          gap:8px;
+        }
+
+
+        .mana-v84-exercise-target{
+          grid-column:2;
+
+          text-align:left;
+
+          margin-top:-4px;
         }
       }
+
     `;
 
     document.head.appendChild(
       style
     );
   }
+
 
   function startOfWeek() {
     const now =
@@ -233,26 +475,30 @@
     return start;
   }
 
-  function weekLogs(logs) {
+
+  function weekLogs(
+    logs
+  ) {
     const start =
-      startOfWeek().getTime();
+      startOfWeek()
+        .getTime();
 
     return logs.filter(
-      log => {
-        const time =
-          new Date(
-            log.date || 0
-          ).getTime();
-
-        return (
-          time >= start
-        );
-      }
+      log =>
+        new Date(
+          log.date || 0
+        ).getTime() >=
+        start
     );
   }
 
-  function formatDate(value) {
-    if (!value) return "—";
+
+  function formatDate(
+    value
+  ) {
+    if (!value) {
+      return "—";
+    }
 
     const date =
       new Date(value);
@@ -261,7 +507,9 @@
       Number.isNaN(
         date.getTime()
       )
-    ) return "—";
+    ) {
+      return "—";
+    }
 
     return date
       .toLocaleDateString(
@@ -273,21 +521,26 @@
       );
   }
 
+
   function nextIndex(
     program,
     completed
   ) {
     const total =
-      program?.sessions
+      program
+        ?.sessions
         ?.length || 0;
 
-    if (!total) return 0;
+    if (!total) {
+      return 0;
+    }
 
     return (
       completed.length %
       total
     );
   }
+
 
   function shellIsStrength() {
     const shell =
@@ -300,10 +553,12 @@
         "manaV83Title"
       );
 
-    return !!(
+    return Boolean(
       shell
         ?.classList
-        .contains("open") &&
+        .contains(
+          "open"
+        ) &&
       title
         ?.textContent
         .trim()
@@ -311,6 +566,7 @@
         "MANA STRENGTH"
     );
   }
+
 
   function activeTab() {
     return (
@@ -325,46 +581,62 @@
     );
   }
 
-  function openOldStrength() {
-    const client =
+
+  function profileSummary() {
+    const p =
+      loadProfile();
+
+    return [
+      p.goal,
+      p.days
+        ? `${p.days} days/week`
+        : "",
+      p.experience,
+      p.equipment
+    ]
+      .filter(Boolean)
+      .join(" • ");
+  }
+
+
+  function openWorkout(
+    index
+  ) {
+    const shell =
       document.getElementById(
-        "clientView"
-      );
-
-    if (!client) return;
-
-    const targets =
-      [
-        ...client
-          .querySelectorAll(
-            "button, .day, .card"
-          )
-      ];
-
-    const target =
-      targets.find(
-        el =>
-          (el.textContent || "")
-            .toUpperCase()
-            .includes(
-              "MANA STRENGTH"
-            )
-      );
-
-    if (!target) return;
-
-    document
-      .getElementById(
         SHELL_ID
-      )
+      );
+
+    shell
       ?.classList
-      .remove("open");
+      .remove(
+        "open"
+      );
 
     document.body.style.overflow =
       "";
 
-    target.click();
+
+    if (
+      typeof
+        window
+          .openManaStrengthWorkout ===
+      "function"
+    ) {
+      window
+        .openManaStrengthWorkout(
+          index
+        );
+
+      return;
+    }
+
+
+    console.error(
+      "Mana Strength workout logger unavailable."
+    );
   }
+
 
   function openFuel() {
     const shell =
@@ -374,10 +646,13 @@
 
     shell
       ?.classList
-      .remove("open");
+      .remove(
+        "open"
+      );
 
     document.body.style.overflow =
       "";
+
 
     const buttons =
       [
@@ -386,6 +661,7 @@
             "[data-page], button"
           )
       ];
+
 
     const fuel =
       buttons.find(
@@ -400,26 +676,14 @@
           "fuel"
       );
 
-    if (fuel) {
-      fuel.click();
-    }
+
+    fuel?.click();
   }
 
-  function profileSummary() {
-    const p =
-      loadProfile();
 
-    return [
-      p.goal,
-      p.trainingDays
-        ? `${p.trainingDays} days/week`
-        : "",
-      p.experience,
-      p.equipment
-    ]
-      .filter(Boolean)
-      .join(" • ");
-  }
+  /* =========================================
+     OVERVIEW
+     ========================================= */
 
   function renderOverview(
     holder
@@ -430,45 +694,45 @@
     const logs =
       loadLogs();
 
+    const profile =
+      loadProfile();
+
+
     if (
-      !program?.sessions
+      !program
+        ?.sessions
         ?.length
     ) {
       holder.innerHTML = `
-        <div class="mana-v83-card">
+
+        <div
+          class="mana-v83-card"
+        >
+
           <h2>
-            Your Strength Program
+            Build your program
           </h2>
 
           <p>
-            Your profile is ready,
-            but your strength program
-            needs to be generated.
+            Complete your Profile and
+            Mana Strength will generate
+            your personalised training
+            plan.
           </p>
 
-          <button
-            class="mana-v84-button"
-            id="manaV84OpenStrength"
-          >
-            Build / open program
-          </button>
         </div>
-      `;
 
-      document
-        .getElementById(
-          "manaV84OpenStrength"
-        )
-        ?.addEventListener(
-          "click",
-          openOldStrength
-        );
+      `;
 
       return;
     }
 
+
     const completed =
-      weekLogs(logs);
+      weekLogs(
+        logs
+      );
+
 
     const index =
       nextIndex(
@@ -476,92 +740,274 @@
         completed
       );
 
-    const session =
-      program.sessions[index];
 
-    const last =
-      logs.length
-        ? logs[
-            logs.length - 1
-          ]
-        : null;
+    const session =
+      program.sessions[
+        index
+      ];
+
+
+    const exercises =
+      Array.isArray(
+        session?.[1]
+      )
+        ? session[1]
+        : [];
+
+
+    const exerciseRows =
+      exercises
+        .map(
+          (
+            exercise,
+            exerciseIndex
+          ) => {
+
+            const name =
+              Array.isArray(
+                exercise
+              )
+                ? exercise[0]
+                : String(
+                    exercise
+                  );
+
+
+            const target =
+              Array.isArray(
+                exercise
+              )
+                ? exercise[1]
+                : "";
+
+
+            return `
+
+              <div
+                class="mana-v84-exercise-row"
+              >
+
+                <div
+                  class="mana-v84-exercise-number"
+                >
+                  ${
+                    exerciseIndex +
+                    1
+                  }
+                </div>
+
+
+                <div
+                  class="mana-v84-exercise-name"
+                >
+                  ${name}
+                </div>
+
+
+                <div
+                  class="mana-v84-exercise-target"
+                >
+                  ${target || ""}
+                </div>
+
+              </div>
+
+            `;
+          }
+        )
+        .join("");
+
+
+    const weeklyTarget =
+      program.sessions.length;
+
+
+    const weekPercent =
+      weeklyTarget
+        ? Math.min(
+            100,
+            Math.round(
+              completed.length /
+              weeklyTarget *
+              100
+            )
+          )
+        : 0;
+
 
     holder.innerHTML = `
-      <div class="mana-v84-grid">
 
-        <div class="
-          mana-v84-card
-          wide
-        ">
-          <div class="mana-v84-label">
-            Next workout
-          </div>
+      <div
+        class="mana-v84-today"
+      >
 
-          <div class="mana-v84-value">
-            Day ${index + 1}
-            •
-            ${
-              session?.[0] ||
-              "Workout"
-            }
-          </div>
-
-          <div class="mana-v84-sub">
-            ${
-              profileSummary() ||
-              "Personalised training"
-            }
-          </div>
-
-          <button
-            class="mana-v84-button"
-            id="manaV84Start"
-          >
-            Start workout
-          </button>
+        <div
+          class="mana-v84-today-kicker"
+        >
+          TODAY'S WORKOUT
         </div>
 
-        <div class="mana-v84-card">
-          <div class="mana-v84-label">
+
+        <h2>
+          Day ${index + 1}
+          •
+          ${
+            session?.[0] ||
+            "Workout"
+          }
+        </h2>
+
+
+        <div
+          class="mana-v84-today-meta"
+        >
+          ${
+            profileSummary() ||
+            "Personalised training"
+          }
+        </div>
+
+
+        <div
+          class="mana-v84-exercise-list"
+        >
+          ${exerciseRows}
+        </div>
+
+
+        <button
+          type="button"
+          class="mana-v84-button"
+          id="manaV84Start"
+        >
+          START WORKOUT →
+        </button>
+
+      </div>
+
+
+      <div
+        class="mana-v84-grid"
+      >
+
+        <div
+          class="mana-v84-card"
+        >
+
+          <div
+            class="mana-v84-label"
+          >
             This week
           </div>
 
-          <div class="mana-v84-value">
+          <div
+            class="mana-v84-value"
+          >
             ${completed.length}
             /
-            ${program.sessions.length}
+            ${weeklyTarget}
           </div>
 
-          <div class="mana-v84-sub">
+          <div
+            class="mana-v84-sub"
+          >
             Workouts completed
           </div>
+
+          <div
+            class="mana-v84-week-progress"
+          >
+            <div
+              class="mana-v84-week-fill"
+              style="
+                width:
+                ${weekPercent}%
+              "
+            ></div>
+          </div>
+
         </div>
 
-        <div class="mana-v84-card">
-          <div class="mana-v84-label">
-            Last workout
+
+        <div
+          class="mana-v84-card"
+        >
+
+          <div
+            class="mana-v84-label"
+          >
+            Goal
           </div>
 
-          <div class="mana-v84-value">
+          <div
+            class="mana-v84-value"
+          >
             ${
-              last
-                ? formatDate(
-                    last.date
-                  )
-                : "—"
+              profile.goal ||
+              program.goal ||
+              "Strength"
             }
           </div>
 
-          <div class="mana-v84-sub">
+        </div>
+
+
+        <div
+          class="mana-v84-card"
+        >
+
+          <div
+            class="mana-v84-label"
+          >
+            Training
+          </div>
+
+          <div
+            class="mana-v84-value"
+          >
             ${
-              last?.sessionName ||
-              "No workout logged"
+              profile.days ||
+              program.days ||
+              "—"
+            }
+            days
+          </div>
+
+          <div
+            class="mana-v84-sub"
+          >
+            Per week
+          </div>
+
+        </div>
+
+
+        <div
+          class="mana-v84-card"
+        >
+
+          <div
+            class="mana-v84-label"
+          >
+            Equipment
+          </div>
+
+          <div
+            class="mana-v84-value"
+          >
+            ${
+              profile.equipment ||
+              program.equipment ||
+              "—"
             }
           </div>
+
         </div>
 
       </div>
+
     `;
+
 
     document
       .getElementById(
@@ -569,9 +1015,18 @@
       )
       ?.addEventListener(
         "click",
-        openOldStrength
+        () => {
+          openWorkout(
+            index
+          );
+        }
       );
   }
+
+
+  /* =========================================
+     FULL PROGRAM
+     ========================================= */
 
   function renderProgram(
     holder
@@ -579,42 +1034,35 @@
     const program =
       loadProgram();
 
+
     if (
-      !program?.sessions
+      !program
+        ?.sessions
         ?.length
     ) {
       holder.innerHTML = `
-        <div class="mana-v83-card">
+
+        <div
+          class="mana-v83-card"
+        >
+
           <h2>
             Your Program
           </h2>
 
           <p>
-            Open Mana Strength to
-            generate your personalised
-            training sessions.
+            Your personalised program
+            will appear here once your
+            Profile is complete.
           </p>
 
-          <button
-            class="mana-v84-button"
-            id="manaV84ProgramOpen"
-          >
-            Open Mana Strength
-          </button>
         </div>
-      `;
 
-      document
-        .getElementById(
-          "manaV84ProgramOpen"
-        )
-        ?.addEventListener(
-          "click",
-          openOldStrength
-        );
+      `;
 
       return;
     }
+
 
     const sessions =
       program.sessions
@@ -622,37 +1070,72 @@
           (
             session,
             index
-          ) => `
-            <div class="mana-v84-session">
-              <strong>
-                Day ${index + 1}
-                •
-                ${session[0]}
-              </strong>
+          ) => {
 
-              <div class="mana-v84-exercise">
-                ${
-                  Array.isArray(
-                    session[1]
-                  )
-                    ? session[1]
-                        .map(
-                          ex =>
-                            Array.isArray(ex)
-                              ? ex[0]
-                              : String(ex)
-                        )
-                        .join(" • ")
-                    : ""
-                }
+            const exerciseList =
+              Array.isArray(
+                session[1]
+              )
+                ? session[1]
+                    .map(
+                      exercise => {
+
+                        if (
+                          Array.isArray(
+                            exercise
+                          )
+                        ) {
+                          return (
+                            exercise[0] +
+                            " — " +
+                            (
+                              exercise[1] ||
+                              ""
+                            )
+                          );
+                        }
+
+                        return String(
+                          exercise
+                        );
+                      }
+                    )
+                    .join("<br>")
+                : "";
+
+
+            return `
+
+              <div
+                class="mana-v84-session"
+              >
+
+                <strong>
+                  Day ${index + 1}
+                  •
+                  ${session[0]}
+                </strong>
+
+                <div
+                  class="mana-v84-exercise"
+                >
+                  ${exerciseList}
+                </div>
+
               </div>
-            </div>
-          `
+
+            `;
+          }
         )
         .join("");
 
+
     holder.innerHTML = `
-      <div class="mana-v83-card">
+
+      <div
+        class="mana-v83-card"
+      >
+
         <h2>
           Your Program
         </h2>
@@ -666,24 +1149,15 @@
 
         ${sessions}
 
-        <button
-          class="mana-v84-button"
-          id="manaV84ProgramOpen"
-        >
-          Open workout logger
-        </button>
       </div>
-    `;
 
-    document
-      .getElementById(
-        "manaV84ProgramOpen"
-      )
-      ?.addEventListener(
-        "click",
-        openOldStrength
-      );
+    `;
   }
+
+
+  /* =========================================
+     FUEL
+     ========================================= */
 
   function renderFuel(
     holder
@@ -691,60 +1165,91 @@
     const p =
       loadProfile();
 
+
     holder.innerHTML = `
-      <div class="mana-v83-card">
+
+      <div
+        class="mana-v83-card"
+      >
+
         <h2>
           Fuel for Strength
         </h2>
 
         <p>
           Nutrition should support
-          training, recovery and your
+          your training, recovery and
           current goal.
         </p>
 
-        <div class="mana-v84-grid">
 
-          <div class="mana-v84-card">
-            <div class="mana-v84-label">
+        <div
+          class="mana-v84-grid"
+        >
+
+          <div
+            class="mana-v84-card"
+          >
+
+            <div
+              class="mana-v84-label"
+            >
               Goal
             </div>
 
-            <div class="mana-v84-value">
-              ${p.goal || "Set in Profile"}
+            <div
+              class="mana-v84-value"
+            >
+              ${
+                p.goal ||
+                "Set in Profile"
+              }
             </div>
+
           </div>
 
-          <div class="mana-v84-card">
-            <div class="mana-v84-label">
+
+          <div
+            class="mana-v84-card"
+          >
+
+            <div
+              class="mana-v84-label"
+            >
               Body weight
             </div>
 
-            <div class="mana-v84-value">
+            <div
+              class="mana-v84-value"
+            >
               ${
-                p.weightKg ||
                 p.weight ||
                 "—"
               }
               ${
-                p.weightKg ||
                 p.weight
                   ? " kg"
                   : ""
               }
             </div>
+
           </div>
 
         </div>
 
+
         <button
+          type="button"
           class="mana-v84-button"
           id="manaV84FuelOpen"
         >
-          Open Fuel
+          OPEN FUEL →
         </button>
+
       </div>
+
     `;
+
 
     document
       .getElementById(
@@ -756,14 +1261,23 @@
       );
   }
 
+
+  /* =========================================
+     PROGRESS
+     ========================================= */
+
   function renderProgress(
     holder
   ) {
     const logs =
       loadLogs();
 
+
     const completed =
-      weekLogs(logs);
+      weekLogs(
+        logs
+      );
+
 
     const totalVolume =
       logs.reduce(
@@ -773,10 +1287,12 @@
         ) =>
           total +
           Number(
-            log.volume || 0
+            log.totalVolume ||
+            0
           ),
         0
       );
+
 
     const history =
       logs.length
@@ -785,7 +1301,11 @@
             .reverse()
             .map(
               log => `
-                <div class="mana-v84-history">
+
+                <div
+                  class="mana-v84-history"
+                >
+
                   <strong>
                     ${
                       log.sessionName ||
@@ -800,98 +1320,157 @@
                       )
                     }
                   </span>
+
                 </div>
+
               `
             )
             .join("")
         : `
-          <div class="mana-v84-sub">
+
+          <div
+            class="mana-v84-sub"
+          >
             No completed workouts yet.
           </div>
+
         `;
 
-    holder.innerHTML = `
-      <div class="mana-v84-grid">
 
-        <div class="mana-v84-card">
-          <div class="mana-v84-label">
+    holder.innerHTML = `
+
+      <div
+        class="mana-v84-grid"
+      >
+
+        <div
+          class="mana-v84-card"
+        >
+
+          <div
+            class="mana-v84-label"
+          >
             This week
           </div>
 
-          <div class="mana-v84-value">
+          <div
+            class="mana-v84-value"
+          >
             ${completed.length}
           </div>
 
-          <div class="mana-v84-sub">
+          <div
+            class="mana-v84-sub"
+          >
             Workouts completed
           </div>
+
         </div>
 
-        <div class="mana-v84-card">
-          <div class="mana-v84-label">
+
+        <div
+          class="mana-v84-card"
+        >
+
+          <div
+            class="mana-v84-label"
+          >
             Total workouts
           </div>
 
-          <div class="mana-v84-value">
+          <div
+            class="mana-v84-value"
+          >
             ${logs.length}
           </div>
+
         </div>
 
-        <div class="
-          mana-v84-card
-          wide
-        ">
-          <div class="mana-v84-label">
-            Logged volume
+
+        <div
+          class="
+            mana-v84-card
+            wide
+          "
+        >
+
+          <div
+            class="mana-v84-label"
+          >
+            Total volume
           </div>
 
-          <div class="mana-v84-value">
+          <div
+            class="mana-v84-value"
+          >
             ${
               totalVolume
                 ? Math.round(
                     totalVolume
-                  ).toLocaleString()
+                  )
+                    .toLocaleString() +
+                  " kg"
                 : "—"
             }
           </div>
+
         </div>
 
-        <div class="
-          mana-v84-card
-          wide
-        ">
-          <div class="mana-v84-label">
+
+        <div
+          class="
+            mana-v84-card
+            wide
+          "
+        >
+
+          <div
+            class="mana-v84-label"
+          >
             Recent workouts
           </div>
 
           ${history}
+
         </div>
 
       </div>
+
     `;
   }
+
+
+  /* =========================================
+     LEARN
+     ========================================= */
 
   function renderLearn(
     holder
   ) {
     holder.innerHTML = `
-      <div class="
-        mana-v83-card
-        mana-v84-learn
-      ">
+
+      <div
+        class="
+          mana-v83-card
+          mana-v84-learn
+        "
+      >
+
         <h2>
           Strength Principles
         </h2>
+
 
         <h3>
           Progressive overload
         </h3>
 
         <p>
-          Aim to gradually improve
-          load, repetitions, control
-          or training quality over time.
+          Gradually improve load,
+          repetitions, control or
+          training quality over time.
         </p>
+
 
         <h3>
           Technique first
@@ -902,15 +1481,17 @@
           before chasing heavier weight.
         </p>
 
+
         <h3>
           Recovery matters
         </h3>
 
         <p>
-          Strength is built through the
-          combination of training,
-          nutrition, sleep and recovery.
+          Strength and muscle are built
+          through training, nutrition,
+          sleep and recovery.
         </p>
+
 
         <h3>
           Consistency wins
@@ -921,14 +1502,22 @@
           consistently beats occasional
           perfect workouts.
         </p>
+
       </div>
+
     `;
   }
+
+
+  /* =========================================
+     RENDER ACTIVE TAB
+     ========================================= */
 
   function renderStrengthTab() {
     if (
       !shellIsStrength()
     ) return;
+
 
     const holder =
       document.getElementById(
@@ -937,47 +1526,62 @@
 
     if (!holder) return;
 
+
     const tab =
       activeTab();
 
+
     if (
-      tab === "overview"
+      tab ===
+      "overview"
     ) {
       renderOverview(
         holder
       );
+
       return;
     }
 
+
     if (
-      tab === "program"
+      tab ===
+      "program"
     ) {
       renderProgram(
         holder
       );
+
       return;
     }
 
+
     if (
-      tab === "fuel"
+      tab ===
+      "fuel"
     ) {
       renderFuel(
         holder
       );
+
       return;
     }
 
+
     if (
-      tab === "progress"
+      tab ===
+      "progress"
     ) {
       renderProgress(
         holder
       );
+
       return;
     }
 
+
     if (
-      tab === "learn"
+      tab ===
+      "learn"
     ) {
       renderLearn(
         holder
@@ -985,37 +1589,56 @@
     }
   }
 
+
+  /* =========================================
+     WATCHERS
+     ========================================= */
+
   function wire() {
-    document
-      .addEventListener(
-        "click",
-        event => {
-          if (
-            event.target.closest(
-              "#manaV80Strength"
-            )
-          ) {
-            setTimeout(
-              renderStrengthTab,
-              80
-            );
+    document.addEventListener(
+      "click",
+      event => {
 
-            return;
-          }
+        if (
+          event.target.closest(
+            "#manaV80Strength"
+          )
+        ) {
+          setTimeout(
+            renderStrengthTab,
+            80
+          );
 
-          if (
-            event.target.closest(
-              "#manaV83Tabs " +
-              "[data-v83-tab]"
-            )
-          ) {
-            setTimeout(
-              renderStrengthTab,
-              20
-            );
-          }
+          return;
         }
-      );
+
+
+        if (
+          event.target.closest(
+            "#manaV83Tabs " +
+            "[data-v83-tab]"
+          )
+        ) {
+          setTimeout(
+            renderStrengthTab,
+            20
+          );
+        }
+
+      }
+    );
+
+
+    window.addEventListener(
+      "mana:program-tab-change",
+      () => {
+        setTimeout(
+          renderStrengthTab,
+          20
+        );
+      }
+    );
+
 
     window.addEventListener(
       "mana:strength-synced",
@@ -1027,9 +1650,22 @@
       }
     );
 
+
+    window.addEventListener(
+      "mana:profile-synced",
+      () => {
+        setTimeout(
+          renderStrengthTab,
+          100
+        );
+      }
+    );
+
+
     window.addEventListener(
       "focus",
       () => {
+
         if (
           shellIsStrength()
         ) {
@@ -1038,87 +1674,90 @@
             100
           );
         }
+
       }
     );
   }
-function watchStrengthShell() {
-  const shell =
-    document.getElementById(
-      SHELL_ID
-    );
 
-  const title =
-    document.getElementById(
-      "manaV83Title"
-    );
 
-  const tabs =
-    document.getElementById(
-      "manaV83Tabs"
-    );
-
-  if (!shell) return;
-
-  const refresh = () => {
-    if (shellIsStrength()) {
-      setTimeout(
-        renderStrengthTab,
-        60
+  function watchStrengthShell() {
+    const shell =
+      document.getElementById(
+        SHELL_ID
       );
-    }
-  };
 
-  const observer =
-    new MutationObserver(
-      refresh
-    );
+    const title =
+      document.getElementById(
+        "manaV83Title"
+      );
 
-  observer.observe(
-    shell,
-    {
-      attributes:true,
-      attributeFilter:[
-        "class"
-      ]
-    }
-  );
 
-  if (title) {
+    if (!shell) return;
+
+
+    const refresh =
+      () => {
+
+        if (
+          shellIsStrength()
+        ) {
+          setTimeout(
+            renderStrengthTab,
+            60
+          );
+        }
+
+      };
+
+
+    const observer =
+      new MutationObserver(
+        refresh
+      );
+
+
     observer.observe(
-      title,
+      shell,
       {
-        childList:true,
-        subtree:true
-      }
-    );
-  }
-
-  if (tabs) {
-    observer.observe(
-      tabs,
-      {
-        childList:true,
-        subtree:true,
         attributes:true,
         attributeFilter:[
           "class"
         ]
       }
     );
-  }
-}
-  function init() {
-  injectStyles();
-  wire();
-  watchStrengthShell();
 
-  setTimeout(
-    renderStrengthTab,
-    1200
-  );
-}
-window.renderManaStrengthShell =
-  renderStrengthTab;
+
+    if (title) {
+      observer.observe(
+        title,
+        {
+          childList:true,
+          subtree:true
+        }
+      );
+    }
+  }
+
+
+  function init() {
+    injectStyles();
+
+    wire();
+
+    watchStrengthShell();
+
+
+    setTimeout(
+      renderStrengthTab,
+      1200
+    );
+  }
+
+
+  window.renderManaStrengthShell =
+    renderStrengthTab;
+
+
   if (
     document.readyState ===
     "loading"
