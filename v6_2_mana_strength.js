@@ -1,31 +1,58 @@
 /* =========================================
    MANA MOVEMENT TRAINING v6.2
-   MANA STRENGTH
-   Personalised strength program builder
+   PROFILE-DRIVEN PROGRAM GENERATOR
+
+   GOAL • DAYS • EXPERIENCE • EQUIPMENT
    ========================================= */
 
 (() => {
   "use strict";
 
-  const STYLE_ID = "mana-strength-v62-style";
-  const MODAL_ID = "manaStrengthModal";
-  const STORE_KEY = "mana-strength-v62-program";
+
+  const STYLE_ID =
+    "mana-strength-v62-style";
+
+  const MODAL_ID =
+    "manaStrengthModal";
+
+  const STORE_KEY =
+    "mana-strength-v62-program";
+
+
+  /* =========================================
+     STYLES
+     ========================================= */
 
   function injectStyles() {
-    if (document.getElementById(STYLE_ID)) return;
+    if (
+      document.getElementById(
+        STYLE_ID
+      )
+    ) return;
 
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
+
+    const style =
+      document.createElement(
+        "style"
+      );
+
+
+    style.id =
+      STYLE_ID;
+
 
     style.textContent = `
+
       .mana-strength-card{
         cursor:pointer !important;
         opacity:1 !important;
       }
 
+
       .mana-strength-card:active{
         transform:scale(.99);
       }
+
 
       .mana-strength-arrow{
         color:#f3d875;
@@ -33,225 +60,397 @@
         line-height:1;
       }
 
+
       #${MODAL_ID}{
         position:fixed;
         inset:0;
+
         z-index:20000;
+
         display:none;
+
         background:#050505;
+
         overflow:auto;
+
         padding:
           calc(env(safe-area-inset-top) + 18px)
           18px
           calc(100px + env(safe-area-inset-bottom));
       }
 
+
       #${MODAL_ID}.open{
         display:block;
       }
+
 
       .mana-strength-shell{
         width:min(520px,100%);
         margin:auto;
       }
 
+
       .mana-strength-head{
         display:flex;
         justify-content:space-between;
         align-items:flex-start;
+
         gap:16px;
+
         margin-bottom:20px;
       }
+
 
       .mana-strength-head h1{
         margin:6px 0 4px;
         font-size:34px;
       }
 
+
       .mana-strength-close{
         width:44px;
         height:44px;
+
+        flex:0 0 44px;
+
         border-radius:50%;
+
         border:1px solid #333;
+
         background:#111;
+
         color:white;
+
         font-size:24px;
       }
 
+
       .mana-strength-section{
         background:#101010;
-        border:1px solid #292310;
+
+        border:
+          1px solid
+          #292310;
+
         border-radius:22px;
+
         padding:18px;
+
         margin:14px 0;
       }
+
 
       .mana-strength-section h3{
         margin:0 0 12px;
       }
 
+
       .mana-strength-options{
         display:grid;
-        grid-template-columns:1fr 1fr;
+
+        grid-template-columns:
+          1fr 1fr;
+
         gap:10px;
       }
 
+
       .mana-strength-option{
         min-height:52px;
+
         border-radius:14px;
-        border:1px solid #333;
+
+        border:
+          1px solid
+          #333;
+
         background:#0b0b0b;
+
         color:#ddd;
+
         font-weight:700;
+
         padding:10px;
       }
 
+
       .mana-strength-option.active{
         background:#f3d875;
+
         border-color:#f3d875;
+
         color:#090909;
       }
 
+
       .mana-strength-build{
         width:100%;
+
         min-height:58px;
+
         border:0;
+
         border-radius:16px;
+
         background:#f3d875;
+
         color:#111;
+
         font-size:17px;
+
         font-weight:900;
+
         margin-top:12px;
       }
+
 
       .mana-strength-program{
         margin-top:18px;
       }
 
+
       .mana-strength-day{
-        border:1px solid #292929;
+        border:
+          1px solid
+          #292929;
+
         background:#0b0b0b;
+
         border-radius:18px;
+
         padding:16px;
+
         margin-top:10px;
       }
 
+
       .mana-strength-day h3{
         margin:0 0 10px;
+
         color:#f3d875;
       }
 
+
       .mana-strength-exercise{
         padding:10px 0;
-        border-top:1px solid #242424;
+
+        border-top:
+          1px solid
+          #242424;
       }
+
 
       .mana-strength-exercise:first-of-type{
         border-top:0;
       }
 
+
       .mana-strength-exercise strong{
         display:block;
       }
 
+
       .mana-strength-exercise span{
         color:#999;
+
         font-size:13px;
       }
 
+
       .mana-strength-summary{
         color:#aaa;
+
         font-size:14px;
+
         line-height:1.5;
       }
 
+
       @media(max-width:380px){
+
         .mana-strength-options{
-          grid-template-columns:1fr;
+          grid-template-columns:
+            1fr;
         }
+
       }
+
     `;
 
-    document.head.appendChild(style);
+
+    document.head.appendChild(
+      style
+    );
   }
+
+
+  /* =========================================
+     OLD HOME CARD
+     ========================================= */
 
   function findStrengthCard() {
     const candidates =
-      [...document.querySelectorAll("#clientView .day")];
+      [
+        ...document
+          .querySelectorAll(
+            "#clientView .day"
+          )
+      ];
 
-    return candidates.find(el => {
-      const text =
-        (el.textContent || "").toUpperCase();
 
-      return (
-        text.includes("MANA STRONG") ||
-        text.includes("MANA STRENGTH")
-      );
-    });
+    return candidates.find(
+      el => {
+
+        const text =
+          (
+            el.textContent ||
+            ""
+          )
+            .toUpperCase();
+
+
+        return (
+          text.includes(
+            "MANA STRONG"
+          ) ||
+          text.includes(
+            "MANA STRENGTH"
+          )
+        );
+
+      }
+    );
   }
 
+
   function upgradeHomeCard() {
-    const card = findStrengthCard();
+    const card =
+      findStrengthCard();
+
+
     if (!card) return;
 
-    card.classList.add("mana-strength-card");
+
+    card.classList.add(
+      "mana-strength-card"
+    );
+
 
     const strong =
-      card.querySelector("strong");
+      card.querySelector(
+        "strong"
+      );
+
 
     if (strong) {
-      strong.textContent = "MANA STRENGTH";
+      strong.textContent =
+        "MANA STRENGTH";
     }
 
+
     const muted =
-      card.querySelectorAll(".tiny");
+      card.querySelectorAll(
+        ".tiny"
+      );
+
 
     if (muted[0]) {
       muted[0].textContent =
         "Personalised strength training";
     }
 
+
     if (muted[1]) {
       muted[1].textContent =
-        "BUILD YOUR PROGRAM";
-      muted[1].classList.add("gold");
-      muted[1].classList.remove("muted");
+        "VIEW YOUR PROGRAM";
+
+      muted[1]
+        .classList
+        .add(
+          "gold"
+        );
+
+      muted[1]
+        .classList
+        .remove(
+          "muted"
+        );
     }
 
-    if (!card.querySelector(".mana-strength-arrow")) {
+
+    if (
+      !card.querySelector(
+        ".mana-strength-arrow"
+      )
+    ) {
+
       const arrow =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       arrow.className =
         "mana-strength-arrow";
 
-      arrow.textContent = "›";
+      arrow.textContent =
+        "›";
 
-      card.appendChild(arrow);
+      card.appendChild(
+        arrow
+      );
     }
 
-    card.onclick = openModal;
+
+    card.onclick =
+      openModal;
   }
 
+
+  /* =========================================
+     BUILDER MODAL
+     ========================================= */
+
   function buildModal() {
-    if (document.getElementById(MODAL_ID)) return;
+    if (
+      document.getElementById(
+        MODAL_ID
+      )
+    ) return;
+
 
     const modal =
-      document.createElement("div");
+      document.createElement(
+        "div"
+      );
 
-    modal.id = MODAL_ID;
+
+    modal.id =
+      MODAL_ID;
+
 
     modal.innerHTML = `
+
       <div class="mana-strength-shell">
 
         <div class="mana-strength-head">
+
           <div>
-            <span class="pill">MANA STRENGTH</span>
-            <h1>Build your program</h1>
+
+            <span class="pill">
+              MANA STRENGTH
+            </span>
+
+            <h1>
+              Your program
+            </h1>
+
             <div class="muted">
-              Training built around you.
+              Training built around your profile.
             </div>
+
           </div>
+
 
           <button
             class="mana-strength-close"
@@ -260,21 +459,28 @@
           >
             ×
           </button>
+
         </div>
 
+
         <div class="mana-strength-section">
-          <h3>Your goal</h3>
+
+          <h3>
+            Your goal
+          </h3>
 
           <div
             class="mana-strength-options"
             data-strength-group="goal"
           >
+
             <button
               class="mana-strength-option active"
               data-value="Build muscle"
             >
               Build muscle
             </button>
+
 
             <button
               class="mana-strength-option"
@@ -283,6 +489,7 @@
               Get stronger
             </button>
 
+
             <button
               class="mana-strength-option"
               data-value="General fitness"
@@ -290,25 +497,37 @@
               General fitness
             </button>
 
+
             <button
               class="mana-strength-option"
               data-value="Return to training"
             >
               Return to training
             </button>
+
           </div>
+
         </div>
 
+
         <div class="mana-strength-section">
-          <h3>Training days</h3>
+
+          <h3>
+            Training days
+          </h3>
 
           <div
             class="mana-strength-options"
             data-strength-group="days"
           >
-            <button class="mana-strength-option" data-value="2">
+
+            <button
+              class="mana-strength-option"
+              data-value="2"
+            >
               2 days
             </button>
+
 
             <button
               class="mana-strength-option active"
@@ -317,26 +536,45 @@
               3 days
             </button>
 
-            <button class="mana-strength-option" data-value="4">
+
+            <button
+              class="mana-strength-option"
+              data-value="4"
+            >
               4 days
             </button>
 
-            <button class="mana-strength-option" data-value="5">
+
+            <button
+              class="mana-strength-option"
+              data-value="5"
+            >
               5 days
             </button>
+
           </div>
+
         </div>
 
+
         <div class="mana-strength-section">
-          <h3>Experience</h3>
+
+          <h3>
+            Experience
+          </h3>
 
           <div
             class="mana-strength-options"
             data-strength-group="experience"
           >
-            <button class="mana-strength-option" data-value="Beginner">
+
+            <button
+              class="mana-strength-option"
+              data-value="Beginner"
+            >
               Beginner
             </button>
+
 
             <button
               class="mana-strength-option active"
@@ -345,23 +583,38 @@
               Intermediate
             </button>
 
-            <button class="mana-strength-option" data-value="Experienced">
+
+            <button
+              class="mana-strength-option"
+              data-value="Experienced"
+            >
               Experienced
             </button>
 
-            <button class="mana-strength-option" data-value="Returning">
+
+            <button
+              class="mana-strength-option"
+              data-value="Returning"
+            >
               Returning
             </button>
+
           </div>
+
         </div>
 
+
         <div class="mana-strength-section">
-          <h3>Equipment</h3>
+
+          <h3>
+            Equipment
+          </h3>
 
           <div
             class="mana-strength-options"
             data-strength-group="equipment"
           >
+
             <button
               class="mana-strength-option active"
               data-value="Full gym"
@@ -369,18 +622,32 @@
               Full gym
             </button>
 
-            <button class="mana-strength-option" data-value="Dumbbells">
+
+            <button
+              class="mana-strength-option"
+              data-value="Dumbbells"
+            >
               Dumbbells
             </button>
 
-            <button class="mana-strength-option" data-value="Home basics">
+
+            <button
+              class="mana-strength-option"
+              data-value="Home basics"
+            >
               Home basics
             </button>
 
-            <button class="mana-strength-option" data-value="Bodyweight">
+
+            <button
+              class="mana-strength-option"
+              data-value="Bodyweight"
+            >
               Bodyweight
             </button>
+
           </div>
+
 
           <button
             class="mana-strength-build"
@@ -389,7 +656,9 @@
           >
             Build my program
           </button>
+
         </div>
+
 
         <div
           id="manaStrengthProgram"
@@ -397,298 +666,1319 @@
         ></div>
 
       </div>
+
     `;
 
-    document.body.appendChild(modal);
+
+    document.body.appendChild(
+      modal
+    );
+
 
     modal
-      .querySelector("#manaStrengthClose")
-      .onclick = closeModal;
+      .querySelector(
+        "#manaStrengthClose"
+      )
+      .onclick =
+        closeModal;
+
 
     modal
-      .querySelector("#manaStrengthBuild")
-      .onclick = buildProgram;
+      .querySelector(
+        "#manaStrengthBuild"
+      )
+      .onclick =
+        buildProgram;
+
 
     modal
-      .querySelectorAll(".mana-strength-option")
-      .forEach(btn => {
-        btn.onclick = () => {
-          const group =
-            btn.closest(
-              "[data-strength-group]"
-            );
+      .querySelectorAll(
+        ".mana-strength-option"
+      )
+      .forEach(
+        button => {
 
-          group
-            .querySelectorAll(
-              ".mana-strength-option"
-            )
-            .forEach(x =>
-              x.classList.remove("active")
-            );
+          button.onclick =
+            () => {
 
-          btn.classList.add("active");
-        };
-      });
+              const group =
+                button.closest(
+                  "[data-strength-group]"
+                );
+
+
+              group
+                .querySelectorAll(
+                  ".mana-strength-option"
+                )
+                .forEach(
+                  item =>
+                    item
+                      .classList
+                      .remove(
+                        "active"
+                      )
+                );
+
+
+              button
+                .classList
+                .add(
+                  "active"
+                );
+            };
+
+        }
+      );
   }
 
-  function selected(group) {
+
+  function selected(
+    group
+  ) {
     return (
-      document.querySelector(
-        `[data-strength-group="${group}"] .active`
-      )?.dataset.value || ""
+      document
+        .querySelector(
+          `[data-strength-group="${group}"] .active`
+        )
+        ?.dataset
+        .value ||
+      ""
     );
   }
 
-  function fullGymDays(days) {
-    const plans = {
-      2: [
-        ["Full Body A", [
-          ["Back Squat", "3 × 6–8"],
-          ["Bench Press", "3 × 6–8"],
-          ["Seated Row", "3 × 8–10"],
-          ["Romanian Deadlift", "3 × 8"],
-          ["Shoulder Press", "2 × 10"],
-          ["Plank", "3 sets"]
-        ]],
-        ["Full Body B", [
-          ["Deadlift", "3 × 5"],
-          ["Incline DB Press", "3 × 8–10"],
-          ["Lat Pulldown", "3 × 8–10"],
-          ["Leg Press", "3 × 10"],
-          ["DB Lateral Raise", "2 × 12–15"],
-          ["Dead Bug", "3 sets"]
-        ]]
-      ],
 
-      3: [
-        ["Full Body A", [
-          ["Back Squat", "3 × 6–8"],
-          ["Bench Press", "3 × 6–8"],
-          ["Seated Row", "3 × 8–10"],
-          ["Romanian Deadlift", "3 × 8"],
-          ["Core", "3 sets"]
-        ]],
-        ["Full Body B", [
-          ["Deadlift", "3 × 5"],
-          ["Shoulder Press", "3 × 8"],
-          ["Lat Pulldown", "3 × 8–10"],
-          ["Leg Press", "3 × 10"],
-          ["Core", "3 sets"]
-        ]],
-        ["Full Body C", [
-          ["Front Squat", "3 × 8"],
-          ["Incline DB Press", "3 × 8–10"],
-          ["Cable Row", "3 × 10"],
-          ["Hip Thrust", "3 × 8–10"],
-          ["Arms", "2 × 12"]
-        ]]
-      ],
+  /* =========================================
+     EQUIPMENT EXERCISE LIBRARIES
+     ========================================= */
 
-      4: [
-        ["Upper A", [
-          ["Bench Press", "4 × 6"],
-          ["Seated Row", "4 × 8"],
-          ["Shoulder Press", "3 × 8"],
-          ["Lat Pulldown", "3 × 10"],
-          ["Biceps Curl", "2 × 12"],
-          ["Triceps Pressdown", "2 × 12"]
-        ]],
-        ["Lower A", [
-          ["Back Squat", "4 × 6"],
-          ["Romanian Deadlift", "3 × 8"],
-          ["Leg Press", "3 × 10"],
-          ["Leg Curl", "3 × 10"],
-          ["Calf Raise", "3 × 12"]
-        ]],
-        ["Upper B", [
-          ["Incline DB Press", "3 × 8"],
-          ["Cable Row", "3 × 8"],
-          ["DB Shoulder Press", "3 × 10"],
-          ["Pulldown", "3 × 10"],
-          ["Lateral Raise", "2 × 15"],
-          ["Arms", "2 × 12"]
-        ]],
-        ["Lower B", [
-          ["Deadlift", "3 × 5"],
-          ["Front Squat", "3 × 8"],
-          ["Hip Thrust", "3 × 8"],
-          ["Split Squat", "3 × 10"],
-          ["Calf Raise", "3 × 12"]
-        ]]
-      ],
+  const LIBRARIES = {
 
-      5: [
-        ["Push", [
-          ["Bench Press", "4 × 6–8"],
-          ["Incline DB Press", "3 × 8"],
-          ["Shoulder Press", "3 × 8"],
-          ["Lateral Raise", "3 × 12"],
-          ["Triceps Pressdown", "3 × 12"]
-        ]],
-        ["Pull", [
-          ["Deadlift", "3 × 5"],
-          ["Lat Pulldown", "3 × 8"],
-          ["Cable Row", "3 × 8"],
-          ["Rear Delt Fly", "3 × 12"],
-          ["Biceps Curl", "3 × 12"]
-        ]],
-        ["Legs", [
-          ["Back Squat", "4 × 6"],
-          ["Romanian Deadlift", "3 × 8"],
-          ["Leg Press", "3 × 10"],
-          ["Leg Curl", "3 × 10"],
-          ["Calf Raise", "3 × 12"]
-        ]],
-        ["Upper", [
-          ["Incline Press", "3 × 8"],
-          ["Seated Row", "3 × 8"],
-          ["Shoulder Press", "3 × 10"],
-          ["Pulldown", "3 × 10"],
-          ["Arms", "2 × 12"]
-        ]],
-        ["Lower", [
-          ["Front Squat", "3 × 8"],
-          ["Hip Thrust", "3 × 8"],
-          ["Walking Lunge", "3 × 10"],
-          ["Leg Curl", "3 × 12"],
-          ["Core", "3 sets"]
-        ]]
-      ]
+    "Full gym": {
+
+      squat:
+        "Back Squat",
+
+      squat2:
+        "Front Squat",
+
+      hinge:
+        "Romanian Deadlift",
+
+      hinge2:
+        "Deadlift",
+
+      horizontalPush:
+        "Bench Press",
+
+      horizontalPush2:
+        "Incline DB Press",
+
+      horizontalPull:
+        "Seated Cable Row",
+
+      horizontalPull2:
+        "Chest Supported Row",
+
+      verticalPush:
+        "Shoulder Press",
+
+      verticalPull:
+        "Lat Pulldown",
+
+      quad:
+        "Leg Press",
+
+      glute:
+        "Hip Thrust",
+
+      singleLeg:
+        "Walking Lunge",
+
+      hamstring:
+        "Leg Curl",
+
+      calf:
+        "Calf Raise",
+
+      sideDelt:
+        "DB Lateral Raise",
+
+      rearDelt:
+        "Rear Delt Fly",
+
+      biceps:
+        "Biceps Curl",
+
+      triceps:
+        "Triceps Pressdown",
+
+      core:
+        "Cable Crunch",
+
+      core2:
+        "Plank"
+    },
+
+
+    "Dumbbells": {
+
+      squat:
+        "Goblet Squat",
+
+      squat2:
+        "DB Front Squat",
+
+      hinge:
+        "DB Romanian Deadlift",
+
+      hinge2:
+        "DB Deadlift",
+
+      horizontalPush:
+        "DB Floor Press",
+
+      horizontalPush2:
+        "Incline DB Press",
+
+      horizontalPull:
+        "One Arm DB Row",
+
+      horizontalPull2:
+        "Chest Supported DB Row",
+
+      verticalPush:
+        "DB Shoulder Press",
+
+      verticalPull:
+        "DB Pullover",
+
+      quad:
+        "DB Split Squat",
+
+      glute:
+        "DB Hip Thrust",
+
+      singleLeg:
+        "DB Reverse Lunge",
+
+      hamstring:
+        "DB Romanian Deadlift",
+
+      calf:
+        "DB Calf Raise",
+
+      sideDelt:
+        "DB Lateral Raise",
+
+      rearDelt:
+        "DB Rear Delt Fly",
+
+      biceps:
+        "DB Biceps Curl",
+
+      triceps:
+        "DB Overhead Triceps Extension",
+
+      core:
+        "DB Dead Bug",
+
+      core2:
+        "Plank"
+    },
+
+
+    "Home basics": {
+
+      squat:
+        "Band Goblet Squat",
+
+      squat2:
+        "Tempo Squat",
+
+      hinge:
+        "Band Romanian Deadlift",
+
+      hinge2:
+        "Band Good Morning",
+
+      horizontalPush:
+        "Push-Up",
+
+      horizontalPush2:
+        "Band Chest Press",
+
+      horizontalPull:
+        "Band Row",
+
+      horizontalPull2:
+        "Single Arm Band Row",
+
+      verticalPush:
+        "Band Shoulder Press",
+
+      verticalPull:
+        "Band Pulldown",
+
+      quad:
+        "Step-Up",
+
+      glute:
+        "Glute Bridge",
+
+      singleLeg:
+        "Reverse Lunge",
+
+      hamstring:
+        "Sliding Leg Curl",
+
+      calf:
+        "Standing Calf Raise",
+
+      sideDelt:
+        "Band Lateral Raise",
+
+      rearDelt:
+        "Band Pull Apart",
+
+      biceps:
+        "Band Biceps Curl",
+
+      triceps:
+        "Band Triceps Pressdown",
+
+      core:
+        "Dead Bug",
+
+      core2:
+        "Plank"
+    },
+
+
+    "Bodyweight": {
+
+      squat:
+        "Bodyweight Squat",
+
+      squat2:
+        "Tempo Squat",
+
+      hinge:
+        "Single Leg Hip Hinge",
+
+      hinge2:
+        "Hip Hinge",
+
+      horizontalPush:
+        "Push-Up",
+
+      horizontalPush2:
+        "Incline Push-Up",
+
+      horizontalPull:
+        "Prone Row",
+
+      horizontalPull2:
+        "Reverse Snow Angel",
+
+      verticalPush:
+        "Pike Push-Up",
+
+      verticalPull:
+        "Prone Lat Pull",
+
+      quad:
+        "Split Squat",
+
+      glute:
+        "Glute Bridge",
+
+      singleLeg:
+        "Reverse Lunge",
+
+      hamstring:
+        "Hamstring Walkout",
+
+      calf:
+        "Single Leg Calf Raise",
+
+      sideDelt:
+        "Wall Lateral Press",
+
+      rearDelt:
+        "Reverse Snow Angel",
+
+      biceps:
+        "Self Resisted Curl",
+
+      triceps:
+        "Close Grip Push-Up",
+
+      core:
+        "Dead Bug",
+
+      core2:
+        "Plank"
+    }
+
+  };
+
+
+  /* =========================================
+     GOAL TARGETS
+     ========================================= */
+
+  function targetStyle(
+    goal,
+    experience
+  ) {
+
+    const easier =
+      experience ===
+        "Beginner" ||
+      experience ===
+        "Returning";
+
+
+    if (
+      goal ===
+      "Get stronger"
+    ) {
+      return {
+        main:
+          easier
+            ? "3 × 5–6"
+            : "4 × 4–6",
+
+        secondary:
+          easier
+            ? "3 × 8"
+            : "3 × 6–8",
+
+        accessory:
+          easier
+            ? "2 × 10–12"
+            : "3 × 8–12",
+
+        core:
+          "3 sets"
+      };
+    }
+
+
+    if (
+      goal ===
+      "General fitness"
+    ) {
+      return {
+        main:
+          easier
+            ? "2 × 10"
+            : "3 × 8–10",
+
+        secondary:
+          easier
+            ? "2 × 10–12"
+            : "3 × 10",
+
+        accessory:
+          easier
+            ? "2 × 12"
+            : "2 × 12–15",
+
+        core:
+          "3 sets"
+      };
+    }
+
+
+    if (
+      goal ===
+      "Return to training"
+    ) {
+      return {
+        main:
+          "2 × 8–10",
+
+        secondary:
+          "2 × 10",
+
+        accessory:
+          "2 × 12",
+
+        core:
+          "2 sets"
+      };
+    }
+
+
+    /*
+      Default:
+      Build muscle
+    */
+
+    return {
+      main:
+        easier
+          ? "3 × 8–10"
+          : "4 × 6–10",
+
+      secondary:
+        easier
+          ? "3 × 10"
+          : "3 × 8–12",
+
+      accessory:
+        easier
+          ? "2 × 12–15"
+          : "3 × 10–15",
+
+      core:
+        "3 sets"
     };
-
-    return plans[days] || plans[3];
   }
 
+
+  /* =========================================
+     SESSION BUILDERS
+     ========================================= */
+
+  function fullBodyA(
+    ex,
+    t
+  ) {
+    return [
+      "Full Body A",
+      [
+        [
+          ex.squat,
+          t.main
+        ],
+        [
+          ex.horizontalPush,
+          t.main
+        ],
+        [
+          ex.horizontalPull,
+          t.secondary
+        ],
+        [
+          ex.hinge,
+          t.secondary
+        ],
+        [
+          ex.verticalPush,
+          t.accessory
+        ],
+        [
+          ex.core2,
+          t.core
+        ]
+      ]
+    ];
+  }
+
+
+  function fullBodyB(
+    ex,
+    t
+  ) {
+    return [
+      "Full Body B",
+      [
+        [
+          ex.hinge2,
+          t.main
+        ],
+        [
+          ex.horizontalPush2,
+          t.secondary
+        ],
+        [
+          ex.verticalPull,
+          t.secondary
+        ],
+        [
+          ex.quad,
+          t.secondary
+        ],
+        [
+          ex.sideDelt,
+          t.accessory
+        ],
+        [
+          ex.core,
+          t.core
+        ]
+      ]
+    ];
+  }
+
+
+  function fullBodyC(
+    ex,
+    t
+  ) {
+    return [
+      "Full Body C",
+      [
+        [
+          ex.squat2,
+          t.main
+        ],
+        [
+          ex.horizontalPush2,
+          t.secondary
+        ],
+        [
+          ex.horizontalPull2,
+          t.secondary
+        ],
+        [
+          ex.glute,
+          t.secondary
+        ],
+        [
+          ex.biceps,
+          t.accessory
+        ],
+        [
+          ex.triceps,
+          t.accessory
+        ]
+      ]
+    ];
+  }
+
+
+  function upperA(
+    ex,
+    t
+  ) {
+    return [
+      "Upper A",
+      [
+        [
+          ex.horizontalPush,
+          t.main
+        ],
+        [
+          ex.horizontalPull,
+          t.main
+        ],
+        [
+          ex.verticalPush,
+          t.secondary
+        ],
+        [
+          ex.verticalPull,
+          t.secondary
+        ],
+        [
+          ex.biceps,
+          t.accessory
+        ],
+        [
+          ex.triceps,
+          t.accessory
+        ]
+      ]
+    ];
+  }
+
+
+  function lowerA(
+    ex,
+    t
+  ) {
+    return [
+      "Lower A",
+      [
+        [
+          ex.squat,
+          t.main
+        ],
+        [
+          ex.hinge,
+          t.main
+        ],
+        [
+          ex.quad,
+          t.secondary
+        ],
+        [
+          ex.hamstring,
+          t.secondary
+        ],
+        [
+          ex.calf,
+          t.accessory
+        ],
+        [
+          ex.core2,
+          t.core
+        ]
+      ]
+    ];
+  }
+
+
+  function upperB(
+    ex,
+    t
+  ) {
+    return [
+      "Upper B",
+      [
+        [
+          ex.horizontalPush2,
+          t.secondary
+        ],
+        [
+          ex.horizontalPull2,
+          t.secondary
+        ],
+        [
+          ex.verticalPush,
+          t.secondary
+        ],
+        [
+          ex.verticalPull,
+          t.secondary
+        ],
+        [
+          ex.sideDelt,
+          t.accessory
+        ],
+        [
+          ex.rearDelt,
+          t.accessory
+        ]
+      ]
+    ];
+  }
+
+
+  function lowerB(
+    ex,
+    t
+  ) {
+    return [
+      "Lower B",
+      [
+        [
+          ex.hinge2,
+          t.main
+        ],
+        [
+          ex.squat2,
+          t.secondary
+        ],
+        [
+          ex.glute,
+          t.secondary
+        ],
+        [
+          ex.singleLeg,
+          t.secondary
+        ],
+        [
+          ex.calf,
+          t.accessory
+        ],
+        [
+          ex.core,
+          t.core
+        ]
+      ]
+    ];
+  }
+
+
+  function push(
+    ex,
+    t
+  ) {
+    return [
+      "Push",
+      [
+        [
+          ex.horizontalPush,
+          t.main
+        ],
+        [
+          ex.horizontalPush2,
+          t.secondary
+        ],
+        [
+          ex.verticalPush,
+          t.secondary
+        ],
+        [
+          ex.sideDelt,
+          t.accessory
+        ],
+        [
+          ex.triceps,
+          t.accessory
+        ]
+      ]
+    ];
+  }
+
+
+  function pull(
+    ex,
+    t
+  ) {
+    return [
+      "Pull",
+      [
+        [
+          ex.hinge2,
+          t.main
+        ],
+        [
+          ex.verticalPull,
+          t.secondary
+        ],
+        [
+          ex.horizontalPull,
+          t.secondary
+        ],
+        [
+          ex.rearDelt,
+          t.accessory
+        ],
+        [
+          ex.biceps,
+          t.accessory
+        ]
+      ]
+    ];
+  }
+
+
+  function legs(
+    ex,
+    t
+  ) {
+    return [
+      "Legs",
+      [
+        [
+          ex.squat,
+          t.main
+        ],
+        [
+          ex.hinge,
+          t.secondary
+        ],
+        [
+          ex.quad,
+          t.secondary
+        ],
+        [
+          ex.hamstring,
+          t.secondary
+        ],
+        [
+          ex.calf,
+          t.accessory
+        ]
+      ]
+    ];
+  }
+
+
+  function upperMixed(
+    ex,
+    t
+  ) {
+    return [
+      "Upper",
+      [
+        [
+          ex.horizontalPush2,
+          t.secondary
+        ],
+        [
+          ex.horizontalPull2,
+          t.secondary
+        ],
+        [
+          ex.verticalPush,
+          t.secondary
+        ],
+        [
+          ex.verticalPull,
+          t.secondary
+        ],
+        [
+          ex.biceps,
+          t.accessory
+        ],
+        [
+          ex.triceps,
+          t.accessory
+        ]
+      ]
+    ];
+  }
+
+
+  function lowerMixed(
+    ex,
+    t
+  ) {
+    return [
+      "Lower",
+      [
+        [
+          ex.squat2,
+          t.secondary
+        ],
+        [
+          ex.glute,
+          t.secondary
+        ],
+        [
+          ex.singleLeg,
+          t.secondary
+        ],
+        [
+          ex.hamstring,
+          t.secondary
+        ],
+        [
+          ex.calf,
+          t.accessory
+        ],
+        [
+          ex.core,
+          t.core
+        ]
+      ]
+    ];
+  }
+
+
+  /* =========================================
+     BUILD SPLIT
+     ========================================= */
+
+  function createSessions(
+    days,
+    equipment,
+    goal,
+    experience
+  ) {
+
+    const exercises =
+      LIBRARIES[
+        equipment
+      ] ||
+      LIBRARIES[
+        "Full gym"
+      ];
+
+
+    const targets =
+      targetStyle(
+        goal,
+        experience
+      );
+
+
+    if (
+      days === 2
+    ) {
+      return [
+        fullBodyA(
+          exercises,
+          targets
+        ),
+
+        fullBodyB(
+          exercises,
+          targets
+        )
+      ];
+    }
+
+
+    if (
+      days === 3
+    ) {
+      return [
+        fullBodyA(
+          exercises,
+          targets
+        ),
+
+        fullBodyB(
+          exercises,
+          targets
+        ),
+
+        fullBodyC(
+          exercises,
+          targets
+        )
+      ];
+    }
+
+
+    if (
+      days === 4
+    ) {
+      return [
+        upperA(
+          exercises,
+          targets
+        ),
+
+        lowerA(
+          exercises,
+          targets
+        ),
+
+        upperB(
+          exercises,
+          targets
+        ),
+
+        lowerB(
+          exercises,
+          targets
+        )
+      ];
+    }
+
+
+    return [
+      push(
+        exercises,
+        targets
+      ),
+
+      pull(
+        exercises,
+        targets
+      ),
+
+      legs(
+        exercises,
+        targets
+      ),
+
+      upperMixed(
+        exercises,
+        targets
+      ),
+
+      lowerMixed(
+        exercises,
+        targets
+      )
+    ];
+  }
+
+
+  /* =========================================
+     BUILD PROGRAM
+     ========================================= */
+
   function buildProgram() {
+
     const goal =
-      selected("goal");
+      selected(
+        "goal"
+      ) ||
+      "Build muscle";
+
 
     const days =
-      Number(selected("days")) || 3;
+      Number(
+        selected(
+          "days"
+        )
+      ) || 3;
+
 
     const experience =
-      selected("experience");
+      selected(
+        "experience"
+      ) ||
+      "Intermediate";
+
 
     const equipment =
-      selected("equipment");
+      selected(
+        "equipment"
+      ) ||
+      "Full gym";
+
 
     const sessions =
-      fullGymDays(days);
+      createSessions(
+        days,
+        equipment,
+        goal,
+        experience
+      );
+
 
     const program = {
+
       goal,
+
       days,
+
       experience,
+
       equipment,
+
       createdAt:
-        new Date().toISOString(),
+        new Date()
+          .toISOString(),
+
       sessions
+
     };
+
 
     localStorage.setItem(
       STORE_KEY,
-      JSON.stringify(program)
+      JSON.stringify(
+        program
+      )
     );
 
-    renderProgram(program);
+
+    renderProgram(
+      program
+    );
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:strength-program-built",
+        {
+          detail:
+            program
+        }
+      )
+    );
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:strength-synced"
+      )
+    );
   }
 
-  function renderProgram(program) {
+
+  /* =========================================
+     PROGRAM PREVIEW
+     ========================================= */
+
+  function renderProgram(
+    program
+  ) {
     const container =
       document.getElementById(
         "manaStrengthProgram"
       );
 
+
     if (!container) return;
 
+
     container.innerHTML = `
-      <div class="mana-strength-section">
+
+      <div
+        class="mana-strength-section"
+      >
 
         <span class="pill">
           YOUR PROGRAM
         </span>
 
+
         <h2>
           MANA STRENGTH
         </h2>
 
-        <div class="mana-strength-summary">
-          ${program.goal} •
-          ${program.days} days/week •
-          ${program.experience} •
+
+        <div
+          class="mana-strength-summary"
+        >
+          ${program.goal}
+          •
+          ${program.days} days/week
+          •
+          ${program.experience}
+          •
           ${program.equipment}
         </div>
 
-        ${program.sessions.map(
-          (session, index) => `
-            <div class="mana-strength-day">
-              <h3>
-                Day ${index + 1} • ${session[0]}
-              </h3>
 
-              ${session[1].map(
-                exercise => `
-                  <div class="mana-strength-exercise">
-                    <strong>
-                      ${exercise[0]}
-                    </strong>
-                    <span>
-                      ${exercise[1]}
-                    </span>
-                  </div>
-                `
-              ).join("")}
+        ${
+          program.sessions
+            .map(
+              (
+                session,
+                index
+              ) => `
 
-            </div>
-          `
-        ).join("")}
+                <div
+                  class="mana-strength-day"
+                >
+
+                  <h3>
+                    Day ${
+                      index + 1
+                    }
+                    •
+                    ${session[0]}
+                  </h3>
+
+
+                  ${
+                    session[1]
+                      .map(
+                        exercise => `
+
+                          <div
+                            class="mana-strength-exercise"
+                          >
+
+                            <strong>
+                              ${exercise[0]}
+                            </strong>
+
+                            <span>
+                              ${exercise[1]}
+                            </span>
+
+                          </div>
+
+                        `
+                      )
+                      .join("")
+                  }
+
+                </div>
+
+              `
+            )
+            .join("")
+        }
 
       </div>
-    `;
 
-    container.scrollIntoView({
-      behavior:"smooth",
-      block:"start"
-    });
+    `;
   }
+
 
   function restoreProgram() {
     try {
+
       const saved =
         JSON.parse(
-          localStorage.getItem(STORE_KEY)
+          localStorage.getItem(
+            STORE_KEY
+          )
         );
 
-      if (saved?.sessions) {
-        renderProgram(saved);
+
+      if (
+        saved?.sessions
+      ) {
+        renderProgram(
+          saved
+        );
       }
+
     } catch (_) {}
   }
+
+
+  /* =========================================
+     MODAL
+     ========================================= */
 
   function openModal() {
     buildModal();
 
+
     document
-      .getElementById(MODAL_ID)
-      ?.classList.add("open");
+      .getElementById(
+        MODAL_ID
+      )
+      ?.classList
+      .add(
+        "open"
+      );
+
 
     restoreProgram();
   }
 
+
   function closeModal() {
     document
-      .getElementById(MODAL_ID)
-      ?.classList.remove("open");
+      .getElementById(
+        MODAL_ID
+      )
+      ?.classList
+      .remove(
+        "open"
+      );
+
+
+    /*
+      If this old builder is opened from
+      Mana Strength, return to the new
+      Strength Overview.
+    */
+
+    if (
+      typeof
+        window
+          .openManaProgram ===
+      "function"
+    ) {
+      setTimeout(
+        () => {
+          window
+            .openManaProgram(
+              "strength"
+            );
+        },
+        50
+      );
+    }
   }
+
+
+  /* =========================================
+     INIT
+     ========================================= */
 
   function init() {
     injectStyles();
+
     buildModal();
+
 
     setTimeout(
       upgradeHomeCard,
       300
     );
+
 
     setTimeout(
       upgradeHomeCard,
@@ -696,8 +1986,14 @@
     );
   }
 
+
+  window.buildManaStrengthProgram =
+    buildProgram;
+
+
   if (
-    document.readyState === "loading"
+    document.readyState ===
+    "loading"
   ) {
     document.addEventListener(
       "DOMContentLoaded",
