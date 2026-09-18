@@ -1,14 +1,14 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v6.7
+   MANA MOVEMENT TRAINING v6.7.4
    CLIENT PROFILE
-   RETURNS TO SOURCE SCREEN
+   CLEAN PROFILE LAYOUT
    ========================================= */
 
 (() => {
   "use strict";
 
   const STYLE_ID =
-    "mana-profile-v67-style";
+    "mana-profile-v674-style";
 
   const PROFILE_ID =
     "manaProfileScreen";
@@ -61,13 +61,16 @@
       )
     ) return;
 
+
     const style =
       document.createElement(
         "style"
       );
 
+
     style.id =
       STYLE_ID;
+
 
     style.textContent = `
 
@@ -75,14 +78,26 @@
         position:fixed;
         inset:0;
         z-index:25000;
+
         display:none;
+
         overflow:auto;
+
         background:#050505;
 
         padding:
-          calc(env(safe-area-inset-top) + 18px)
+          calc(
+            env(
+              safe-area-inset-top
+            ) + 18px
+          )
           18px
-          calc(105px + env(safe-area-inset-bottom));
+          calc(
+            105px +
+            env(
+              safe-area-inset-bottom
+            )
+          );
       }
 
 
@@ -92,22 +107,36 @@
 
 
       .mana-profile-shell{
-        width:min(520px,100%);
+        width:min(
+          520px,
+          100%
+        );
+
         margin:auto;
       }
 
 
       .mana-profile-head{
         display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
+
+        justify-content:
+          space-between;
+
+        align-items:
+          flex-start;
+
         gap:16px;
+
         margin-bottom:18px;
       }
 
 
       .mana-profile-head h1{
-        margin:6px 0 4px;
+        margin:
+          6px
+          0
+          4px;
+
         font-size:32px;
       }
 
@@ -115,32 +144,86 @@
       .mana-profile-close{
         width:44px;
         height:44px;
-        flex:0 0 44px;
+
+        flex:
+          0
+          0
+          44px;
+
         border-radius:50%;
-        border:1px solid #333;
+
+        border:
+          1px solid
+          #333;
+
         background:#111;
+
         color:#fff;
+
         font-size:24px;
       }
 
 
       .mana-profile-card{
         background:#101010;
-        border:1px solid #292929;
+
+        border:
+          1px solid
+          #292929;
+
         border-radius:20px;
+
         padding:16px;
-        margin:12px 0;
+
+        margin:
+          12px
+          0;
       }
 
 
       .mana-profile-card h3{
-        margin:0 0 12px;
+        margin:
+          0
+          0
+          12px;
+      }
+
+
+      .mana-profile-training{
+        border:
+          1px solid
+          rgba(
+            243,
+            216,
+            117,
+            .35
+          );
+
+        background:
+          linear-gradient(
+            145deg,
+            #17150d,
+            #0c0c0c
+          );
+      }
+
+
+      .mana-profile-training h3{
+        color:#f3d875;
+
+        text-transform:uppercase;
+
+        letter-spacing:.05em;
       }
 
 
       .mana-profile-grid{
         display:grid;
-        grid-template-columns:1fr 1fr;
+
+        grid-template-columns:
+          1fr
+          1fr;
+
         gap:10px;
       }
 
@@ -152,9 +235,13 @@
 
       .mana-profile-field label{
         display:block;
+
         margin-bottom:6px;
+
         color:#aaa;
+
         font-size:12px;
+
         font-weight:700;
       }
 
@@ -162,76 +249,90 @@
       .mana-profile-field input,
       .mana-profile-field select{
         width:100%;
+
         min-height:50px;
+
         margin:0 !important;
-        padding:12px 14px;
+
+        padding:
+          12px
+          14px;
+
         border-radius:13px;
-        border:1px solid #333;
+
+        border:
+          1px solid
+          #333;
+
         background:#090909;
-        color:white;
+
+        color:#fff;
+
         font-size:15px;
       }
 
 
       .mana-profile-save{
         width:100%;
+
         min-height:58px;
+
         border:0;
+
         border-radius:16px;
+
         margin-top:8px;
+
         background:#f3d875;
+
         color:#111;
+
         font-size:17px;
+
         font-weight:900;
       }
 
 
       .mana-profile-status{
         min-height:22px;
+
         margin-top:8px;
+
         text-align:center;
+
         color:#f3d875;
+
         font-size:13px;
       }
 
 
-      .mana-profile-summary{
-        display:grid;
-        grid-template-columns:1fr 1fr;
-        gap:10px;
-      }
-
-
-      .mana-profile-stat{
-        background:#0a0a0a;
-        border:1px solid #292929;
-        border-radius:14px;
-        padding:13px;
-      }
-
-
-      .mana-profile-stat span{
-        display:block;
-        color:#888;
-        font-size:11px;
-        margin-bottom:4px;
-      }
-
-
-      .mana-profile-stat strong{
-        color:#f3d875;
-        font-size:15px;
-      }
-
-
       @media(max-width:390px){
-        .mana-profile-grid,
-        .mana-profile-summary{
-          grid-template-columns:1fr;
+
+        /*
+          Keep these paired fields
+          side-by-side on phone.
+        */
+
+        .mana-profile-grid{
+          grid-template-columns:
+            1fr
+            1fr;
         }
+
+      }
+
+
+      @media(max-width:330px){
+
+        .mana-profile-grid{
+          grid-template-columns:
+            1fr;
+        }
+
       }
 
     `;
+
 
     document.head.appendChild(
       style
@@ -252,19 +353,26 @@
         "div"
       );
 
+
     screen.id =
       PROFILE_ID;
 
 
     screen.innerHTML = `
 
-      <div class="mana-profile-shell">
+      <div
+        class="mana-profile-shell"
+      >
 
-        <div class="mana-profile-head">
+        <div
+          class="mana-profile-head"
+        >
 
           <div>
 
-            <span class="pill">
+            <span
+              class="pill"
+            >
               MANA PROFILE
             </span>
 
@@ -272,7 +380,9 @@
               Your profile
             </h1>
 
-            <div class="muted">
+            <div
+              class="muted"
+            >
               Your training setup in one place.
             </div>
 
@@ -290,14 +400,20 @@
         </div>
 
 
-        <div class="mana-profile-card">
+        <!-- PERSONAL DETAILS -->
+
+        <div
+          class="mana-profile-card"
+        >
 
           <h3>
             Personal details
           </h3>
 
 
-          <div class="mana-profile-field">
+          <div
+            class="mana-profile-field"
+          >
 
             <label>
               Name
@@ -312,9 +428,13 @@
           </div>
 
 
-          <div class="mana-profile-grid">
+          <div
+            class="mana-profile-grid"
+          >
 
-            <div class="mana-profile-field">
+            <div
+              class="mana-profile-field"
+            >
 
               <label>
                 Age
@@ -331,7 +451,46 @@
             </div>
 
 
-            <div class="mana-profile-field">
+            <div
+              class="mana-profile-field"
+            >
+
+              <label>
+                Gender
+              </label>
+
+              <select
+                id="manaProfileGender"
+              >
+
+                <option value="">
+                  Select
+                </option>
+
+                <option value="Male">
+                  Male
+                </option>
+
+                <option value="Female">
+                  Female
+                </option>
+
+                <option value="Non-binary">
+                  Non-binary
+                </option>
+
+                <option value="Prefer not to say">
+                  Prefer not to say
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div
+              class="mana-profile-field"
+            >
 
               <label>
                 Height cm
@@ -348,7 +507,9 @@
             </div>
 
 
-            <div class="mana-profile-field">
+            <div
+              class="mana-profile-field"
+            >
 
               <label>
                 Weight kg
@@ -365,8 +526,73 @@
 
             </div>
 
+          </div>
 
-            <div class="mana-profile-field">
+        </div>
+
+
+        <!-- TRAINING SETUP -->
+
+        <div
+          class="
+            mana-profile-card
+            mana-profile-training
+          "
+        >
+
+          <h3>
+            Training setup
+          </h3>
+
+
+          <div
+            class="mana-profile-grid"
+          >
+
+            <div
+              class="mana-profile-field"
+            >
+
+              <label>
+                Goal
+              </label>
+
+              <select
+                id="manaProfileGoal"
+              >
+
+                <option value="">
+                  Select goal
+                </option>
+
+                <option value="Build muscle">
+                  Build muscle
+                </option>
+
+                <option value="Weight loss">
+                  Weight loss
+                </option>
+
+                <option value="Get stronger">
+                  Get stronger
+                </option>
+
+                <option value="General fitness">
+                  General fitness
+                </option>
+
+                <option value="Return to training">
+                  Return to training
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <div
+              class="mana-profile-field"
+            >
 
               <label>
                 Training days
@@ -400,56 +626,10 @@
 
             </div>
 
-          </div>
 
-        </div>
-
-
-        <div class="mana-profile-card">
-
-          <h3>
-            Training setup
-          </h3>
-
-
-          <div class="mana-profile-field">
-
-            <label>
-              Goal
-            </label>
-
-            <select
-              id="manaProfileGoal"
+            <div
+              class="mana-profile-field"
             >
-
-              <option value="">
-                Select goal
-              </option>
-
-              <option value="Build muscle">
-                Build muscle
-              </option>
-
-              <option value="Get stronger">
-                Get stronger
-              </option>
-
-              <option value="General fitness">
-                General fitness
-              </option>
-
-              <option value="Return to training">
-                Return to training
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div class="mana-profile-grid">
-
-            <div class="mana-profile-field">
 
               <label>
                 Experience
@@ -484,7 +664,9 @@
             </div>
 
 
-            <div class="mana-profile-field">
+            <div
+              class="mana-profile-field"
+            >
 
               <label>
                 Equipment
@@ -523,26 +705,12 @@
         </div>
 
 
-        <div class="mana-profile-card">
-
-          <h3>
-            Current setup
-          </h3>
-
-          <div
-            class="mana-profile-summary"
-            id="manaProfileSummary"
-          ></div>
-
-        </div>
-
-
         <button
           type="button"
           class="mana-profile-save"
           id="manaProfileSave"
         >
-          Save profile
+          SAVE PROFILE
         </button>
 
 
@@ -578,70 +746,6 @@
   }
 
 
-  function renderSummary(
-    profile
-  ) {
-    const holder =
-      document.getElementById(
-        "manaProfileSummary"
-      );
-
-    if (!holder) return;
-
-
-    const items = [
-
-      [
-        "Goal",
-        profile.goal ||
-        "Not set"
-      ],
-
-      [
-        "Training",
-        profile.days
-          ? `${profile.days} days/week`
-          : "Not set"
-      ],
-
-      [
-        "Experience",
-        profile.experience ||
-        "Not set"
-      ],
-
-      [
-        "Equipment",
-        profile.equipment ||
-        "Not set"
-      ]
-
-    ];
-
-
-    holder.innerHTML =
-      items.map(
-        item => `
-
-          <div
-            class="mana-profile-stat"
-          >
-
-            <span>
-              ${item[0]}
-            </span>
-
-            <strong>
-              ${item[1]}
-            </strong>
-
-          </div>
-
-        `
-      ).join("");
-  }
-
-
   function populateProfile() {
     const profile =
       loadProfile();
@@ -665,6 +769,14 @@
 
     document
       .getElementById(
+        "manaProfileGender"
+      )
+      .value =
+        profile.gender || "";
+
+
+    document
+      .getElementById(
         "manaProfileHeight"
       )
       .value =
@@ -681,18 +793,18 @@
 
     document
       .getElementById(
-        "manaProfileDays"
-      )
-      .value =
-        profile.days || "";
-
-
-    document
-      .getElementById(
         "manaProfileGoal"
       )
       .value =
         profile.goal || "";
+
+
+    document
+      .getElementById(
+        "manaProfileDays"
+      )
+      .value =
+        profile.days || "";
 
 
     document
@@ -709,16 +821,17 @@
       )
       .value =
         profile.equipment || "";
-
-
-    renderSummary(
-      profile
-    );
   }
 
 
   function handleSave() {
+    const previous =
+      loadProfile();
+
+
     const profile = {
+
+      ...previous,
 
       name:
         document
@@ -734,8 +847,16 @@
             .getElementById(
               "manaProfileAge"
             )
-            .value || 0
+            .value ||
+            0
         ),
+
+      gender:
+        document
+          .getElementById(
+            "manaProfileGender"
+          )
+          .value,
 
       height:
         Number(
@@ -743,7 +864,8 @@
             .getElementById(
               "manaProfileHeight"
             )
-            .value || 0
+            .value ||
+            0
         ),
 
       weight:
@@ -752,20 +874,21 @@
             .getElementById(
               "manaProfileWeight"
             )
-            .value || 0
+            .value ||
+            0
         ),
-
-      days:
-        document
-          .getElementById(
-            "manaProfileDays"
-          )
-          .value,
 
       goal:
         document
           .getElementById(
             "manaProfileGoal"
+          )
+          .value,
+
+      days:
+        document
+          .getElementById(
+            "manaProfileDays"
           )
           .value,
 
@@ -795,11 +918,6 @@
     );
 
 
-    renderSummary(
-      profile
-    );
-
-
     const status =
       document.getElementById(
         "manaProfileStatus"
@@ -807,18 +925,28 @@
 
 
     if (status) {
+
       status.textContent =
         "Profile saved ✓";
 
 
       setTimeout(
         () => {
+
           status.textContent =
             "";
+
         },
         1500
       );
     }
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:profile-synced"
+      )
+    );
   }
 
 
@@ -827,6 +955,7 @@
       document.getElementById(
         "manaV83ProgramShell"
       );
+
 
     const title =
       document.getElementById(
@@ -840,6 +969,7 @@
         .contains(
           "open"
         ) &&
+
       title
         ?.textContent
         .trim()
@@ -853,20 +983,10 @@
     ensureProfileScreen();
 
 
-    /*
-      Remember where Profile
-      was opened from.
-    */
-
-    if (
+    returnTo =
       strengthIsOpen()
-    ) {
-      returnTo =
-        "strength";
-    } else {
-      returnTo =
-        "home";
-    }
+        ? "strength"
+        : "home";
 
 
     populateProfile();
@@ -898,12 +1018,6 @@
       );
 
 
-    /*
-      If Profile was opened
-      from Mana Strength,
-      return there.
-    */
-
     if (
       returnTo ===
       "strength"
@@ -915,10 +1029,12 @@
             .openManaProgram ===
         "function"
       ) {
+
         window
           .openManaProgram(
             "strength"
           );
+
       }
     }
 
@@ -980,21 +1096,19 @@
         "1";
 
 
-    profileTab
-      .addEventListener(
-        "click",
-        event => {
+    profileTab.addEventListener(
+      "click",
+      event => {
 
-          event.preventDefault();
+        event.preventDefault();
 
-          event.stopPropagation();
+        event.stopPropagation();
 
+        openProfile();
 
-          openProfile();
-
-        },
-        true
-      );
+      },
+      true
+    );
   }
 
 
@@ -1015,11 +1129,14 @@
     document.readyState ===
     "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
+
   } else {
+
     init();
   }
 
