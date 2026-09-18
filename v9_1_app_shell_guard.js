@@ -1,16 +1,13 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.1
-   APP SHELL GUARD
-
-   PREVENT OLD CLIENT UI RETURNING
-   AFTER MOBILE SLEEP / SESSION REFRESH
+   MANA MOVEMENT TRAINING v9.1.2
+   APP SHELL + SESSION RESTORE FIX
    ========================================= */
 
 (() => {
   "use strict";
 
 
-  const HOME_ID =
+  const NEW_HOME_ID =
     "manaV80Home";
 
 
@@ -24,26 +21,15 @@
   ];
 
 
-  let guardTimer =
-    null;
-
-
   /* =========================================
-     HELPERS
+     HIDE OLD CLIENT UI
      ========================================= */
 
-  function newManaExists() {
-    return Boolean(
-      document.getElementById(
-        HOME_ID
-      )
-    );
-  }
-
-
-  function hideOldMana() {
+  function hideOldClientUI() {
     if (
-      !newManaExists()
+      !document.getElementById(
+        NEW_HOME_ID
+      )
     ) {
       return;
     }
@@ -61,12 +47,6 @@
         if (!el) return;
 
 
-        /*
-          Hide using both methods because
-          the old session code can remove
-          the .hide class or change styles.
-        */
-
         el.classList.add(
           "hide"
         );
@@ -80,17 +60,21 @@
   }
 
 
-  function restoreNewHome() {
+  /* =========================================
+     SHOW NEW MANA HOME
+     ========================================= */
+
+  function showNewHome() {
     const home =
       document.getElementById(
-        HOME_ID
+        NEW_HOME_ID
       );
 
 
     if (!home) return;
 
 
-    const programShell =
+    const strengthShell =
       document.getElementById(
         "manaV83ProgramShell"
       );
@@ -108,28 +92,19 @@
       );
 
 
-    /*
-      Only restore Home when another
-      Mana overlay/program isn't open.
-    */
-
-    const programOpen =
-      programShell
+    const anotherScreenOpen =
+      strengthShell
         ?.classList
         .contains(
           "open"
-        );
+        ) ||
 
-
-    const profileOpen =
       profile
         ?.classList
         .contains(
           "open"
-        );
+        ) ||
 
-
-    const introOpen =
       intro
         ?.classList
         .contains(
@@ -138,9 +113,7 @@
 
 
     if (
-      !programOpen &&
-      !profileOpen &&
-      !introOpen
+      !anotherScreenOpen
     ) {
 
       home.style.display =
@@ -150,58 +123,119 @@
   }
 
 
-  function enforceShell() {
-    hideOldMana();
+  /* =========================================
+     OVERRIDE OLD CLIENT RESTORE
+     ========================================= */
 
-    restoreNewHome();
-  }
+  function overrideOldClientRestore() {
+
+    if (
+      typeof
+        window.openConnectedClient !==
+      "function"
+    ) {
+      return false;
+    }
 
 
-  function scheduleGuard() {
-    clearTimeout(
-      guardTimer
-    );
+    if (
+      window
+        .openConnectedClient
+        .__manaNewShell
+    ) {
+      return true;
+    }
 
 
-    guardTimer =
-      setTimeout(
-        enforceShell,
-        80
-      );
+    const original =
+      window.openConnectedClient;
+
+
+    const replacement =
+      async function(profile) {
+
+        /*
+          Let the old function load
+          cloud data / user details.
+        */
+
+        await original(
+          profile
+        );
+
+
+        /*
+          Immediately remove the
+          old client shell it opened.
+        */
+
+        hideOldClientUI();
+
+
+        showNewHome();
+
+
+        /*
+          Re-wire the new Home cards
+          after a session restore.
+        */
+
+        setTimeout(
+          () => {
+
+            hideOldClientUI();
+
+            showNewHome();
+
+          },
+          100
+        );
+
+
+        setTimeout(
+          () => {
+
+            hideOldClientUI();
+
+            showNewHome();
+
+          },
+          500
+        );
+
+      };
+
+
+    replacement.__manaNewShell =
+      true;
+
+
+    window.openConnectedClient =
+      replacement;
+
+
+    return true;
   }
 
 
   /* =========================================
-     WATCH SESSION / DOM CHANGES
+     ENFORCE
      ========================================= */
 
-  function startObserver() {
-    const observer =
-      new MutationObserver(
-        scheduleGuard
-      );
+  function enforce() {
+    hideOldClientUI();
 
+    showNewHome();
 
-    observer.observe(
-      document.body,
-      {
-        childList:true,
-        subtree:true,
-        attributes:true,
-        attributeFilter:[
-          "class",
-          "style"
-        ]
-      }
-    );
+    overrideOldClientRestore();
   }
 
 
   /* =========================================
-     PHONE WAKE / TAB RETURN
+     PHONE WAKE
      ========================================= */
 
-  function wireResumeEvents() {
+  function wireResume() {
 
     document.addEventListener(
       "visibilitychange",
@@ -213,14 +247,20 @@
         ) {
 
           setTimeout(
-            enforceShell,
-            100
+            enforce,
+            50
           );
 
 
           setTimeout(
-            enforceShell,
-            500
+            enforce,
+            300
+          );
+
+
+          setTimeout(
+            enforce,
+            900
           );
 
         }
@@ -234,7 +274,7 @@
       () => {
 
         setTimeout(
-          enforceShell,
+          enforce,
           100
         );
 
@@ -247,7 +287,7 @@
       () => {
 
         setTimeout(
-          enforceShell,
+          enforce,
           100
         );
 
@@ -257,80 +297,45 @@
 
 
   /* =========================================
-     AUTH REFRESH PROTECTION
+     OBSERVER
      ========================================= */
 
-  async function watchAuth() {
-    try {
+  function watchDOM() {
 
-      if (
-        typeof
-          window.supabaseClient !==
-        "function"
-      ) {
-        return;
-      }
+    let timer = null;
 
 
-      const client =
-        await window
-          .supabaseClient();
+    const observer =
+      new MutationObserver(
+        () => {
+
+          clearTimeout(
+            timer
+          );
 
 
-      client.auth
-        .onAuthStateChange(
-          (
-            event,
-            session
-          ) => {
+          timer =
+            setTimeout(
+              enforce,
+              60
+            );
 
-            if (
-              session?.user &&
-              (
-                event ===
-                  "TOKEN_REFRESHED" ||
-
-                event ===
-                  "SIGNED_IN" ||
-
-                event ===
-                  "INITIAL_SESSION" ||
-
-                event ===
-                  "USER_UPDATED"
-              )
-            ) {
-
-              /*
-                Let the old auth code finish,
-                then put Mana back into the
-                new shell.
-              */
-
-              setTimeout(
-                enforceShell,
-                150
-              );
-
-
-              setTimeout(
-                enforceShell,
-                600
-              );
-
-            }
-
-          }
-        );
-
-    } catch (error) {
-
-      console.warn(
-        "Mana shell guard auth:",
-        error
+        }
       );
 
-    }
+
+    observer.observe(
+      document.body,
+      {
+        subtree:true,
+        childList:true,
+        attributes:true,
+        attributeFilter:[
+          "class",
+          "style"
+        ]
+      }
+    );
   }
 
 
@@ -341,32 +346,40 @@
   function init() {
 
     /*
-      v8 Home is created shortly
-      after page load.
+      openConnectedClient is defined
+      by the large inline app script,
+      so check a few times until it exists.
     */
 
-    setTimeout(
-      enforceShell,
-      900
+    const tries = [
+      100,
+      400,
+      900,
+      1600,
+      2500
+    ];
+
+
+    tries.forEach(
+      delay => {
+
+        setTimeout(
+          enforce,
+          delay
+        );
+
+      }
     );
 
 
-    setTimeout(
-      enforceShell,
-      1800
-    );
+    wireResume();
 
-
-    startObserver();
-
-    wireResumeEvents();
-
-    watchAuth();
+    watchDOM();
   }
 
 
   window.enforceManaAppShell =
-    enforceShell;
+    enforce;
 
 
   if (
@@ -382,7 +395,6 @@
   } else {
 
     init();
-
   }
 
 })();
