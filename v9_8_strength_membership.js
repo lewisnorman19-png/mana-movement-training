@@ -1,18 +1,15 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.8.0
+   MANA MOVEMENT TRAINING v9.8.1
    MANA STRENGTH — MEMBERSHIP GATE
 
-   FIRST ENTRY:
-   HOME → MEMBERSHIP → STRENGTH
+   HOME
+     ↓
+   MANA STRENGTH
+     ↓
+   CHOOSE MEMBERSHIP
+     ↓
+   STRENGTH APP
 
-   RETURNING MEMBER:
-   HOME → STRENGTH
-
-   ALSO:
-   - SAVES SELECTED PLAN
-   - HIDES OLD OVERVIEW PRICING
-   - PLAN-SPECIFIC COACH FEATURES
-   - CHANGE PLAN FROM OVERVIEW
    ========================================= */
 
 (() => {
@@ -23,7 +20,7 @@
     "manaV98Membership";
 
   const STYLE_ID =
-    "mana-v980-membership-style";
+    "mana-v981-membership-style";
 
   const PLAN_KEY =
     "mana-strength-membership";
@@ -39,25 +36,14 @@
 
     self:{
       id:"self",
-
-      kicker:
-        "MANA STRENGTH",
-
-      title:
-        "Self-Guided",
-
-      price:
-        "$39.99",
-
-      subtitle:
-        "AUD / month",
-
+      title:"Self-Guided",
+      price:"$39.99",
       description:
-        "Everything you need to train with structure and track your progress.",
+        "Train with structure, track your workouts and manage your own progress.",
 
       features:[
         "Personalised strength program",
-        "Workout logging and progression",
+        "Workout logging",
         "Progress tracking",
         "Personalised Fuel targets",
         "Mana meal selections"
@@ -70,29 +56,18 @@
 
     support:{
       id:"support",
-
-      kicker:
-        "MANA STRENGTH SUPPORT",
-
-      title:
-        "Coach Support",
-
-      price:
-        "$79.99",
-
-      subtitle:
-        "AUD / month",
-
+      title:"Coach Support",
+      price:"$79.99",
       description:
-        "Your personalised training plus regular access to your coach.",
+        "Your personalised program with regular coach support inside Mana.",
 
       features:[
         "Everything in Self-Guided",
-        "Coach chat inside Mana",
+        "Coach chat",
         "Weekly coach check-in",
         "Coach feedback",
         "Monthly program review",
-        "Program adjustments when needed"
+        "Program adjustments"
       ],
 
       button:
@@ -104,26 +79,15 @@
 
     coaching:{
       id:"coaching",
-
-      kicker:
-        "MANA STRENGTH COACHING",
-
-      title:
-        "Personal Coaching",
-
-      price:
-        "$149.99",
-
-      subtitle:
-        "AUD / month",
-
+      title:"Personal Coaching",
+      price:"$149.99",
       description:
         "Higher-touch coaching, accountability and personalised support.",
 
       features:[
         "Everything in Coach Support",
         "Fortnightly video check-in",
-        "Weekly coach support",
+        "Weekly coaching support",
         "Personal coach feedback",
         "Priority program adjustments"
       ],
@@ -139,9 +103,7 @@
      HELPERS
      ========================================= */
 
-  function esc(
-    value
-  ) {
+  function esc(value) {
     return String(
       value ?? ""
     )
@@ -167,15 +129,15 @@
   function getPlan() {
     try {
 
-      const saved =
+      const value =
         localStorage.getItem(
           PLAN_KEY
         );
 
 
       return (
-        PLANS[saved]
-          ? saved
+        PLANS[value]
+          ? value
           : ""
       );
 
@@ -189,13 +151,6 @@
   function savePlan(
     plan
   ) {
-    if (
-      !PLANS[plan]
-    ) {
-      return;
-    }
-
-
     try {
 
       localStorage.setItem(
@@ -291,43 +246,37 @@
 
     style.textContent = `
 
-      /* ==========================
-         MEMBERSHIP SCREEN
-         ========================== */
-
       #${SCREEN_ID}{
         position:fixed;
-
         inset:0;
-
-        z-index:36000;
+        z-index:60000;
 
         display:none;
 
         overflow:auto;
 
-        background:
-          radial-gradient(
-            circle at top,
-            #1b1708 0,
-            #080808 38%,
-            #050505 72%
-          );
-
-        color:#fff;
-
         padding:
           calc(
             env(
               safe-area-inset-top
-            ) + 18px
+            ) + 20px
           )
-          16px
+          14px
           calc(
             env(
               safe-area-inset-bottom
             ) + 30px
           );
+
+        background:
+          radial-gradient(
+            circle at top,
+            #211b08 0%,
+            #090909 38%,
+            #050505 75%
+          );
+
+        color:#fff;
       }
 
 
@@ -336,9 +285,9 @@
       }
 
 
-      .mana-v980-wrap{
+      .mana-v981-wrap{
         width:min(
-          960px,
+          1000px,
           100%
         );
 
@@ -346,32 +295,26 @@
       }
 
 
-      .mana-v980-top{
+      .mana-v981-header{
         display:flex;
-
-        justify-content:
-          space-between;
-
         align-items:flex-start;
-
-        gap:18px;
+        gap:14px;
 
         margin-bottom:28px;
       }
 
 
-      .mana-v980-mark{
+      .mana-v981-mark{
         width:58px;
         height:58px;
-
-        display:grid;
-
-        place-items:center;
 
         flex:
           0
           0
           58px;
+
+        display:grid;
+        place-items:center;
 
         border:
           2px solid
@@ -381,35 +324,30 @@
 
         font:
           700
-          37px
+          38px
           Georgia,
           serif;
       }
 
 
-      .mana-v980-heading{
+      .mana-v981-header-copy{
         flex:1;
-
-        min-width:0;
       }
 
 
-      .mana-v980-kicker{
+      .mana-v981-kicker{
         color:#f3d875;
 
         font-size:10px;
-
         font-weight:900;
 
         letter-spacing:.14em;
-
-        text-transform:uppercase;
       }
 
 
-      .mana-v980-heading h1{
+      .mana-v981-header h1{
         margin:
-          7px
+          6px
           0
           9px;
 
@@ -417,17 +355,17 @@
           clamp(
             34px,
             7vw,
-            54px
+            52px
           );
 
         line-height:1;
       }
 
 
-      .mana-v980-heading p{
-        max-width:650px;
-
+      .mana-v981-header p{
         margin:0;
+
+        max-width:620px;
 
         color:#aaa;
 
@@ -437,7 +375,7 @@
       }
 
 
-      .mana-v980-close{
+      .mana-v981-close{
         width:44px;
         height:44px;
 
@@ -456,17 +394,13 @@
 
         color:#fff;
 
-        font-size:23px;
-
-        cursor:pointer;
+        font-size:22px;
       }
 
 
-      /* ==========================
-         PLAN GRID
-         ========================== */
+      /* PLANS */
 
-      .mana-v980-plans{
+      .mana-v981-plans{
         display:grid;
 
         grid-template-columns:
@@ -482,20 +416,19 @@
       }
 
 
-      .mana-v980-plan{
+      .mana-v981-plan{
         position:relative;
 
         display:flex;
-
         flex-direction:column;
 
-        min-height:510px;
+        min-height:500px;
 
-        padding:23px;
+        padding:24px;
 
         border:
           1px solid
-          #333;
+          #323232;
 
         border-radius:24px;
 
@@ -503,12 +436,12 @@
           linear-gradient(
             145deg,
             #121212,
-            #090909
+            #080808
           );
       }
 
 
-      .mana-v980-plan.featured{
+      .mana-v981-plan.featured{
         border:
           2px solid
           #d4af37;
@@ -516,28 +449,17 @@
         background:
           linear-gradient(
             145deg,
-            #211b08,
-            #0a0a0a 55%
-          );
-
-        box-shadow:
-          0
-          15px
-          45px
-          rgba(
-            212,
-            175,
-            55,
-            .16
+            #221c08,
+            #090909 55%
           );
       }
 
 
-      .mana-v980-popular{
+      .mana-v981-popular{
         position:absolute;
 
-        top:16px;
-        right:16px;
+        top:14px;
+        right:14px;
 
         padding:
           6px
@@ -550,49 +472,43 @@
         color:#111;
 
         font-size:8px;
-
         font-weight:900;
-
-        letter-spacing:.06em;
       }
 
 
-      .mana-v980-plan-kicker{
+      .mana-v981-plan-label{
         color:#f3d875;
 
         font-size:10px;
-
         font-weight:900;
 
-        letter-spacing:.09em;
+        letter-spacing:.1em;
       }
 
 
-      .mana-v980-plan h2{
+      .mana-v981-plan h2{
         margin:
-          8px
+          7px
           0
           0;
 
         font-size:28px;
-
-        line-height:1.08;
       }
 
 
-      .mana-v980-price{
-        margin-top:16px;
+      .mana-v981-price{
+        margin-top:15px;
       }
 
 
-      .mana-v980-price strong{
+      .mana-v981-price strong{
         color:#f3d875;
 
         font-size:34px;
       }
 
 
-      .mana-v980-price span{
+      .mana-v981-price span{
         margin-left:5px;
 
         color:#777;
@@ -601,10 +517,10 @@
       }
 
 
-      .mana-v980-description{
-        min-height:64px;
-
+      .mana-v981-description{
         margin-top:12px;
+
+        min-height:62px;
 
         color:#999;
 
@@ -614,19 +530,18 @@
       }
 
 
-      .mana-v980-features{
+      .mana-v981-features{
         display:grid;
-
         gap:10px;
 
         margin:
           18px
           0
-          22px;
+          24px;
       }
 
 
-      .mana-v980-feature{
+      .mana-v981-feature{
         display:grid;
 
         grid-template-columns:
@@ -646,40 +561,36 @@
       }
 
 
-      .mana-v980-check{
+      .mana-v981-feature-check{
         color:#f3d875;
 
         font-weight:900;
       }
 
 
-      .mana-v980-select{
+      .mana-v981-button{
         width:100%;
-
         min-height:52px;
 
         margin-top:auto;
 
         border:
           1px solid
-          #6c591f;
+          #66551e;
 
         border-radius:15px;
 
-        background:#171409;
+        background:#161309;
 
         color:#f3d875;
 
-        font-size:12px;
-
+        font-size:11px;
         font-weight:900;
-
-        cursor:pointer;
       }
 
 
-      .mana-v980-plan.featured
-      .mana-v980-select{
+      .mana-v981-plan.featured
+      .mana-v981-button{
         border:0;
 
         background:#f3d875;
@@ -688,32 +599,30 @@
       }
 
 
-      .mana-v980-current{
+      .mana-v981-current{
         margin-top:9px;
 
-        color:#8fd39c;
-
         text-align:center;
+
+        color:#8fd39c;
 
         font-size:9px;
 
         font-weight:900;
-
-        letter-spacing:.05em;
       }
 
 
-      .mana-v980-note{
+      .mana-v981-note{
+        max-width:650px;
+
         margin:
-          22px
+          24px
           auto
           0;
 
-        max-width:650px;
+        text-align:center;
 
         color:#666;
-
-        text-align:center;
 
         font-size:10px;
 
@@ -721,15 +630,10 @@
       }
 
 
-      /* ==========================
-         OVERVIEW PLAN BAR
-         ========================== */
+      /* OVERVIEW PLAN BAR */
 
       #${PLAN_BAR_ID}{
-        margin:
-          0
-          0
-          14px;
+        margin-bottom:14px;
 
         padding:
           12px
@@ -746,7 +650,7 @@
 
         border:
           1px solid
-          #3a3219;
+          #463c1b;
 
         border-radius:15px;
 
@@ -754,30 +658,22 @@
       }
 
 
-      .mana-v980-planbar-copy{
-        min-width:0;
-      }
-
-
-      .mana-v980-planbar-copy small{
+      .mana-v981-planbar small{
         display:block;
 
         color:#777;
 
         font-size:8px;
-
         font-weight:900;
 
         letter-spacing:.08em;
-
-        text-transform:uppercase;
       }
 
 
-      .mana-v980-planbar-copy strong{
+      .mana-v981-planbar strong{
         display:block;
 
-        margin-top:3px;
+        margin-top:4px;
 
         color:#f3d875;
 
@@ -785,12 +681,7 @@
       }
 
 
-      .mana-v980-change{
-        flex:
-          0
-          0
-          auto;
-
+      .mana-v981-change{
         min-height:34px;
 
         padding:
@@ -799,19 +690,16 @@
 
         border:
           1px solid
-          #4e421d;
+          #4d421d;
 
         border-radius:999px;
 
         background:#111;
 
-        color:#d8c36c;
+        color:#f3d875;
 
         font-size:9px;
-
         font-weight:900;
-
-        cursor:pointer;
       }
 
 
@@ -819,18 +707,18 @@
         max-width:760px
       ){
 
-        .mana-v980-plans{
+        .mana-v981-plans{
           grid-template-columns:
             1fr;
         }
 
 
-        .mana-v980-plan{
+        .mana-v981-plan{
           min-height:0;
         }
 
 
-        .mana-v980-description{
+        .mana-v981-description{
           min-height:0;
         }
 
@@ -838,37 +726,32 @@
 
 
       @media(
-        max-width:450px
+        max-width:430px
       ){
 
         #${SCREEN_ID}{
-          padding-left:10px;
-          padding-right:10px;
+          padding-left:9px;
+          padding-right:9px;
         }
 
 
-        .mana-v980-top{
-          gap:11px;
+        .mana-v981-header{
+          gap:10px;
         }
 
 
-        .mana-v980-mark{
+        .mana-v981-mark{
           width:48px;
           height:48px;
 
           flex-basis:48px;
 
+          font-size:30px;
+        }
+
+
+        .mana-v981-header h1{
           font-size:31px;
-        }
-
-
-        .mana-v980-heading h1{
-          font-size:32px;
-        }
-
-
-        .mana-v980-plan{
-          padding:20px;
         }
 
       }
@@ -884,40 +767,13 @@
 
 
   /* =========================================
-     MEMBERSHIP HTML
+     PLAN HTML
      ========================================= */
-
-  function featureHTML(
-    feature
-  ) {
-    return `
-
-      <div
-        class="mana-v980-feature"
-      >
-
-        <span
-          class="mana-v980-check"
-        >
-          ✓
-        </span>
-
-        <span>
-          ${esc(
-            feature
-          )}
-        </span>
-
-      </div>
-
-    `;
-  }
-
 
   function planHTML(
     plan
   ) {
-    const selected =
+    const current =
       getPlan() ===
       plan.id;
 
@@ -926,7 +782,7 @@
 
       <div
         class="
-          mana-v980-plan
+          mana-v981-plan
           ${
             plan.featured
               ? "featured"
@@ -939,7 +795,7 @@
           plan.featured
             ? `
               <div
-                class="mana-v980-popular"
+                class="mana-v981-popular"
               >
                 MOST POPULAR
               </div>
@@ -949,11 +805,9 @@
 
 
         <div
-          class="mana-v980-plan-kicker"
+          class="mana-v981-plan-label"
         >
-          ${esc(
-            plan.kicker
-          )}
+          MANA STRENGTH
         </div>
 
 
@@ -965,7 +819,7 @@
 
 
         <div
-          class="mana-v980-price"
+          class="mana-v981-price"
         >
 
           <strong>
@@ -975,16 +829,14 @@
           </strong>
 
           <span>
-            ${esc(
-              plan.subtitle
-            )}
+            AUD / month
           </span>
 
         </div>
 
 
         <div
-          class="mana-v980-description"
+          class="mana-v981-description"
         >
           ${esc(
             plan.description
@@ -993,12 +845,32 @@
 
 
         <div
-          class="mana-v980-features"
+          class="mana-v981-features"
         >
 
           ${plan.features
             .map(
-              featureHTML
+              feature => `
+
+                <div
+                  class="mana-v981-feature"
+                >
+
+                  <span
+                    class="mana-v981-feature-check"
+                  >
+                    ✓
+                  </span>
+
+                  <span>
+                    ${esc(
+                      feature
+                    )}
+                  </span>
+
+                </div>
+
+              `
             )
             .join("")}
 
@@ -1007,14 +879,14 @@
 
         <button
           type="button"
-          class="mana-v980-select"
-          data-mana-plan="${esc(
+          class="mana-v981-button"
+          data-plan="${esc(
             plan.id
           )}"
         >
           ${
-            selected
-              ? "CURRENT PLAN"
+            current
+              ? "CONTINUE WITH THIS PLAN →"
               : esc(
                   plan.button
                 )
@@ -1023,12 +895,12 @@
 
 
         ${
-          selected
+          current
             ? `
               <div
-                class="mana-v980-current"
+                class="mana-v981-current"
               >
-                ✓ YOUR CURRENT MEMBERSHIP
+                ✓ CURRENT MEMBERSHIP
               </div>
             `
             : ""
@@ -1041,7 +913,7 @@
 
 
   /* =========================================
-     BUILD SCREEN
+     SCREEN
      ========================================= */
 
   function ensureScreen() {
@@ -1067,26 +939,26 @@
     screen.innerHTML = `
 
       <div
-        class="mana-v980-wrap"
+        class="mana-v981-wrap"
       >
 
         <div
-          class="mana-v980-top"
+          class="mana-v981-header"
         >
 
           <div
-            class="mana-v980-mark"
+            class="mana-v981-mark"
           >
             M
           </div>
 
 
           <div
-            class="mana-v980-heading"
+            class="mana-v981-header-copy"
           >
 
             <div
-              class="mana-v980-kicker"
+              class="mana-v981-kicker"
             >
               MANA STRENGTH
             </div>
@@ -1098,10 +970,9 @@
 
 
             <p>
-              Start with the level of
-              coaching and support that
-              suits you. You can change
-              your membership later.
+              Choose how much coaching
+              and support you want with
+              your Mana Strength program.
             </p>
 
           </div>
@@ -1109,7 +980,7 @@
 
           <button
             type="button"
-            class="mana-v980-close"
+            class="mana-v981-close"
             id="manaV98Close"
           >
             ×
@@ -1119,19 +990,17 @@
 
 
         <div
-          class="mana-v980-plans"
+          class="mana-v981-plans"
           id="manaV98Plans"
         ></div>
 
 
         <div
-          class="mana-v980-note"
+          class="mana-v981-note"
         >
-          Membership selection is currently
-          used to personalise your Mana
-          Strength experience. Payment access
-          will be connected before paid
-          memberships go live.
+          Payment processing will be
+          connected before memberships
+          are made available publicly.
         </div>
 
       </div>
@@ -1182,7 +1051,7 @@
 
     holder
       .querySelectorAll(
-        "[data-mana-plan]"
+        "[data-plan]"
       )
       .forEach(
         button => {
@@ -1191,8 +1060,7 @@
             () => {
 
               choosePlan(
-                button.dataset
-                  .manaPlan
+                button.dataset.plan
               );
 
             };
@@ -1201,10 +1069,6 @@
       );
   }
 
-
-  /* =========================================
-     OPEN / CLOSE MEMBERSHIP
-     ========================================= */
 
   function openMembership() {
     ensureScreen();
@@ -1283,14 +1147,14 @@
 
 
     setTimeout(
-      applyMembershipToOverview,
-      140
+      applyOverview,
+      120
     );
 
 
     setTimeout(
-      applyMembershipToOverview,
-      500
+      applyOverview,
+      450
     );
   }
 
@@ -1310,151 +1174,105 @@
     );
 
 
-    renderPlans();
-
-
-    setTimeout(
-      openStrength,
-      120
-    );
+    openStrength();
   }
 
 
   /* =========================================
-     HOME ROUTING
+     HARD INTERCEPT
      ========================================= */
 
-  function handleStrengthEntry(
-    event
-  ) {
-    if (event) {
+  function installStrengthIntercept() {
 
-      event.preventDefault();
+    document.addEventListener(
+      "click",
+      event => {
 
-      event.stopPropagation();
-
-    }
-
-
-    const plan =
-      getPlan();
+        const card =
+          event.target
+            ?.closest(
+              "#manaV80Strength"
+            );
 
 
-    if (plan) {
-
-      openStrength();
-
-    } else {
-
-      openMembership();
-
-    }
-  }
-
-
-  function wireStrengthCard() {
-    const card =
-      document.getElementById(
-        "manaV80Strength"
-      );
-
-
-    if (!card) {
-      return false;
-    }
-
-
-    if (
-      card.dataset
-        .membershipGate ===
-      "ready"
-    ) {
-      return true;
-    }
-
-
-    /*
-      Replace Home's original
-      openProgram("strength") handler.
-    */
-
-    card.onclick =
-      handleStrengthEntry;
-
-
-    card.dataset
-      .membershipGate =
-        "ready";
-
-
-    return true;
-  }
-
-
-  /* =========================================
-     OVERVIEW MEMBERSHIP
-     ========================================= */
-
-  function hideOldPricing() {
-    const sections =
-      Array.from(
-        document.querySelectorAll(
-          ".mana-v866-section"
-        )
-      );
-
-
-    sections.forEach(
-      section => {
-
-        const heading =
-          section.querySelector(
-            ".mana-v866-section-head h3"
-          );
-
-
-        if (
-          heading
-            ?.textContent
-            ?.trim() ===
-          "Mana Strength Membership"
-        ) {
-
-          section.style.display =
-            "none";
-
+        if (!card) {
+          return;
         }
 
-      }
+
+        /*
+          Stop Home's original onclick
+          BEFORE it gets a chance to run.
+        */
+
+        event.preventDefault();
+
+        event.stopPropagation();
+
+        event.stopImmediatePropagation();
+
+
+        openMembership();
+
+      },
+      true
     );
   }
 
 
-  function applyCoachAccess() {
+  /* =========================================
+     OVERVIEW
+     ========================================= */
+
+  function hideOldMembershipSection() {
+    document
+      .querySelectorAll(
+        ".mana-v866-section"
+      )
+      .forEach(
+        section => {
+
+          const title =
+            section
+              .querySelector(
+                ".mana-v866-section-head h3"
+              )
+              ?.textContent
+              ?.trim();
+
+
+          if (
+            title ===
+            "Mana Strength Membership"
+          ) {
+
+            section.style.display =
+              "none";
+
+          }
+
+        }
+      );
+  }
+
+
+  function applyCoachVisibility() {
     const plan =
       getPlan();
 
 
-    const coachSection =
+    const coach =
       document.querySelector(
         ".mana-v866-coach"
       );
 
 
-    if (!coachSection) {
+    if (!coach) {
       return;
     }
 
 
-    /*
-      Self-Guided:
-      no coach chat/check-in area.
-
-      Support / Coaching:
-      coach features stay visible.
-    */
-
-    coachSection.style.display =
+    coach.style.display =
       plan === "self"
         ? "none"
         : "";
@@ -1521,7 +1339,7 @@
     bar.innerHTML = `
 
       <div
-        class="mana-v980-planbar-copy"
+        class="mana-v981-planbar"
       >
 
         <small>
@@ -1544,7 +1362,7 @@
 
       <button
         type="button"
-        class="mana-v980-change"
+        class="mana-v981-change"
         id="manaV98ChangePlan"
       >
         CHANGE
@@ -1562,7 +1380,7 @@
   }
 
 
-  function applyMembershipToOverview() {
+  function applyOverview() {
     if (
       !strengthOverviewOpen()
     ) {
@@ -1570,9 +1388,9 @@
     }
 
 
-    hideOldPricing();
+    hideOldMembershipSection();
 
-    applyCoachAccess();
+    applyCoachVisibility();
 
     insertPlanBar();
   }
@@ -1588,7 +1406,7 @@
       () => {
 
         setTimeout(
-          applyMembershipToOverview,
+          applyOverview,
           100
         );
 
@@ -1601,7 +1419,7 @@
       () => {
 
         setTimeout(
-          applyMembershipToOverview,
+          applyOverview,
           100
         );
 
@@ -1613,11 +1431,8 @@
       "focus",
       () => {
 
-        wireStrengthCard();
-
-
         setTimeout(
-          applyMembershipToOverview,
+          applyOverview,
           100
         );
 
@@ -1640,21 +1455,8 @@
 
           timer =
             setTimeout(
-              () => {
-
-                wireStrengthCard();
-
-
-                if (
-                  strengthOverviewOpen()
-                ) {
-
-                  applyMembershipToOverview();
-
-                }
-
-              },
-              90
+              applyOverview,
+              100
             );
 
         }
@@ -1684,25 +1486,20 @@
 
     ensureScreen();
 
+    installStrengthIntercept();
+
     watch();
 
 
     [
-      300,
-      700,
-      1300,
-      2200
+      500,
+      1000,
+      1800
     ].forEach(
       delay => {
 
         setTimeout(
-          () => {
-
-            wireStrengthCard();
-
-            applyMembershipToOverview();
-
-          },
+          applyOverview,
           delay
         );
 
@@ -1721,23 +1518,6 @@
 
   window.getManaStrengthMembership =
     getPlan;
-
-
-  window.resetManaStrengthMembership =
-    () => {
-
-      try {
-
-        localStorage.removeItem(
-          PLAN_KEY
-        );
-
-      } catch (_) {}
-
-
-      openMembership();
-
-    };
 
 
   if (
