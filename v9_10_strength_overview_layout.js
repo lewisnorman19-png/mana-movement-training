@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.10.3
+   MANA MOVEMENT TRAINING v9.10.4
    MANA STRENGTH — OVERVIEW
 
    - FULL TODAY'S WORKOUT
@@ -11,6 +11,12 @@
    - WEEKLY WORKOUTS
    - COACH SUPPORT AT BOTTOM
    - ONE SIMPLE COACH CHAT
+
+   FIX:
+   - OVERVIEW START WORKOUT NOW USES
+     THE SAME LAUNCH PATH AS PROGRAM TAB
+   - CLOSES SHELL BEFORE WORKOUT
+   - EXERCISE COACH REFRESHES AFTER OPEN
    ========================================= */
 
 (() => {
@@ -18,7 +24,7 @@
 
 
   const STYLE_ID =
-    "mana-v9103-overview-layout-style";
+    "mana-v9104-overview-layout-style";
 
   const PROGRAM_KEY =
     "mana-strength-v62-program";
@@ -129,6 +135,7 @@
 
 
   function strengthOverviewOpen() {
+
     const shell =
       document.getElementById(
         "manaV83ProgramShell"
@@ -171,6 +178,7 @@
 
 
   function loadProgram() {
+
     return safeJson(
       localStorage.getItem(
         PROGRAM_KEY
@@ -181,6 +189,7 @@
 
 
   function loadLogs() {
+
     const logs =
       safeJson(
         localStorage.getItem(
@@ -199,6 +208,7 @@
 
 
   function loadFuelStore() {
+
     return safeJson(
       localStorage.getItem(
         FUEL_KEY
@@ -209,6 +219,7 @@
 
 
   function loadTargets() {
+
     const saved =
       safeJson(
         localStorage.getItem(
@@ -244,6 +255,7 @@
      ========================================= */
 
   function nextWorkoutIndex() {
+
     const program =
       loadProgram();
 
@@ -271,6 +283,7 @@
 
 
   function todaySession() {
+
     const program =
       loadProgram();
 
@@ -297,6 +310,7 @@
      ========================================= */
 
   function currentWeekRange() {
+
     const now =
       new Date();
 
@@ -308,10 +322,6 @@
         now.getDate()
       );
 
-
-    /*
-      Monday = start of week.
-    */
 
     const mondayOffset =
       (
@@ -362,6 +372,7 @@
   function dateKey(
     date
   ) {
+
     return [
 
       date.getFullYear(),
@@ -385,6 +396,7 @@
 
 
   function currentWeekKeysToToday() {
+
     const range =
       currentWeekRange();
 
@@ -442,6 +454,7 @@
   function fuelTotalsForDay(
     day
   ) {
+
     const totals = {
 
       calories:0,
@@ -494,6 +507,7 @@
 
 
   function weeklyFuelTotals() {
+
     const store =
       loadFuelStore();
 
@@ -541,12 +555,6 @@
     );
 
 
-    /*
-      Weekly targets are full 7-day
-      targets regardless of which day
-      of the week it currently is.
-    */
-
     return {
 
       calories:{
@@ -587,6 +595,7 @@
      ========================================= */
 
   function weeklyWorkoutTotals() {
+
     const program =
       loadProgram();
 
@@ -651,10 +660,12 @@
 
 
     return {
+
       current:
         completed,
 
       target
+
     };
   }
 
@@ -664,6 +675,7 @@
      ========================================= */
 
   function injectStyles() {
+
     if (
       document.getElementById(
         STYLE_ID
@@ -684,10 +696,6 @@
 
 
     style.textContent = `
-
-      /* ==========================
-         TODAY'S WORKOUT
-         ========================== */
 
       .mana-v9103-workout{
         margin:
@@ -879,10 +887,6 @@
       }
 
 
-      /* ==========================
-         WEEKLY PROGRESS
-         ========================== */
-
       #${WEEKLY_ID}{
         margin:
           14px
@@ -1052,10 +1056,6 @@
       }
 
 
-      /* ==========================
-         COACH SUPPORT
-         ========================== */
-
       .mana-v9103-coach{
         margin-top:
           18px !important;
@@ -1086,11 +1086,6 @@
       }
 
 
-      /*
-        Hide old Coach Activity feed.
-        Keep only Coach Chat.
-      */
-
       .mana-v9103-coach
       > div:not(
         .mana-v866-section-head
@@ -1100,11 +1095,6 @@
         display:none !important;
       }
 
-
-      /*
-        Separate weekly check-in card
-        is hidden from Overview.
-      */
 
       #manaV94CheckinCard{
         display:none !important;
@@ -1241,14 +1231,34 @@
      ========================================= */
 
   function startWorkout() {
+
     const index =
       nextWorkoutIndex();
 
 
     /*
-      Go directly into the workout logger
-      when available.
+      Match the Program-tab launch path.
+
+      The Strength shell must close first,
+      then the v6.4 workout opens cleanly.
     */
+
+    const shell =
+      document.getElementById(
+        "manaV83ProgramShell"
+      );
+
+
+    shell
+      ?.classList
+      .remove(
+        "open"
+      );
+
+
+    document.body.style.overflow =
+      "";
+
 
     if (
       typeof
@@ -1263,19 +1273,80 @@
         );
 
 
+      /*
+        Make sure v9.16 enhances the
+        newly-built v6.4 exercise cards.
+      */
+
+      [
+        40,
+        100,
+        180,
+        320,
+        600
+      ].forEach(
+        delay => {
+
+          setTimeout(
+            () => {
+
+              if (
+                typeof
+                  window
+                    .refreshManaExerciseCoach ===
+                "function"
+              ) {
+
+                window
+                  .refreshManaExerciseCoach();
+
+              }
+
+            },
+            delay
+          );
+
+        }
+      );
+
+
       return;
     }
 
 
     /*
-      Fallback to Program tab.
+      Fallback:
+      reopen Strength and send the user
+      to the Program tab.
     */
 
-    document
-      .querySelector(
-        '#manaV83Tabs [data-v83-tab="program"]'
-      )
-      ?.click();
+    if (
+      typeof
+        window
+          .openManaProgram ===
+      "function"
+    ) {
+
+      window
+        .openManaProgram(
+          "strength"
+        );
+
+    }
+
+
+    setTimeout(
+      () => {
+
+        document
+          .querySelector(
+            '#manaV83Tabs [data-v83-tab="program"]'
+          )
+          ?.click();
+
+      },
+      100
+    );
   }
 
 
@@ -1284,6 +1355,7 @@
      ========================================= */
 
   function buildWorkoutCard() {
+
     const holder =
       document.getElementById(
         "manaV83Content"
@@ -1455,6 +1527,7 @@
      ========================================= */
 
   function moveDailyFocus() {
+
     const holder =
       document.getElementById(
         "manaV83Content"
@@ -1517,6 +1590,7 @@
     unit,
     percent
   ) {
+
     return `
 
       <div
@@ -1586,6 +1660,7 @@
 
 
   function buildWeeklyProgress() {
+
     const holder =
       document.getElementById(
         "manaV83Content"
@@ -1807,6 +1882,7 @@
      ========================================= */
 
   function simplifyCoachSupport() {
+
     const holder =
       document.getElementById(
         "manaV83Content"
@@ -1861,11 +1937,6 @@
     }
 
 
-    /*
-      Coach Support remains the
-      final section on Overview.
-    */
-
     holder.appendChild(
       coach
     );
@@ -1909,6 +1980,7 @@
      ========================================= */
 
   function applyLayout() {
+
     if (
       applying ||
       !strengthOverviewOpen()
@@ -2094,6 +2166,7 @@
      ========================================= */
 
   function init() {
+
     injectStyles();
 
     watch();
