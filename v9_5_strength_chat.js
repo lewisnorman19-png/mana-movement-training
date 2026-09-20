@@ -1,14 +1,12 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.5.0
+   MANA MOVEMENT TRAINING v9.5.1
    MANA STRENGTH — COACH CHAT
 
    CLIENT ↔ COACH MESSAGING
 
-   USES:
-   - strength_messages
-   - currentUser
-   - selectedCoachClient
-   - supabaseClient()
+   FIX:
+   - CLIENT COACH CHAT CARD NOW ALWAYS
+     USES THE YELLOW BUTTON VERSION
    ========================================= */
 
 (() => {
@@ -259,21 +257,8 @@
       }
 
 
-      .mana-v950-card-kicker{
-        color:#f3d875;
-
-        font-size:10px;
-
-        font-weight:900;
-
-        letter-spacing:.12em;
-
-        text-transform:uppercase;
-      }
-
-
       .mana-v950-card-title{
-        margin-top:5px;
+        margin-top:0;
 
         color:#fff;
 
@@ -294,27 +279,6 @@
       }
 
 
-      .mana-v950-live{
-        padding:
-          5px
-          8px;
-
-        border:
-          1px solid
-          #68571e;
-
-        border-radius:999px;
-
-        color:#f3d875;
-
-        font-size:8px;
-
-        font-weight:900;
-
-        letter-spacing:.06em;
-      }
-
-
       .mana-v950-open{
         width:100%;
 
@@ -322,9 +286,7 @@
 
         margin-top:13px;
 
-        border:
-          1px solid
-          #766321;
+        border:0;
 
         border-radius:14px;
 
@@ -335,6 +297,13 @@
         font-size:13px;
 
         font-weight:900;
+
+        cursor:pointer;
+      }
+
+
+      .mana-v950-open:active{
+        transform:scale(.99);
       }
 
 
@@ -950,10 +919,9 @@
     }
 
 
-    modal.classList
-      .add(
-        "open"
-      );
+    modal.classList.add(
+      "open"
+    );
 
 
     document.body.style.overflow =
@@ -961,7 +929,6 @@
 
 
     loadMessages();
-
 
     startRefresh();
 
@@ -993,7 +960,6 @@
 
 
     stopRefresh();
-
 
     refreshCards();
   }
@@ -1050,9 +1016,7 @@
     }
 
 
-    return (
-      data || []
-    );
+    return data || [];
   }
 
 
@@ -1129,7 +1093,9 @@
           No messages yet.<br><br>
           ${
             chatMode === "coach"
-              ? `Send ${esc(activeClientName)} their first coaching message.`
+              ? `Send ${esc(
+                  activeClientName
+                )} their first coaching message.`
               : "Send Lewis a message whenever you need support."
           }
         </div>
@@ -1515,6 +1481,15 @@
     }
 
 
+    /*
+      This is now the ONLY client
+      Coach Chat card design.
+
+      No LIVE badge.
+      No duplicate kicker.
+      Yellow button remains permanent.
+    */
+
     card.innerHTML = `
 
       <div
@@ -1522,13 +1497,6 @@
       >
 
         <div>
-
-          <div
-            class="mana-v950-card-kicker"
-          >
-            COACH SUPPORT
-          </div>
-
 
           <div
             class="mana-v950-card-title"
@@ -1547,13 +1515,6 @@
 
         </div>
 
-
-        <div
-          class="mana-v950-live"
-        >
-          LIVE
-        </div>
-
       </div>
 
 
@@ -1562,7 +1523,7 @@
         class="mana-v950-open"
         id="manaV95ClientOpen"
       >
-        OPEN COACH CHAT →
+        MESSAGE YOUR COACH →
       </button>
 
     `;
@@ -1830,6 +1791,7 @@
      ========================================= */
 
   function watch() {
+
     window.addEventListener(
       "mana:program-tab-change",
       () => {
