@@ -1,12 +1,17 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.26.0
-   TRAINING TIME LEDGER
+   MANA MOVEMENT TRAINING v9.26.1
+   INDEPENDENT TRAINING TIME LEDGER
+
+   WHOLE FILE REPLACEMENT FOR:
+   v9_26_training_time_ledger.js
 
    PURPOSE
-   - RECORDS WORKOUT TIME IN ITS OWN LEDGER
-   - DOES NOT DEPEND ON THE WORKOUT LOG SAVE ORDER
-   - READS THE EXISTING v9.20 TIMER STATE
-   - CAPTURES TIME WHEN COMPLETE WORKOUT IS PRESSED
+   - RUNS ITS OWN WORKOUT TIMER STATE
+   - DOES NOT RELY ON v9.20 STATE BEING PRESENT AT COMPLETE
+   - STARTS / RESUMES WHEN A STRENGTH WORKOUT OPENS
+   - PAUSES WHEN THE WORKOUT IS PAUSED OR CLOSED
+   - SAVES TIME IMMEDIATELY WHEN COMPLETE WORKOUT IS PRESSED
+   - USES THE VISIBLE WORKOUT TIMER AS A BACKUP
    - UPDATES PROGRESS:
        TRAINING TIME
        AVG SESSION
@@ -15,22 +20,23 @@
        WEEKLY
        MONTHLY
        TO DATE
-   - DOES NOT TOUCH:
+   - DOES NOT CHANGE:
+       WORKOUT LOGS
        PBs
        VOLUME
        FUEL
        LEARN
-       WORKOUT PROGRAMMING
+       PROGRAMMING
    ========================================= */
 
 (() => {
   "use strict";
 
   const BUILD =
-    "92600";
+    "92610";
 
-  const STATE_KEY =
-    "mana-strength-v920-in-progress";
+  const SESSION_KEY =
+    "mana-strength-v926-session";
 
   const LEDGER_KEY =
     "mana-strength-v926-time-ledger";
@@ -38,7 +44,25 @@
   const PENDING_KEY =
     "mana-strength-v926-pending-entry";
 
+  const WORKOUT_SHELL_ID =
+    "manaStrengthV64Workout";
+
+  const COMPLETE_ID =
+    "manaV64Complete";
+
+  const CLOSE_ID =
+    "manaV64Close";
+
+  const PAUSE_ID =
+    "manaV920Pause";
+
   let refreshTimer =
+    null;
+
+  let wrapTimer =
+    null;
+
+  let observerTimer =
     null;
 
   function safeJson(
@@ -54,11 +78,40 @@
     }
   }
 
-  function loadState() {
+  function nowMs() {
+    return Date.now();
+  }
+
+  function loadSession() {
     return safeJson(
       localStorage.getItem(
-        STATE_KEY
+        SESSION_KEY
       ) || "null",
+      null
+    );
+  }
+
+  function saveSession(
+    session
+  ) {
+    try {
+      if (session) {
+        localStorage.setItem(
+          SESSION_KEY,
+          JSON.stringify(
+            session
+          )
+        );
+      } else {
+        localStorage.removeItem(
+          SESSION_KEY
+        );
+      }
+    } catch (_) {}
+  }
+
+  function clearSession() {
+    saveSession(
       null
     );
   }
@@ -195,125 +248,335 @@
     );
   }
 
-  function elapsedMs(
-    state
+  function workoutOpen() {
+    return Boolean(
+      document
+        .getElementById(
+          WORKOUT_SHELL_ID
+        )
+        ?.classList
+        .contains(
+          "open"
+        )
+    );
+  }
+
+  function sessionElapsedMs(
+    session = loadSession()
   ) {
-    if (!state) {
+    if (!session) {
       return 0;
     }
 
     let elapsed =
       Number(
-        state.elapsedMs ||
+        session.elapsedMs ||
         0
       );
 
     if (
-      state.running &&
-      state.segmentStartedAt
+      session.running &&
+      session.segmentStartedAt
     ) {
       elapsed +=
         Math.max(
           0,
-          Date.now() -
+          nowMs() -
           Number(
-            state.segmentStartedAt
+            session.segmentStartedAt
           )
         );
     }
 
-    return elapsed;
+    return Math.max(
+      0,
+      elapsed
+    );
   }
 
-  function formatDuration(
-    seconds
+  function createSession(
+    dayIndex = null
   ) {
-    const total =
-      Math.max(
-        0,
-        Math.round(
+    const now =
+      nowMs();
+
+    return {
+      dayIndex:
+        Number.isFinite(
           Number(
-            seconds ||
-            0
+            dayIndex
           )
+        )
+          ? Number(
+              dayIndex
+            )
+          : null,
+
+      startedAt:
+        now,
+
+      startedAtISO:
+        new Date(
+          now
+        ).toISOString(),
+
+      elapsedMs:
+        0,
+
+      running:
+        true,
+
+      segmentStartedAt:
+        now,
+
+      updatedAt:
+        now
+    };
+  }
+
+  function startOrResumeSession(
+    dayIndex = null
+  ) {
+    const existing =
+      loadSession();
+
+    if (!existing) {
+      saveSession(
+        createSession(
+          dayIndex
         )
       );
 
-    if (!total) {
-      return "Not tracked";
+      return;
     }
 
-    const minutes =
-      Math.floor(
-        total /
-        60
+    const incomingIndex =
+      Number.isFinite(
+        Number(
+          dayIndex
+        )
+      )
+        ? Number(
+            dayIndex
+          )
+        : null;
+
+    const existingIndex =
+      Number.isFinite(
+        Number(
+          existing.dayIndex
+        )
+      )
+        ? Number(
+            existing.dayIndex
+          )
+        : null;
+
+    if (
+      incomingIndex !==
+        null &&
+      existingIndex !==
+        null &&
+      incomingIndex !==
+        existingIndex
+    ) {
+      saveSession(
+        createSession(
+          incomingIndex
+        )
       );
 
-    const remaining =
-      total %
-      60;
-
-    if (
-      minutes >=
-      60
-    ) {
-      const hours =
-        Math.floor(
-          minutes /
-          60
-        );
-
-      const mins =
-        minutes %
-        60;
-
-      return mins
-        ? `${hours}h ${mins}m`
-        : `${hours}h`;
+      return;
     }
 
     if (
-      minutes >
-      0
+      !existing.running
     ) {
-      return `${minutes}m ${remaining}s`;
-    }
+      existing.running =
+        true;
 
-    return `${remaining}s`;
+      existing.segmentStartedAt =
+        nowMs();
+
+      existing.updatedAt =
+        nowMs();
+
+      if (
+        existing.dayIndex ===
+          null &&
+        incomingIndex !==
+          null
+      ) {
+        existing.dayIndex =
+          incomingIndex;
+      }
+
+      saveSession(
+        existing
+      );
+    }
   }
 
-  function makeEntry() {
-    const state =
-      loadState();
+  function pauseSession() {
+    const session =
+      loadSession();
 
-    if (!state) {
-      return null;
+    if (!session) {
+      return;
     }
 
-    const now =
-      Date.now();
+    session.elapsedMs =
+      sessionElapsedMs(
+        session
+      );
 
-    const durationSeconds =
+    session.running =
+      false;
+
+    session.segmentStartedAt =
+      null;
+
+    session.updatedAt =
+      nowMs();
+
+    saveSession(
+      session
+    );
+  }
+
+  function visibleTimerSeconds() {
+    const timer =
+      document.getElementById(
+        "manaV920Timer"
+      ) ||
+      document.getElementById(
+        "manaV64Timer"
+      ) ||
+      document.getElementById(
+        "manaV64NativeTimer"
+      );
+
+    const text =
+      String(
+        timer?.textContent ||
+        ""
+      ).trim();
+
+    if (!text) {
+      return 0;
+    }
+
+    const parts =
+      text
+        .split(":")
+        .map(
+          value =>
+            Number(
+              value
+            )
+        );
+
+    if (
+      parts.some(
+        value =>
+          !Number.isFinite(
+            value
+          )
+      )
+    ) {
+      return 0;
+    }
+
+    if (
+      parts.length ===
+      2
+    ) {
+      return Math.max(
+        0,
+        parts[0] *
+        60 +
+        parts[1]
+      );
+    }
+
+    if (
+      parts.length ===
+      3
+    ) {
+      return Math.max(
+        0,
+        parts[0] *
+        3600 +
+        parts[1] *
+        60 +
+        parts[2]
+      );
+    }
+
+    return 0;
+  }
+
+  function durationAtCompletion(
+    session
+  ) {
+    const independent =
       Math.max(
-        1,
+        0,
         Math.round(
-          elapsedMs(
-            state
+          sessionElapsedMs(
+            session
           ) /
           1000
         )
       );
 
-    const startedAt =
-      state.startedAtISO ||
+    const visible =
+      visibleTimerSeconds();
+
+    return Math.max(
+      1,
+      independent,
+      visible
+    );
+  }
+
+  function makeLedgerEntry() {
+    const session =
+      loadSession();
+
+    const now =
+      nowMs();
+
+    const visibleSeconds =
+      visibleTimerSeconds();
+
+    if (
+      !session &&
+      visibleSeconds <=
+      0
+    ) {
+      return null;
+    }
+
+    const durationSeconds =
+      session
+        ? durationAtCompletion(
+            session
+          )
+        : Math.max(
+            1,
+            visibleSeconds
+          );
+
+    const startedAtISO =
+      session?.startedAtISO ||
       new Date(
-        Number(
-          state.startedAt ||
-          now
-        )
+        now -
+        durationSeconds *
+        1000
       ).toISOString();
 
-    const finishedAt =
+    const finishedAtISO =
       new Date(
         now
       ).toISOString();
@@ -322,31 +585,104 @@
       id:
         [
           "mana-time",
-          Number(
-            state.dayIndex ??
-            -1
-          ),
-          now
+          now,
+          Math.round(
+            durationSeconds
+          )
         ].join("-"),
 
       dayIndex:
-        Number(
-          state.dayIndex ??
-          -1
-        ),
+        Number.isFinite(
+          Number(
+            session?.dayIndex
+          )
+        )
+          ? Number(
+              session.dayIndex
+            )
+          : null,
 
-      startedAt,
+      startedAt:
+        startedAtISO,
 
-      finishedAt,
+      finishedAt:
+        finishedAtISO,
 
       date:
-        finishedAt,
+        finishedAtISO,
 
-      durationSeconds,
+      durationSeconds:
+        Math.max(
+          1,
+          Math.round(
+            durationSeconds
+          )
+        ),
 
       recordedAt:
-        now
+        now,
+
+      source:
+        "mana-v92610-independent"
     };
+  }
+
+  function isDuplicateEntry(
+    ledger,
+    entry
+  ) {
+    if (
+      ledger.some(
+        item =>
+          item?.id ===
+          entry.id
+      )
+    ) {
+      return true;
+    }
+
+    return ledger.some(
+      item => {
+
+        const a =
+          Number(
+            item?.recordedAt ||
+            0
+          );
+
+        const b =
+          Number(
+            entry?.recordedAt ||
+            0
+          );
+
+        const closeInTime =
+          Math.abs(
+            a -
+            b
+          ) <=
+          15000;
+
+        const similarDuration =
+          Math.abs(
+            Number(
+              item?.durationSeconds ||
+              0
+            ) -
+            Number(
+              entry?.durationSeconds ||
+              0
+            )
+          ) <=
+          3;
+
+        return (
+          closeInTime &&
+          similarDuration
+        );
+
+      }
+    );
   }
 
   function commitEntry(
@@ -364,15 +700,11 @@
     const ledger =
       loadLedger();
 
-    const duplicate =
-      ledger.some(
-        item =>
-          item?.id ===
-          entry.id
-      );
-
     if (
-      duplicate
+      isDuplicateEntry(
+        ledger,
+        entry
+      )
     ) {
       return true;
     }
@@ -382,10 +714,9 @@
     );
 
     const trimmed =
-      ledger
-        .slice(
-          -2000
-        );
+      ledger.slice(
+        -2000
+      );
 
     saveLedger(
       trimmed
@@ -412,53 +743,48 @@
     return true;
   }
 
-  function captureCompletion() {
-    document.addEventListener(
-      "click",
-      event => {
+  function finishWorkoutTiming() {
+    const entry =
+      makeLedgerEntry();
 
-        if (
-          !event.target.closest(
-            "#manaV64Complete"
-          )
-        ) {
-          return;
-        }
+    if (!entry) {
+      return false;
+    }
 
-        const entry =
-          makeEntry();
-
-        if (!entry) {
-          return;
-        }
-
-        savePending(
-          entry
-        );
-
-        commitEntry(
-          entry
-        );
-
-        savePending(
-          null
-        );
-
-        scheduleRefresh(
-          60
-        );
-
-        scheduleRefresh(
-          400
-        );
-
-        scheduleRefresh(
-          1200
-        );
-
-      },
-      true
+    savePending(
+      entry
     );
+
+    const saved =
+      commitEntry(
+        entry
+      );
+
+    if (
+      saved
+    ) {
+      savePending(
+        null
+      );
+
+      clearSession();
+
+      scheduleRefresh(
+        40
+      );
+
+      setTimeout(
+        updateProgressCards,
+        180
+      );
+
+      setTimeout(
+        updateProgressCards,
+        600
+      );
+    }
+
+    return saved;
   }
 
   function recoverPending() {
@@ -478,10 +804,173 @@
     );
   }
 
+  function wrapWorkoutOpen() {
+    const current =
+      window
+        .openManaStrengthWorkout;
+
+    if (
+      typeof current !==
+      "function"
+    ) {
+      return;
+    }
+
+    if (
+      current
+        .__manaV926TimingWrapped
+    ) {
+      return;
+    }
+
+    const wrapped =
+      function(
+        dayIndex
+      ) {
+        startOrResumeSession(
+          dayIndex
+        );
+
+        const result =
+          current.apply(
+            this,
+            arguments
+          );
+
+        setTimeout(
+          () => {
+
+            if (
+              workoutOpen()
+            ) {
+              startOrResumeSession(
+                dayIndex
+              );
+            }
+
+          },
+          120
+        );
+
+        return result;
+      };
+
+    wrapped
+      .__manaV926TimingWrapped =
+        true;
+
+    window
+      .openManaStrengthWorkout =
+        wrapped;
+  }
+
+  function watchWorkoutClicks() {
+    document.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target.closest(
+            `#${COMPLETE_ID}`
+          )
+        ) {
+          finishWorkoutTiming();
+
+          return;
+        }
+
+        if (
+          event.target.closest(
+            `#${PAUSE_ID}`
+          )
+        ) {
+          pauseSession();
+
+          return;
+        }
+
+        if (
+          event.target.closest(
+            `#${CLOSE_ID}`
+          )
+        ) {
+          pauseSession();
+        }
+
+      },
+      true
+    );
+  }
+
+  function monitorWorkoutShell() {
+    const observer =
+      new MutationObserver(
+        () => {
+
+          clearTimeout(
+            observerTimer
+          );
+
+          observerTimer =
+            setTimeout(
+              () => {
+
+                wrapWorkoutOpen();
+
+                if (
+                  workoutOpen()
+                ) {
+                  startOrResumeSession(
+                    null
+                  );
+                }
+
+              },
+              60
+            );
+
+        }
+      );
+
+    observer.observe(
+      document.body,
+      {
+        childList:
+          true,
+
+        subtree:
+          true,
+
+        attributes:
+          true,
+
+        attributeFilter:
+          [
+            "class"
+          ]
+      }
+    );
+  }
+
+  function keepOpenWrapperAlive() {
+    clearInterval(
+      wrapTimer
+    );
+
+    wrapWorkoutOpen();
+
+    wrapTimer =
+      setInterval(
+        wrapWorkoutOpen,
+        1200
+      );
+  }
+
   function activeRange() {
     const active =
       document.querySelector(
-        "[data-v9170-range].active, [data-v9181-range].active"
+        "[data-v9170-range].active, " +
+        "[data-v9181-range].active"
       );
 
     return (
@@ -642,13 +1131,73 @@
     };
   }
 
+  function formatDuration(
+    seconds
+  ) {
+    const total =
+      Math.max(
+        0,
+        Math.round(
+          Number(
+            seconds ||
+            0
+          )
+        )
+      );
+
+    if (!total) {
+      return "Not tracked";
+    }
+
+    const minutes =
+      Math.floor(
+        total /
+        60
+      );
+
+    const remaining =
+      total %
+      60;
+
+    if (
+      minutes >=
+      60
+    ) {
+      const hours =
+        Math.floor(
+          minutes /
+          60
+        );
+
+      const mins =
+        minutes %
+        60;
+
+      return mins
+        ? `${hours}h ${mins}m`
+        : `${hours}h`;
+    }
+
+    if (
+      minutes >
+      0
+    ) {
+      return remaining
+        ? `${minutes}m ${remaining}s`
+        : `${minutes} min`;
+    }
+
+    return `${remaining}s`;
+  }
+
   function findStatCard(
     labelText
   ) {
     const cards =
       [
         ...document.querySelectorAll(
-          ".mana-v9170-stat, .mana-v9181-stat"
+          ".mana-v9170-stat, " +
+          ".mana-v9181-stat"
         )
       ];
 
@@ -657,7 +1206,8 @@
 
         const label =
           card.querySelector(
-            ".mana-v9170-stat-label, .mana-v9181-stat-label"
+            ".mana-v9170-stat-label, " +
+            ".mana-v9181-stat-label"
           );
 
         return (
@@ -689,12 +1239,14 @@
 
     const valueEl =
       card.querySelector(
-        ".mana-v9170-stat-value, .mana-v9181-stat-value"
+        ".mana-v9170-stat-value, " +
+        ".mana-v9181-stat-value"
       );
 
     const subEl =
       card.querySelector(
-        ".mana-v9170-stat-sub, .mana-v9181-stat-sub"
+        ".mana-v9170-stat-sub, " +
+        ".mana-v9181-stat-sub"
       );
 
     if (
@@ -793,7 +1345,8 @@
 
         if (
           event.target.closest(
-            "[data-v9170-range], [data-v9181-range]"
+            "[data-v9170-range], " +
+            "[data-v9181-range]"
           )
         ) {
           setTimeout(
@@ -803,7 +1356,7 @@
 
           setTimeout(
             updateProgressCards,
-            250
+            280
           );
         }
 
@@ -819,7 +1372,7 @@
 
           setTimeout(
             updateProgressCards,
-            450
+            500
           );
         }
 
@@ -845,7 +1398,12 @@
 
         setTimeout(
           updateProgressCards,
-          80
+          60
+        );
+
+        setTimeout(
+          updateProgressCards,
+          300
         );
 
       }
@@ -910,20 +1468,48 @@
   function init() {
     recoverPending();
 
-    captureCompletion();
+    wrapWorkoutOpen();
+
+    keepOpenWrapperAlive();
+
+    watchWorkoutClicks();
+
+    monitorWorkoutShell();
 
     watchProgress();
 
+    if (
+      workoutOpen()
+    ) {
+      startOrResumeSession(
+        null
+      );
+    }
+
     [
-      400,
-      900,
-      1600,
-      2600
+      300,
+      700,
+      1200,
+      2200
     ].forEach(
       delay => {
 
         setTimeout(
-          updateProgressCards,
+          () => {
+
+            wrapWorkoutOpen();
+
+            if (
+              workoutOpen()
+            ) {
+              startOrResumeSession(
+                null
+              );
+            }
+
+            updateProgressCards();
+
+          },
           delay
         );
 
@@ -936,6 +1522,9 @@
 
   window.getManaTrainingTimeLedger =
     loadLedger;
+
+  window.getManaIndependentWorkoutTimer =
+    loadSession;
 
   window.refreshManaTrainingTime =
     updateProgressCards;
