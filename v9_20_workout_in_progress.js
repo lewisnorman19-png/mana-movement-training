@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.20.3
+   MANA MOVEMENT TRAINING v9.20.4
    WORKOUT IN PROGRESS + NATIVE PAUSE
 
    - ONE VISIBLE WORKOUT TIMER
@@ -10,8 +10,9 @@
    - PERSIST YELLOW SET TICKS
    - TICK ALL SETS
    - TICK ALL WORKOUT
-   - IN PROGRESS UNTIL COMPLETE
-   - DOES NOT TOUCH LOGIN / APP ROUTING
+   - PROGRAM TAB TRACKS ACTUAL WORKOUT
+   - OVERVIEW ONLY SHOWS IN PROGRESS
+     IF ITS WORKOUT MATCHES SAVED DAY
    ========================================= */
 
 (() => {
@@ -23,6 +24,9 @@
 
   const LOG_KEY =
     "mana-strength-v64-logs";
+
+  const PROGRAM_KEY =
+    "mana-strength-v62-program";
 
   const TIMER_ID =
     "manaV920Timer";
@@ -156,6 +160,47 @@
   }
 
 
+  function loadProgram() {
+
+    return safeJson(
+      localStorage.getItem(
+        PROGRAM_KEY
+      ) || "null",
+      null
+    );
+
+  }
+
+
+  function overviewWorkoutIndex() {
+
+    const program =
+      loadProgram();
+
+
+    const logs =
+      loadLogs();
+
+
+    const total =
+      program
+        ?.sessions
+        ?.length || 0;
+
+
+    if (!total) {
+      return null;
+    }
+
+
+    return (
+      logs.length %
+      total
+    );
+
+  }
+
+
   function workoutOpen() {
 
     return Boolean(
@@ -258,10 +303,6 @@
 
   /* =========================================
      TAKE CONTROL OF VISIBLE TIMER
-
-     v6.4 keeps its own timer running,
-     but it no longer owns the visible
-     timer element.
      ========================================= */
 
   function takeTimerControl() {
@@ -276,7 +317,6 @@
 
       native.id =
         NATIVE_TIMER_ID;
-
 
       native.style.display =
         "none";
@@ -372,7 +412,6 @@
 
     stopTimerLoop();
 
-
     updateTimerDisplay();
 
 
@@ -394,7 +433,6 @@
       clearInterval(
         timerLoop
       );
-
 
       timerLoop =
         null;
@@ -694,10 +732,6 @@
       loadState();
 
 
-    /*
-      Resume same unfinished workout.
-    */
-
     if (
       previous &&
       Number(
@@ -758,10 +792,6 @@
       return;
     }
 
-
-    /*
-      Brand-new workout.
-    */
 
     saveState({
 
@@ -1253,12 +1283,6 @@
         pauseTimer();
 
 
-        /*
-          Use existing v6.4 close path
-          so all current Overview and
-          navigation behaviour stays intact.
-        */
-
         document
           .getElementById(
             "manaV64Close"
@@ -1383,7 +1407,32 @@
       );
 
 
-    if (!state) {
+    const overviewIndex =
+      overviewWorkoutIndex();
+
+
+    const matchesOverview =
+      Boolean(
+        state &&
+        overviewIndex !== null &&
+        Number(
+          state.dayIndex
+        ) ===
+          Number(
+            overviewIndex
+          )
+      );
+
+
+    /*
+      If another workout was started manually
+      from Program, do NOT mark Overview's
+      different workout as in progress.
+    */
+
+    if (
+      !matchesOverview
+    ) {
 
       if (button) {
 
@@ -1439,14 +1488,18 @@
 
       note.textContent =
         `In progress • ${formatTime(
-          elapsedMs(state) / 1000
+          elapsedMs(
+            state
+          ) / 1000
         )}`;
 
     } else {
 
       note.textContent =
         `Paused at ${formatTime(
-          elapsedMs(state) / 1000
+          elapsedMs(
+            state
+          ) / 1000
         )}`;
 
     }
@@ -1563,10 +1616,14 @@
     note.textContent =
       state.running
         ? `In progress • ${formatTime(
-            elapsedMs(state) / 1000
+            elapsedMs(
+              state
+            ) / 1000
           )}`
         : `Paused at ${formatTime(
-            elapsedMs(state) / 1000
+            elapsedMs(
+              state
+            ) / 1000
           )}`;
 
 
