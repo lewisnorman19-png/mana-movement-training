@@ -1,16 +1,17 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.20.2
-   WORKOUT RESUME STATE — HARD RESTORE
+   MANA MOVEMENT TRAINING v9.20.3
+   WORKOUT IN PROGRESS + NATIVE PAUSE
 
+   - ONE VISIBLE WORKOUT TIMER
+   - NO TIMER FLICKER
+   - PAUSE WORKOUT BUTTON
+   - X ALSO SAFELY PAUSES
+   - TIMER CONTINUES FROM PAUSED TIME
    - PERSIST YELLOW SET TICKS
-   - PERSIST WORKOUT TIMER
-   - TIMER PAUSES ON X
-   - TIMER CONTINUES ON RESUME
-   - RESTORES AFTER V6.4 REBUILDS UI
    - TICK ALL SETS
    - TICK ALL WORKOUT
    - IN PROGRESS UNTIL COMPLETE
-   - DOES NOT TOUCH LOGIN / PHONE ROUTING
+   - DOES NOT TOUCH LOGIN / APP ROUTING
    ========================================= */
 
 (() => {
@@ -22,6 +23,15 @@
 
   const LOG_KEY =
     "mana-strength-v64-logs";
+
+  const TIMER_ID =
+    "manaV920Timer";
+
+  const NATIVE_TIMER_ID =
+    "manaV64NativeTimer";
+
+  const PAUSE_ID =
+    "manaV920Pause";
 
 
   let wrapping =
@@ -41,9 +51,14 @@
      HELPERS
      ========================================= */
 
-  function safeJson(raw, fallback) {
+  function safeJson(
+    raw,
+    fallback
+  ) {
     try {
-      return JSON.parse(raw);
+      return JSON.parse(
+        raw
+      );
     } catch (_) {
       return fallback;
     }
@@ -51,43 +66,60 @@
 
 
   function loadState() {
+
     return safeJson(
       localStorage.getItem(
         STATE_KEY
       ) || "null",
       null
     );
+
   }
 
 
-  function saveState(state) {
+  function saveState(
+    state
+  ) {
+
     try {
+
       localStorage.setItem(
         STATE_KEY,
-        JSON.stringify(state)
+        JSON.stringify(
+          state
+        )
       );
+
     } catch (_) {}
+
   }
 
 
   function clearState() {
+
     try {
+
       localStorage.removeItem(
         STATE_KEY
       );
+
     } catch (_) {}
 
+
     stopTimerLoop();
+
 
     window.dispatchEvent(
       new CustomEvent(
         "mana:workout-progress-change"
       )
     );
+
   }
 
 
   function loadLogs() {
+
     const logs =
       safeJson(
         localStorage.getItem(
@@ -96,31 +128,47 @@
         []
       );
 
-    return Array.isArray(logs)
+
+    return Array.isArray(
+      logs
+    )
       ? logs
       : [];
+
   }
 
 
-  function saveLogs(logs) {
+  function saveLogs(
+    logs
+  ) {
+
     try {
+
       localStorage.setItem(
         LOG_KEY,
-        JSON.stringify(logs)
+        JSON.stringify(
+          logs
+        )
       );
+
     } catch (_) {}
+
   }
 
 
   function workoutOpen() {
+
     return Boolean(
       document
         .getElementById(
           "manaStrengthV64Workout"
         )
         ?.classList
-        .contains("open")
+        .contains(
+          "open"
+        )
     );
+
   }
 
 
@@ -128,41 +176,70 @@
      TIMER
      ========================================= */
 
-  function formatTime(seconds) {
+  function formatTime(
+    seconds
+  ) {
+
     const total =
       Math.max(
         0,
         Math.floor(
-          Number(seconds || 0)
+          Number(
+            seconds || 0
+          )
         )
       );
 
+
     const mins =
-      Math.floor(total / 60);
+      Math.floor(
+        total / 60
+      );
+
 
     const secs =
       total % 60;
 
+
     return (
-      String(mins).padStart(2, "0") +
+      String(
+        mins
+      ).padStart(
+        2,
+        "0"
+      ) +
       ":" +
-      String(secs).padStart(2, "0")
+      String(
+        secs
+      ).padStart(
+        2,
+        "0"
+      )
     );
+
   }
 
 
-  function elapsedMs(state = loadState()) {
-    if (!state) return 0;
+  function elapsedMs(
+    state = loadState()
+  ) {
+
+    if (!state) {
+      return 0;
+    }
+
 
     let elapsed =
       Number(
         state.elapsedMs || 0
       );
 
+
     if (
       state.running &&
       state.segmentStartedAt
     ) {
+
       elapsed +=
         Math.max(
           0,
@@ -171,81 +248,178 @@
             state.segmentStartedAt
           )
         );
+
     }
+
 
     return elapsed;
   }
 
 
-  function forceTimerDisplay() {
-    if (!workoutOpen()) return;
+  /* =========================================
+     TAKE CONTROL OF VISIBLE TIMER
 
-    const state =
-      loadState();
+     v6.4 keeps its own timer running,
+     but it no longer owns the visible
+     timer element.
+     ========================================= */
 
-    if (!state) return;
+  function takeTimerControl() {
 
-    const timer =
+    let native =
       document.getElementById(
         "manaV64Timer"
       );
 
-    if (!timer) return;
 
-    const value =
-      formatTime(
-        elapsedMs(state) / 1000
-      );
+    if (native) {
+
+      native.id =
+        NATIVE_TIMER_ID;
+
+
+      native.style.display =
+        "none";
+
+    }
+
 
     if (
-      timer.textContent !== value
+      document.getElementById(
+        TIMER_ID
+      )
     ) {
-      timer.textContent =
-        value;
+      return;
     }
+
+
+    const hidden =
+      document.getElementById(
+        NATIVE_TIMER_ID
+      );
+
+
+    if (!hidden) {
+      return;
+    }
+
+
+    const visible =
+      document.createElement(
+        "strong"
+      );
+
+
+    visible.id =
+      TIMER_ID;
+
+    visible.textContent =
+      "00:00";
+
+
+    hidden
+      .insertAdjacentElement(
+        "afterend",
+        visible
+      );
+
+  }
+
+
+  function updateTimerDisplay() {
+
+    if (
+      !workoutOpen()
+    ) {
+      return;
+    }
+
+
+    takeTimerControl();
+
+
+    const state =
+      loadState();
+
+
+    if (!state) {
+      return;
+    }
+
+
+    const timer =
+      document.getElementById(
+        TIMER_ID
+      );
+
+
+    if (!timer) {
+      return;
+    }
+
+
+    timer.textContent =
+      formatTime(
+        elapsedMs(
+          state
+        ) / 1000
+      );
+
   }
 
 
   function startTimerLoop() {
+
     stopTimerLoop();
 
-    forceTimerDisplay();
 
-    /*
-      v6.4 updates its own timer once a second.
+    updateTimerDisplay();
 
-      Our faster loop keeps the persisted
-      resumed time as the visible value.
-    */
 
     timerLoop =
       setInterval(
-        forceTimerDisplay,
-        150
+        updateTimerDisplay,
+        500
       );
+
   }
 
 
   function stopTimerLoop() {
-    if (timerLoop) {
+
+    if (
+      timerLoop
+    ) {
+
       clearInterval(
         timerLoop
       );
 
+
       timerLoop =
         null;
+
     }
+
   }
 
 
   function pauseTimer() {
+
     const state =
       loadState();
 
-    if (!state) return;
+
+    if (!state) {
+      return;
+    }
+
 
     state.elapsedMs =
-      elapsedMs(state);
+      elapsedMs(
+        state
+      );
+
 
     state.running =
       false;
@@ -256,19 +430,37 @@
     state.updatedAt =
       Date.now();
 
-    saveState(state);
+
+    saveState(
+      state
+    );
+
 
     stopTimerLoop();
+
+
+    updateOverview();
+
+    updateCurrentWorkout();
+
   }
 
 
   function resumeTimer() {
+
     const state =
       loadState();
 
-    if (!state) return;
 
-    if (!state.running) {
+    if (!state) {
+      return;
+    }
+
+
+    if (
+      !state.running
+    ) {
+
       state.running =
         true;
 
@@ -278,54 +470,74 @@
       state.updatedAt =
         Date.now();
 
-      saveState(state);
+
+      saveState(
+        state
+      );
+
     }
 
+
     startTimerLoop();
+
   }
 
 
   /* =========================================
-     SET STATE
+     COMPLETED SET STATE
      ========================================= */
 
   function collectCompletedSets() {
+
     const data = {};
+
 
     document
       .querySelectorAll(
         "#manaV64Exercises .mana-v64-card"
       )
-      .forEach(card => {
+      .forEach(
+        card => {
 
-        const name =
-          card.dataset
-            .exerciseName ||
-          "";
+          const name =
+            card.dataset
+              .exerciseName ||
+            "";
 
-        if (!name) return;
 
-        data[name] =
-          [
-            ...card.querySelectorAll(
-              "[data-v64-check]"
-            )
-          ].map(
-            check =>
-              check.classList.contains(
-                "done"
+          if (!name) {
+            return;
+          }
+
+
+          data[name] =
+            [
+              ...card.querySelectorAll(
+                "[data-v64-check]"
               )
-          );
+            ]
+              .map(
+                check =>
+                  check
+                    .classList
+                    .contains(
+                      "done"
+                    )
+              );
 
-      });
+        }
+      );
+
 
     return data;
   }
 
 
   function saveTicks() {
+
     const state =
       loadState();
+
 
     if (
       !state ||
@@ -334,44 +546,58 @@
       return;
     }
 
+
     state.completedSets =
       collectCompletedSets();
 
     state.updatedAt =
       Date.now();
 
-    saveState(state);
+
+    saveState(
+      state
+    );
+
   }
 
 
   function updateNativeSummary() {
+
     const input =
       document.querySelector(
         "#manaV64Exercises input"
       );
 
-    if (input) {
-      input.dispatchEvent(
-        new Event(
-          "input",
-          {
-            bubbles:true
-          }
-        )
-      );
+
+    if (!input) {
+      return;
     }
+
+
+    input.dispatchEvent(
+      new Event(
+        "input",
+        {
+          bubbles:true
+        }
+      )
+    );
+
   }
 
 
   function restoreTicks() {
+
     const state =
       loadState();
+
 
     if (
       !state ||
       !state.completedSets ||
-      typeof state.completedSets !==
-        "object"
+      typeof
+        state.completedSets !==
+      "object"
     ) {
       return;
     }
@@ -381,55 +607,62 @@
       .querySelectorAll(
         "#manaV64Exercises .mana-v64-card"
       )
-      .forEach(card => {
+      .forEach(
+        card => {
 
-        const name =
-          card.dataset
-            .exerciseName ||
-          "";
-
-        const saved =
-          state.completedSets[
-            name
-          ];
-
-        if (
-          !Array.isArray(saved)
-        ) {
-          return;
-        }
+          const name =
+            card.dataset
+              .exerciseName ||
+            "";
 
 
-        const checks =
-          [
-            ...card.querySelectorAll(
-              "[data-v64-check]"
+          const saved =
+            state.completedSets[
+              name
+            ];
+
+
+          if (
+            !Array.isArray(
+              saved
             )
-          ];
-
-
-        checks.forEach(
-          (
-            check,
-            index
-          ) => {
-
-            check
-              .classList
-              .toggle(
-                "done",
-                Boolean(
-                  saved[index]
-                )
-              );
-
+          ) {
+            return;
           }
-        );
 
-      });
+
+          const checks =
+            [
+              ...card.querySelectorAll(
+                "[data-v64-check]"
+              )
+            ];
+
+
+          checks.forEach(
+            (
+              check,
+              index
+            ) => {
+
+              check
+                .classList
+                .toggle(
+                  "done",
+                  Boolean(
+                    saved[index]
+                  )
+                );
+
+            }
+          );
+
+        }
+      );
 
 
     updateNativeSummary();
+
   }
 
 
@@ -437,12 +670,20 @@
      IN PROGRESS STATE
      ========================================= */
 
-  function markInProgress(dayIndex) {
+  function markInProgress(
+    dayIndex
+  ) {
+
     const index =
-      Number(dayIndex);
+      Number(
+        dayIndex
+      );
+
 
     if (
-      !Number.isInteger(index) ||
+      !Number.isInteger(
+        index
+      ) ||
       index < 0
     ) {
       return;
@@ -454,7 +695,7 @@
 
 
     /*
-      Existing unfinished workout.
+      Resume same unfinished workout.
     */
 
     if (
@@ -465,24 +706,30 @@
     ) {
 
       if (
-        typeof previous.elapsedMs !==
+        typeof
+          previous.elapsedMs !==
         "number"
       ) {
+
         previous.elapsedMs =
           0;
+
       }
 
 
       if (
         !previous.completedSets ||
-        typeof previous.completedSets !==
-          "object" ||
+        typeof
+          previous.completedSets !==
+        "object" ||
         Array.isArray(
           previous.completedSets
         )
       ) {
+
         previous.completedSets =
           {};
+
       }
 
 
@@ -496,7 +743,9 @@
         Date.now();
 
 
-      saveState(previous);
+      saveState(
+        previous
+      );
 
 
       window.dispatchEvent(
@@ -511,7 +760,7 @@
 
 
     /*
-      New workout.
+      Brand-new workout.
     */
 
     saveState({
@@ -548,6 +797,7 @@
         "mana:workout-progress-change"
       )
     );
+
   }
 
 
@@ -556,11 +806,18 @@
      ========================================= */
 
   function wrapWorkoutOpen() {
-    if (wrapping) return;
+
+    if (
+      wrapping
+    ) {
+      return;
+    }
+
 
     const original =
       window
         .openManaStrengthWorkout;
+
 
     if (
       typeof original !==
@@ -572,7 +829,7 @@
 
     if (
       original
-        .__manaV920HardWrapped
+        .__manaV920PauseWrapped
     ) {
       return;
     }
@@ -583,7 +840,9 @@
 
 
     const wrapped =
-      function(dayIndex) {
+      function(
+        dayIndex
+      ) {
 
         markInProgress(
           dayIndex
@@ -597,31 +856,25 @@
           );
 
 
-        /*
-          v6.4 rebuilds the exercise DOM.
-
-          Restore repeatedly after that
-          rebuild so our state wins.
-        */
-
         [
           30,
           100,
           220,
           450,
-          800,
-          1200
+          800
         ].forEach(
           delay => {
 
             setTimeout(
               () => {
 
+                takeTimerControl();
+
                 enhanceWorkout();
 
                 restoreTicks();
 
-                forceTimerDisplay();
+                updateTimerDisplay();
 
               },
               delay
@@ -633,16 +886,17 @@
 
         setTimeout(
           resumeTimer,
-          60
+          80
         );
 
 
         return result;
+
       };
 
 
     wrapped
-      .__manaV920HardWrapped =
+      .__manaV920PauseWrapped =
         true;
 
 
@@ -653,14 +907,16 @@
 
     wrapping =
       false;
+
   }
 
 
   /* =========================================
-     STYLE
+     STYLES
      ========================================= */
 
   function injectStyles() {
+
     if (
       document.getElementById(
         "mana-v920-progress-style"
@@ -698,10 +954,12 @@
         text-transform:uppercase;
       }
 
+
       .mana-v920-progress-badge::before{
         content:"●";
         font-size:8px;
       }
+
 
       .mana-v920-tick-all{
         width:100%;
@@ -713,26 +971,34 @@
         color:#f3d875;
         font-size:12px;
         font-weight:900;
-        cursor:pointer;
       }
+
 
       .mana-v920-workout-all{
         width:100%;
-        min-height:52px;
-        margin:18px 0 8px;
+        min-height:50px;
+        margin-top:18px;
         border:1px solid #6b5920;
-        border-radius:16px;
-        background:
-          linear-gradient(
-            145deg,
-            #1b1708,
-            #0d0d0d
-          );
+        border-radius:15px;
+        background:#151208;
         color:#f3d875;
         font-size:13px;
         font-weight:900;
-        cursor:pointer;
       }
+
+
+      .mana-v920-pause{
+        width:100%;
+        min-height:52px;
+        margin-top:10px;
+        border:1px solid #444;
+        border-radius:15px;
+        background:#111;
+        color:#fff;
+        font-size:13px;
+        font-weight:900;
+      }
+
 
       .mana-v920-resume-note{
         margin-top:9px;
@@ -748,6 +1014,7 @@
     document.head.appendChild(
       style
     );
+
   }
 
 
@@ -756,90 +1023,92 @@
      ========================================= */
 
   function addExerciseTickAll() {
+
     document
       .querySelectorAll(
         "#manaV64Exercises .mana-v64-card"
       )
-      .forEach(card => {
+      .forEach(
+        card => {
 
-        if (
-          card.querySelector(
-            ".mana-v920-tick-all"
-          )
-        ) {
-          return;
-        }
-
-
-        const controls =
-          card.querySelector(
-            ".mana-v64-controls"
-          );
-
-        if (!controls) return;
+          if (
+            card.querySelector(
+              ".mana-v920-tick-all"
+            )
+          ) {
+            return;
+          }
 
 
-        const button =
-          document.createElement(
-            "button"
-          );
-
-
-        button.type =
-          "button";
-
-        button.className =
-          "mana-v920-tick-all";
-
-        button.textContent =
-          "✓ TICK ALL SETS";
-
-
-        button.addEventListener(
-          "click",
-          () => {
-
-            card
-              .querySelectorAll(
-                "[data-v64-check]"
-              )
-              .forEach(check => {
-
-                check
-                  .classList
-                  .add(
-                    "done"
-                  );
-
-              });
-
-
-            updateNativeSummary();
-
-
-            [
-              20,
-              80,
-              180
-            ].forEach(
-              delay =>
-                setTimeout(
-                  saveTicks,
-                  delay
-                )
+          const controls =
+            card.querySelector(
+              ".mana-v64-controls"
             );
 
+
+          if (!controls) {
+            return;
           }
-        );
 
 
-        controls
-          .insertAdjacentElement(
-            "beforebegin",
-            button
+          const button =
+            document.createElement(
+              "button"
+            );
+
+
+          button.type =
+            "button";
+
+          button.className =
+            "mana-v920-tick-all";
+
+          button.textContent =
+            "✓ TICK ALL SETS";
+
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              card
+                .querySelectorAll(
+                  "[data-v64-check]"
+                )
+                .forEach(
+                  check => {
+
+                    check
+                      .classList
+                      .add(
+                        "done"
+                      );
+
+                  }
+                );
+
+
+              updateNativeSummary();
+
+
+              setTimeout(
+                saveTicks,
+                50
+              );
+
+            }
           );
 
-      });
+
+          controls
+            .insertAdjacentElement(
+              "beforebegin",
+              button
+            );
+
+        }
+      );
+
   }
 
 
@@ -848,6 +1117,7 @@
      ========================================= */
 
   function addWorkoutTickAll() {
+
     if (
       document.getElementById(
         "manaV920TickWorkout"
@@ -862,7 +1132,10 @@
         "manaV64Complete"
       );
 
-    if (!complete) return;
+
+    if (!complete) {
+      return;
+    }
 
 
     const button =
@@ -892,30 +1165,25 @@
           .querySelectorAll(
             "#manaV64Exercises [data-v64-check]"
           )
-          .forEach(check => {
+          .forEach(
+            check => {
 
-            check
-              .classList
-              .add(
-                "done"
-              );
+              check
+                .classList
+                .add(
+                  "done"
+                );
 
-          });
+            }
+          );
 
 
         updateNativeSummary();
 
 
-        [
-          20,
-          80,
-          180
-        ].forEach(
-          delay =>
-            setTimeout(
-              saveTicks,
-              delay
-            )
+        setTimeout(
+          saveTicks,
+          50
         );
 
       }
@@ -927,14 +1195,95 @@
         "beforebegin",
         button
       );
+
   }
 
 
   /* =========================================
-     BADGE
+     PAUSE BUTTON
+     ========================================= */
+
+  function addPauseButton() {
+
+    if (
+      document.getElementById(
+        PAUSE_ID
+      )
+    ) {
+      return;
+    }
+
+
+    const complete =
+      document.getElementById(
+        "manaV64Complete"
+      );
+
+
+    if (!complete) {
+      return;
+    }
+
+
+    const button =
+      document.createElement(
+        "button"
+      );
+
+
+    button.type =
+      "button";
+
+    button.id =
+      PAUSE_ID;
+
+    button.className =
+      "mana-v920-pause";
+
+    button.textContent =
+      "Ⅱ PAUSE WORKOUT";
+
+
+    button.addEventListener(
+      "click",
+      () => {
+
+        saveTicks();
+
+        pauseTimer();
+
+
+        /*
+          Use existing v6.4 close path
+          so all current Overview and
+          navigation behaviour stays intact.
+        */
+
+        document
+          .getElementById(
+            "manaV64Close"
+          )
+          ?.click();
+
+      }
+    );
+
+
+    complete
+      .insertAdjacentElement(
+        "beforebegin",
+        button
+      );
+
+  }
+
+
+  /* =========================================
+     WORKOUT BADGE
      ========================================= */
 
   function addWorkoutBadge() {
+
     const head =
       document.querySelector(
         "#manaStrengthV64Workout .mana-v64-head > div"
@@ -967,17 +1316,29 @@
     head.appendChild(
       badge
     );
+
   }
 
 
   function enhanceWorkout() {
-    if (!workoutOpen()) return;
+
+    if (
+      !workoutOpen()
+    ) {
+      return;
+    }
+
+
+    takeTimerControl();
 
     addExerciseTickAll();
 
     addWorkoutTickAll();
 
+    addPauseButton();
+
     addWorkoutBadge();
+
   }
 
 
@@ -986,6 +1347,7 @@
      ========================================= */
 
   function updateOverview() {
+
     const state =
       loadState();
 
@@ -995,7 +1357,10 @@
         ".mana-v9103-workout"
       );
 
-    if (!card) return;
+
+    if (!card) {
+      return;
+    }
 
 
     card
@@ -1019,10 +1384,14 @@
 
 
     if (!state) {
+
       if (button) {
+
         button.textContent =
           "START WORKOUT →";
+
       }
+
 
       return;
     }
@@ -1064,10 +1433,23 @@
       "mana-v920-resume-note";
 
 
-    note.textContent =
-      `Paused at ${formatTime(
-        elapsedMs(state) / 1000
-      )} • Resume when ready`;
+    if (
+      state.running
+    ) {
+
+      note.textContent =
+        `In progress • ${formatTime(
+          elapsedMs(state) / 1000
+        )}`;
+
+    } else {
+
+      note.textContent =
+        `Paused at ${formatTime(
+          elapsedMs(state) / 1000
+        )}`;
+
+    }
 
 
     badge
@@ -1078,9 +1460,12 @@
 
 
     if (button) {
+
       button.textContent =
         "RESUME WORKOUT →";
+
     }
+
   }
 
 
@@ -1089,6 +1474,7 @@
      ========================================= */
 
   function updateCurrentWorkout() {
+
     const state =
       loadState();
 
@@ -1098,7 +1484,10 @@
         "manaV82Current"
       );
 
-    if (!card) return;
+
+    if (!card) {
+      return;
+    }
 
 
     card
@@ -1122,10 +1511,14 @@
 
 
     if (!state) {
+
       if (openText) {
+
         openText.textContent =
           "Start workout →";
+
       }
+
 
       return;
     }
@@ -1168,9 +1561,13 @@
 
 
     note.textContent =
-      `Paused at ${formatTime(
-        elapsedMs(state) / 1000
-      )}`;
+      state.running
+        ? `In progress • ${formatTime(
+            elapsedMs(state) / 1000
+          )}`
+        : `Paused at ${formatTime(
+            elapsedMs(state) / 1000
+          )}`;
 
 
     badge
@@ -1181,17 +1578,21 @@
 
 
     if (openText) {
+
       openText.textContent =
         "Resume workout →";
+
     }
+
   }
 
 
   /* =========================================
-     SET CLICK SAVE
+     MANUAL SET SAVE
      ========================================= */
 
   function watchSetTicks() {
+
     document.addEventListener(
       "click",
       event => {
@@ -1205,34 +1606,24 @@
         }
 
 
-        /*
-          Let v6.4 toggle the button first,
-          then save the finished state.
-        */
-
-        [
-          20,
-          80,
-          180
-        ].forEach(
-          delay =>
-            setTimeout(
-              saveTicks,
-              delay
-            )
+        setTimeout(
+          saveTicks,
+          60
         );
 
       },
       true
     );
+
   }
 
 
   /* =========================================
-     CLOSE = PAUSE
+     X = SAFE PAUSE
      ========================================= */
 
   function watchClose() {
+
     document.addEventListener(
       "click",
       event => {
@@ -1246,10 +1637,12 @@
         }
 
 
-        /*
-          Capture state before v6.4 destroys
-          the active workout context.
-        */
+        if (
+          completing
+        ) {
+          return;
+        }
+
 
         saveTicks();
 
@@ -1258,7 +1651,7 @@
 
         setTimeout(
           refreshEverything,
-          120
+          150
         );
 
 
@@ -1270,39 +1663,45 @@
       },
       true
     );
+
   }
 
 
   /* =========================================
-     COMPLETE
+     COMPLETE WORKOUT
      ========================================= */
 
   function watchComplete() {
+
     document.addEventListener(
       "click",
       event => {
 
         if (
-          event.target.closest(
+          !event.target.closest(
             "#manaV64Complete"
           )
         ) {
-
-          saveTicks();
-
-          completing =
-            true;
-
-
-          setTimeout(
-            () => {
-              completing =
-                false;
-            },
-            2200
-          );
-
+          return;
         }
+
+
+        saveTicks();
+
+
+        completing =
+          true;
+
+
+        setTimeout(
+          () => {
+
+            completing =
+              false;
+
+          },
+          2200
+        );
 
       },
       true
@@ -1313,7 +1712,9 @@
       "mana:strength-synced",
       () => {
 
-        if (!completing) {
+        if (
+          !completing
+        ) {
           return;
         }
 
@@ -1330,8 +1731,9 @@
           Math.max(
             0,
             Math.round(
-              elapsedMs(state) /
-              1000
+              elapsedMs(
+                state
+              ) / 1000
             )
           );
 
@@ -1349,8 +1751,12 @@
         if (
           last &&
           state &&
-          Number(last.dayIndex) ===
-            Number(state.dayIndex)
+          Number(
+            last.dayIndex
+          ) ===
+          Number(
+            state.dayIndex
+          )
         ) {
 
           last.durationSeconds =
@@ -1358,11 +1764,15 @@
 
           last.durationMinutes =
             Math.round(
-              totalSeconds / 60
+              totalSeconds /
+              60
             );
 
 
-          saveLogs(logs);
+          saveLogs(
+            logs
+          );
+
         }
 
 
@@ -1382,6 +1792,7 @@
 
       }
     );
+
   }
 
 
@@ -1390,17 +1801,24 @@
      ========================================= */
 
   function refreshEverything() {
+
     enhanceWorkout();
 
     updateOverview();
 
     updateCurrentWorkout();
 
-    if (workoutOpen()) {
+
+    if (
+      workoutOpen()
+    ) {
+
       restoreTicks();
 
-      forceTimerDisplay();
+      updateTimerDisplay();
+
     }
+
   }
 
 
@@ -1409,6 +1827,7 @@
      ========================================= */
 
   function watchDOM() {
+
     const observer =
       new MutationObserver(
         () => {
@@ -1445,6 +1864,7 @@
         ]
       }
     );
+
   }
 
 
@@ -1453,21 +1873,23 @@
      ========================================= */
 
   function watchEvents() {
+
     [
       "mana:program-tab-change",
       "mana:workout-progress-change",
       "mana:profile-synced"
     ].forEach(
-      name => {
+      eventName => {
 
         window.addEventListener(
-          name,
+          eventName,
           () => {
 
             setTimeout(
               refreshEverything,
               80
             );
+
 
             setTimeout(
               refreshEverything,
@@ -1479,6 +1901,7 @@
 
       }
     );
+
   }
 
 
@@ -1487,7 +1910,10 @@
      ========================================= */
 
   function init() {
+
     injectStyles();
+
+    takeTimerControl();
 
     wrapWorkoutOpen();
 
@@ -1509,9 +1935,12 @@
       1200,
       2200
     ].forEach(
-      delay =>
+      delay => {
+
         setTimeout(
           () => {
+
+            takeTimerControl();
 
             wrapWorkoutOpen();
 
@@ -1519,8 +1948,11 @@
 
           },
           delay
-        )
+        );
+
+      }
     );
+
   }
 
 
@@ -1532,12 +1964,16 @@
     document.readyState ===
       "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
+
   } else {
+
     init();
+
   }
 
 })();
