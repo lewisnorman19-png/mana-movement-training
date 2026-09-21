@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.6.6
+   MANA MOVEMENT TRAINING v8.6.7
    MANA STRENGTH — OVERVIEW
 
    PERSONALISED WELCOME
@@ -7,6 +7,11 @@
    COACH ACTIVITY
    NEXT UP
    MEMBERSHIP LEVELS
+
+   v8.6.7:
+   - RECOVERY FOCUS NOW REAPPLIES
+     MODERN COACH SUPPORT AFTER
+     OVERVIEW REBUILD
    ========================================= */
 
 (() => {
@@ -305,7 +310,66 @@
     );
 
 
+    /*
+      Rebuild Today's Focus immediately.
+    */
+
     renderOverview();
+
+
+    /*
+      Recovery rebuilds the entire Overview,
+      including the old Coach Activity block.
+
+      After the rebuild settles, use the
+      existing stable Overview repair layer
+      to restore modern Coach Support.
+    */
+
+    setTimeout(
+      () => {
+
+        if (
+          typeof
+            window
+              .repairManaStrengthOverview ===
+          "function"
+        ) {
+
+          window
+            .repairManaStrengthOverview();
+
+        }
+
+      },
+      120
+    );
+
+
+    /*
+      Restore the training percentage too,
+      because renderOverview recreates the
+      Training done row.
+    */
+
+    setTimeout(
+      () => {
+
+        if (
+          typeof
+            window
+              .refreshManaTrainingPercentage ===
+          "function"
+        ) {
+
+          window
+            .refreshManaTrainingPercentage();
+
+        }
+
+      },
+      220
+    );
   }
 
 
