@@ -1,14 +1,17 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.20.0
-   WORKOUT IN PROGRESS
+   MANA MOVEMENT TRAINING v9.20.1
+   WORKOUT IN PROGRESS + RESUME STATE
 
-   - MARK WORKOUT IN PROGRESS WHEN OPENED
-   - KEEP IN PROGRESS UNTIL COMPLETE WORKOUT
-   - SHOW IN PROGRESS ON OVERVIEW
-   - SHOW IN PROGRESS ON CURRENT WORKOUT
-   - SHOW RESUME WORKOUT
+   - WORKOUT REMAINS IN PROGRESS
+     UNTIL COMPLETE IS CONFIRMED
+   - RESTORES YELLOW COMPLETED SET TICKS
+   - RESTORES WORKOUT TIMER
+   - TIMER PAUSES WHEN WORKOUT IS CLOSED
+   - TIMER CONTINUES WHEN WORKOUT RESUMES
    - TICK ALL SETS PER EXERCISE
    - TICK ALL WORKOUT
+   - SHOWS IN PROGRESS ON OVERVIEW
+   - SHOWS IN PROGRESS ON CURRENT WORKOUT
    - DOES NOT CONTROL APP STARTUP / ROUTING
    ========================================= */
 
@@ -30,6 +33,9 @@
     false;
 
   let observerTimer =
+    null;
+
+  let timerInterval =
     null;
 
 
@@ -98,6 +104,9 @@
     } catch (_) {}
 
 
+    stopResumeTimer();
+
+
     window.dispatchEvent(
       new CustomEvent(
         "mana:workout-progress-change"
@@ -127,6 +136,24 @@
   }
 
 
+  function saveLogs(
+    logs
+  ) {
+
+    try {
+
+      localStorage.setItem(
+        LOG_KEY,
+        JSON.stringify(
+          logs
+        )
+      );
+
+    } catch (_) {}
+
+  }
+
+
   function workoutOpen() {
 
     return Boolean(
@@ -138,6 +165,444 @@
         .contains(
           "open"
         )
+    );
+
+  }
+
+
+  function currentDayIndex() {
+
+    const subtitle =
+      document
+        .getElementById(
+          "manaV64Subtitle"
+        )
+        ?.textContent ||
+      "";
+
+
+    const match =
+      subtitle.match(
+        /Day\s+(\d+)/i
+      );
+
+
+    if (
+      !match?.[1]
+    ) {
+      return null;
+    }
+
+
+    const index =
+      Number(
+        match[1]
+      ) - 1;
+
+
+    return Number.isInteger(
+      index
+    )
+      ? index
+      : null;
+
+  }
+
+
+  /* =========================================
+     TIMER
+     ========================================= */
+
+  function formatTime(
+    seconds
+  ) {
+
+    const safeSeconds =
+      Math.max(
+        0,
+        Math.floor(
+          Number(
+            seconds || 0
+          )
+        )
+      );
+
+
+    const mins =
+      Math.floor(
+        safeSeconds / 60
+      );
+
+
+    const secs =
+      safeSeconds % 60;
+
+
+    return (
+      String(
+        mins
+      ).padStart(
+        2,
+        "0"
+      ) +
+      ":" +
+      String(
+        secs
+      ).padStart(
+        2,
+        "0"
+      )
+    );
+
+  }
+
+
+  function currentElapsedMs(
+    state = loadState()
+  ) {
+
+    if (!state) {
+      return 0;
+    }
+
+
+    let elapsed =
+      Number(
+        state.elapsedMs ||
+        0
+      );
+
+
+    if (
+      state.running &&
+      state.segmentStartedAt
+    ) {
+
+      elapsed +=
+        Math.max(
+          0,
+          Date.now() -
+          Number(
+            state.segmentStartedAt
+          )
+        );
+
+    }
+
+
+    return elapsed;
+
+  }
+
+
+  function updateTimerDisplay() {
+
+    if (
+      !workoutOpen()
+    ) {
+      return;
+    }
+
+
+    const state =
+      loadState();
+
+
+    if (!state) {
+      return;
+    }
+
+
+    const timer =
+      document.getElementById(
+        "manaV64Timer"
+      );
+
+
+    if (!timer) {
+      return;
+    }
+
+
+    timer.textContent =
+      formatTime(
+        currentElapsedMs(
+          state
+        ) / 1000
+      );
+
+  }
+
+
+  function startResumeTimer() {
+
+    stopResumeTimer();
+
+
+    updateTimerDisplay();
+
+
+    timerInterval =
+      setInterval(
+        updateTimerDisplay,
+        1000
+      );
+
+  }
+
+
+  function stopResumeTimer() {
+
+    if (
+      timerInterval
+    ) {
+
+      clearInterval(
+        timerInterval
+      );
+
+
+      timerInterval =
+        null;
+
+    }
+
+  }
+
+
+  function pauseTimer() {
+
+    const state =
+      loadState();
+
+
+    if (!state) {
+      return;
+    }
+
+
+    state.elapsedMs =
+      currentElapsedMs(
+        state
+      );
+
+
+    state.running =
+      false;
+
+    state.segmentStartedAt =
+      null;
+
+    state.updatedAt =
+      Date.now();
+
+
+    saveState(
+      state
+    );
+
+
+    stopResumeTimer();
+
+  }
+
+
+  function resumeTimer() {
+
+    const state =
+      loadState();
+
+
+    if (!state) {
+      return;
+    }
+
+
+    /*
+      Only start a fresh segment if
+      timer is currently paused.
+    */
+
+    if (
+      !state.running
+    ) {
+
+      state.running =
+        true;
+
+      state.segmentStartedAt =
+        Date.now();
+
+      state.updatedAt =
+        Date.now();
+
+
+      saveState(
+        state
+      );
+
+    }
+
+
+    startResumeTimer();
+
+  }
+
+
+  /* =========================================
+     SAVE COMPLETED SET TICKS
+     ========================================= */
+
+  function collectTickState() {
+
+    return [
+      ...document.querySelectorAll(
+        "#manaV64Exercises .mana-v64-card"
+      )
+    ].map(
+      card => {
+
+        return [
+          ...card.querySelectorAll(
+            "[data-v64-check]"
+          )
+        ].map(
+          check =>
+            check
+              .classList
+              .contains(
+                "done"
+              )
+        );
+
+      }
+    );
+
+  }
+
+
+  function saveTicks() {
+
+    const state =
+      loadState();
+
+
+    if (
+      !state ||
+      !workoutOpen()
+    ) {
+      return;
+    }
+
+
+    state.completedSets =
+      collectTickState();
+
+    state.updatedAt =
+      Date.now();
+
+
+    saveState(
+      state
+    );
+
+  }
+
+
+  function restoreTicks() {
+
+    const state =
+      loadState();
+
+
+    if (
+      !state ||
+      !Array.isArray(
+        state.completedSets
+      )
+    ) {
+      return;
+    }
+
+
+    const cards =
+      [
+        ...document.querySelectorAll(
+          "#manaV64Exercises .mana-v64-card"
+        )
+      ];
+
+
+    cards.forEach(
+      (
+        card,
+        exerciseIndex
+      ) => {
+
+        const savedSets =
+          state.completedSets[
+            exerciseIndex
+          ];
+
+
+        if (
+          !Array.isArray(
+            savedSets
+          )
+        ) {
+          return;
+        }
+
+
+        const checks =
+          [
+            ...card.querySelectorAll(
+              "[data-v64-check]"
+            )
+          ];
+
+
+        checks.forEach(
+          (
+            check,
+            setIndex
+          ) => {
+
+            const shouldBeDone =
+              Boolean(
+                savedSets[
+                  setIndex
+                ]
+              );
+
+
+            const isDone =
+              check
+                .classList
+                .contains(
+                  "done"
+                );
+
+
+            /*
+              Use click rather than manually
+              changing the class so v6.4 also
+              recalculates volume, sets and %.
+            */
+
+            if (
+              shouldBeDone !==
+              isDone
+            ) {
+
+              check.click();
+
+            }
+
+          }
+        );
+
+      }
     );
 
   }
@@ -171,26 +636,78 @@
       loadState();
 
 
+    /*
+      Same unfinished workout:
+      preserve timer + ticks.
+    */
+
+    if (
+      previous?.dayIndex ===
+        index
+    ) {
+
+      previous.updatedAt =
+        Date.now();
+
+
+      if (
+        !previous.running
+      ) {
+
+        previous.running =
+          true;
+
+        previous.segmentStartedAt =
+          Date.now();
+
+      }
+
+
+      saveState(
+        previous
+      );
+
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "mana:workout-progress-change"
+        )
+      );
+
+
+      return;
+    }
+
+
+    /*
+      Brand-new workout.
+    */
+
     const state = {
 
       dayIndex:
         index,
 
       startedAt:
-        (
-          previous?.dayIndex === index &&
-          previous?.startedAt
-        )
-          ? previous.startedAt
-          : Date.now(),
+        Date.now(),
+
+      elapsedMs:
+        0,
+
+      running:
+        true,
+
+      segmentStartedAt:
+        Date.now(),
+
+      completedSets:
+        [],
 
       updatedAt:
         Date.now(),
 
       logCountAtStart:
-        previous?.dayIndex === index
-          ? previous.logCountAtStart
-          : loadLogs().length
+        loadLogs().length
 
     };
 
@@ -270,19 +787,42 @@
           );
 
 
+        /*
+          v6.4 rebuilds all workout cards
+          every time the workout opens.
+
+          Restore our saved state after
+          those cards exist.
+        */
+
         [
-          50,
-          150,
-          350
+          60,
+          160,
+          350,
+          650
         ].forEach(
           delay => {
 
             setTimeout(
-              enhanceWorkout,
+              () => {
+
+                enhanceWorkout();
+
+                restoreTicks();
+
+                updateTimerDisplay();
+
+              },
               delay
             );
 
           }
+        );
+
+
+        setTimeout(
+          resumeTimer,
+          100
         );
 
 
@@ -547,6 +1087,12 @@
                   }
                 );
 
+
+              setTimeout(
+                saveTicks,
+                60
+              );
+
             };
 
 
@@ -632,6 +1178,12 @@
             }
           );
 
+
+        setTimeout(
+          saveTicks,
+          80
+        );
+
       };
 
 
@@ -709,7 +1261,7 @@
 
 
   /* =========================================
-     OVERVIEW BADGE
+     OVERVIEW
      ========================================= */
 
   function updateOverview() {
@@ -760,7 +1312,6 @@
 
 
       return;
-
     }
 
 
@@ -799,8 +1350,17 @@
     note.className =
       "mana-v920-resume-note";
 
+
+    const elapsed =
+      formatTime(
+        currentElapsedMs(
+          state
+        ) / 1000
+      );
+
+
     note.textContent =
-      "This workout stays active until you confirm Complete workout.";
+      `Workout paused at ${elapsed}. Resume when ready.`;
 
 
     badge
@@ -872,7 +1432,6 @@
 
 
       return;
-
     }
 
 
@@ -911,8 +1470,13 @@
     note.className =
       "mana-v920-resume-note";
 
+
     note.textContent =
-      "Workout remains open until completed.";
+      `Paused at ${formatTime(
+        currentElapsedMs(
+          state
+        ) / 1000
+      )}`;
 
 
     badge
@@ -933,6 +1497,78 @@
 
 
   /* =========================================
+     MANUAL SET TICKS
+     ========================================= */
+
+  function watchSetTicks() {
+
+    document.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target.closest(
+            "#manaV64Exercises [data-v64-check]"
+          )
+        ) {
+
+          setTimeout(
+            saveTicks,
+            60
+          );
+
+        }
+
+      },
+      true
+    );
+
+  }
+
+
+  /* =========================================
+     WORKOUT X — PAUSE
+     ========================================= */
+
+  function watchWorkoutClose() {
+
+    document.addEventListener(
+      "click",
+      event => {
+
+        if (
+          !event.target.closest(
+            "#manaV64Close"
+          )
+        ) {
+          return;
+        }
+
+
+        saveTicks();
+
+        pauseTimer();
+
+
+        setTimeout(
+          refreshEverything,
+          150
+        );
+
+
+        setTimeout(
+          refreshEverything,
+          500
+        );
+
+      },
+      true
+    );
+
+  }
+
+
+  /* =========================================
      COMPLETE WORKOUT
      ========================================= */
 
@@ -948,6 +1584,9 @@
           )
         ) {
 
+          saveTicks();
+
+
           completing =
             true;
 
@@ -959,7 +1598,7 @@
                 false;
 
             },
-            1800
+            2000
           );
 
         }
@@ -982,6 +1621,68 @@
 
         completing =
           false;
+
+
+        /*
+          v6.4 records only the timer segment
+          since the most recent reopen.
+
+          Replace that duration with our full
+          resumed workout duration.
+        */
+
+        const state =
+          loadState();
+
+
+        const finalSeconds =
+          Math.max(
+            0,
+            Math.round(
+              currentElapsedMs(
+                state
+              ) / 1000
+            )
+          );
+
+
+        const logs =
+          loadLogs();
+
+
+        const last =
+          logs[
+            logs.length - 1
+          ];
+
+
+        if (
+          last &&
+          state &&
+          Number(
+            last.dayIndex
+          ) ===
+          Number(
+            state.dayIndex
+          )
+        ) {
+
+          last.durationSeconds =
+            finalSeconds;
+
+
+          last.durationMinutes =
+            Math.round(
+              finalSeconds /
+              60
+            );
+
+
+          saveLogs(
+            logs
+          );
+
+        }
 
 
         clearState();
@@ -1016,6 +1717,15 @@
 
     updateCurrentWorkout();
 
+
+    if (
+      workoutOpen()
+    ) {
+
+      updateTimerDisplay();
+
+    }
+
   }
 
 
@@ -1036,7 +1746,13 @@
 
           observerTimer =
             setTimeout(
-              refreshEverything,
+              () => {
+
+                wrapWorkoutOpen();
+
+                refreshEverything();
+
+              },
               80
             );
 
@@ -1118,6 +1834,10 @@
     injectStyles();
 
     wrapWorkoutOpen();
+
+    watchSetTicks();
+
+    watchWorkoutClose();
 
     watchComplete();
 
