@@ -1,23 +1,22 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.20.4
-   WORKOUT IN PROGRESS + NATIVE PAUSE
+   MANA MOVEMENT TRAINING v9.20.5
+   WORKOUT IN PROGRESS + RELIABLE TIMING SAVE
 
    - ONE VISIBLE WORKOUT TIMER
-   - NO TIMER FLICKER
-   - PAUSE WORKOUT BUTTON
-   - X ALSO SAFELY PAUSES
+   - PAUSE / RESUME WORKOUT
+   - X SAFELY PAUSES
    - TIMER CONTINUES FROM PAUSED TIME
    - PERSIST YELLOW SET TICKS
-   - TICK ALL SETS
-   - TICK ALL WORKOUT
-   - PROGRAM TAB TRACKS ACTUAL WORKOUT
-   - OVERVIEW ONLY SHOWS IN PROGRESS
-     IF ITS WORKOUT MATCHES SAVED DAY
+   - TICK ALL SETS / WHOLE WORKOUT
+   - OVERVIEW + HOME SHOW IN-PROGRESS STATE
+   - SAVES START TIME / END TIME
+   - SAVES DURATION SECONDS / MINUTES
+   - SAVES COMPLETION %
+   - ROBUSTLY ATTACHES TIMING TO NEW LOG
    ========================================= */
 
 (() => {
   "use strict";
-
 
   const STATE_KEY =
     "mana-strength-v920-in-progress";
@@ -37,23 +36,20 @@
   const PAUSE_ID =
     "manaV920Pause";
 
-
   let wrapping =
     false;
 
   let completing =
     false;
 
+  let pendingCompletion =
+    null;
+
   let observerTimer =
     null;
 
   let timerLoop =
     null;
-
-
-  /* =========================================
-     HELPERS
-     ========================================= */
 
   function safeJson(
     raw,
@@ -68,62 +64,45 @@
     }
   }
 
-
   function loadState() {
-
     return safeJson(
       localStorage.getItem(
         STATE_KEY
       ) || "null",
       null
     );
-
   }
-
 
   function saveState(
     state
   ) {
-
     try {
-
       localStorage.setItem(
         STATE_KEY,
         JSON.stringify(
           state
         )
       );
-
     } catch (_) {}
-
   }
 
-
   function clearState() {
-
     try {
-
       localStorage.removeItem(
         STATE_KEY
       );
-
     } catch (_) {}
 
-
     stopTimerLoop();
-
 
     window.dispatchEvent(
       new CustomEvent(
         "mana:workout-progress-change"
       )
     );
-
   }
 
-
   function loadLogs() {
-
     const logs =
       safeJson(
         localStorage.getItem(
@@ -132,77 +111,58 @@
         []
       );
 
-
     return Array.isArray(
       logs
     )
       ? logs
       : [];
-
   }
-
 
   function saveLogs(
     logs
   ) {
-
     try {
-
       localStorage.setItem(
         LOG_KEY,
         JSON.stringify(
           logs
         )
       );
-
     } catch (_) {}
-
   }
 
-
   function loadProgram() {
-
     return safeJson(
       localStorage.getItem(
         PROGRAM_KEY
       ) || "null",
       null
     );
-
   }
 
-
   function overviewWorkoutIndex() {
-
     const program =
       loadProgram();
 
-
     const logs =
       loadLogs();
-
 
     const total =
       program
         ?.sessions
         ?.length || 0;
 
-
     if (!total) {
       return null;
     }
-
 
     return (
       logs.length %
       total
     );
-
   }
 
-
   function workoutOpen() {
-
     return Boolean(
       document
         .getElementById(
@@ -213,18 +173,11 @@
           "open"
         )
     );
-
   }
-
-
-  /* =========================================
-     TIMER
-     ========================================= */
 
   function formatTime(
     seconds
   ) {
-
     const total =
       Math.max(
         0,
@@ -235,16 +188,15 @@
         )
       );
 
-
     const mins =
       Math.floor(
-        total / 60
+        total /
+        60
       );
 
-
     const secs =
-      total % 60;
-
+      total %
+      60;
 
     return (
       String(
@@ -261,30 +213,24 @@
         "0"
       )
     );
-
   }
-
 
   function elapsedMs(
     state = loadState()
   ) {
-
     if (!state) {
       return 0;
     }
-
 
     let elapsed =
       Number(
         state.elapsedMs || 0
       );
 
-
     if (
       state.running &&
       state.segmentStartedAt
     ) {
-
       elapsed +=
         Math.max(
           0,
@@ -293,36 +239,24 @@
             state.segmentStartedAt
           )
         );
-
     }
-
 
     return elapsed;
   }
 
-
-  /* =========================================
-     TAKE CONTROL OF VISIBLE TIMER
-     ========================================= */
-
   function takeTimerControl() {
-
     let native =
       document.getElementById(
         "manaV64Timer"
       );
 
-
     if (native) {
-
       native.id =
         NATIVE_TIMER_ID;
 
       native.style.display =
         "none";
-
     }
-
 
     if (
       document.getElementById(
@@ -332,23 +266,19 @@
       return;
     }
 
-
     const hidden =
       document.getElementById(
         NATIVE_TIMER_ID
       );
 
-
     if (!hidden) {
       return;
     }
-
 
     const visible =
       document.createElement(
         "strong"
       );
-
 
     visible.id =
       TIMER_ID;
@@ -356,108 +286,84 @@
     visible.textContent =
       "00:00";
 
-
     hidden
       .insertAdjacentElement(
         "afterend",
         visible
       );
-
   }
 
-
   function updateTimerDisplay() {
-
     if (
       !workoutOpen()
     ) {
       return;
     }
 
-
     takeTimerControl();
-
 
     const state =
       loadState();
 
-
     if (!state) {
       return;
     }
-
 
     const timer =
       document.getElementById(
         TIMER_ID
       );
 
-
     if (!timer) {
       return;
     }
-
 
     timer.textContent =
       formatTime(
         elapsedMs(
           state
-        ) / 1000
+        ) /
+        1000
       );
-
   }
 
-
   function startTimerLoop() {
-
     stopTimerLoop();
 
     updateTimerDisplay();
-
 
     timerLoop =
       setInterval(
         updateTimerDisplay,
         500
       );
-
   }
-
 
   function stopTimerLoop() {
-
-    if (
-      timerLoop
-    ) {
-
-      clearInterval(
-        timerLoop
-      );
-
-      timerLoop =
-        null;
-
+    if (!timerLoop) {
+      return;
     }
 
+    clearInterval(
+      timerLoop
+    );
+
+    timerLoop =
+      null;
   }
 
-
   function pauseTimer() {
-
     const state =
       loadState();
-
 
     if (!state) {
       return;
     }
 
-
     state.elapsedMs =
       elapsedMs(
         state
       );
-
 
     state.running =
       false;
@@ -468,37 +374,28 @@
     state.updatedAt =
       Date.now();
 
-
     saveState(
       state
     );
 
-
     stopTimerLoop();
-
 
     updateOverview();
 
     updateCurrentWorkout();
-
   }
 
-
   function resumeTimer() {
-
     const state =
       loadState();
-
 
     if (!state) {
       return;
     }
 
-
     if (
       !state.running
     ) {
-
       state.running =
         true;
 
@@ -508,27 +405,17 @@
       state.updatedAt =
         Date.now();
 
-
       saveState(
         state
       );
-
     }
 
-
     startTimerLoop();
-
   }
 
-
-  /* =========================================
-     COMPLETED SET STATE
-     ========================================= */
-
   function collectCompletedSets() {
-
-    const data = {};
-
+    const data =
+      {};
 
     document
       .querySelectorAll(
@@ -542,13 +429,13 @@
               .exerciseName ||
             "";
 
-
           if (!name) {
             return;
           }
 
-
-          data[name] =
+          data[
+            name
+          ] =
             [
               ...card.querySelectorAll(
                 "[data-v64-check]"
@@ -566,16 +453,66 @@
         }
       );
 
-
     return data;
   }
 
+  function completedSetCounts(
+    completedSets
+  ) {
+    let totalSets =
+      0;
+
+    let completedSetsCount =
+      0;
+
+    Object.values(
+      completedSets ||
+      {}
+    ).forEach(
+      list => {
+
+        if (
+          !Array.isArray(
+            list
+          )
+        ) {
+          return;
+        }
+
+        totalSets +=
+          list.length;
+
+        completedSetsCount +=
+          list
+            .filter(
+              Boolean
+            )
+            .length;
+
+      }
+    );
+
+    return {
+      totalSets,
+
+      completedSets:
+        completedSetsCount,
+
+      completionPercent:
+        totalSets >
+        0
+          ? Math.round(
+              completedSetsCount /
+              totalSets *
+              100
+            )
+          : 0
+    };
+  }
 
   function saveTicks() {
-
     const state =
       loadState();
-
 
     if (
       !state ||
@@ -584,51 +521,40 @@
       return;
     }
 
-
     state.completedSets =
       collectCompletedSets();
 
     state.updatedAt =
       Date.now();
 
-
     saveState(
       state
     );
-
   }
 
-
   function updateNativeSummary() {
-
     const input =
       document.querySelector(
         "#manaV64Exercises input"
       );
 
-
     if (!input) {
       return;
     }
-
 
     input.dispatchEvent(
       new Event(
         "input",
         {
-          bubbles:true
+          bubbles: true
         }
       )
     );
-
   }
 
-
   function restoreTicks() {
-
     const state =
       loadState();
-
 
     if (
       !state ||
@@ -639,7 +565,6 @@
     ) {
       return;
     }
-
 
     document
       .querySelectorAll(
@@ -653,12 +578,10 @@
               .exerciseName ||
             "";
 
-
           const saved =
             state.completedSets[
               name
             ];
-
 
           if (
             !Array.isArray(
@@ -668,14 +591,12 @@
             return;
           }
 
-
           const checks =
             [
               ...card.querySelectorAll(
                 "[data-v64-check]"
               )
             ];
-
 
           checks.forEach(
             (
@@ -688,7 +609,9 @@
                 .toggle(
                   "done",
                   Boolean(
-                    saved[index]
+                    saved[
+                      index
+                    ]
                   )
                 );
 
@@ -698,58 +621,45 @@
         }
       );
 
-
     updateNativeSummary();
-
   }
-
-
-  /* =========================================
-     IN PROGRESS STATE
-     ========================================= */
 
   function markInProgress(
     dayIndex
   ) {
-
     const index =
       Number(
         dayIndex
       );
 
-
     if (
       !Number.isInteger(
         index
       ) ||
-      index < 0
+      index <
+      0
     ) {
       return;
     }
 
-
     const previous =
       loadState();
-
 
     if (
       previous &&
       Number(
         previous.dayIndex
-      ) === index
+      ) ===
+      index
     ) {
-
       if (
         typeof
           previous.elapsedMs !==
         "number"
       ) {
-
         previous.elapsedMs =
           0;
-
       }
-
 
       if (
         !previous.completedSets ||
@@ -760,12 +670,37 @@
           previous.completedSets
         )
       ) {
-
         previous.completedSets =
           {};
-
       }
 
+      if (
+        !previous.startedAt
+      ) {
+        previous.startedAt =
+          Date.now();
+      }
+
+      if (
+        !previous.startedAtISO
+      ) {
+        previous.startedAtISO =
+          new Date(
+            Number(
+              previous.startedAt
+            )
+          ).toISOString();
+      }
+
+      if (
+        !Number.isInteger(
+          previous.logCountAtStart
+        )
+      ) {
+        previous.logCountAtStart =
+          loadLogs()
+            .length;
+      }
 
       previous.running =
         true;
@@ -776,11 +711,9 @@
       previous.updatedAt =
         Date.now();
 
-
       saveState(
         previous
       );
-
 
       window.dispatchEvent(
         new CustomEvent(
@@ -788,13 +721,13 @@
         )
       );
 
-
       return;
     }
 
+    const now =
+      Date.now();
 
     saveState({
-
       dayIndex:
         index,
 
@@ -805,49 +738,44 @@
         true,
 
       segmentStartedAt:
-        Date.now(),
+        now,
 
       completedSets:
         {},
 
       startedAt:
-        Date.now(),
+        now,
+
+      startedAtISO:
+        new Date(
+          now
+        ).toISOString(),
 
       updatedAt:
-        Date.now(),
+        now,
 
       logCountAtStart:
-        loadLogs().length
-
+        loadLogs()
+          .length
     });
-
 
     window.dispatchEvent(
       new CustomEvent(
         "mana:workout-progress-change"
       )
     );
-
   }
 
-
-  /* =========================================
-     WRAP WORKOUT OPEN
-     ========================================= */
-
   function wrapWorkoutOpen() {
-
     if (
       wrapping
     ) {
       return;
     }
 
-
     const original =
       window
         .openManaStrengthWorkout;
-
 
     if (
       typeof original !==
@@ -856,7 +784,6 @@
       return;
     }
 
-
     if (
       original
         .__manaV920PauseWrapped
@@ -864,27 +791,22 @@
       return;
     }
 
-
     wrapping =
       true;
-
 
     const wrapped =
       function(
         dayIndex
       ) {
-
         markInProgress(
           dayIndex
         );
-
 
         const result =
           original.apply(
             this,
             arguments
           );
-
 
         [
           30,
@@ -913,61 +835,42 @@
           }
         );
 
-
         setTimeout(
           resumeTimer,
           80
         );
 
-
         return result;
-
       };
-
 
     wrapped
       .__manaV920PauseWrapped =
         true;
 
-
     window
       .openManaStrengthWorkout =
         wrapped;
 
-
     wrapping =
       false;
-
   }
 
-
-  /* =========================================
-     STYLES
-     ========================================= */
-
   function injectStyles() {
-
-    if (
-      document.getElementById(
+    document
+      .getElementById(
         "mana-v920-progress-style"
       )
-    ) {
-      return;
-    }
-
+      ?.remove();
 
     const style =
       document.createElement(
         "style"
       );
 
-
     style.id =
       "mana-v920-progress-style";
 
-
     style.textContent = `
-
       .mana-v920-progress-badge{
         display:inline-flex;
         align-items:center;
@@ -984,12 +887,10 @@
         text-transform:uppercase;
       }
 
-
       .mana-v920-progress-badge::before{
         content:"●";
         font-size:8px;
       }
-
 
       .mana-v920-tick-all{
         width:100%;
@@ -1003,7 +904,6 @@
         font-weight:900;
       }
 
-
       .mana-v920-workout-all{
         width:100%;
         min-height:50px;
@@ -1015,7 +915,6 @@
         font-size:13px;
         font-weight:900;
       }
-
 
       .mana-v920-pause{
         width:100%;
@@ -1029,7 +928,6 @@
         font-weight:900;
       }
 
-
       .mana-v920-resume-note{
         margin-top:9px;
         color:#f3d875;
@@ -1037,23 +935,14 @@
         font-weight:800;
         line-height:1.4;
       }
-
     `;
-
 
     document.head.appendChild(
       style
     );
-
   }
 
-
-  /* =========================================
-     TICK ALL — EXERCISE
-     ========================================= */
-
   function addExerciseTickAll() {
-
     document
       .querySelectorAll(
         "#manaV64Exercises .mana-v64-card"
@@ -1069,23 +958,19 @@
             return;
           }
 
-
           const controls =
             card.querySelector(
               ".mana-v64-controls"
             );
 
-
           if (!controls) {
             return;
           }
-
 
           const button =
             document.createElement(
               "button"
             );
-
 
           button.type =
             "button";
@@ -1095,7 +980,6 @@
 
           button.textContent =
             "✓ TICK ALL SETS";
-
 
           button.addEventListener(
             "click",
@@ -1117,9 +1001,7 @@
                   }
                 );
 
-
               updateNativeSummary();
-
 
               setTimeout(
                 saveTicks,
@@ -1129,7 +1011,6 @@
             }
           );
 
-
           controls
             .insertAdjacentElement(
               "beforebegin",
@@ -1138,16 +1019,9 @@
 
         }
       );
-
   }
 
-
-  /* =========================================
-     TICK ALL — WORKOUT
-     ========================================= */
-
   function addWorkoutTickAll() {
-
     if (
       document.getElementById(
         "manaV920TickWorkout"
@@ -1156,23 +1030,19 @@
       return;
     }
 
-
     const complete =
       document.getElementById(
         "manaV64Complete"
       );
 
-
     if (!complete) {
       return;
     }
-
 
     const button =
       document.createElement(
         "button"
       );
-
 
     button.type =
       "button";
@@ -1185,7 +1055,6 @@
 
     button.textContent =
       "✓ TICK ALL WORKOUT SETS";
-
 
     button.addEventListener(
       "click",
@@ -1207,9 +1076,7 @@
             }
           );
 
-
         updateNativeSummary();
-
 
         setTimeout(
           saveTicks,
@@ -1219,22 +1086,14 @@
       }
     );
 
-
     complete
       .insertAdjacentElement(
         "beforebegin",
         button
       );
-
   }
 
-
-  /* =========================================
-     PAUSE BUTTON
-     ========================================= */
-
   function addPauseButton() {
-
     if (
       document.getElementById(
         PAUSE_ID
@@ -1243,23 +1102,19 @@
       return;
     }
 
-
     const complete =
       document.getElementById(
         "manaV64Complete"
       );
 
-
     if (!complete) {
       return;
     }
-
 
     const button =
       document.createElement(
         "button"
       );
-
 
     button.type =
       "button";
@@ -1273,7 +1128,6 @@
     button.textContent =
       "Ⅱ PAUSE WORKOUT";
 
-
     button.addEventListener(
       "click",
       () => {
@@ -1281,7 +1135,6 @@
         saveTicks();
 
         pauseTimer();
-
 
         document
           .getElementById(
@@ -1292,27 +1145,18 @@
       }
     );
 
-
     complete
       .insertAdjacentElement(
         "beforebegin",
         button
       );
-
   }
 
-
-  /* =========================================
-     WORKOUT BADGE
-     ========================================= */
-
   function addWorkoutBadge() {
-
     const head =
       document.querySelector(
         "#manaStrengthV64Workout .mana-v64-head > div"
       );
-
 
     if (
       !head ||
@@ -1323,12 +1167,10 @@
       return;
     }
 
-
     const badge =
       document.createElement(
         "div"
       );
-
 
     badge.className =
       "mana-v920-progress-badge";
@@ -1336,22 +1178,17 @@
     badge.textContent =
       "IN PROGRESS";
 
-
     head.appendChild(
       badge
     );
-
   }
 
-
   function enhanceWorkout() {
-
     if (
       !workoutOpen()
     ) {
       return;
     }
-
 
     takeTimerControl();
 
@@ -1362,30 +1199,20 @@
     addPauseButton();
 
     addWorkoutBadge();
-
   }
 
-
-  /* =========================================
-     OVERVIEW
-     ========================================= */
-
   function updateOverview() {
-
     const state =
       loadState();
-
 
     const card =
       document.querySelector(
         ".mana-v9103-workout"
       );
 
-
     if (!card) {
       return;
     }
-
 
     card
       .querySelector(
@@ -1393,70 +1220,55 @@
       )
       ?.remove();
 
-
     card
       .querySelector(
         ".mana-v920-resume-note"
       )
       ?.remove();
-
 
     const button =
       card.querySelector(
         "#manaV9103Start"
       );
 
-
     const overviewIndex =
       overviewWorkoutIndex();
-
 
     const matchesOverview =
       Boolean(
         state &&
-        overviewIndex !== null &&
+        overviewIndex !==
+        null &&
         Number(
           state.dayIndex
         ) ===
-          Number(
-            overviewIndex
-          )
+        Number(
+          overviewIndex
+        )
       );
-
-
-    /*
-      If another workout was started manually
-      from Program, do NOT mark Overview's
-      different workout as in progress.
-    */
 
     if (
       !matchesOverview
     ) {
-
-      if (button) {
-
+      if (
+        button
+      ) {
         button.textContent =
           "START WORKOUT →";
-
       }
-
 
       return;
     }
-
 
     const title =
       card.querySelector(
         "h3"
       );
 
-
     const badge =
       document.createElement(
         "div"
       );
-
 
     badge.className =
       "mana-v920-progress-badge";
@@ -1464,46 +1276,34 @@
     badge.textContent =
       "IN PROGRESS";
 
-
     title
       ?.insertAdjacentElement(
         "afterend",
         badge
       );
 
-
     const note =
       document.createElement(
         "div"
       );
 
-
     note.className =
       "mana-v920-resume-note";
 
-
-    if (
+    note.textContent =
       state.running
-    ) {
-
-      note.textContent =
-        `In progress • ${formatTime(
-          elapsedMs(
-            state
-          ) / 1000
-        )}`;
-
-    } else {
-
-      note.textContent =
-        `Paused at ${formatTime(
-          elapsedMs(
-            state
-          ) / 1000
-        )}`;
-
-    }
-
+        ? `In progress • ${formatTime(
+            elapsedMs(
+              state
+            ) /
+            1000
+          )}`
+        : `Paused at ${formatTime(
+            elapsedMs(
+              state
+            ) /
+            1000
+          )}`;
 
     badge
       .insertAdjacentElement(
@@ -1511,37 +1311,26 @@
         note
       );
 
-
-    if (button) {
-
+    if (
+      button
+    ) {
       button.textContent =
         "RESUME WORKOUT →";
-
     }
-
   }
 
-
-  /* =========================================
-     HOME CURRENT WORKOUT
-     ========================================= */
-
   function updateCurrentWorkout() {
-
     const state =
       loadState();
-
 
     const card =
       document.getElementById(
         "manaV82Current"
       );
 
-
     if (!card) {
       return;
     }
-
 
     card
       .querySelector(
@@ -1549,45 +1338,37 @@
       )
       ?.remove();
 
-
     card
       .querySelector(
         ".mana-v920-resume-note"
       )
       ?.remove();
 
-
     const openText =
       card.querySelector(
         ".mana-v82-current-open"
       );
 
-
     if (!state) {
-
-      if (openText) {
-
+      if (
+        openText
+      ) {
         openText.textContent =
           "Start workout →";
-
       }
-
 
       return;
     }
-
 
     const title =
       card.querySelector(
         ".mana-v82-current-title"
       );
 
-
     const badge =
       document.createElement(
         "div"
       );
-
 
     badge.className =
       "mana-v920-progress-badge";
@@ -1595,37 +1376,34 @@
     badge.textContent =
       "IN PROGRESS";
 
-
     title
       ?.insertAdjacentElement(
         "afterend",
         badge
       );
 
-
     const note =
       document.createElement(
         "div"
       );
 
-
     note.className =
       "mana-v920-resume-note";
-
 
     note.textContent =
       state.running
         ? `In progress • ${formatTime(
             elapsedMs(
               state
-            ) / 1000
+            ) /
+            1000
           )}`
         : `Paused at ${formatTime(
             elapsedMs(
               state
-            ) / 1000
+            ) /
+            1000
           )}`;
-
 
     badge
       .insertAdjacentElement(
@@ -1633,23 +1411,15 @@
         note
       );
 
-
-    if (openText) {
-
+    if (
+      openText
+    ) {
       openText.textContent =
         "Resume workout →";
-
     }
-
   }
 
-
-  /* =========================================
-     MANUAL SET SAVE
-     ========================================= */
-
   function watchSetTicks() {
-
     document.addEventListener(
       "click",
       event => {
@@ -1662,7 +1432,6 @@
           return;
         }
 
-
         setTimeout(
           saveTicks,
           60
@@ -1671,16 +1440,9 @@
       },
       true
     );
-
   }
 
-
-  /* =========================================
-     X = SAFE PAUSE
-     ========================================= */
-
   function watchClose() {
-
     document.addEventListener(
       "click",
       event => {
@@ -1693,24 +1455,20 @@
           return;
         }
 
-
         if (
           completing
         ) {
           return;
         }
 
-
         saveTicks();
 
         pauseTimer();
-
 
         setTimeout(
           refreshEverything,
           150
         );
-
 
         setTimeout(
           refreshEverything,
@@ -1720,16 +1478,384 @@
       },
       true
     );
-
   }
 
+  function captureCompletionSnapshot() {
+    saveTicks();
 
-  /* =========================================
-     COMPLETE WORKOUT
-     ========================================= */
+    const state =
+      loadState();
+
+    if (!state) {
+      return null;
+    }
+
+    const completedSets =
+      state.completedSets &&
+      typeof
+        state.completedSets ===
+      "object"
+        ? state.completedSets
+        : collectCompletedSets();
+
+    const counts =
+      completedSetCounts(
+        completedSets
+      );
+
+    const now =
+      Date.now();
+
+    return {
+      dayIndex:
+        Number(
+          state.dayIndex
+        ),
+
+      logCountAtStart:
+        Number.isInteger(
+          state.logCountAtStart
+        )
+          ? state.logCountAtStart
+          : loadLogs()
+              .length,
+
+      startedAt:
+        Number(
+          state.startedAt ||
+          now
+        ),
+
+      startedAtISO:
+        state.startedAtISO ||
+        new Date(
+          Number(
+            state.startedAt ||
+            now
+          )
+        ).toISOString(),
+
+      finishedAt:
+        now,
+
+      finishedAtISO:
+        new Date(
+          now
+        ).toISOString(),
+
+      durationSeconds:
+        Math.max(
+          0,
+          Math.round(
+            elapsedMs(
+              state
+            ) /
+            1000
+          )
+        ),
+
+      completedSets:
+        counts.completedSets,
+
+      totalSets:
+        counts.totalSets,
+
+      completionPercent:
+        counts.completionPercent
+    };
+  }
+
+  function findCompletedLogIndex(
+    logs,
+    snapshot
+  ) {
+    if (
+      !logs.length ||
+      !snapshot
+    ) {
+      return -1;
+    }
+
+    const startIndex =
+      Math.max(
+        0,
+        Math.min(
+          logs.length -
+          1,
+          Number(
+            snapshot.logCountAtStart ||
+            0
+          )
+        )
+      );
+
+    for (
+      let i =
+        logs.length -
+        1;
+      i >=
+      startIndex;
+      i--
+    ) {
+      const log =
+        logs[
+          i
+        ];
+
+      if (
+        Number.isFinite(
+          Number(
+            log?.dayIndex
+          )
+        ) &&
+        Number(
+          log.dayIndex
+        ) ===
+        Number(
+          snapshot.dayIndex
+        )
+      ) {
+        return i;
+      }
+    }
+
+    if (
+      logs.length >
+      snapshot.logCountAtStart
+    ) {
+      return (
+        logs.length -
+        1
+      );
+    }
+
+    const last =
+      logs[
+        logs.length -
+        1
+      ];
+
+    if (
+      last &&
+      Number.isFinite(
+        Number(
+          last?.dayIndex
+        )
+      ) &&
+      Number(
+        last.dayIndex
+      ) ===
+      Number(
+        snapshot.dayIndex
+      )
+    ) {
+      return (
+        logs.length -
+        1
+      );
+    }
+
+    return -1;
+  }
+
+  function applyTimingToCompletedLog(
+    snapshot
+  ) {
+    if (
+      !snapshot
+    ) {
+      return false;
+    }
+
+    const logs =
+      loadLogs();
+
+    const index =
+      findCompletedLogIndex(
+        logs,
+        snapshot
+      );
+
+    if (
+      index <
+      0
+    ) {
+      return false;
+    }
+
+    const log =
+      logs[
+        index
+      ];
+
+    log.startedAt =
+      snapshot.startedAtISO;
+
+    log.startTime =
+      snapshot.startedAtISO;
+
+    log.finishedAt =
+      snapshot.finishedAtISO;
+
+    log.endTime =
+      snapshot.finishedAtISO;
+
+    log.completedAt =
+      snapshot.finishedAtISO;
+
+    log.durationSeconds =
+      snapshot.durationSeconds;
+
+    log.durationMinutes =
+      Math.round(
+        snapshot.durationSeconds /
+        60
+      );
+
+    if (
+      !Number.isFinite(
+        Number(
+          log.completedSets
+        )
+      ) ||
+      Number(
+        log.completedSets
+      ) <=
+      0
+    ) {
+      log.completedSets =
+        snapshot.completedSets;
+    }
+
+    if (
+      !Number.isFinite(
+        Number(
+          log.totalSets
+        )
+      ) ||
+      Number(
+        log.totalSets
+      ) <=
+      0
+    ) {
+      log.totalSets =
+        snapshot.totalSets;
+    }
+
+    if (
+      !Number.isFinite(
+        Number(
+          log.completionPercent
+        )
+      ) ||
+      Number(
+        log.completionPercent
+      ) <=
+      0
+    ) {
+      log.completionPercent =
+        snapshot.completionPercent;
+    }
+
+    log.completed =
+      true;
+
+    log.workoutTimingVersion =
+      "9.20.5";
+
+    saveLogs(
+      logs
+    );
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:workout-timing-saved",
+        {
+          detail: {
+            id:
+              log.id ||
+              "",
+
+            durationSeconds:
+              log.durationSeconds,
+
+            completionPercent:
+              log.completionPercent
+          }
+        }
+      )
+    );
+
+    return true;
+  }
+
+  function finishCompletionSave() {
+    if (
+      !pendingCompletion
+    ) {
+      return;
+    }
+
+    const snapshot =
+      pendingCompletion;
+
+    const saved =
+      applyTimingToCompletedLog(
+        snapshot
+      );
+
+    if (
+      !saved
+    ) {
+      setTimeout(
+        () => {
+
+          if (
+            !pendingCompletion
+          ) {
+            return;
+          }
+
+          const retrySaved =
+            applyTimingToCompletedLog(
+              pendingCompletion
+            );
+
+          if (
+            retrySaved
+          ) {
+            pendingCompletion =
+              null;
+
+            clearState();
+
+            refreshEverything();
+          }
+
+        },
+        120
+      );
+
+      return;
+    }
+
+    pendingCompletion =
+      null;
+
+    clearState();
+
+    setTimeout(
+      refreshEverything,
+      100
+    );
+
+    setTimeout(
+      refreshEverything,
+      500
+    );
+  }
 
   function watchComplete() {
-
     document.addEventListener(
       "click",
       event => {
@@ -1742,13 +1868,11 @@
           return;
         }
 
-
-        saveTicks();
-
+        pendingCompletion =
+          captureCompletionSnapshot();
 
         completing =
           true;
-
 
         setTimeout(
           () => {
@@ -1757,134 +1881,53 @@
               false;
 
           },
-          2200
+          3000
         );
 
       },
       true
     );
 
-
     window.addEventListener(
       "mana:strength-synced",
       () => {
 
         if (
-          !completing
+          !completing ||
+          !pendingCompletion
         ) {
           return;
         }
 
-
         completing =
           false;
 
-
-        const state =
-          loadState();
-
-
-        const totalSeconds =
-          Math.max(
-            0,
-            Math.round(
-              elapsedMs(
-                state
-              ) / 1000
-            )
-          );
-
-
-        const logs =
-          loadLogs();
-
-
-        const last =
-          logs[
-            logs.length - 1
-          ];
-
-
-        if (
-          last &&
-          state &&
-          Number(
-            last.dayIndex
-          ) ===
-          Number(
-            state.dayIndex
-          )
-        ) {
-
-          last.durationSeconds =
-            totalSeconds;
-
-          last.durationMinutes =
-            Math.round(
-              totalSeconds /
-              60
-            );
-
-
-          saveLogs(
-            logs
-          );
-
-        }
-
-
-        clearState();
-
-
         setTimeout(
-          refreshEverything,
-          100
-        );
-
-
-        setTimeout(
-          refreshEverything,
-          500
+          finishCompletionSave,
+          30
         );
 
       }
     );
-
   }
 
-
-  /* =========================================
-     REFRESH
-     ========================================= */
-
   function refreshEverything() {
-
     enhanceWorkout();
 
     updateOverview();
 
     updateCurrentWorkout();
 
-
     if (
       workoutOpen()
     ) {
-
       restoreTicks();
 
       updateTimerDisplay();
-
     }
-
   }
 
-
-  /* =========================================
-     DOM WATCH
-     ========================================= */
-
   function watchDOM() {
-
     const observer =
       new MutationObserver(
         () => {
@@ -1892,7 +1935,6 @@
           clearTimeout(
             observerTimer
           );
-
 
           observerTimer =
             setTimeout(
@@ -1909,28 +1951,27 @@
         }
       );
 
-
     observer.observe(
       document.body,
       {
-        childList:true,
-        subtree:true,
-        attributes:true,
-        attributeFilter:[
-          "class"
-        ]
+        childList:
+          true,
+
+        subtree:
+          true,
+
+        attributes:
+          true,
+
+        attributeFilter:
+          [
+            "class"
+          ]
       }
     );
-
   }
 
-
-  /* =========================================
-     EVENTS
-     ========================================= */
-
   function watchEvents() {
-
     [
       "mana:program-tab-change",
       "mana:workout-progress-change",
@@ -1947,7 +1988,6 @@
               80
             );
 
-
             setTimeout(
               refreshEverything,
               350
@@ -1958,16 +1998,9 @@
 
       }
     );
-
   }
 
-
-  /* =========================================
-     INIT
-     ========================================= */
-
   function init() {
-
     injectStyles();
 
     takeTimerControl();
@@ -1983,7 +2016,6 @@
     watchDOM();
 
     watchEvents();
-
 
     [
       100,
@@ -2009,28 +2041,24 @@
 
       }
     );
-
   }
-
 
   window.refreshManaWorkoutProgress =
     refreshEverything;
 
+  window.MANA_WORKOUT_TIMING_BUILD =
+    "92005";
 
   if (
     document.readyState ===
-      "loading"
+    "loading"
   ) {
-
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
-
   } else {
-
     init();
-
   }
 
 })();
