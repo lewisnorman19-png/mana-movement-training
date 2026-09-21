@@ -1,11 +1,9 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.18.1
+   MANA MOVEMENT TRAINING v9.18.0
    STRENGTH OVERVIEW STABILITY
 
    FIXES:
    - COACH CHAT STAYS MODERN
-   - RECOVERY FOCUS NO LONGER
-     REVERTS TO OLD COACH ACTIVITY
    - RESTORES CHAT AFTER WORKOUT EXIT
    - RESTORES CHAT AFTER OVERVIEW REBUILD
    - KEEPS COACH SUPPORT AT BOTTOM
@@ -71,69 +69,6 @@
 
 
   /* =========================================
-     CHECK WHETHER OVERVIEW NEEDS REPAIR
-     ========================================= */
-
-  function overviewNeedsRepair() {
-
-    if (
-      !strengthOverviewOpen()
-    ) {
-      return false;
-    }
-
-
-    const coach =
-      document.querySelector(
-        "#manaV83Content .mana-v866-coach"
-      );
-
-
-    if (!coach) {
-      return false;
-    }
-
-
-    const card =
-      coach.querySelector(
-        "#manaV95ClientChatCard"
-      );
-
-
-    const heading =
-      coach
-        .querySelector(
-          ".mana-v866-section-head h3"
-        )
-        ?.textContent
-        ?.trim();
-
-
-    const badge =
-      coach
-        .querySelector(
-          ".mana-v866-section-head span"
-        )
-        ?.textContent
-        ?.trim();
-
-
-    return (
-
-      !card ||
-
-      heading !==
-        "Coach Support" ||
-
-      badge !==
-        "MESSAGE"
-
-    );
-
-  }
-
-
-  /* =========================================
      FINAL CHAT NORMALISATION
      ========================================= */
 
@@ -168,7 +103,7 @@
 
 
     /*
-      Coach Support always stays last.
+      Keep Coach Support last.
     */
 
     if (
@@ -212,8 +147,7 @@
 
 
     /*
-      Hide the original v8.6
-      Coach Activity content.
+      Hide old Coach Activity content.
     */
 
     [
@@ -222,7 +156,6 @@
       child => {
 
         const allowed =
-
           child.classList
             .contains(
               "mana-v866-section-head"
@@ -247,78 +180,77 @@
 
 
     /*
-      Lock modern Coach Chat wording.
+      Lock correct chat wording.
     */
 
     const card =
-      coach.querySelector(
-        "#manaV95ClientChatCard"
+      document.getElementById(
+        "manaV95ClientChatCard"
       );
 
 
-    if (!card) {
-      return;
-    }
+    if (card) {
+
+      const kicker =
+        card.querySelector(
+          ".mana-v950-card-kicker"
+        );
 
 
-    const kicker =
-      card.querySelector(
-        ".mana-v950-card-kicker"
-      );
+      if (kicker) {
+
+        kicker.style.setProperty(
+          "display",
+          "none",
+          "important"
+        );
+
+      }
 
 
-    if (kicker) {
-
-      kicker.style.setProperty(
-        "display",
-        "none",
-        "important"
-      );
-
-    }
+      const live =
+        card.querySelector(
+          ".mana-v950-live"
+        );
 
 
-    const live =
-      card.querySelector(
-        ".mana-v950-live"
-      );
+      if (live) {
+
+        live.style.setProperty(
+          "display",
+          "none",
+          "important"
+        );
+
+      }
 
 
-    if (live) {
-
-      live.style.setProperty(
-        "display",
-        "none",
-        "important"
-      );
-
-    }
+      const title =
+        card.querySelector(
+          ".mana-v950-card-title"
+        );
 
 
-    const title =
-      card.querySelector(
-        ".mana-v950-card-title"
-      );
+      if (title) {
+
+        title.textContent =
+          "Coach Chat";
+
+      }
 
 
-    if (title) {
-
-      title.textContent =
-        "Coach Chat";
-
-    }
+      const button =
+        document.getElementById(
+          "manaV95ClientOpen"
+        );
 
 
-    const button =
-      card.querySelector(
-        "#manaV95ClientOpen"
-      );
+      if (button) {
 
+        button.textContent =
+          "MESSAGE YOUR COACH →";
 
-    if (button) {
-
-      button.textContent =
-        "MESSAGE YOUR COACH →";
+      }
 
     }
 
@@ -343,10 +275,6 @@
       true;
 
 
-    /*
-      Reapply current Overview layout.
-    */
-
     if (
       typeof
         window
@@ -359,10 +287,6 @@
 
     }
 
-
-    /*
-      Recreate modern Coach Chat.
-    */
 
     setTimeout(
       () => {
@@ -380,14 +304,9 @@
         }
 
       },
-      80
+      100
     );
 
-
-    /*
-      v8.6 can perform another render
-      shortly afterwards.
-    */
 
     setTimeout(
       () => {
@@ -418,22 +337,7 @@
         }
 
       },
-      260
-    );
-
-
-    /*
-      Final normalisation after all
-      Overview rendering has settled.
-    */
-
-    setTimeout(
-      () => {
-
-        normaliseCoachSupport();
-
-      },
-      480
+      350
     );
 
 
@@ -466,73 +370,6 @@
         repairOverview,
         delay
       );
-
-  }
-
-
-  /* =========================================
-     RECOVERY FOCUS FIX
-     ========================================= */
-
-  function watchRecoveryFocus() {
-
-    document.addEventListener(
-      "click",
-      event => {
-
-        if (
-          !event.target.closest(
-            "#manaV866Recovery"
-          )
-        ) {
-          return;
-        }
-
-
-        /*
-          v8.6 immediately rebuilds the
-          entire Overview after Recovery
-          is toggled.
-
-          Repair modern Coach Support
-          after each possible render pass.
-        */
-
-        [
-          40,
-          120,
-          260,
-          500,
-          800,
-          1200
-        ].forEach(
-          delay => {
-
-            setTimeout(
-              () => {
-
-                if (
-                  strengthOverviewOpen()
-                ) {
-
-                  repairing =
-                    false;
-
-
-                  repairOverview();
-
-                }
-
-              },
-              delay
-            );
-
-          }
-        );
-
-      },
-      true
-    );
 
   }
 
@@ -612,8 +449,7 @@
       "mana:program-tab-change",
       "mana:strength-synced",
       "mana:profile-synced",
-      "mana:strength-membership-change",
-      "mana:workout-progress-change"
+      "mana:strength-membership-change"
     ].forEach(
       eventName => {
 
@@ -689,26 +525,26 @@
           }
 
 
-          /*
-            Previously we only repaired if
-            the chat card disappeared.
+          const card =
+            document.getElementById(
+              "manaV95ClientChatCard"
+            );
 
-            Now we also repair if v8.6
-            restores the old Coach Activity
-            heading or badge.
-          */
+
+          const coach =
+            document.querySelector(
+              ".mana-v866-coach"
+            );
+
 
           if (
-            overviewNeedsRepair()
+            coach &&
+            !card
           ) {
 
             scheduleRepair(
-              80
+              120
             );
-
-          } else {
-
-            normaliseCoachSupport();
 
           }
 
@@ -732,8 +568,6 @@
      ========================================= */
 
   function init() {
-
-    watchRecoveryFocus();
 
     watchWorkoutExit();
 
