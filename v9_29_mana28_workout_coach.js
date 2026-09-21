@@ -1,33 +1,9 @@
-/* =========================================
-   MANA MOVEMENT TRAINING v9.29.0
-   MANA 28 — WORKOUT COACH
-
-   WHOLE NEW FILE:
-   v9_29_mana28_workout_coach.js
-
-   BUILDS:
-   - FOCUSED FULL-SCREEN MANA 28 WORKOUT
-   - ONE EXERCISE AT A TIME
-   - SET / REP PRESCRIPTION
-   - REST GUIDANCE
-   - COACHING CUE
-   - EQUIPMENT
-   - SUBSTITUTION
-   - PREVIOUS / NEXT EXERCISE
-   - MARK EXERCISE COMPLETE
-   - WORKOUT TIMER
-   - REST TIMER
-   - FINISH WORKOUT
-   - SAVES BACK INTO EXISTING MANA 28 STATE
-
-   DOES NOT ALTER MANA STRENGTH
-   ========================================= */
-
+/* MANA MOVEMENT TRAINING v9.29.1 — STABLE MANA 28 WORKOUT COACH */
 (() => {
   "use strict";
 
   const BUILD =
-    "92900";
+    "92910";
 
   const STATE_KEY =
     "mana28-v927-state";
@@ -56,154 +32,157 @@
   let sessionExercises =
     [];
 
+  let previousBodyOverflow =
+    "";
+
   const COACH = [
-    {
-      match: /goblet squat/i,
-      rest: "60–90 sec",
-      equipment: "Dumbbell or kettlebell",
-      cue: "Keep the weight close to your chest, brace first, sit between the hips and drive through the whole foot.",
-      substitute: "Leg press or box squat"
-    },
-    {
-      match: /leg press/i,
-      rest: "75–90 sec",
-      equipment: "Leg press",
-      cue: "Keep your whole foot planted, control the lowering phase and stop before your hips roll under.",
-      substitute: "Goblet squat or supported squat"
-    },
-    {
-      match: /db bench|dumbbell bench/i,
-      rest: "75–90 sec",
-      equipment: "Bench + dumbbells",
-      cue: "Set the shoulder blades, keep wrists stacked and lower with control before pressing smoothly.",
-      substitute: "Machine chest press or incline push-up"
-    },
-    {
-      match: /machine press/i,
-      rest: "60–90 sec",
-      equipment: "Chest press machine",
-      cue: "Keep your upper back supported, control the handles back and press without shrugging.",
-      substitute: "Dumbbell bench press"
-    },
-    {
-      match: /shoulder press/i,
-      rest: "60–90 sec",
-      equipment: "Dumbbells or machine",
-      cue: "Brace the trunk, keep elbows slightly forward and press without leaning back.",
-      substitute: "Machine shoulder press or landmine press"
-    },
-    {
-      match: /seated row|cable row|machine row/i,
-      rest: "60–90 sec",
-      equipment: "Cable or row machine",
-      cue: "Lead with the elbows, keep the ribs down and finish by squeezing the shoulder blades without jerking.",
-      substitute: "Chest-supported dumbbell row"
-    },
-    {
-      match: /lat pulldown/i,
-      rest: "60–90 sec",
-      equipment: "Lat pulldown",
-      cue: "Pull the elbows down toward your ribs while keeping the chest tall and shoulders away from your ears.",
-      substitute: "Assisted pull-up or high cable row"
-    },
-    {
-      match: /romanian deadlift/i,
-      rest: "75–120 sec",
-      equipment: "Dumbbells or barbell",
-      cue: "Soften the knees, push the hips back and keep the weight close while maintaining a long neutral spine.",
-      substitute: "Cable pull-through or hip hinge with dumbbells"
-    },
-    {
-      match: /split squat/i,
-      rest: "60–90 sec",
-      equipment: "Bodyweight or dumbbells",
-      cue: "Stay tall, keep the front foot planted and lower under control using support if needed.",
-      substitute: "Step-up or supported reverse lunge"
-    },
-    {
-      match: /hamstring curl/i,
-      rest: "45–75 sec",
-      equipment: "Hamstring curl machine",
-      cue: "Keep the hips still, curl smoothly and control the return instead of letting the weight drop.",
-      substitute: "Swiss-ball curl or slider curl"
-    },
-    {
-      match: /calf raise/i,
-      rest: "45–60 sec",
-      equipment: "Machine, step or dumbbells",
-      cue: "Use a full range, pause at the top and control the heel down.",
-      substitute: "Bodyweight calf raise"
-    },
-    {
-      match: /biceps curl/i,
-      rest: "45–60 sec",
-      equipment: "Dumbbells or cable",
-      cue: "Keep the elbows quiet, curl without swinging and lower slowly.",
-      substitute: "Cable curl or hammer curl"
-    },
-    {
-      match: /triceps pressdown/i,
-      rest: "45–60 sec",
-      equipment: "Cable",
-      cue: "Pin the elbows by your sides and straighten the arms without rolling the shoulders forward.",
-      substitute: "Overhead cable extension"
-    },
-    {
-      match: /plank/i,
-      rest: "45–60 sec",
-      equipment: "Mat",
-      cue: "Brace as if preparing for a punch, squeeze glutes and keep the body in one straight line.",
-      substitute: "Elevated plank or dead bug"
-    },
-    {
-      match: /dead bug/i,
-      rest: "30–45 sec",
-      equipment: "Mat",
-      cue: "Keep the lower back gently connected to the floor and move only as far as you can control.",
-      substitute: "Heel taps"
-    },
-    {
-      match: /bird dog/i,
-      rest: "30–45 sec",
-      equipment: "Mat",
-      cue: "Keep the hips square and reach long rather than lifting the arm and leg high.",
-      substitute: "Dead bug"
-    },
-    {
-      match: /side plank/i,
-      rest: "30–45 sec",
-      equipment: "Mat",
-      cue: "Stack the shoulders and hips, press the floor away and keep the body long.",
-      substitute: "Bent-knee side plank"
-    },
-    {
-      match: /farmer carry/i,
-      rest: "45–60 sec",
-      equipment: "Dumbbells or kettlebells",
-      cue: "Stand tall, brace the trunk and walk with controlled steps without leaning.",
-      substitute: "Suitcase carry"
-    },
-    {
-      match: /bike|rower|incline walk|easy walk|purposeful walk|easy cardio/i,
-      rest: "As needed",
-      equipment: "Cardio machine or walking route",
-      cue: "Keep the effort controlled enough that you could speak in short sentences.",
-      substitute: "Any low-impact cardio you can do comfortably"
-    },
-    {
-      match: /mobility|stretch/i,
-      rest: "Move continuously",
-      equipment: "Mat",
-      cue: "Move slowly, stay out of painful ranges and breathe through each position.",
-      substitute: "Use a comfortable mobility movement for the same area"
-    },
-    {
-      match: /breathing/i,
-      rest: "Continuous",
-      equipment: "Quiet space",
-      cue: "Breathe slowly through the nose, relax the shoulders and lengthen the exhale.",
-      substitute: "Easy lying or seated breathing"
-    }
+    [
+      /goblet squat/i,
+      "60–90 sec",
+      "Dumbbell or kettlebell",
+      "Keep the weight close to your chest, brace first, sit between the hips and drive through the whole foot.",
+      "Leg press or box squat"
+    ],
+    [
+      /leg press/i,
+      "75–90 sec",
+      "Leg press",
+      "Keep your whole foot planted, control the lowering phase and stop before your hips roll under.",
+      "Goblet squat or supported squat"
+    ],
+    [
+      /db bench|dumbbell bench/i,
+      "75–90 sec",
+      "Bench + dumbbells",
+      "Set the shoulder blades, keep wrists stacked and lower with control before pressing smoothly.",
+      "Machine chest press or incline push-up"
+    ],
+    [
+      /machine press/i,
+      "60–90 sec",
+      "Chest press machine",
+      "Keep your upper back supported, control the handles back and press without shrugging.",
+      "Dumbbell bench press"
+    ],
+    [
+      /shoulder press/i,
+      "60–90 sec",
+      "Dumbbells or machine",
+      "Brace the trunk, keep elbows slightly forward and press without leaning back.",
+      "Machine shoulder press or landmine press"
+    ],
+    [
+      /seated row|cable row|machine row/i,
+      "60–90 sec",
+      "Cable or row machine",
+      "Lead with the elbows, keep the ribs down and finish by squeezing the shoulder blades without jerking.",
+      "Chest-supported dumbbell row"
+    ],
+    [
+      /lat pulldown/i,
+      "60–90 sec",
+      "Lat pulldown",
+      "Pull the elbows down toward your ribs while keeping the chest tall and shoulders away from your ears.",
+      "Assisted pull-up or high cable row"
+    ],
+    [
+      /romanian deadlift/i,
+      "75–120 sec",
+      "Dumbbells or barbell",
+      "Soften the knees, push the hips back and keep the weight close while maintaining a long neutral spine.",
+      "Cable pull-through or hip hinge with dumbbells"
+    ],
+    [
+      /split squat/i,
+      "60–90 sec",
+      "Bodyweight or dumbbells",
+      "Stay tall, keep the front foot planted and lower under control using support if needed.",
+      "Step-up or supported reverse lunge"
+    ],
+    [
+      /hamstring curl/i,
+      "45–75 sec",
+      "Hamstring curl machine",
+      "Keep the hips still, curl smoothly and control the return instead of letting the weight drop.",
+      "Swiss-ball curl or slider curl"
+    ],
+    [
+      /calf raise/i,
+      "45–60 sec",
+      "Machine, step or dumbbells",
+      "Use a full range, pause at the top and control the heel down.",
+      "Bodyweight calf raise"
+    ],
+    [
+      /biceps curl/i,
+      "45–60 sec",
+      "Dumbbells or cable",
+      "Keep the elbows quiet, curl without swinging and lower slowly.",
+      "Cable curl or hammer curl"
+    ],
+    [
+      /triceps pressdown/i,
+      "45–60 sec",
+      "Cable",
+      "Pin the elbows by your sides and straighten the arms without rolling the shoulders forward.",
+      "Overhead cable extension"
+    ],
+    [
+      /plank/i,
+      "45–60 sec",
+      "Mat",
+      "Brace as if preparing for a punch, squeeze glutes and keep the body in one straight line.",
+      "Elevated plank or dead bug"
+    ],
+    [
+      /dead bug/i,
+      "30–45 sec",
+      "Mat",
+      "Keep the lower back gently connected to the floor and move only as far as you can control.",
+      "Heel taps"
+    ],
+    [
+      /bird dog/i,
+      "30–45 sec",
+      "Mat",
+      "Keep the hips square and reach long rather than lifting the arm and leg high.",
+      "Dead bug"
+    ],
+    [
+      /side plank/i,
+      "30–45 sec",
+      "Mat",
+      "Stack the shoulders and hips, press the floor away and keep the body long.",
+      "Bent-knee side plank"
+    ],
+    [
+      /farmer carry/i,
+      "45–60 sec",
+      "Dumbbells or kettlebells",
+      "Stand tall, brace the trunk and walk with controlled steps without leaning.",
+      "Suitcase carry"
+    ],
+    [
+      /bike|rower|incline walk|easy walk|purposeful walk|easy cardio/i,
+      "As needed",
+      "Cardio machine or walking route",
+      "Keep the effort controlled enough that you could speak in short sentences.",
+      "Any low-impact cardio you can do comfortably"
+    ],
+    [
+      /mobility|stretch/i,
+      "Move continuously",
+      "Mat",
+      "Move slowly, stay out of painful ranges and breathe through each position.",
+      "Use a comfortable mobility movement for the same area"
+    ],
+    [
+      /breathing/i,
+      "Continuous",
+      "Quiet space",
+      "Breathe slowly through the nose, relax the shoulders and lengthen the exhale.",
+      "Easy lying or seated breathing"
+    ]
   ];
 
   function safeJson(
@@ -234,15 +213,6 @@
         "object"
     ) {
       state.workouts =
-        {};
-    }
-
-    if (
-      !state.actions ||
-      typeof state.actions !==
-        "object"
-    ) {
-      state.actions =
         {};
     }
 
@@ -283,13 +253,53 @@
     );
   }
 
+  function readExercises() {
+    return [
+      ...document.querySelectorAll(
+        "#manaV928Workout [data-m928-ex]"
+      )
+    ].map(
+      button => ({
+        name:
+          button
+            .querySelector(
+              ".m928-name"
+            )
+            ?.textContent
+            ?.trim() ||
+          "Exercise",
+
+        dose:
+          button
+            .querySelector(
+              ".m928-dose"
+            )
+            ?.textContent
+            ?.trim() ||
+          ""
+      })
+    );
+  }
+
+  function workoutName() {
+    return (
+      document
+        .querySelector(
+          "#manaV928Workout .m928-title"
+        )
+        ?.textContent
+        ?.trim() ||
+      "MANA 28 Workout"
+    );
+  }
+
   function currentWorkout(
     day
   ) {
     const state =
       loadState();
 
-    const workout =
+    const stored =
       state.workouts[
         String(
           day
@@ -298,9 +308,9 @@
 
     const checks =
       Array.isArray(
-        workout.checks
+        stored.checks
       )
-        ? workout.checks.slice()
+        ? stored.checks.slice()
         : [];
 
     while (
@@ -314,11 +324,11 @@
 
     return {
       startedAt:
-        workout.startedAt ||
+        stored.startedAt ||
         null,
 
       completedAt:
-        workout.completedAt ||
+        stored.completedAt ||
         null,
 
       checks
@@ -344,101 +354,58 @@
     );
   }
 
-  function workoutCard() {
-    return document.getElementById(
-      "manaV928Workout"
-    );
-  }
-
-  function mana28OverviewOpen() {
-    const shell =
-      document.getElementById(
-        "manaV83ProgramShell"
-      );
-
-    const title =
-      document.getElementById(
-        "manaV83Title"
-      );
-
-    const tab =
-      document.querySelector(
-        "#manaV83Tabs .mana-v83-tab.active"
-      );
-
-    return Boolean(
-      shell?.classList
-        .contains(
-          "open"
-        ) &&
-      title?.textContent
-        ?.trim()
-        ?.toUpperCase() ===
-        "MANA 28" &&
-      tab?.dataset
-        ?.v83Tab ===
-        "overview"
-    );
-  }
-
-  function readExercisesFromCard() {
-    const card =
-      workoutCard();
-
-    if (!card) {
-      return [];
-    }
-
-    return [
-      ...card.querySelectorAll(
-        "[data-m928-ex]"
-      )
-    ].map(
-      button => {
-
-        const name =
-          button
-            .querySelector(
-              ".m928-name"
-            )
-            ?.textContent
-            ?.trim() ||
-          "Exercise";
-
-        const dose =
-          button
-            .querySelector(
-              ".m928-dose"
-            )
-            ?.textContent
-            ?.trim() ||
-          "";
-
-        return {
-          name,
-          dose
-        };
-
-      }
-    );
-  }
-
   function coachFor(
-    exerciseName
+    name
   ) {
-    return (
+    const found =
       COACH.find(
         item =>
-          item.match.test(
-            exerciseName
+          item[
+            0
+          ].test(
+            name
           )
-      ) || {
-        rest: "60–90 sec",
-        equipment: "Use the equipment shown in your program",
-        cue: "Use controlled technique, stay within a comfortable range and stop the set if your form breaks down.",
-        substitute: "Choose a similar movement pattern that you can perform safely"
-      }
-    );
+      );
+
+    if (
+      !found
+    ) {
+      return {
+        rest:
+          "60–90 sec",
+
+        equipment:
+          "Use the equipment shown in your program",
+
+        cue:
+          "Use controlled technique, stay within a comfortable range and stop the set if your form breaks down.",
+
+        substitute:
+          "Choose a similar movement pattern that you can perform safely"
+      };
+    }
+
+    return {
+      rest:
+        found[
+          1
+        ],
+
+      equipment:
+        found[
+          2
+        ],
+
+      cue:
+        found[
+          3
+        ],
+
+      substitute:
+        found[
+          4
+        ]
+    };
   }
 
   function formatTime(
@@ -523,12 +490,14 @@
         z-index:40000;
         display:none;
         overflow:auto;
+        overscroll-behavior:contain;
         background:#050505;
         color:#fff;
         padding:
           calc(env(safe-area-inset-top) + 14px)
           14px
           calc(env(safe-area-inset-bottom) + 28px);
+        touch-action:pan-y;
       }
 
       #${MODAL_ID}.open{
@@ -536,7 +505,10 @@
       }
 
       .m929-shell{
-        width:min(560px,100%);
+        width:min(
+          560px,
+          100%
+        );
         margin:0 auto;
       }
 
@@ -555,8 +527,18 @@
         letter-spacing:.14em;
       }
 
+      .m929-close,
+      .m929-complete-btn,
+      .m929-nav button,
+      .m929-rest-btn,
+      .m929-finish{
+        touch-action:manipulation;
+        -webkit-tap-highlight-color:
+          transparent;
+      }
+
       .m929-close{
-        min-height:42px;
+        min-height:44px;
         padding:0 14px;
         border:1px solid #333;
         border-radius:13px;
@@ -571,12 +553,11 @@
         padding:18px;
         border:1px solid #55491d;
         border-radius:19px;
-        background:
-          linear-gradient(
-            145deg,
-            #171308,
-            #090909
-          );
+        background:linear-gradient(
+          145deg,
+          #171308,
+          #090909
+        );
       }
 
       .m929-row{
@@ -641,12 +622,11 @@
         padding:18px;
         border:1px solid #303030;
         border-radius:18px;
-        background:
-          linear-gradient(
-            145deg,
-            #111,
-            #090909
-          );
+        background:linear-gradient(
+          145deg,
+          #111,
+          #090909
+        );
       }
 
       .m929-ex-index{
@@ -672,7 +652,9 @@
 
       .m929-info-grid{
         display:grid;
-        grid-template-columns:1fr 1fr;
+        grid-template-columns:
+          1fr
+          1fr;
         gap:9px;
         margin-top:15px;
       }
@@ -704,7 +686,11 @@
         margin-top:14px;
         padding:14px;
         border-left:3px solid #f3d875;
-        border-radius:0 12px 12px 0;
+        border-radius:
+          0
+          12px
+          12px
+          0;
         background:#100f09;
       }
 
@@ -744,14 +730,16 @@
 
       .m929-nav{
         display:grid;
-        grid-template-columns:1fr 1fr;
+        grid-template-columns:
+          1fr
+          1fr;
         gap:9px;
         margin-top:10px;
       }
 
       .m929-nav button,
       .m929-rest-btn{
-        min-height:46px;
+        min-height:48px;
         border:1px solid #343434;
         border-radius:13px;
         background:#101010;
@@ -790,7 +778,11 @@
 
       .m929-rest-buttons{
         display:grid;
-        grid-template-columns:repeat(3,1fr);
+        grid-template-columns:
+          repeat(
+            3,
+            1fr
+          );
         gap:8px;
         margin-top:10px;
       }
@@ -823,7 +815,8 @@
 
       @media(max-width:390px){
         .m929-info-grid{
-          grid-template-columns:1fr;
+          grid-template-columns:
+            1fr;
         }
 
         .m929-ex-name{
@@ -871,7 +864,9 @@
           </button>
         </div>
 
-        <div id="m929Content"></div>
+        <div
+          id="m929Content"
+        ></div>
       </div>
     `;
 
@@ -879,26 +874,14 @@
       .appendChild(
         modal
       );
-
-    document
-      .getElementById(
-        "m929Close"
-      )
-      ?.addEventListener(
-        "click",
-        closeCoach
-      );
   }
 
-  function openCoach() {
-    if (
-      !mana28OverviewOpen()
-    ) {
-      return;
-    }
-
+  function openCoach(
+    requestedIndex =
+      null
+  ) {
     sessionExercises =
-      readExercisesFromCard();
+      readExercises();
 
     if (
       !sessionExercises.length
@@ -942,21 +925,43 @@
       );
     }
 
-    activeIndex =
-      workout.checks.findIndex(
-        complete =>
-          !complete
-      );
-
     if (
-      activeIndex <
-      0
+      Number.isFinite(
+        Number(
+          requestedIndex
+        )
+      )
     ) {
       activeIndex =
-        0;
+        Math.max(
+          0,
+          Math.min(
+            sessionExercises.length -
+              1,
+            Number(
+              requestedIndex
+            )
+          )
+        );
+    } else {
+      const firstIncomplete =
+        workout.checks
+          .findIndex(
+            value =>
+              !value
+          );
+
+      activeIndex =
+        firstIncomplete >= 0
+          ? firstIncomplete
+          : 0;
     }
 
     ensureModal();
+
+    previousBodyOverflow =
+      document.body.style
+        .overflow;
 
     document
       .getElementById(
@@ -988,14 +993,23 @@
 
     document.body.style
       .overflow =
-        "hidden";
+        previousBodyOverflow ||
+        "";
 
     stopRestTimer();
+
     stopWorkoutTimer();
 
-    window
-      .refreshMana28Workout
-      ?.();
+    setTimeout(
+      () => {
+
+        window
+          .refreshMana28Workout
+          ?.();
+
+      },
+      40
+    );
   }
 
   function renderCoach() {
@@ -1030,9 +1044,11 @@
       );
 
     const completed =
-      workout.checks.filter(
-        Boolean
-      ).length;
+      workout.checks
+        .filter(
+          Boolean
+        )
+        .length;
 
     const percent =
       Math.round(
@@ -1054,15 +1070,7 @@
             </div>
 
             <h2>
-              ${
-                workoutCard()
-                  ?.querySelector(
-                    ".m928-title"
-                  )
-                  ?.textContent
-                  ?.trim() ||
-                "MANA 28 WORKOUT"
-              }
+              ${workoutName()}
             </h2>
           </div>
 
@@ -1112,6 +1120,7 @@
         <div class="m929-info-grid">
           <div class="m929-info">
             <span>REST</span>
+
             <strong>
               ${coach.rest}
             </strong>
@@ -1119,6 +1128,7 @@
 
           <div class="m929-info">
             <span>EQUIPMENT</span>
+
             <strong>
               ${coach.equipment}
             </strong>
@@ -1126,14 +1136,20 @@
         </div>
 
         <div class="m929-coach">
-          <span>COACHING CUE</span>
+          <span>
+            COACHING CUE
+          </span>
+
           <p>
             ${coach.cue}
           </p>
         </div>
 
         <div class="m929-coach">
-          <span>SUBSTITUTION</span>
+          <span>
+            SUBSTITUTION
+          </span>
+
           <p>
             ${coach.substitute}
           </p>
@@ -1255,133 +1271,46 @@
         Stop if an exercise causes sharp or unusual pain.
       </div>
     `;
-
-    wireCoachControls();
   }
 
-  function wireCoachControls() {
-    document
-      .getElementById(
-        "m929CompleteExercise"
-      )
-      ?.addEventListener(
-        "click",
-        () => {
+  function toggleExercise() {
+    const day =
+      currentDay();
 
-          const day =
-            currentDay();
-
-          const workout =
-            currentWorkout(
-              day
-            );
-
-          workout.checks[
-            activeIndex
-          ] =
-            !workout.checks[
-              activeIndex
-            ];
-
-          saveWorkout(
-            day,
-            workout
-          );
-
-          if (
-            workout.checks[
-              activeIndex
-            ] &&
-            activeIndex <
-              sessionExercises.length -
-              1
-          ) {
-            activeIndex +=
-              1;
-
-            startRestTimer(
-              60
-            );
-          }
-
-          renderCoach();
-
-        }
+    const workout =
+      currentWorkout(
+        day
       );
 
-    document
-      .getElementById(
-        "m929Prev"
-      )
-      ?.addEventListener(
-        "click",
-        () => {
+    workout.checks[
+      activeIndex
+    ] =
+      !workout.checks[
+        activeIndex
+      ];
 
-          activeIndex =
-            Math.max(
-              0,
-              activeIndex -
-              1
-            );
+    saveWorkout(
+      day,
+      workout
+    );
 
-          renderCoach();
+    if (
+      workout.checks[
+        activeIndex
+      ] &&
+      activeIndex <
+      sessionExercises.length -
+        1
+    ) {
+      activeIndex +=
+        1;
 
-        }
+      startRestTimer(
+        60
       );
+    }
 
-    document
-      .getElementById(
-        "m929Next"
-      )
-      ?.addEventListener(
-        "click",
-        () => {
-
-          activeIndex =
-            Math.min(
-              sessionExercises.length -
-              1,
-              activeIndex +
-              1
-            );
-
-          renderCoach();
-
-        }
-      );
-
-    document
-      .querySelectorAll(
-        "[data-m929-rest]"
-      )
-      .forEach(
-        button => {
-
-          button.addEventListener(
-            "click",
-            () => {
-
-              startRestTimer(
-                Number(
-                  button.dataset
-                    .m929Rest
-                )
-              );
-
-            }
-          );
-
-        }
-      );
-
-    document
-      .getElementById(
-        "m929Finish"
-      )
-      ?.addEventListener(
-        "click",
-        finishWorkout
-      );
+    renderCoach();
   }
 
   function finishWorkout() {
@@ -1400,7 +1329,9 @@
         Boolean
       );
 
-    if (!allDone) {
+    if (
+      !allDone
+    ) {
       return;
     }
 
@@ -1414,17 +1345,103 @@
     );
 
     closeCoach();
+  }
 
-    setTimeout(
-      () => {
+  function handleClick(
+    event
+  ) {
+    if (
+      event.target.closest(
+        "#m929Close"
+      )
+    ) {
+      event.preventDefault();
 
-        window
-          .refreshMana28Workout
-          ?.();
+      closeCoach();
 
-      },
-      150
-    );
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "#m929CompleteExercise"
+      )
+    ) {
+      event.preventDefault();
+
+      toggleExercise();
+
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "#m929Prev"
+      )
+    ) {
+      event.preventDefault();
+
+      activeIndex =
+        Math.max(
+          0,
+          activeIndex -
+          1
+        );
+
+      renderCoach();
+
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "#m929Next"
+      )
+    ) {
+      event.preventDefault();
+
+      activeIndex =
+        Math.min(
+          sessionExercises.length -
+            1,
+          activeIndex +
+            1
+        );
+
+      renderCoach();
+
+      return;
+    }
+
+    const rest =
+      event.target.closest(
+        "[data-m929-rest]"
+      );
+
+    if (
+      rest
+    ) {
+      event.preventDefault();
+
+      startRestTimer(
+        Number(
+          rest.dataset
+            .m929Rest
+        )
+      );
+
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "#m929Finish"
+      )
+    ) {
+      event.preventDefault();
+
+      finishWorkout();
+    }
   }
 
   function startWorkoutTimer() {
@@ -1439,7 +1456,9 @@
               "m929WorkoutTimer"
             );
 
-          if (el) {
+          if (
+            el
+          ) {
             el.textContent =
               formatTime(
                 elapsedWorkoutSeconds()
@@ -1524,7 +1543,9 @@
         "m929RestTime"
       );
 
-    if (el) {
+    if (
+      el
+    ) {
       el.textContent =
         formatTime(
           restRemaining
@@ -1532,160 +1553,15 @@
     }
   }
 
-  function interceptStartButton() {
-    document.addEventListener(
-      "click",
-      event => {
-
-        const button =
-          event.target.closest(
-            "#m928WorkoutBtn"
-          );
-
-        if (!button) {
-          return;
-        }
-
-        if (
-          !mana28OverviewOpen()
-        ) {
-          return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-
-        openCoach();
-
-      },
-      true
-    );
-  }
-
-  function upgradeButtonCopy() {
-    if (
-      !mana28OverviewOpen()
-    ) {
-      return;
-    }
-
-    const button =
-      document.getElementById(
-        "m928WorkoutBtn"
-      );
-
-    if (!button) {
-      return;
-    }
-
-    const day =
-      currentDay();
-
-    sessionExercises =
-      readExercisesFromCard();
-
-    if (
-      !sessionExercises.length
-    ) {
-      return;
-    }
-
-    const workout =
-      currentWorkout(
-        day
-      );
-
-    const completed =
-      workout.checks.filter(
-        Boolean
-      ).length;
-
-    button.textContent =
-      completed > 0
-        ? "RESUME TODAY’S WORKOUT →"
-        : "START TODAY’S WORKOUT →";
-  }
-
-  function watchDOM() {
-    let timer =
-      null;
-
-    const observer =
-      new MutationObserver(
-        () => {
-
-          clearTimeout(
-            timer
-          );
-
-          timer =
-            setTimeout(
-              upgradeButtonCopy,
-              100
-            );
-
-        }
-      );
-
-    observer.observe(
-      document.body,
-      {
-        childList:
-          true,
-
-        subtree:
-          true
-      }
-    );
-  }
-
   function init() {
     injectStyles();
 
     ensureModal();
 
-    interceptStartButton();
-
-    watchDOM();
-
-    window.addEventListener(
-      "mana:program-tab-change",
-      () => {
-
-        setTimeout(
-          upgradeButtonCopy,
-          160
-        );
-
-      }
-    );
-
-    window.addEventListener(
-      "mana28:updated",
-      () => {
-
-        setTimeout(
-          upgradeButtonCopy,
-          160
-        );
-
-      }
-    );
-
-    [
-      700,
-      1400,
-      2400
-    ].forEach(
-      delay => {
-
-        setTimeout(
-          upgradeButtonCopy,
-          delay
-        );
-
-      }
+    document.addEventListener(
+      "click",
+      handleClick,
+      true
     );
   }
 
@@ -1694,6 +1570,9 @@
 
   window.openMana28WorkoutCoach =
     openCoach;
+
+  window.closeMana28WorkoutCoach =
+    closeCoach;
 
   if (
     document.readyState ===
