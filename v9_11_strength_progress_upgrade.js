@@ -1,26 +1,9 @@
-/* =========================================
-   MANA MOVEMENT TRAINING v9.13.5
-   PROGRESS DASHBOARD
-   WHOLE FILE REPLACEMENT
-
-   - Trend dashboard
-   - Weekly snapshot
-   - Exercise progression
-   - Load / Reps / Estimated 1RM
-   - Current PB banner
-   - PB badges on visible bars
-   - Coaching insight
-   - Personal bests
-   - Recent workouts
-   - Reset training history
-   ========================================= */
-
+/* MANA MOVEMENT TRAINING v9.13.6 — PROGRESS DASHBOARD — WHOLE FILE REPLACEMENT */
 (() => {
   "use strict";
 
-  const STYLE_ID = "mana-v9135-progress-style";
-  const ROOT_ID = "manaV9135Progress";
-
+  const STYLE_ID = "mana-v9136-progress-style";
+  const ROOT_ID = "manaV9136Progress";
   const LOG_KEY = "mana-strength-v64-logs";
   const PROGRAM_KEY = "mana-strength-v62-program";
   const FUEL_KEY = "mana-fuel-v571";
@@ -33,244 +16,245 @@
   let selectedStrengthMetric = "load";
   let renderTimer = null;
 
-  /* =========================================
-     HELPERS
-     ========================================= */
-
-  function safeJson(raw, fallback) {
+  const safeJson = (raw, fallback) => {
     try {
       return JSON.parse(raw);
-    } catch (_) {
+    } catch {
       return fallback;
     }
-  }
+  };
 
-  function esc(value) {
-    return String(value ?? "")
+  const esc = v =>
+    String(v ?? "")
       .replaceAll("&", "&amp;")
       .replaceAll("<", "&lt;")
       .replaceAll(">", "&gt;")
       .replaceAll('"', "&quot;");
-  }
 
-  function parseDate(value) {
-    if (!value) {
-      return null;
-    }
+  const parseDate = v => {
+    if (!v) return null;
 
-    const date = new Date(value);
+    const d = new Date(v);
 
     return Number.isNaN(
-      date.getTime()
+      d.getTime()
     )
       ? null
-      : date;
-  }
+      : d;
+  };
 
-  function startOfDay(date = new Date()) {
-    return new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
+  const startOfDay = (
+    d = new Date()
+  ) =>
+    new Date(
+      d.getFullYear(),
+      d.getMonth(),
+      d.getDate()
     );
-  }
 
-  function startOfWeek(date = new Date()) {
-    const base = startOfDay(date);
-    const offset =
+  const startOfWeek = (
+    d = new Date()
+  ) => {
+    const x =
+      startOfDay(d);
+
+    x.setDate(
+      x.getDate() -
       (
-        base.getDay() +
-        6
-      ) % 7;
-
-    base.setDate(
-      base.getDate() -
-      offset
+        (
+          x.getDay() +
+          6
+        ) % 7
+      )
     );
 
-    return base;
-  }
+    return x;
+  };
 
-  function startOfMonth(date = new Date()) {
-    return new Date(
-      date.getFullYear(),
-      date.getMonth(),
+  const startOfMonth = (
+    d = new Date()
+  ) =>
+    new Date(
+      d.getFullYear(),
+      d.getMonth(),
       1
     );
-  }
 
-  function addDays(date, amount) {
-    const next =
-      new Date(date);
+  const addDays = (
+    d,
+    n
+  ) => {
+    const x =
+      new Date(d);
 
-    next.setDate(
-      next.getDate() +
-      amount
+    x.setDate(
+      x.getDate() +
+      n
     );
 
-    return next;
-  }
+    return x;
+  };
 
-  function addMonths(date, amount) {
-    return new Date(
-      date.getFullYear(),
-      date.getMonth() +
-        amount,
+  const addMonths = (
+    d,
+    n
+  ) =>
+    new Date(
+      d.getFullYear(),
+      d.getMonth() +
+      n,
       1
     );
-  }
 
-  function dateKey(date) {
-    return [
-      date.getFullYear(),
+  const dateKey =
+    d => [
+      d.getFullYear(),
 
       String(
-        date.getMonth() + 1
+        d.getMonth() +
+        1
       ).padStart(
         2,
         "0"
       ),
 
       String(
-        date.getDate()
+        d.getDate()
       ).padStart(
         2,
         "0"
       )
     ].join("-");
-  }
 
-  function formatNumber(value) {
-    return Math.round(
+  const formatNumber =
+    value =>
+      Math.round(
+        Number(
+          value || 0
+        )
+      ).toLocaleString();
+
+  const formatDecimal =
+    value => {
+      const n =
+        Number(
+          value || 0
+        );
+
+      if (!n) {
+        return "—";
+      }
+
+      return Number.isInteger(
+        n
+      )
+        ? String(n)
+        : n.toFixed(1);
+    };
+
+  const formatLoad =
+    value =>
       Number(
         value || 0
       )
-    ).toLocaleString();
-  }
+        ? `${formatDecimal(
+            value
+          )} kg`
+        : "—";
 
-  function formatDecimal(
-    value,
-    decimals = 1
-  ) {
-    const number =
-      Number(
-        value || 0
-      );
-
-    if (!number) {
-      return "—";
-    }
-
-    return Number.isInteger(
-      number
-    )
-      ? String(number)
-      : number.toFixed(
-          decimals
-        );
-  }
-
-  function formatLoad(value) {
-    const number =
-      Number(
-        value || 0
-      );
-
-    return number
-      ? `${formatDecimal(
-          number
-        )} kg`
-      : "—";
-  }
-
-  function signedValue(
+  const signed = (
     value,
     suffix = ""
-  ) {
-    const number =
+  ) => {
+    const n =
       Number(
         value || 0
       );
 
-    if (!number) {
+    if (!n) {
       return "—";
     }
 
     return `${
-      number > 0
+      n > 0
         ? "+"
         : ""
     }${formatDecimal(
-      number
+      n
     )}${suffix}`;
-  }
+  };
 
-  function formatDate(value) {
-    const date =
-      parseDate(value);
+  const formatDate =
+    value => {
+      const d =
+        parseDate(
+          value
+        );
 
-    if (!date) {
-      return "—";
-    }
+      return d
+        ? d.toLocaleDateString(
+            undefined,
+            {
+              day:
+                "numeric",
 
-    return date.toLocaleDateString(
-      undefined,
-      {
-        day: "numeric",
-        month: "short"
-      }
-    );
-  }
+              month:
+                "short"
+            }
+          )
+        : "—";
+    };
 
-  function formatDuration(seconds) {
-    const minutes =
-      Math.round(
-        Number(
-          seconds || 0
-        ) / 60
-      );
-
-    if (!minutes) {
-      return "—";
-    }
-
-    if (
-      minutes < 60
-    ) {
-      return `${minutes} min`;
-    }
-
-    const hours =
-      Math.floor(
-        minutes / 60
-      );
-
-    const remainder =
-      minutes % 60;
-
-    return remainder
-      ? `${hours}h ${remainder}m`
-      : `${hours}h`;
-  }
-
-  function clampPercent(value) {
-    return Math.max(
-      0,
-      Math.min(
-        100,
+  const formatDuration =
+    seconds => {
+      const mins =
         Math.round(
           Number(
-            value || 0
+            seconds || 0
+          ) / 60
+        );
+
+      if (!mins) {
+        return "—";
+      }
+
+      if (
+        mins < 60
+      ) {
+        return `${mins} min`;
+      }
+
+      const hours =
+        Math.floor(
+          mins / 60
+        );
+
+      const remainder =
+        mins % 60;
+
+      return remainder
+        ? `${hours}h ${remainder}m`
+        : `${hours}h`;
+    };
+
+  const clamp =
+    value =>
+      Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            Number(
+              value || 0
+            )
           )
         )
-      )
-    );
-  }
+      );
 
-  function estimated1RM(
+  const estimated1RM = (
     weight,
     reps
-  ) {
+  ) => {
     const w =
       Number(
         weight || 0
@@ -304,14 +288,10 @@
       ) *
       10
     ) / 10;
-  }
-
-  /* =========================================
-     STORAGE
-     ========================================= */
+  };
 
   function loadLogs() {
-    const logs =
+    const x =
       safeJson(
         localStorage.getItem(
           LOG_KEY
@@ -320,13 +300,15 @@
       );
 
     return Array.isArray(
-      logs
+      x
     )
-      ? logs
+      ? x
       : [];
   }
 
-  function saveLogs(logs) {
+  function saveLogs(
+    logs
+  ) {
     localStorage.setItem(
       LOG_KEY,
       JSON.stringify(
@@ -349,7 +331,7 @@
   }
 
   function loadFuel() {
-    const fuel =
+    const x =
       safeJson(
         localStorage.getItem(
           FUEL_KEY
@@ -357,31 +339,15 @@
         {}
       );
 
-    return fuel &&
-      typeof fuel ===
+    return x &&
+      typeof x ===
         "object"
-      ? fuel
-      : {};
-  }
-
-  function loadRecovery() {
-    const recovery =
-      safeJson(
-        localStorage.getItem(
-          DAILY_KEY
-        ) || "{}",
-        {}
-      );
-
-    return recovery &&
-      typeof recovery ===
-        "object"
-      ? recovery
+      ? x
       : {};
   }
 
   function loadTargets() {
-    const targets =
+    const x =
       safeJson(
         localStorage.getItem(
           TARGET_KEY
@@ -392,22 +358,38 @@
     return {
       calories:
         Number(
-          targets.calories ||
+          x.calories ||
           0
         ),
 
       protein:
         Number(
-          targets.protein ||
+          x.protein ||
           0
         ),
 
       water:
         Number(
-          targets.water ||
+          x.water ||
           0
         )
     };
+  }
+
+  function loadRecovery() {
+    const x =
+      safeJson(
+        localStorage.getItem(
+          DAILY_KEY
+        ) || "{}",
+        {}
+      );
+
+    return x &&
+      typeof x ===
+        "object"
+      ? x
+      : {};
   }
 
   function progressOpen() {
@@ -427,9 +409,10 @@
       );
 
     return Boolean(
-      shell?.classList.contains(
-        "open"
-      ) &&
+      shell?.classList
+        .contains(
+          "open"
+        ) &&
 
       title?.textContent
         ?.trim()
@@ -442,11 +425,9 @@
     );
   }
 
-  /* =========================================
-     FUEL
-     ========================================= */
-
-  function fuelTotals(day) {
+  function fuelTotals(
+    day
+  ) {
     const totals = {
       calories: 0,
       protein: 0,
@@ -491,7 +472,9 @@
     return totals;
   }
 
-  function fuelForDate(date) {
+  function fuelForDate(
+    date
+  ) {
     return fuelTotals(
       loadFuel()[
         dateKey(
@@ -501,10 +484,6 @@
     );
   }
 
-  /* =========================================
-     PERIOD DATA
-     ========================================= */
-
   function logsInPeriod(
     start,
     end
@@ -513,15 +492,15 @@
       .filter(
         log => {
 
-          const date =
+          const d =
             parseDate(
               log?.date
             );
 
           return Boolean(
-            date &&
-            date >= start &&
-            date < end
+            d &&
+            d >= start &&
+            d < end
           );
 
         }
@@ -547,15 +526,15 @@
         day
       ]) => {
 
-        const date =
+        const d =
           parseDate(
             `${key}T12:00:00`
           );
 
         if (
-          !date ||
-          date < start ||
-          date >= end
+          !d ||
+          d < start ||
+          d >= end
         ) {
           return;
         }
@@ -574,7 +553,8 @@
         totals.water +=
           values.water;
 
-        totals.days += 1;
+        totals.days +=
+          1;
 
       }
     );
@@ -597,22 +577,23 @@
         day
       ]) => {
 
-        const date =
+        const d =
           parseDate(
             `${key}T12:00:00`
           );
 
         if (
-          date &&
-          date >= start &&
-          date < end &&
+          d &&
+          d >= start &&
+          d < end &&
           (
             day?.recovery ||
             day?.recoveryDone ||
             day?.recoveryComplete
           )
         ) {
-          count += 1;
+          count +=
+            1;
         }
 
       }
@@ -629,14 +610,14 @@
       .forEach(
         log => {
 
-          const date =
+          const d =
             parseDate(
               log?.date
             );
 
-          if (date) {
+          if (d) {
             dates.push(
-              date
+              d
             );
           }
 
@@ -655,14 +636,14 @@
         ).forEach(
           key => {
 
-            const date =
+            const d =
               parseDate(
                 `${key}T12:00:00`
               );
 
-            if (date) {
+            if (d) {
               dates.push(
-                date
+                d
               );
             }
 
@@ -672,22 +653,18 @@
       }
     );
 
-    if (
-      !dates.length
-    ) {
-      return startOfMonth(
-        new Date()
-      );
-    }
-
-    return new Date(
-      Math.min(
-        ...dates.map(
-          date =>
-            date.getTime()
+    return dates.length
+      ? new Date(
+          Math.min(
+            ...dates.map(
+              d =>
+                d.getTime()
+            )
+          )
         )
-      )
-    );
+      : startOfMonth(
+          new Date()
+        );
   }
 
   function currentRange() {
@@ -858,13 +835,21 @@
       recovery,
       volume,
       duration,
-      avgCompletion
+      avgCompletion,
+
+      avgDuration:
+        logs.length
+          ? duration /
+            logs.length
+          : 0,
+
+      avgVolume:
+        logs.length
+          ? volume /
+            logs.length
+          : 0
     };
   }
-
-  /* =========================================
-     WEEKLY SNAPSHOT
-     ========================================= */
 
   function weeklyTarget() {
     const program =
@@ -904,17 +889,14 @@
         new Date()
       );
 
-    const workouts =
+    return clamp(
       logsInPeriod(
         start,
         addDays(
           start,
           7
         )
-      ).length;
-
-    return clampPercent(
-      workouts /
+      ).length /
       target *
       100
     );
@@ -960,7 +942,7 @@
 
     const workoutPercent =
       planned
-        ? clampPercent(
+        ? clamp(
             logs.length /
             planned *
             100
@@ -1044,10 +1026,6 @@
         )
     };
   }
-
-  /* =========================================
-     TREND GRAPH
-     ========================================= */
 
   function buildPeriods() {
     const now =
@@ -1259,7 +1237,8 @@
           1
         );
 
-      guard += 1;
+      guard +=
+        1;
     }
 
     return periods;
@@ -1321,7 +1300,7 @@
   }
 
   function metricLabel() {
-    const labels = {
+    return ({
       workouts:
         "Workouts",
 
@@ -1336,9 +1315,7 @@
 
       recovery:
         "Recovery"
-    };
-
-    return labels[
+    })[
       selectedMetric
     ] ||
     "Workouts";
@@ -1361,7 +1338,7 @@
 
     return `
       <div
-        class="mana-v9135-chart"
+        class="mana-v9136-chart"
       >
         ${
           periods
@@ -1390,11 +1367,11 @@
 
                 return `
                   <div
-                    class="mana-v9135-bar-wrap"
+                    class="mana-v9136-bar-wrap"
                   >
 
                     <div
-                      class="mana-v9135-bar-value"
+                      class="mana-v9136-bar-value"
                     >
                       ${
                         value
@@ -1406,18 +1383,20 @@
                     </div>
 
                     <div
-                      class="mana-v9135-bar-track"
+                      class="mana-v9136-bar-track"
                     >
+
                       <div
-                        class="mana-v9135-bar"
+                        class="mana-v9136-bar"
                         style="
                           height:${height}%;
                         "
                       ></div>
+
                     </div>
 
                     <div
-                      class="mana-v9135-bar-label"
+                      class="mana-v9136-bar-label"
                     >
                       ${esc(
                         period.label
@@ -1434,10 +1413,6 @@
       </div>
     `;
   }
-
-  /* =========================================
-     PERSONAL BESTS
-     ========================================= */
 
   function personalBests() {
     const map =
@@ -1535,10 +1510,6 @@
         8
       );
   }
-
-  /* =========================================
-     EXERCISE PROGRESSION DATA
-     ========================================= */
 
   function exerciseSeries() {
     const map =
@@ -1642,26 +1613,17 @@
                   (
                     best,
                     set
-                  ) => {
-
-                    const value =
-                      estimated1RM(
-                        set.weight,
-                        set.reps
-                      );
-
-                    const bestValue =
-                      estimated1RM(
-                        best.weight,
-                        best.reps
-                      );
-
-                    return value >
-                      bestValue
+                  ) =>
+                    estimated1RM(
+                      set.weight,
+                      set.reps
+                    ) >
+                    estimated1RM(
+                      best.weight,
+                      best.reps
+                    )
                       ? set
-                      : best;
-
-                  },
+                      : best,
                   sets[0]
                 );
 
@@ -1753,6 +1715,7 @@
         ]) => ({
           name,
           points,
+
           count:
             points.length
         })
@@ -1764,9 +1727,10 @@
         ) =>
           b.count -
             a.count ||
-          a.name.localeCompare(
-            b.name
-          )
+          a.name
+            .localeCompare(
+              b.name
+            )
       );
   }
 
@@ -1798,7 +1762,9 @@
     return options;
   }
 
-  function strengthMetricValue(point) {
+  function strengthMetricValue(
+    point
+  ) {
     if (
       selectedStrengthMetric ===
       "reps"
@@ -1843,7 +1809,9 @@
     return "Load";
   }
 
-  function strengthMetricFormat(value) {
+  function strengthMetricFormat(
+    value
+  ) {
     if (!value) {
       return "—";
     }
@@ -1862,7 +1830,9 @@
     )} kg`;
   }
 
-  function strengthBarLabel(value) {
+  function strengthBarLabel(
+    value
+  ) {
     if (!value) {
       return "";
     }
@@ -1881,18 +1851,20 @@
     )}kg`;
   }
 
-  function strengthMetricSigned(value) {
+  function strengthMetricSigned(
+    value
+  ) {
     if (
       selectedStrengthMetric ===
       "reps"
     ) {
-      return signedValue(
+      return signed(
         value,
         " reps"
       );
     }
 
-    return signedValue(
+    return signed(
       value,
       " kg"
     );
@@ -1905,7 +1877,7 @@
     return `
       <button
         type="button"
-        data-v9135-strength-metric="${metric}"
+        data-v9136-strength-metric="${metric}"
         class="${
           selectedStrengthMetric ===
           metric
@@ -1919,9 +1891,9 @@
   }
 
   function currentPbSubtext(
-    bestPoint
+    point
   ) {
-    if (!bestPoint) {
+    if (!point) {
       return "";
     }
 
@@ -1929,12 +1901,12 @@
       selectedStrengthMetric ===
       "load"
     ) {
-      return bestPoint.loadReps
+      return point.loadReps
         ? `${formatDecimal(
-            bestPoint.load
-          )} kg × ${bestPoint.loadReps} reps`
+            point.load
+          )} kg × ${point.loadReps} reps`
         : formatLoad(
-            bestPoint.load
+            point.load
           );
     }
 
@@ -1942,24 +1914,24 @@
       selectedStrengthMetric ===
       "reps"
     ) {
-      return bestPoint.repsWeight
-        ? `${bestPoint.reps} reps @ ${formatDecimal(
-            bestPoint.repsWeight
+      return point.repsWeight
+        ? `${point.reps} reps @ ${formatDecimal(
+            point.repsWeight
           )} kg`
-        : `${bestPoint.reps} reps`;
+        : `${point.reps} reps`;
     }
 
-    return bestPoint.e1rmWeight &&
-      bestPoint.e1rmReps
+    return point.e1rmWeight &&
+      point.e1rmReps
       ? `From ${formatDecimal(
-          bestPoint.e1rmWeight
-        )} kg × ${bestPoint.e1rmReps}`
+          point.e1rmWeight
+        )} kg × ${point.e1rmReps}`
       : "";
   }
 
   function currentPbHtml(
     best,
-    bestPoint
+    point
   ) {
     if (!best) {
       return "";
@@ -1967,21 +1939,19 @@
 
     return `
       <div
-        class="mana-v9135-current-pb"
+        class="mana-v9136-current-pb"
       >
 
         <div
-          class="mana-v9135-current-pb-icon"
+          class="mana-v9136-current-pb-icon"
         >
           PB
         </div>
 
-        <div
-          class="mana-v9135-current-pb-copy"
-        >
+        <div>
 
           <div
-            class="mana-v9135-current-pb-label"
+            class="mana-v9136-current-pb-label"
           >
             CURRENT ${esc(
               strengthMetricLabel()
@@ -1989,7 +1959,7 @@
           </div>
 
           <div
-            class="mana-v9135-current-pb-value"
+            class="mana-v9136-current-pb-value"
           >
             ${esc(
               strengthMetricFormat(
@@ -1999,23 +1969,23 @@
           </div>
 
           <div
-            class="mana-v9135-current-pb-meta"
+            class="mana-v9136-current-pb-meta"
           >
             ${
-              bestPoint?.dateRaw
+              point?.dateRaw
                 ? `Set ${formatDate(
-                    bestPoint.dateRaw
+                    point.dateRaw
                   )}`
                 : ""
             }
 
             ${
               currentPbSubtext(
-                bestPoint
+                point
               )
                 ? ` • ${esc(
                     currentPbSubtext(
-                      bestPoint
+                      point
                     )
                   )}`
                 : ""
@@ -2035,12 +2005,12 @@
     first,
     best
   }) {
-    const metricName =
+    const metric =
       strengthMetricLabel()
         .toLowerCase();
 
     if (!latest) {
-      return `${name} will build a ${metricName} trend as you log completed sets.`;
+      return `${name} will build a ${metric} trend as you log completed sets.`;
     }
 
     if (
@@ -2057,7 +2027,7 @@
         )} versus your previous session.`;
       }
 
-      return `${name}: latest session matched your current ${metricName} PB of ${strengthMetricFormat(
+      return `${name}: latest session matched your current ${metric} PB of ${strengthMetricFormat(
         best
       )}.`;
     }
@@ -2086,7 +2056,7 @@
       best &&
       latest < best
     ) {
-      return `${name}: latest ${metricName} is ${strengthMetricFormat(
+      return `${name}: latest ${metric} is ${strengthMetricFormat(
         best -
         latest
       )} below your current PB of ${strengthMetricFormat(
@@ -2094,7 +2064,7 @@
       )}.`;
     }
 
-    return `${name}: keep logging sessions to build a clearer long-term ${metricName} trend.`;
+    return `${name}: keep logging sessions to build a clearer long-term ${metric} trend.`;
   }
 
   function miniStat(
@@ -2103,19 +2073,21 @@
   ) {
     return `
       <div
-        class="mana-v9135-mini-stat"
+        class="mana-v9136-mini-stat"
       >
+
         <div
-          class="mana-v9135-mini-label"
+          class="mana-v9136-mini-label"
         >
           ${esc(label)}
         </div>
 
         <div
-          class="mana-v9135-mini-value"
+          class="mana-v9136-mini-value"
         >
           ${esc(value)}
         </div>
+
       </div>
     `;
   }
@@ -2129,12 +2101,13 @@
     ) {
       return `
         <div
-          class="mana-v9135-section"
+          class="mana-v9136-section"
         >
 
           <div
-            class="mana-v9135-section-head"
+            class="mana-v9136-section-head"
           >
+
             <h3>
               Strength Progression
             </h3>
@@ -2142,10 +2115,11 @@
             <span>
               BY EXERCISE
             </span>
+
           </div>
 
           <div
-            class="mana-v9135-empty"
+            class="mana-v9136-empty"
           >
             Complete weighted sets and
             your exercise progression
@@ -2176,25 +2150,21 @@
       );
 
     const latestPoint =
-      metricPoints.length
-        ? metricPoints[
-            metricPoints.length -
-            1
-          ]
-        : null;
+      metricPoints.at(
+        -1
+      ) ||
+      null;
 
     const previousPoint =
       metricPoints.length > 1
-        ? metricPoints[
-            metricPoints.length -
-            2
-          ]
+        ? metricPoints.at(
+            -2
+          )
         : null;
 
     const firstPoint =
-      metricPoints.length
-        ? metricPoints[0]
-        : null;
+      metricPoints[0] ||
+      null;
 
     const latest =
       strengthMetricValue(
@@ -2274,17 +2244,17 @@
 
     return `
       <div
-        class="mana-v9135-section mana-v9135-strength-section"
+        class="mana-v9136-section mana-v9136-strength-section"
       >
 
         <div
-          class="mana-v9135-section-head"
+          class="mana-v9136-section-head"
         >
 
           <div>
 
             <div
-              class="mana-v9135-eyebrow"
+              class="mana-v9136-eyebrow"
             >
               STRENGTH
             </div>
@@ -2305,15 +2275,15 @@
         </div>
 
         <label
-          class="mana-v9135-select-label"
-          for="manaV9135ExerciseSelect"
+          class="mana-v9136-select-label"
+          for="manaV9136ExerciseSelect"
         >
           Exercise
         </label>
 
         <select
-          id="manaV9135ExerciseSelect"
-          class="mana-v9135-select"
+          id="manaV9136ExerciseSelect"
+          class="mana-v9136-select"
         >
           ${
             options
@@ -2341,7 +2311,7 @@
         </select>
 
         <div
-          class="mana-v9135-strength-metric-tabs"
+          class="mana-v9136-strength-metric-tabs"
         >
 
           ${strengthMetricButton(
@@ -2362,7 +2332,7 @@
         </div>
 
         <div
-          class="mana-v9135-strength-stats"
+          class="mana-v9136-strength-stats"
         >
 
           ${miniStat(
@@ -2412,7 +2382,7 @@
         )}
 
         <div
-          class="mana-v9135-strength-chart"
+          class="mana-v9136-strength-chart"
         >
 
           ${
@@ -2447,18 +2417,18 @@
 
                   return `
                     <div
-                      class="mana-v9135-strength-bar-wrap"
+                      class="mana-v9136-strength-bar-wrap"
                     >
 
                       <div
-                        class="mana-v9135-strength-top"
+                        class="mana-v9136-strength-top"
                       >
 
                         ${
                           isPB
                             ? `
                                 <span
-                                  class="mana-v9135-pb-badge"
+                                  class="mana-v9136-pb-badge"
                                 >
                                   PB
                                 </span>
@@ -2475,10 +2445,11 @@
                       </div>
 
                       <div
-                        class="mana-v9135-strength-track"
+                        class="mana-v9136-strength-track"
                       >
+
                         <div
-                          class="mana-v9135-strength-bar ${
+                          class="mana-v9136-strength-bar ${
                             isPB
                               ? "pb"
                               : ""
@@ -2487,10 +2458,11 @@
                             height:${height}%;
                           "
                         ></div>
+
                       </div>
 
                       <div
-                        class="mana-v9135-strength-date"
+                        class="mana-v9136-strength-date"
                       >
                         ${formatDate(
                           point.dateRaw
@@ -2508,17 +2480,17 @@
         </div>
 
         <div
-          class="mana-v9135-insight"
+          class="mana-v9136-insight"
         >
 
           <div
-            class="mana-v9135-insight-kicker"
+            class="mana-v9136-insight-kicker"
           >
             COACHING INSIGHT
           </div>
 
           <div
-            class="mana-v9135-insight-copy"
+            class="mana-v9136-insight-copy"
           >
             ${esc(
               insight
@@ -2528,23 +2500,17 @@
         </div>
 
         <div
-          class="mana-v9135-strength-note"
+          class="mana-v9136-strength-note"
         >
-          The Current PB card shows your
-          all-time best even if it happened
-          outside the last 8 sessions.
-          PB badges appear directly on any
-          visible session that matches the
-          current best.
+          The Current PB card shows your all-time
+          best even when it sits outside the last
+          8 sessions. PB badges mark visible
+          sessions that equal the current best.
         </div>
 
       </div>
     `;
   }
-
-  /* =========================================
-     SNAPSHOT
-     ========================================= */
 
   function snapshotCard(
     label,
@@ -2553,23 +2519,23 @@
   ) {
     return `
       <div
-        class="mana-v9135-snapshot-card"
+        class="mana-v9136-snapshot-card"
       >
 
         <div
-          class="mana-v9135-snapshot-label"
+          class="mana-v9136-snapshot-label"
         >
           ${esc(label)}
         </div>
 
         <div
-          class="mana-v9135-snapshot-value"
+          class="mana-v9136-snapshot-value"
         >
           ${esc(value)}
         </div>
 
         <div
-          class="mana-v9135-snapshot-sub"
+          class="mana-v9136-snapshot-sub"
         >
           ${esc(sub)}
         </div>
@@ -2592,17 +2558,17 @@
 
     return `
       <div
-        class="mana-v9135-section mana-v9135-week"
+        class="mana-v9136-section mana-v9136-week"
       >
 
         <div
-          class="mana-v9135-section-head"
+          class="mana-v9136-section-head"
         >
 
           <div>
 
             <div
-              class="mana-v9135-eyebrow"
+              class="mana-v9136-eyebrow"
             >
               THIS WEEK
             </div>
@@ -2620,18 +2586,18 @@
         </div>
 
         <div
-          class="mana-v9135-week-main"
+          class="mana-v9136-week-main"
         >
 
           <div
-            class="mana-v9135-ring"
+            class="mana-v9136-ring"
             style="
-              --progress:${week.workoutPercent * 3.6}deg;
+              --progress:${week.workoutPercent * 3.6}deg
             "
           >
 
             <div
-              class="mana-v9135-ring-inner"
+              class="mana-v9136-ring-inner"
             >
 
               <strong>
@@ -2647,17 +2613,17 @@
           </div>
 
           <div
-            class="mana-v9135-week-copy"
+            class="mana-v9136-week-copy"
           >
 
             <div
-              class="mana-v9135-week-title"
+              class="mana-v9136-week-title"
             >
               Training target
             </div>
 
             <div
-              class="mana-v9135-week-value"
+              class="mana-v9136-week-value"
             >
               ${esc(
                 workoutSub
@@ -2665,13 +2631,13 @@
             </div>
 
             <div
-              class="mana-v9135-progress-track"
+              class="mana-v9136-progress-track"
             >
 
               <div
-                class="mana-v9135-progress-fill"
+                class="mana-v9136-progress-fill"
                 style="
-                  width:${week.workoutPercent}%;
+                  width:${week.workoutPercent}%
                 "
               ></div>
 
@@ -2682,7 +2648,7 @@
         </div>
 
         <div
-          class="mana-v9135-snapshot-grid"
+          class="mana-v9136-snapshot-grid"
         >
 
           ${snapshotCard(
@@ -2741,10 +2707,6 @@
     `;
   }
 
-  /* =========================================
-     HTML HELPERS
-     ========================================= */
-
   function rangeButton(
     range,
     label
@@ -2752,7 +2714,7 @@
     return `
       <button
         type="button"
-        data-v9135-range="${range}"
+        data-v9136-range="${range}"
         class="${
           selectedRange ===
           range
@@ -2772,7 +2734,7 @@
     return `
       <button
         type="button"
-        data-v9135-metric="${metric}"
+        data-v9136-metric="${metric}"
         class="${
           selectedMetric ===
           metric
@@ -2792,23 +2754,23 @@
   ) {
     return `
       <div
-        class="mana-v9135-stat"
+        class="mana-v9136-stat"
       >
 
         <div
-          class="mana-v9135-stat-label"
+          class="mana-v9136-stat-label"
         >
           ${esc(label)}
         </div>
 
         <div
-          class="mana-v9135-stat-value"
+          class="mana-v9136-stat-value"
         >
           ${esc(value)}
         </div>
 
         <div
-          class="mana-v9135-stat-sub"
+          class="mana-v9136-stat-sub"
         >
           ${esc(sub)}
         </div>
@@ -2817,51 +2779,274 @@
     `;
   }
 
-  function performanceCard(
-    label,
-    value
+  function totalsHtml(
+    stats,
+    targets
   ) {
     return `
       <div
-        class="mana-v9135-performance-card"
+        class="mana-v9136-section"
       >
 
         <div
-          class="mana-v9135-performance-label"
+          class="mana-v9136-section-head"
         >
-          ${esc(label)}
+
+          <div>
+
+            <div
+              class="mana-v9136-eyebrow"
+            >
+              TOTALS
+            </div>
+
+            <h3>
+              ${esc(
+                stats.range.label
+              )}
+            </h3>
+
+          </div>
+
+          <span>
+            SUMMARY
+          </span>
+
         </div>
 
         <div
-          class="mana-v9135-performance-value"
+          class="mana-v9136-grid"
         >
-          ${esc(value)}
+
+          ${statCard(
+            "Workouts",
+            stats.logs.length,
+            weeklyTarget()
+              ? `${weeklyTarget()} planned / week`
+              : "Completed sessions"
+          )}
+
+          ${statCard(
+            "Volume",
+            stats.volume
+              ? `${formatNumber(
+                  stats.volume
+                )} kg`
+              : "—",
+            "Total load moved"
+          )}
+
+          ${statCard(
+            "Calories",
+            formatNumber(
+              stats.fuel.calories
+            ),
+            targets.calories
+              ? `${targets.calories} kcal daily target`
+              : "Logged calories"
+          )}
+
+          ${statCard(
+            "Protein",
+            `${formatNumber(
+              stats.fuel.protein
+            )} g`,
+            targets.protein
+              ? `${targets.protein} g daily target`
+              : "Logged protein"
+          )}
+
+          ${statCard(
+            "Water",
+            `${formatNumber(
+              stats.fuel.water
+            )} ml`,
+            targets.water
+              ? `${targets.water} ml daily target`
+              : "Logged hydration"
+          )}
+
+          ${statCard(
+            "Recovery",
+            stats.recovery,
+            "Recovery focus days"
+          )}
+
         </div>
 
       </div>
     `;
   }
 
-  /* =========================================
-     RESET
-     ========================================= */
+  function performanceHtml(
+    stats,
+    pbs
+  ) {
+    const consistency =
+      consistencyPercent();
+
+    const completion =
+      clamp(
+        stats.avgCompletion
+      );
+
+    return `
+      <div
+        class="mana-v9136-section mana-v9136-performance-section"
+      >
+
+        <div
+          class="mana-v9136-section-head"
+        >
+
+          <div>
+
+            <div
+              class="mana-v9136-eyebrow"
+            >
+              PERFORMANCE
+            </div>
+
+            <h3>
+              Training Performance
+            </h3>
+
+          </div>
+
+          <span>
+            ${esc(
+              stats.range.label
+            )}
+          </span>
+
+        </div>
+
+        <div
+          class="mana-v9136-performance-hero"
+        >
+
+          <div
+            class="mana-v9136-perf-block"
+          >
+
+            <div
+              class="mana-v9136-perf-label"
+            >
+              Completion
+            </div>
+
+            <div
+              class="mana-v9136-perf-value"
+            >
+              ${completion}%
+            </div>
+
+            <div
+              class="mana-v9136-perf-track"
+            >
+
+              <div
+                class="mana-v9136-perf-fill"
+                style="
+                  width:${completion}%
+                "
+              ></div>
+
+            </div>
+
+          </div>
+
+          <div
+            class="mana-v9136-perf-block"
+          >
+
+            <div
+              class="mana-v9136-perf-label"
+            >
+              Consistency
+            </div>
+
+            <div
+              class="mana-v9136-perf-value"
+            >
+              ${consistency}%
+            </div>
+
+            <div
+              class="mana-v9136-perf-track"
+            >
+
+              <div
+                class="mana-v9136-perf-fill"
+                style="
+                  width:${consistency}%
+                "
+              ></div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+        <div
+          class="mana-v9136-performance-grid"
+        >
+
+          ${statCard(
+            "Training time",
+            formatDuration(
+              stats.duration
+            ),
+            "Total time trained"
+          )}
+
+          ${statCard(
+            "Avg session",
+            formatDuration(
+              stats.avgDuration
+            ),
+            "Average session length"
+          )}
+
+          ${statCard(
+            "Avg volume",
+            stats.avgVolume
+              ? `${formatNumber(
+                  stats.avgVolume
+                )} kg`
+              : "—",
+            "Average load per workout"
+          )}
+
+          ${statCard(
+            "Personal bests",
+            pbs.length,
+            "Top recorded loads"
+          )}
+
+        </div>
+
+      </div>
+    `;
+  }
 
   function resetButtonHtml() {
     return `
       <div
-        class="mana-v9135-reset-zone"
+        class="mana-v9136-reset-zone"
       >
 
         <div>
 
           <div
-            class="mana-v9135-reset-title"
+            class="mana-v9136-reset-title"
           >
             Testing complete?
           </div>
 
           <div
-            class="mana-v9135-reset-copy"
+            class="mana-v9136-reset-copy"
           >
             Reset removes workout history,
             training volume, personal bests
@@ -2874,8 +3059,8 @@
 
         <button
           type="button"
-          id="manaV9135ResetTraining"
-          class="mana-v9135-reset-btn"
+          id="manaV9136ResetTraining"
+          class="mana-v9136-reset-btn"
         >
           Reset Training History
         </button>
@@ -2891,26 +3076,26 @@
     if (
       !logs.length
     ) {
-      window.alert(
+      alert(
         "There is no training history to reset."
       );
 
       return;
     }
 
-    const confirmReset =
-      window.confirm(
+    const confirmed =
+      confirm(
         `Reset all ${logs.length} recorded workout${logs.length === 1 ? "" : "s"}?\n\nWorkout history, volume, PBs and exercise progression will be cleared.\n\nFuel data will NOT be deleted.`
       );
 
     if (
-      !confirmReset
+      !confirmed
     ) {
       return;
     }
 
     const typed =
-      window.prompt(
+      prompt(
         "Type RESET to confirm. This cannot be undone."
       );
 
@@ -2922,7 +3107,7 @@
         .toUpperCase() !==
       "RESET"
     ) {
-      window.alert(
+      alert(
         "Reset cancelled."
       );
 
@@ -2950,14 +3135,10 @@
 
     render();
 
-    window.alert(
+    alert(
       "Training history reset. Fuel and nutrition data were kept."
     );
   }
-
-  /* =========================================
-     STYLES
-     ========================================= */
 
   function injectStyles() {
     [
@@ -2966,17 +3147,15 @@
       "mana-v913-progress-style",
       "mana-v9132-progress-style",
       "mana-v9133-progress-style",
-      "mana-v9134-progress-style"
+      "mana-v9134-progress-style",
+      "mana-v9135-progress-style"
     ].forEach(
-      id => {
-
+      id =>
         document
           .getElementById(
             id
           )
-          ?.remove();
-
-      }
+          ?.remove()
     );
 
     if (
@@ -2996,36 +3175,36 @@
       STYLE_ID;
 
     style.textContent = `
-
       #${ROOT_ID}{
         width:100%;
         padding-bottom:32px;
       }
 
-      .mana-v9135-head{
+      .mana-v9136-head{
         margin-bottom:16px;
       }
 
-      .mana-v9135-kicker,
-      .mana-v9135-eyebrow{
+      .mana-v9136-kicker,
+      .mana-v9136-eyebrow{
         color:#f3d875;
         font-size:10px;
         font-weight:900;
         letter-spacing:.13em;
       }
 
-      .mana-v9135-head h2{
+      .mana-v9136-head h2{
         margin:6px 0 5px;
         font-size:30px;
       }
 
-      .mana-v9135-head p{
+      .mana-v9136-head p{
         margin:0;
         color:#888;
         font-size:12px;
+        line-height:1.5;
       }
 
-      .mana-v9135-tabs{
+      .mana-v9136-tabs{
         display:grid;
         grid-template-columns:
           repeat(
@@ -3036,7 +3215,7 @@
         margin:15px 0;
       }
 
-      .mana-v9135-tabs button{
+      .mana-v9136-tabs button{
         min-height:43px;
         border:1px solid #333;
         border-radius:12px;
@@ -3047,13 +3226,13 @@
         cursor:pointer;
       }
 
-      .mana-v9135-tabs button.active{
+      .mana-v9136-tabs button.active{
         border-color:#f3d875;
         background:#f3d875;
         color:#111;
       }
 
-      .mana-v9135-section{
+      .mana-v9136-section{
         margin-top:14px;
         padding:17px;
         border:1px solid #292929;
@@ -3066,7 +3245,7 @@
           );
       }
 
-      .mana-v9135-section-head{
+      .mana-v9136-section-head{
         display:flex;
         justify-content:space-between;
         align-items:flex-start;
@@ -3074,20 +3253,20 @@
         margin-bottom:14px;
       }
 
-      .mana-v9135-section-head h3{
+      .mana-v9136-section-head h3{
         margin:0;
         font-size:19px;
       }
 
-      .mana-v9135-section-head span{
+      .mana-v9136-section-head span{
         color:#777;
         font-size:9px;
         font-weight:800;
         text-transform:uppercase;
       }
 
-      .mana-v9135-metric-tabs,
-      .mana-v9135-strength-metric-tabs{
+      .mana-v9136-metric-tabs,
+      .mana-v9136-strength-metric-tabs{
         display:flex;
         gap:6px;
         overflow-x:auto;
@@ -3095,13 +3274,13 @@
         margin-bottom:14px;
       }
 
-      .mana-v9135-strength-metric-tabs{
+      .mana-v9136-strength-metric-tabs{
         margin-top:10px;
         margin-bottom:10px;
       }
 
-      .mana-v9135-metric-tabs button,
-      .mana-v9135-strength-metric-tabs button{
+      .mana-v9136-metric-tabs button,
+      .mana-v9136-strength-metric-tabs button{
         flex:0 0 auto;
         min-height:36px;
         padding:7px 10px;
@@ -3114,14 +3293,14 @@
         cursor:pointer;
       }
 
-      .mana-v9135-metric-tabs button.active,
-      .mana-v9135-strength-metric-tabs button.active{
+      .mana-v9136-metric-tabs button.active,
+      .mana-v9136-strength-metric-tabs button.active{
         border-color:#62531e;
         background:#171407;
         color:#f3d875;
       }
 
-      .mana-v9135-chart{
+      .mana-v9136-chart{
         height:190px;
         display:flex;
         gap:7px;
@@ -3129,7 +3308,7 @@
         padding-top:12px;
       }
 
-      .mana-v9135-bar-wrap{
+      .mana-v9136-bar-wrap{
         flex:1 0 34px;
         min-width:34px;
         display:grid;
@@ -3141,12 +3320,12 @@
         text-align:center;
       }
 
-      .mana-v9135-bar-value{
+      .mana-v9136-bar-value{
         color:#aaa;
         font-size:8px;
       }
 
-      .mana-v9135-bar-track{
+      .mana-v9136-bar-track{
         height:130px;
         display:flex;
         align-items:flex-end;
@@ -3155,7 +3334,7 @@
         background:#181818;
       }
 
-      .mana-v9135-bar{
+      .mana-v9136-bar{
         width:100%;
         min-height:3px;
         border-radius:
@@ -3166,12 +3345,12 @@
         background:#f3d875;
       }
 
-      .mana-v9135-bar-label{
+      .mana-v9136-bar-label{
         color:#666;
         font-size:8px;
       }
 
-      .mana-v9135-week{
+      .mana-v9136-week{
         border-color:#3a3218;
         background:
           radial-gradient(
@@ -3196,7 +3375,7 @@
           );
       }
 
-      .mana-v9135-week-main{
+      .mana-v9136-week-main{
         display:grid;
         grid-template-columns:
           auto
@@ -3209,7 +3388,7 @@
           16px;
       }
 
-      .mana-v9135-ring{
+      .mana-v9136-ring{
         width:92px;
         height:92px;
         display:grid;
@@ -3224,7 +3403,7 @@
           );
       }
 
-      .mana-v9135-ring-inner{
+      .mana-v9136-ring-inner{
         width:72px;
         height:72px;
         display:flex;
@@ -3235,32 +3414,33 @@
         background:#0b0b0b;
       }
 
-      .mana-v9135-ring-inner strong{
+      .mana-v9136-ring-inner strong{
         color:#f3d875;
         font-size:21px;
       }
 
-      .mana-v9135-ring-inner small{
+      .mana-v9136-ring-inner small{
         margin-top:5px;
         color:#777;
         font-size:8px;
       }
 
-      .mana-v9135-week-title{
+      .mana-v9136-week-title{
         color:#777;
         font-size:9px;
         font-weight:900;
         text-transform:uppercase;
       }
 
-      .mana-v9135-week-value{
+      .mana-v9136-week-value{
         margin-top:5px;
         color:#fff;
         font-size:15px;
         font-weight:900;
       }
 
-      .mana-v9135-progress-track{
+      .mana-v9136-progress-track,
+      .mana-v9136-perf-track{
         height:8px;
         margin-top:12px;
         overflow:hidden;
@@ -3268,13 +3448,14 @@
         background:#222;
       }
 
-      .mana-v9135-progress-fill{
+      .mana-v9136-progress-fill,
+      .mana-v9136-perf-fill{
         height:100%;
         border-radius:999px;
         background:#f3d875;
       }
 
-      .mana-v9135-snapshot-grid{
+      .mana-v9136-snapshot-grid{
         display:grid;
         grid-template-columns:
           repeat(
@@ -3284,10 +3465,9 @@
         gap:8px;
       }
 
-      .mana-v9135-snapshot-card,
-      .mana-v9135-stat,
-      .mana-v9135-performance-card,
-      .mana-v9135-mini-stat{
+      .mana-v9136-snapshot-card,
+      .mana-v9136-stat,
+      .mana-v9136-mini-stat{
         min-width:0;
         padding:12px;
         border:1px solid #292929;
@@ -3295,33 +3475,34 @@
         background:#0b0b0b;
       }
 
-      .mana-v9135-snapshot-label,
-      .mana-v9135-stat-label,
-      .mana-v9135-performance-label,
-      .mana-v9135-mini-label{
+      .mana-v9136-snapshot-label,
+      .mana-v9136-stat-label,
+      .mana-v9136-mini-label,
+      .mana-v9136-perf-label{
         color:#777;
         font-size:8px;
         font-weight:900;
         text-transform:uppercase;
       }
 
-      .mana-v9135-snapshot-value,
-      .mana-v9135-stat-value,
-      .mana-v9135-mini-value{
+      .mana-v9136-snapshot-value,
+      .mana-v9136-stat-value,
+      .mana-v9136-mini-value{
         margin-top:6px;
         color:#f3d875;
         font-size:18px;
         font-weight:900;
       }
 
-      .mana-v9135-snapshot-sub,
-      .mana-v9135-stat-sub{
+      .mana-v9136-snapshot-sub,
+      .mana-v9136-stat-sub{
         margin-top:4px;
         color:#666;
         font-size:8px;
       }
 
-      .mana-v9135-grid{
+      .mana-v9136-grid,
+      .mana-v9136-performance-grid{
         display:grid;
         grid-template-columns:
           repeat(
@@ -3331,30 +3512,42 @@
         gap:9px;
       }
 
-      .mana-v9135-stat-value{
+      .mana-v9136-stat-value{
         font-size:22px;
       }
 
-      .mana-v9135-performance{
+      .mana-v9136-performance-section{
+        border-color:#34301d;
+      }
+
+      .mana-v9136-performance-hero{
         display:grid;
         grid-template-columns:
           1fr
           1fr;
-        gap:8px;
+        gap:10px;
+        margin-bottom:10px;
       }
 
-      .mana-v9135-performance-value{
-        margin-top:6px;
-        color:#fff;
-        font-size:18px;
-        font-weight:900;
+      .mana-v9136-perf-block{
+        padding:14px;
+        border:1px solid #34301d;
+        border-radius:16px;
+        background:#0d0c08;
       }
 
-      .mana-v9135-strength-section{
+      .mana-v9136-perf-value{
+        margin-top:4px;
+        color:#f3d875;
+        font-size:24px;
+        font-weight:1000;
+      }
+
+      .mana-v9136-strength-section{
         border-color:#35301b;
       }
 
-      .mana-v9135-select-label{
+      .mana-v9136-select-label{
         display:block;
         margin-bottom:6px;
         color:#777;
@@ -3363,7 +3556,7 @@
         text-transform:uppercase;
       }
 
-      .mana-v9135-select{
+      .mana-v9136-select{
         width:100%;
         min-height:44px;
         padding:0 12px;
@@ -3375,7 +3568,7 @@
         font-weight:800;
       }
 
-      .mana-v9135-strength-stats{
+      .mana-v9136-strength-stats{
         display:grid;
         grid-template-columns:
           repeat(
@@ -3386,11 +3579,11 @@
         margin-top:10px;
       }
 
-      .mana-v9135-mini-value{
+      .mana-v9136-mini-value{
         font-size:16px;
       }
 
-      .mana-v9135-current-pb{
+      .mana-v9136-current-pb{
         display:grid;
         grid-template-columns:
           auto
@@ -3409,7 +3602,7 @@
           );
       }
 
-      .mana-v9135-current-pb-icon{
+      .mana-v9136-current-pb-icon{
         width:46px;
         height:46px;
         display:grid;
@@ -3419,39 +3612,29 @@
         color:#f3d875;
         font-size:12px;
         font-weight:1000;
-        box-shadow:
-          0
-          0
-          16px
-          rgba(
-            243,
-            216,
-            117,
-            .13
-          );
       }
 
-      .mana-v9135-current-pb-label{
+      .mana-v9136-current-pb-label{
         color:#a18d46;
         font-size:8px;
         font-weight:900;
         letter-spacing:.08em;
       }
 
-      .mana-v9135-current-pb-value{
+      .mana-v9136-current-pb-value{
         margin-top:3px;
         color:#f3d875;
         font-size:21px;
         font-weight:1000;
       }
 
-      .mana-v9135-current-pb-meta{
+      .mana-v9136-current-pb-meta{
         margin-top:4px;
         color:#777;
         font-size:8px;
       }
 
-      .mana-v9135-strength-chart{
+      .mana-v9136-strength-chart{
         height:190px;
         display:flex;
         gap:7px;
@@ -3460,7 +3643,7 @@
         padding-top:8px;
       }
 
-      .mana-v9135-strength-bar-wrap{
+      .mana-v9136-strength-bar-wrap{
         flex:1 0 48px;
         min-width:48px;
         display:grid;
@@ -3472,7 +3655,7 @@
         text-align:center;
       }
 
-      .mana-v9135-strength-top{
+      .mana-v9136-strength-top{
         display:flex;
         align-items:center;
         justify-content:center;
@@ -3483,7 +3666,7 @@
         white-space:nowrap;
       }
 
-      .mana-v9135-pb-badge{
+      .mana-v9136-pb-badge{
         padding:2px 4px;
         border:1px solid #806c25;
         border-radius:999px;
@@ -3493,7 +3676,7 @@
         font-weight:1000;
       }
 
-      .mana-v9135-strength-track{
+      .mana-v9136-strength-track{
         height:120px;
         display:flex;
         align-items:flex-end;
@@ -3502,7 +3685,7 @@
         background:#181818;
       }
 
-      .mana-v9135-strength-bar{
+      .mana-v9136-strength-bar{
         width:100%;
         min-height:3px;
         border-radius:
@@ -3518,7 +3701,7 @@
           );
       }
 
-      .mana-v9135-strength-bar.pb{
+      .mana-v9136-strength-bar.pb{
         box-shadow:
           inset
           0
@@ -3537,12 +3720,12 @@
           );
       }
 
-      .mana-v9135-strength-date{
+      .mana-v9136-strength-date{
         color:#666;
         font-size:8px;
       }
 
-      .mana-v9135-insight{
+      .mana-v9136-insight{
         margin-top:14px;
         padding:13px;
         border:1px solid #3b341d;
@@ -3550,13 +3733,13 @@
         background:#141106;
       }
 
-      .mana-v9135-insight-kicker{
+      .mana-v9136-insight-kicker{
         color:#f3d875;
         font-size:8px;
         font-weight:900;
       }
 
-      .mana-v9135-insight-copy{
+      .mana-v9136-insight-copy{
         margin-top:5px;
         color:#ddd;
         font-size:10px;
@@ -3564,14 +3747,14 @@
         line-height:1.45;
       }
 
-      .mana-v9135-strength-note{
+      .mana-v9136-strength-note{
         margin-top:10px;
         color:#777;
         font-size:9px;
         line-height:1.45;
       }
 
-      .mana-v9135-pb{
+      .mana-v9136-pb{
         display:grid;
         grid-template-columns:
           1fr
@@ -3582,28 +3765,28 @@
         border-top:1px solid #252525;
       }
 
-      .mana-v9135-pb-name,
-      .mana-v9135-workout-name{
+      .mana-v9136-pb-name,
+      .mana-v9136-workout-name{
         color:#eee;
         font-size:12px;
         font-weight:900;
       }
 
-      .mana-v9135-pb-date,
-      .mana-v9135-workout-meta{
+      .mana-v9136-pb-date,
+      .mana-v9136-workout-meta{
         margin-top:4px;
         color:#777;
         font-size:9px;
       }
 
-      .mana-v9135-pb-value,
-      .mana-v9135-workout-volume{
+      .mana-v9136-pb-value,
+      .mana-v9136-workout-volume{
         color:#f3d875;
         font-size:12px;
         font-weight:900;
       }
 
-      .mana-v9135-workout{
+      .mana-v9136-workout{
         display:grid;
         grid-template-columns:
           1fr
@@ -3613,12 +3796,12 @@
         border-top:1px solid #252525;
       }
 
-      .mana-v9135-feedback{
+      .mana-v9136-feedback{
         grid-column:
           1 / -1;
       }
 
-      .mana-v9135-effort{
+      .mana-v9136-effort{
         display:inline-flex;
         margin-top:5px;
         padding:4px 7px;
@@ -3629,19 +3812,19 @@
         font-weight:900;
       }
 
-      .mana-v9135-note{
+      .mana-v9136-note{
         margin-top:6px;
         color:#999;
         font-size:9px;
       }
 
-      .mana-v9135-empty{
+      .mana-v9136-empty{
         padding:18px 4px;
         color:#777;
         font-size:11px;
       }
 
-      .mana-v9135-reset-zone{
+      .mana-v9136-reset-zone{
         margin-top:18px;
         padding:16px;
         display:grid;
@@ -3660,20 +3843,20 @@
           );
       }
 
-      .mana-v9135-reset-title{
+      .mana-v9136-reset-title{
         color:#fff;
         font-size:13px;
         font-weight:900;
       }
 
-      .mana-v9135-reset-copy{
+      .mana-v9136-reset-copy{
         margin-top:5px;
         color:#777;
         font-size:9px;
         line-height:1.45;
       }
 
-      .mana-v9135-reset-btn{
+      .mana-v9136-reset-btn{
         min-height:40px;
         padding:0 13px;
         border:1px solid #714141;
@@ -3687,7 +3870,7 @@
 
       @media(max-width:760px){
 
-        .mana-v9135-strength-stats{
+        .mana-v9136-strength-stats{
           grid-template-columns:
             repeat(
               3,
@@ -3699,7 +3882,10 @@
 
       @media(max-width:560px){
 
-        .mana-v9135-snapshot-grid{
+        .mana-v9136-snapshot-grid,
+        .mana-v9136-strength-stats,
+        .mana-v9136-performance-grid,
+        .mana-v9136-grid{
           grid-template-columns:
             repeat(
               2,
@@ -3707,20 +3893,17 @@
             );
         }
 
-        .mana-v9135-strength-stats{
-          grid-template-columns:
-            repeat(
-              2,
-              1fr
-            );
-        }
-
-        .mana-v9135-reset-zone{
+        .mana-v9136-performance-hero{
           grid-template-columns:
             1fr;
         }
 
-        .mana-v9135-reset-btn{
+        .mana-v9136-reset-zone{
+          grid-template-columns:
+            1fr;
+        }
+
+        .mana-v9136-reset-btn{
           width:100%;
         }
 
@@ -3728,24 +3911,26 @@
 
       @media(max-width:380px){
 
-        .mana-v9135-tabs{
+        .mana-v9136-tabs{
           grid-template-columns:
             1fr
             1fr;
         }
 
-        .mana-v9135-week-main{
+        .mana-v9136-week-main{
           grid-template-columns:
             1fr;
           text-align:center;
         }
 
-        .mana-v9135-strength-stats{
+        .mana-v9136-strength-stats,
+        .mana-v9136-performance-grid,
+        .mana-v9136-grid{
           grid-template-columns:
             1fr;
         }
 
-        .mana-v9135-workout{
+        .mana-v9136-workout{
           grid-template-columns:
             1fr;
         }
@@ -3757,10 +3942,6 @@
       style
     );
   }
-
-  /* =========================================
-     RENDER
-     ========================================= */
 
   function render() {
     if (
@@ -3794,20 +3975,17 @@
         )
         .reverse();
 
-    const consistency =
-      consistencyPercent();
-
     holder.innerHTML = `
       <div
         id="${ROOT_ID}"
       >
 
         <div
-          class="mana-v9135-head"
+          class="mana-v9136-head"
         >
 
           <div
-            class="mana-v9135-kicker"
+            class="mana-v9136-kicker"
           >
             MANA STRENGTH
           </div>
@@ -3824,7 +4002,7 @@
         </div>
 
         <div
-          class="mana-v9135-tabs"
+          class="mana-v9136-tabs"
         >
 
           ${rangeButton(
@@ -3850,11 +4028,11 @@
         </div>
 
         <div
-          class="mana-v9135-section"
+          class="mana-v9136-section"
         >
 
           <div
-            class="mana-v9135-section-head"
+            class="mana-v9136-section-head"
           >
 
             <h3>
@@ -3870,7 +4048,7 @@
           </div>
 
           <div
-            class="mana-v9135-metric-tabs"
+            class="mana-v9136-metric-tabs"
           >
 
             ${metricButton(
@@ -3908,142 +4086,22 @@
 
         ${strengthProgressHtml()}
 
+        ${totalsHtml(
+          stats,
+          targets
+        )}
+
+        ${performanceHtml(
+          stats,
+          pbs
+        )}
+
         <div
-          class="mana-v9135-section"
+          class="mana-v9136-section"
         >
 
           <div
-            class="mana-v9135-section-head"
-          >
-
-            <h3>
-              Totals
-            </h3>
-
-            <span>
-              ${esc(
-                stats.range.label
-              )}
-            </span>
-
-          </div>
-
-          <div
-            class="mana-v9135-grid"
-          >
-
-            ${statCard(
-              "Workouts",
-              stats.logs.length,
-              weeklyTarget()
-                ? `${weeklyTarget()} planned / week`
-                : "Completed sessions"
-            )}
-
-            ${statCard(
-              "Calories",
-              formatNumber(
-                stats.fuel.calories
-              ),
-              targets.calories
-                ? `${targets.calories} kcal daily target`
-                : "Logged calories"
-            )}
-
-            ${statCard(
-              "Protein",
-              `${formatNumber(
-                stats.fuel.protein
-              )} g`,
-              targets.protein
-                ? `${targets.protein} g daily target`
-                : "Logged protein"
-            )}
-
-            ${statCard(
-              "Water",
-              `${formatNumber(
-                stats.fuel.water
-              )} ml`,
-              targets.water
-                ? `${targets.water} ml daily target`
-                : "Logged hydration"
-            )}
-
-            ${statCard(
-              "Recovery",
-              stats.recovery,
-              "Recovery focus days"
-            )}
-
-            ${statCard(
-              "Volume",
-              stats.volume
-                ? `${formatNumber(
-                    stats.volume
-                  )} kg`
-                : "—",
-              "Total load moved"
-            )}
-
-          </div>
-
-        </div>
-
-        <div
-          class="mana-v9135-section"
-        >
-
-          <div
-            class="mana-v9135-section-head"
-          >
-
-            <h3>
-              Training Performance
-            </h3>
-
-            <span>
-              LIVE
-            </span>
-
-          </div>
-
-          <div
-            class="mana-v9135-performance"
-          >
-
-            ${performanceCard(
-              "Completion",
-              `${stats.avgCompletion}%`
-            )}
-
-            ${performanceCard(
-              "Training time",
-              formatDuration(
-                stats.duration
-              )
-            )}
-
-            ${performanceCard(
-              "Consistency",
-              `${consistency}%`
-            )}
-
-            ${performanceCard(
-              "Personal bests",
-              pbs.length
-            )}
-
-          </div>
-
-        </div>
-
-        <div
-          class="mana-v9135-section"
-        >
-
-          <div
-            class="mana-v9135-section-head"
+            class="mana-v9136-section-head"
           >
 
             <h3>
@@ -4062,13 +4120,13 @@
                   .map(
                     pb => `
                       <div
-                        class="mana-v9135-pb"
+                        class="mana-v9136-pb"
                       >
 
                         <div>
 
                           <div
-                            class="mana-v9135-pb-name"
+                            class="mana-v9136-pb-name"
                           >
                             ${esc(
                               pb.name
@@ -4076,7 +4134,7 @@
                           </div>
 
                           <div
-                            class="mana-v9135-pb-date"
+                            class="mana-v9136-pb-date"
                           >
                             ${formatDate(
                               pb.date
@@ -4086,7 +4144,7 @@
                         </div>
 
                         <div
-                          class="mana-v9135-pb-value"
+                          class="mana-v9136-pb-value"
                         >
                           ${formatLoad(
                             pb.weight
@@ -4099,7 +4157,7 @@
                   .join("")
               : `
                   <div
-                    class="mana-v9135-empty"
+                    class="mana-v9136-empty"
                   >
                     Personal bests will appear
                     as you complete weighted
@@ -4111,11 +4169,11 @@
         </div>
 
         <div
-          class="mana-v9135-section"
+          class="mana-v9136-section"
         >
 
           <div
-            class="mana-v9135-section-head"
+            class="mana-v9136-section-head"
           >
 
             <h3>
@@ -4151,13 +4209,13 @@
 
                       return `
                         <div
-                          class="mana-v9135-workout"
+                          class="mana-v9136-workout"
                         >
 
                           <div>
 
                             <div
-                              class="mana-v9135-workout-name"
+                              class="mana-v9136-workout-name"
                             >
                               ${esc(
                                 log.sessionName ||
@@ -4166,7 +4224,7 @@
                             </div>
 
                             <div
-                              class="mana-v9135-workout-meta"
+                              class="mana-v9136-workout-meta"
                             >
                               ${formatDate(
                                 log.date
@@ -4185,7 +4243,7 @@
                           </div>
 
                           <div
-                            class="mana-v9135-workout-volume"
+                            class="mana-v9136-workout-volume"
                           >
                             ${formatNumber(
                               log.totalVolume
@@ -4198,14 +4256,14 @@
                             note
                               ? `
                                   <div
-                                    class="mana-v9135-feedback"
+                                    class="mana-v9136-feedback"
                                   >
 
                                     ${
                                       effort
                                         ? `
                                             <div
-                                              class="mana-v9135-effort"
+                                              class="mana-v9136-effort"
                                             >
                                               ${esc(
                                                 effort
@@ -4220,7 +4278,7 @@
                                       note
                                         ? `
                                             <div
-                                              class="mana-v9135-note"
+                                              class="mana-v9136-note"
                                             >
                                               ${esc(
                                                 note
@@ -4243,7 +4301,7 @@
                   .join("")
               : `
                   <div
-                    class="mana-v9135-empty"
+                    class="mana-v9136-empty"
                   >
                     Complete a workout and
                     it will appear here.
@@ -4261,14 +4319,10 @@
     wireControls();
   }
 
-  /* =========================================
-     CONTROLS
-     ========================================= */
-
   function wireControls() {
     document
       .querySelectorAll(
-        "[data-v9135-range]"
+        "[data-v9136-range]"
       )
       .forEach(
         button => {
@@ -4279,7 +4333,7 @@
 
               selectedRange =
                 button.dataset
-                  .v9135Range;
+                  .v9136Range;
 
               render();
 
@@ -4291,7 +4345,7 @@
 
     document
       .querySelectorAll(
-        "[data-v9135-metric]"
+        "[data-v9136-metric]"
       )
       .forEach(
         button => {
@@ -4302,7 +4356,7 @@
 
               selectedMetric =
                 button.dataset
-                  .v9135Metric;
+                  .v9136Metric;
 
               render();
 
@@ -4314,7 +4368,7 @@
 
     document
       .querySelectorAll(
-        "[data-v9135-strength-metric]"
+        "[data-v9136-strength-metric]"
       )
       .forEach(
         button => {
@@ -4325,7 +4379,7 @@
 
               selectedStrengthMetric =
                 button.dataset
-                  .v9135StrengthMetric;
+                  .v9136StrengthMetric;
 
               render();
 
@@ -4337,7 +4391,7 @@
 
     document
       .getElementById(
-        "manaV9135ExerciseSelect"
+        "manaV9136ExerciseSelect"
       )
       ?.addEventListener(
         "change",
@@ -4353,17 +4407,13 @@
 
     document
       .getElementById(
-        "manaV9135ResetTraining"
+        "manaV9136ResetTraining"
       )
       ?.addEventListener(
         "click",
         resetTrainingHistory
       );
   }
-
-  /* =========================================
-     WATCH
-     ========================================= */
 
   function scheduleRender(
     delay = 120
@@ -4387,17 +4437,14 @@
       "mana:fuel-updated",
       "mana:recovery-updated"
     ].forEach(
-      eventName => {
-
+      name =>
         window.addEventListener(
-          eventName,
+          name,
           () =>
             scheduleRender(
               140
             )
-        );
-
-      }
+        )
     );
 
     window.addEventListener(
@@ -4471,10 +4518,6 @@
     );
   }
 
-  /* =========================================
-     INIT
-     ========================================= */
-
   function init() {
     injectStyles();
     watch();
@@ -4484,14 +4527,11 @@
       1500,
       2400
     ].forEach(
-      delay => {
-
+      delay =>
         setTimeout(
           render,
           delay
-        );
-
-      }
+        )
     );
   }
 
