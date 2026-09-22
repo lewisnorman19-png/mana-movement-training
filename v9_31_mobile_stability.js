@@ -1,25 +1,32 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.31.0
-   MOBILE STABILITY REPAIR
-
-   WHOLE NEW FILE:
-   v9_31_mobile_stability.js
-
-   MOBILE-ONLY REPAIR FOR:
-   - MANA STRENGTH FUEL CONTENT DROPPING OUT
-   - OVERVIEW WORKOUT / COACH CHAT DROPPING OUT
-   - SAFARI / HOME SCREEN SLOW TAB SETTLING
+   MANA MOVEMENT TRAINING v9.31.1
+   MOBILE STABILITY — FUEL ONLY
 
    IMPORTANT:
-   - NO MUTATION OBSERVER
-   - NO CONTINUOUS RENDER LOOP
-   - ONLY REPAIRS WHEN REQUIRED CONTENT IS MISSING
+   Strength Overview is now rendered directly
+   by v8.6 and must NOT be repaired here.
+
+   This file now protects ONLY:
+   - Strength Fuel content on mobile
+   - Safari / Home Screen delayed Fuel rendering
+
+   REMOVED:
+   - Overview repair passes
+   - Overview full renders
+   - Overview workout/chat repair loops
+   - repeated mobile Overview refreshes
+
+   STABILITY:
+   - NO MutationObserver
+   - NO continuous render loop
+   - bounded Fuel checks only
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "93100";
+  const BUILD =
+    "93110";
 
   const SHELL_ID =
     "manaV83ProgramShell";
@@ -32,9 +39,6 @@
 
   let repairRun =
     0;
-
-  let navTimer =
-    null;
 
   function mobileLike() {
     return Boolean(
@@ -98,14 +102,6 @@
       strengthOpen() &&
       activeTab() ===
         "fuel"
-    );
-  }
-
-  function overviewOpen() {
-    return Boolean(
-      strengthOpen() &&
-      activeTab() ===
-        "overview"
     );
   }
 
@@ -203,157 +199,21 @@
     return fuelComplete();
   }
 
-  function overviewComplete() {
-    const holder =
-      document.getElementById(
-        CONTENT_ID
-      );
-
-    if (!holder) {
-      return false;
-    }
-
-    const welcome =
-      holder.querySelector(
-        ".mana-v866-welcome"
-      );
-
-    const workout =
-      holder.querySelector(
-        ".mana-v9103-workout"
-      );
-
-    const focus =
-      Array
-        .from(
-          holder.querySelectorAll(
-            ".mana-v866-section-head h3"
-          )
-        )
-        .some(
-          node =>
-            node.textContent
-              ?.trim() ===
-            "Today's Focus"
-        );
-
-    const chat =
-      holder.querySelector(
-        "#manaV95ClientChatCard"
-      );
-
-    return Boolean(
-      welcome &&
-      workout &&
-      focus &&
-      chat
-    );
-  }
-
-  function repairOverview() {
-    if (
-      !overviewOpen()
-    ) {
-      return true;
-    }
-
-    if (
-      overviewComplete()
-    ) {
-      return true;
-    }
-
-    try {
-      window
-        .refreshManaStrengthOverviewLayout
-        ?.();
-    } catch (_) {}
-
-    try {
-      window
-        .refreshManaWorkoutProgress
-        ?.();
-    } catch (_) {}
-
-    try {
-      window
-        .refreshManaStrengthChat
-        ?.();
-    } catch (_) {}
-
-    if (
-      overviewComplete()
-    ) {
-      return true;
-    }
-
-    const holder =
-      document.getElementById(
-        CONTENT_ID
-      );
-
-    const baseMissing =
-      !holder
-        ?.querySelector(
-          ".mana-v866-welcome"
-        );
-
-    if (
-      baseMissing
-    ) {
-      try {
-        window
-          .refreshManaStrengthOverview
-          ?.();
-      } catch (_) {}
-    }
-
-    return overviewComplete();
-  }
-
-  function runRepair() {
+  function scheduleFuelRepair() {
     if (
       !mobileLike() ||
-      !strengthOpen()
+      !fuelOpen()
     ) {
       return;
     }
-
-    repairRun += 1;
-
-    if (
-      fuelOpen()
-    ) {
-      repairFuel();
-      return;
-    }
-
-    if (
-      overviewOpen()
-    ) {
-      repairOverview();
-    }
-  }
-
-  function scheduleMobileRepair() {
-    if (
-      !mobileLike()
-    ) {
-      return;
-    }
-
-    clearTimeout(
-      navTimer
-    );
 
     const runId =
       ++repairRun;
 
     [
-      120,
-      320,
-      700,
-      1200
+      100,
+      300,
+      700
     ].forEach(
       delay => {
 
@@ -368,25 +228,22 @@
             }
 
             if (
-              fuelOpen()
+              !fuelOpen()
             ) {
-              if (
-                repairFuel()
-              ) {
-                repairRun += 1;
-              }
-
               return;
             }
 
             if (
-              overviewOpen()
+              fuelComplete()
             ) {
-              if (
-                repairOverview()
-              ) {
-                repairRun += 1;
-              }
+              repairRun += 1;
+              return;
+            }
+
+            if (
+              repairFuel()
+            ) {
+              repairRun += 1;
             }
 
           },
@@ -400,19 +257,9 @@
   function handleClick(
     event
   ) {
-    const tab =
+    const fuelTab =
       event.target.closest(
-        "#manaV83Tabs .mana-v83-tab"
-      );
-
-    const workoutClose =
-      event.target.closest(
-        "#manaV64Close"
-      );
-
-    const workoutComplete =
-      event.target.closest(
-        "#manaV64Complete"
+        '#manaV83Tabs [data-v83-tab="fuel"]'
       );
 
     const strengthOpenButton =
@@ -421,25 +268,31 @@
       );
 
     if (
-      tab ||
-      workoutClose ||
-      workoutComplete ||
+      fuelTab ||
       strengthOpenButton
     ) {
-      scheduleMobileRepair();
+      setTimeout(
+        scheduleFuelRepair,
+        0
+      );
     }
   }
 
   function handleProgramEvent() {
-    scheduleMobileRepair();
+    if (
+      fuelOpen()
+    ) {
+      scheduleFuelRepair();
+    }
   }
 
   function handleVisible() {
     if (
       document.visibilityState ===
-      "visible"
+        "visible" &&
+      fuelOpen()
     ) {
-      scheduleMobileRepair();
+      scheduleFuelRepair();
     }
   }
 
@@ -467,18 +320,29 @@
     );
 
     window.addEventListener(
-      "mana:workout-feedback-saved",
-      handleProgramEvent
-    );
-
-    window.addEventListener(
       "pageshow",
-      scheduleMobileRepair
+      () => {
+
+        if (
+          fuelOpen()
+        ) {
+          scheduleFuelRepair();
+        }
+
+      }
     );
 
     window.addEventListener(
       "focus",
-      scheduleMobileRepair
+      () => {
+
+        if (
+          fuelOpen()
+        ) {
+          scheduleFuelRepair();
+        }
+
+      }
     );
 
     document.addEventListener(
@@ -486,21 +350,33 @@
       handleVisible
     );
 
-    setTimeout(
-      scheduleMobileRepair,
-      400
-    );
+    if (
+      fuelOpen()
+    ) {
+      scheduleFuelRepair();
+    }
   }
 
   window.MANA_MOBILE_STABILITY_BUILD =
     BUILD;
 
+  window.repairManaMobileFuel =
+    scheduleFuelRepair;
+
+  /*
+    Compatibility only.
+
+    Older code may call repairManaMobileView().
+    It now repairs Fuel only and NEVER rebuilds
+    Strength Overview.
+  */
+
   window.repairManaMobileView =
-    scheduleMobileRepair;
+    scheduleFuelRepair;
 
   if (
     document.readyState ===
-    "loading"
+      "loading"
   ) {
     document.addEventListener(
       "DOMContentLoaded",
@@ -509,4 +385,5 @@
   } else {
     init();
   }
+
 })();
