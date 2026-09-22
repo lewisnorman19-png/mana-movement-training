@@ -1,23 +1,29 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.6.9
-   MANA STRENGTH — OVERVIEW
+   MANA MOVEMENT TRAINING v8.6.10
+   MANA STRENGTH — DIRECT STABLE OVERVIEW
 
-   PERSONALISED WELCOME
-   TODAY'S FOCUS CHECKLIST
-   COACH ACTIVITY
-   NEXT UP
-   MEMBERSHIP LEVELS
+   OVERVIEW IS BUILT ONCE IN ITS FINAL FORM:
+   - PERSONALISED WELCOME
+   - TODAY'S TRAINING / VIEW PROGRAM
+   - TODAY'S FOCUS
+   - WEEKLY SNAPSHOT
+   - COACH ACTIVITY
+   - MEMBERSHIP
 
-   v8.6.9:
-   - SINGLE BASE OVERVIEW RENDER
-   - NO EXTRA TAB-CHANGE REBUILD
-   - REAPPLIES SIMPLE OVERVIEW LAYOUT
-   - RESTORES COACH CHAT
-   - RESTORES TRAINING PERCENTAGE
+   STABILITY:
+   - NO OLD WORKOUT TABLE
+   - NO NEXT-UP CONVERSION
+   - NO v9.10 LAYOUT REPAIR NEEDED
+   - NO TAB-CHANGE REBUILD LOOP
+   - COACH DATA UPDATES IN PLACE
+   - WORKS WITH EXISTING MOBILE STABILITY CHECK
    ========================================= */
 
 (() => {
   "use strict";
+
+  const BUILD =
+    "8611";
 
   const PROGRAM_KEY =
     "mana-strength-v62-program";
@@ -40,20 +46,29 @@
   const STYLE_ID =
     "mana-v866-strength-overview-style";
 
-  let coachActivity = [];
+  const COACH_LIST_ID =
+    "manaV866CoachActivity";
 
-  let overviewRefreshTimer =
-    null;
+  const PROGRAM_BUTTON_ID =
+    "manaV866ViewProgram";
+
+  let coachActivity =
+    [];
 
   let coachActivityLoaded =
     false;
+
+  let refreshTimer =
+    null;
 
   function safeJson(
     raw,
     fallback
   ) {
     try {
-      return JSON.parse(raw);
+      return JSON.parse(
+        raw
+      );
     } catch (_) {
       return fallback;
     }
@@ -107,6 +122,46 @@
     ].join("-");
   }
 
+  function dateKey(
+    value
+  ) {
+    if (!value) {
+      return "";
+    }
+
+    const date =
+      new Date(
+        value
+      );
+
+    if (
+      Number.isNaN(
+        date.getTime()
+      )
+    ) {
+      return "";
+    }
+
+    return [
+      date.getFullYear(),
+
+      String(
+        date.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      ),
+
+      String(
+        date.getDate()
+      ).padStart(
+        2,
+        "0"
+      )
+
+    ].join("-");
+  }
+
   function loadProgram() {
     return safeJson(
       localStorage.getItem(
@@ -117,12 +172,19 @@
   }
 
   function loadLogs() {
-    return safeJson(
-      localStorage.getItem(
-        LOG_KEY
-      ) || "[]",
-      []
-    );
+    const logs =
+      safeJson(
+        localStorage.getItem(
+          LOG_KEY
+        ) || "[]",
+        []
+      );
+
+    return Array.isArray(
+      logs
+    )
+      ? logs
+      : [];
   }
 
   function loadProfile() {
@@ -208,18 +270,54 @@
     return Boolean(
       shell
         ?.classList
-        .contains("open") &&
+        .contains(
+          "open"
+        ) &&
 
       title
         ?.textContent
-        .trim()
-        .toUpperCase() ===
+        ?.trim()
+        ?.toUpperCase() ===
         "MANA STRENGTH" &&
 
       active
         ?.dataset
         ?.v83Tab ===
         "overview"
+    );
+  }
+
+  function overviewAlreadyBuilt() {
+    const holder =
+      document.getElementById(
+        "manaV83Content"
+      );
+
+    return Boolean(
+      holder
+        ?.querySelector(
+          ".mana-v866-welcome"
+        ) &&
+
+      holder
+        ?.querySelector(
+          ".mana-v9103-workout"
+        ) &&
+
+      holder
+        ?.querySelector(
+          `#${PROGRAM_BUTTON_ID}`
+        ) &&
+
+      holder
+        ?.querySelector(
+          ".mana-v866-focus"
+        ) &&
+
+      holder
+        ?.querySelector(
+          ".mana-v866-weekly"
+        )
     );
   }
 
@@ -265,30 +363,6 @@
     );
   }
 
-  function toggleRecovery() {
-    const day =
-      loadDailyState();
-
-    day.recovery =
-      !day.recovery;
-
-    saveDailyState(
-      day
-    );
-
-    renderOverview();
-
-    if (
-      typeof
-        window
-          .refreshManaTrainingPercentage ===
-      "function"
-    ) {
-      window
-        .refreshManaTrainingPercentage();
-    }
-  }
-
   function todayLogs() {
     const today =
       todayKey();
@@ -298,45 +372,15 @@
         log => {
 
           const raw =
-            log.date ||
-            log.created_at;
-
-          if (!raw) {
-            return false;
-          }
-
-          const date =
-            new Date(raw);
-
-          if (
-            Number.isNaN(
-              date.getTime()
-            )
-          ) {
-            return false;
-          }
-
-          const key = [
-            date.getFullYear(),
-
-            String(
-              date.getMonth() + 1
-            ).padStart(
-              2,
-              "0"
-            ),
-
-            String(
-              date.getDate()
-            ).padStart(
-              2,
-              "0"
-            )
-
-          ].join("-");
+            log?.date ||
+            log?.created_at ||
+            log?.completedAt ||
+            log?.completed_at;
 
           return (
-            key === today
+            dateKey(
+              raw
+            ) === today
           );
 
         }
@@ -374,7 +418,8 @@
         ).forEach(
           item => {
 
-            totals.meals += 1;
+            totals.meals +=
+              1;
 
             totals.calories +=
               Number(
@@ -500,6 +545,123 @@
       .length;
   }
 
+  function startOfWeek() {
+    const now =
+      new Date();
+
+    const date =
+      new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+
+    const weekday =
+      date.getDay();
+
+    const offset =
+      weekday === 0
+        ? 6
+        : weekday - 1;
+
+    date.setDate(
+      date.getDate() -
+      offset
+    );
+
+    date.setHours(
+      0,
+      0,
+      0,
+      0
+    );
+
+    return date;
+  }
+
+  function weeklyWorkoutTotals() {
+    const program =
+      loadProgram();
+
+    const target =
+      Math.max(
+        1,
+        Number(
+          program?.days ||
+          0
+        ) ||
+        Number(
+          program?.sessions?.length ||
+          0
+        ) ||
+        1
+      );
+
+    const start =
+      startOfWeek();
+
+    const current =
+      loadLogs()
+        .filter(
+          log => {
+
+            const raw =
+              log?.date ||
+              log?.created_at ||
+              log?.completedAt ||
+              log?.completed_at;
+
+            if (!raw) {
+              return false;
+            }
+
+            const date =
+              new Date(
+                raw
+              );
+
+            return Boolean(
+              !Number.isNaN(
+                date.getTime()
+              ) &&
+              date >= start
+            );
+
+          }
+        )
+        .length;
+
+    return {
+      current,
+      target
+    };
+  }
+
+  function progressPercent(
+    current,
+    target
+  ) {
+    if (!target) {
+      return 0;
+    }
+
+    return Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          Number(
+            current || 0
+          ) /
+          Number(
+            target || 1
+          ) *
+          100
+        )
+      )
+    );
+  }
+
   function welcomeMessage(
     foundations,
     hasCoachRequest
@@ -571,136 +733,6 @@
     );
   }
 
-  function nextWorkoutIndex(
-    program,
-    logs
-  ) {
-    const total =
-      program
-        ?.sessions
-        ?.length || 0;
-
-    if (!total) {
-      return 0;
-    }
-
-    return (
-      logs.length %
-      total
-    );
-  }
-
-  async function loadCoachActivity() {
-    coachActivity = [];
-
-    const program =
-      loadProgram();
-
-    try {
-
-      if (
-        typeof supabaseClient ===
-          "function" &&
-        typeof currentUser !==
-          "undefined" &&
-        currentUser?.id
-      ) {
-
-        const c =
-          await supabaseClient();
-
-        const {
-          data,
-          error
-        } =
-          await c
-            .from(
-              "checkin_requests"
-            )
-            .select(
-              "id,status,requested_at"
-            )
-            .eq(
-              "client_id",
-              currentUser.id
-            )
-            .eq(
-              "status",
-              "requested"
-            )
-            .order(
-              "requested_at",
-              {
-                ascending:false
-              }
-            )
-            .limit(3);
-
-        if (error) {
-          throw error;
-        }
-
-        (
-          data || []
-        ).forEach(
-          request => {
-
-            coachActivity.push({
-
-              type:"coach",
-
-              title:
-                "Coach check-in requested",
-
-              text:
-                "Lewis has requested an update from you.",
-
-              time:
-                request.requested_at ||
-                null
-
-            });
-
-          }
-        );
-
-      }
-
-    } catch (error) {
-
-      console.warn(
-        "Mana Strength coach activity",
-        error
-      );
-
-    }
-
-    if (
-      program
-        ?.sessions
-        ?.length
-    ) {
-
-      coachActivity.push({
-
-        type:"program",
-
-        title:
-          "Your program is ready",
-
-        text:
-          `${program.sessions.length} personalised training day${program.sessions.length === 1 ? "" : "s"} available.`,
-
-        time:null
-
-      });
-
-    }
-
-    coachActivityLoaded =
-      true;
-  }
-
   function daysSince(
     value
   ) {
@@ -709,7 +741,9 @@
     }
 
     const date =
-      new Date(value);
+      new Date(
+        value
+      );
 
     if (
       Number.isNaN(
@@ -777,6 +811,121 @@
     }
 
     return "";
+  }
+
+  async function loadCoachActivity() {
+    const items =
+      [];
+
+    const program =
+      loadProgram();
+
+    try {
+
+      if (
+        typeof supabaseClient ===
+          "function" &&
+        typeof currentUser !==
+          "undefined" &&
+        currentUser?.id
+      ) {
+
+        const c =
+          await supabaseClient();
+
+        const {
+          data,
+          error
+        } =
+          await c
+            .from(
+              "checkin_requests"
+            )
+            .select(
+              "id,status,requested_at"
+            )
+            .eq(
+              "client_id",
+              currentUser.id
+            )
+            .eq(
+              "status",
+              "requested"
+            )
+            .order(
+              "requested_at",
+              {
+                ascending:false
+              }
+            )
+            .limit(
+              3
+            );
+
+        if (error) {
+          throw error;
+        }
+
+        (
+          data || []
+        ).forEach(
+          request => {
+
+            items.push({
+              type:"coach",
+
+              title:
+                "Coach check-in requested",
+
+              text:
+                "Lewis has requested an update from you.",
+
+              time:
+                request.requested_at ||
+                null
+            });
+
+          }
+        );
+
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "Mana Strength coach activity",
+        error
+      );
+
+    }
+
+    if (
+      program
+        ?.sessions
+        ?.length
+    ) {
+
+      items.push({
+        type:"program",
+
+        title:
+          "Your program is ready",
+
+        text:
+          `${program.sessions.length} personalised training day${program.sessions.length === 1 ? "" : "s"} available.`,
+
+        time:null
+      });
+
+    }
+
+    coachActivity =
+      items;
+
+    coachActivityLoaded =
+      true;
+
+    updateCoachActivityDOM();
   }
 
   function coachActivityHTML() {
@@ -864,6 +1013,26 @@
       .join("");
   }
 
+  function updateCoachActivityDOM() {
+    if (
+      !strengthOverviewOpen()
+    ) {
+      return;
+    }
+
+    const holder =
+      document.getElementById(
+        COACH_LIST_ID
+      );
+
+    if (!holder) {
+      return;
+    }
+
+    holder.innerHTML =
+      coachActivityHTML();
+  }
+
   function focusRow(
     item,
     options = {}
@@ -923,7 +1092,11 @@
               <span
                 class="mana-v866-action"
               >
-                ${item.done ? "Done" : "Tap"}
+                ${
+                  item.done
+                    ? "Done"
+                    : "Tap"
+                }
               </span>
             `
             : `
@@ -1023,6 +1196,57 @@
         line-height:1.6;
       }
 
+      .mana-v9103-workout{
+        margin:14px 0;
+        padding:22px 19px;
+        border:1px solid #5b4d1f;
+        border-radius:22px;
+        background:
+          linear-gradient(
+            145deg,
+            #191609,
+            #0a0a0a
+          );
+      }
+
+      .mana-v866-training-label{
+        color:#f3d875;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.13em;
+      }
+
+      .mana-v9103-workout h3{
+        margin:8px 0 7px;
+        color:#fff;
+        font-size:24px;
+        line-height:1.15;
+      }
+
+      .mana-v866-training-copy{
+        margin:0;
+        color:#aaa;
+        font-size:12px;
+        line-height:1.55;
+      }
+
+      .mana-v866-program-button{
+        width:100%;
+        min-height:54px;
+        margin-top:17px;
+        border:0;
+        border-radius:15px;
+        background:#f3d875;
+        color:#111;
+        font-size:13px;
+        font-weight:900;
+        letter-spacing:.03em;
+      }
+
+      .mana-v866-program-button:active{
+        transform:scale(.99);
+      }
+
       .mana-v866-section{
         margin:14px 0;
         padding:18px;
@@ -1049,6 +1273,42 @@
         font-size:10px;
         text-transform:uppercase;
         letter-spacing:.08em;
+      }
+
+      .mana-v866-progress-wrap{
+        margin-bottom:14px;
+      }
+
+      .mana-v866-progress-row{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:10px;
+        margin-bottom:7px;
+      }
+
+      .mana-v866-progress-row strong{
+        color:#f3d875;
+        font-size:13px;
+      }
+
+      .mana-v866-progress-row span{
+        color:#777;
+        font-size:10px;
+      }
+
+      .mana-v866-progress{
+        width:100%;
+        height:7px;
+        overflow:hidden;
+        border-radius:999px;
+        background:#202020;
+      }
+
+      .mana-v866-progress-fill{
+        height:100%;
+        border-radius:999px;
+        background:#f3d875;
       }
 
       .mana-v866-focus{
@@ -1152,37 +1412,50 @@
         color:#f3d875;
       }
 
-      .mana-v866-progress-wrap{
-        margin-bottom:14px;
+      .mana-v866-weekly{
+        margin:14px 0;
+        padding:18px;
+        border:1px solid #292929;
+        border-radius:21px;
+        background:#0d0d0d;
       }
 
-      .mana-v866-progress-row{
+      .mana-v866-weekly-row{
         display:flex;
-        justify-content:space-between;
         align-items:center;
-        gap:10px;
-        margin-bottom:7px;
+        justify-content:space-between;
+        gap:14px;
+        padding:4px 0 10px;
       }
 
-      .mana-v866-progress-row strong{
-        color:#f3d875;
-        font-size:13px;
-      }
-
-      .mana-v866-progress-row span{
-        color:#777;
+      .mana-v866-weekly-copy span{
+        display:block;
+        color:#888;
         font-size:10px;
       }
 
-      .mana-v866-progress{
+      .mana-v866-weekly-copy strong{
+        display:block;
+        margin-top:3px;
+        color:#f3d875;
+        font-size:17px;
+      }
+
+      .mana-v866-weekly-percent{
+        color:#f3d875;
+        font-size:22px;
+        font-weight:900;
+      }
+
+      .mana-v866-weekly-track{
         width:100%;
         height:7px;
         overflow:hidden;
         border-radius:999px;
-        background:#202020;
+        background:#242424;
       }
 
-      .mana-v866-progress-fill{
+      .mana-v866-weekly-fill{
         height:100%;
         border-radius:999px;
         background:#f3d875;
@@ -1251,42 +1524,6 @@
         color:#777;
         font-size:11px;
         padding:8px 0;
-      }
-
-      .mana-v866-next{
-        border-color:#4b401c;
-        background:
-          linear-gradient(
-            145deg,
-            #16140b,
-            #0a0a0a
-          );
-      }
-
-      .mana-v866-next-label{
-        color:#f3d875;
-        font-size:10px;
-        font-weight:900;
-        letter-spacing:.12em;
-      }
-
-      .mana-v866-next h3{
-        margin:7px 0 5px;
-        font-size:22px;
-      }
-
-      .mana-v866-next p{
-        margin:0;
-        color:#999;
-        font-size:12px;
-        line-height:1.5;
-      }
-
-      .mana-v866-program-note{
-        margin-top:12px;
-        color:#f3d875;
-        font-size:12px;
-        font-weight:800;
       }
 
       .mana-v866-pricing-intro{
@@ -1392,6 +1629,14 @@
 
       @media(max-width:390px){
 
+        .mana-v9103-workout{
+          padding:19px 16px;
+        }
+
+        .mana-v9103-workout h3{
+          font-size:22px;
+        }
+
         .mana-v866-feed-item{
           grid-template-columns:
             36px
@@ -1406,9 +1651,52 @@
 
     `;
 
-    document.head.appendChild(
-      style
+    document.head
+      .appendChild(
+        style
+      );
+  }
+
+  function openProgramTab() {
+    document
+      .querySelector(
+        '#manaV83Tabs [data-v83-tab="program"]'
+      )
+      ?.click();
+  }
+
+  function bindOverviewEvents() {
+    document
+      .getElementById(
+        "manaV866Recovery"
+      )
+      ?.addEventListener(
+        "click",
+        toggleRecovery
+      );
+
+    document
+      .getElementById(
+        PROGRAM_BUTTON_ID
+      )
+      ?.addEventListener(
+        "click",
+        openProgramTab
+      );
+  }
+
+  function toggleRecovery() {
+    const day =
+      loadDailyState();
+
+    day.recovery =
+      !day.recovery;
+
+    saveDailyState(
+      day
     );
+
+    renderOverview();
   }
 
   function renderOverview() {
@@ -1427,15 +1715,6 @@
       return;
     }
 
-    const profile =
-      loadProfile();
-
-    const program =
-      loadProgram();
-
-    const logs =
-      loadLogs();
-
     const foundations =
       dailyFoundations();
 
@@ -1444,11 +1723,20 @@
         foundations
       );
 
-    const percent =
+    const dailyPercent =
       Math.round(
         completed /
         4 *
         100
+      );
+
+    const weekly =
+      weeklyWorkoutTotals();
+
+    const weeklyPercent =
+      progressPercent(
+        weekly.current,
+        weekly.target
       );
 
     const name =
@@ -1473,23 +1761,6 @@
         hasCoachRequest
       );
 
-    const nextIndex =
-      nextWorkoutIndex(
-        program,
-        logs
-      );
-
-    const nextSession =
-      program
-        ?.sessions
-        ?.[
-          nextIndex
-        ];
-
-    const nextName =
-      nextSession?.[0] ||
-      "Your next strength session";
-
     holder.innerHTML = `
 
       <div
@@ -1513,6 +1784,38 @@
             message
           )}
         </div>
+
+      </div>
+
+      <div
+        class="mana-v9103-workout"
+      >
+
+        <div
+          class="mana-v866-training-label"
+        >
+          TODAY'S TRAINING
+        </div>
+
+        <h3>
+          Ready to train?
+        </h3>
+
+        <p
+          class="mana-v866-training-copy"
+        >
+          Open your personalised program
+          and choose the workout you want
+          to complete today.
+        </p>
+
+        <button
+          type="button"
+          class="mana-v866-program-button"
+          id="${PROGRAM_BUTTON_ID}"
+        >
+          VIEW PROGRAM →
+        </button>
 
       </div>
 
@@ -1547,7 +1850,7 @@
             </strong>
 
             <span>
-              ${percent}%
+              ${dailyPercent}%
             </span>
 
           </div>
@@ -1559,7 +1862,7 @@
             <div
               class="mana-v866-progress-fill"
               style="
-                width:${percent}%;
+                width:${dailyPercent}%;
               "
             ></div>
 
@@ -1595,6 +1898,67 @@
       </div>
 
       <div
+        class="mana-v866-weekly"
+      >
+
+        <div
+          class="mana-v866-section-head"
+        >
+
+          <h3>
+            Weekly Snapshot
+          </h3>
+
+          <span>
+            TRAINING
+          </span>
+
+        </div>
+
+        <div
+          class="mana-v866-weekly-row"
+        >
+
+          <div
+            class="mana-v866-weekly-copy"
+          >
+
+            <span>
+              Workouts completed
+            </span>
+
+            <strong>
+              ${weekly.current}
+              /
+              ${weekly.target}
+            </strong>
+
+          </div>
+
+          <div
+            class="mana-v866-weekly-percent"
+          >
+            ${weeklyPercent}%
+          </div>
+
+        </div>
+
+        <div
+          class="mana-v866-weekly-track"
+        >
+
+          <div
+            class="mana-v866-weekly-fill"
+            style="
+              width:${weeklyPercent}%;
+            "
+          ></div>
+
+        </div>
+
+      </div>
+
+      <div
         class="
           mana-v866-section
           mana-v866-coach
@@ -1615,45 +1979,10 @@
 
         </div>
 
-        <div>
+        <div
+          id="${COACH_LIST_ID}"
+        >
           ${coachActivityHTML()}
-        </div>
-
-      </div>
-
-      <div
-        class="
-          mana-v866-section
-          mana-v866-next
-        "
-      >
-
-        <div
-          class="mana-v866-next-label"
-        >
-          NEXT UP
-        </div>
-
-        <h3>
-          ${esc(
-            nextName
-          )}
-        </h3>
-
-        <p>
-          ${
-            profile.goal
-              ? `Built around your ${esc(
-                  profile.goal
-                ).toLowerCase()} goal.`
-              : "Your next personalised strength session."
-          }
-        </p>
-
-        <div
-          class="mana-v866-program-note"
-        >
-          Open the Program tab when you're ready to train →
         </div>
 
       </div>
@@ -1885,70 +2214,28 @@
 
     `;
 
-    document
-      .getElementById(
-        "manaV866Recovery"
-      )
-      ?.addEventListener(
-        "click",
-        toggleRecovery
-      );
+    bindOverviewEvents();
 
-    /*
-      Every base Overview rebuild must immediately
-      restore the simplified Overview layout.
-    */
-
-    if (
-      typeof
-        window
-          .refreshManaStrengthOverviewLayout ===
-      "function"
-    ) {
+    try {
       window
-        .refreshManaStrengthOverviewLayout();
-    }
+        .refreshManaStrengthChat
+        ?.();
+    } catch (_) {}
 
-    /*
-      Restore Coach Chat after the base
-      Overview HTML is recreated.
-    */
-
-    if (
-      typeof
-        window
-          .refreshManaStrengthChat ===
-      "function"
-    ) {
+    try {
       window
-        .refreshManaStrengthChat();
-    }
+        .refreshManaTrainingPercentage
+        ?.();
+    } catch (_) {}
 
-    /*
-      Restore training percentage after
-      the base Overview HTML is recreated.
-    */
-
-    if (
-      typeof
-        window
-          .refreshManaTrainingPercentage ===
-      "function"
-    ) {
+    try {
       window
-        .refreshManaTrainingPercentage();
-    }
+        .refreshManaWorkoutFeedback
+        ?.();
+    } catch (_) {}
   }
 
-  async function refreshOverview() {
-    if (
-      !strengthOverviewOpen()
-    ) {
-      return;
-    }
-
-    await loadCoachActivity();
-
+  function refreshOverview() {
     if (
       !strengthOverviewOpen()
     ) {
@@ -1956,16 +2243,18 @@
     }
 
     renderOverview();
+
+    loadCoachActivity();
   }
 
-  function queueOverviewRefresh(
-    delay = 120
+  function queueRefresh(
+    delay = 80
   ) {
     clearTimeout(
-      overviewRefreshTimer
+      refreshTimer
     );
 
-    overviewRefreshTimer =
+    refreshTimer =
       setTimeout(
         refreshOverview,
         delay
@@ -1973,17 +2262,10 @@
   }
 
   function watch() {
-
-    /*
-      Do not listen to mana:program-tab-change.
-
-      The Program Shell now directly renders
-      the real Overview.
-    */
-
     [
       "mana:strength-synced",
-      "mana:profile-synced"
+      "mana:profile-synced",
+      "mana:workout-feedback-saved"
     ].forEach(
       eventName => {
 
@@ -1994,8 +2276,8 @@
             if (
               strengthOverviewOpen()
             ) {
-              queueOverviewRefresh(
-                120
+              queueRefresh(
+                80
               );
             }
 
@@ -2006,55 +2288,14 @@
     );
 
     window.addEventListener(
-      "focus",
-      () => {
-
-        if (
-          strengthOverviewOpen()
-        ) {
-          queueOverviewRefresh(
-            140
-          );
-        }
-
-      }
-    );
-
-    window.addEventListener(
-      "pageshow",
-      () => {
-
-        if (
-          strengthOverviewOpen()
-        ) {
-          queueOverviewRefresh(
-            140
-          );
-        }
-
-      }
-    );
-
-    document.addEventListener(
-      "visibilitychange",
-      () => {
-
-        if (
-          document.visibilityState ===
-            "visible" &&
-          strengthOverviewOpen()
-        ) {
-          queueOverviewRefresh(
-            140
-          );
-        }
-
-      }
-    );
-
-    window.addEventListener(
       "storage",
       event => {
+
+        if (
+          !strengthOverviewOpen()
+        ) {
+          return;
+        }
 
         if (
           [
@@ -2066,11 +2307,10 @@
             DAILY_KEY
           ].includes(
             event.key
-          ) &&
-          strengthOverviewOpen()
+          )
         ) {
-          queueOverviewRefresh(
-            120
+          queueRefresh(
+            80
           );
         }
 
@@ -2083,25 +2323,24 @@
 
     watch();
 
-    setTimeout(
-      () => {
-
-        if (
-          strengthOverviewOpen()
-        ) {
-          refreshOverview();
-        }
-
-      },
-      320
-    );
+    if (
+      strengthOverviewOpen()
+    ) {
+      refreshOverview();
+    }
   }
+
+  window.MANA_STRENGTH_OVERVIEW_BUILD =
+    BUILD;
 
   window.renderManaStrengthOverview =
     renderOverview;
 
   window.refreshManaStrengthOverview =
     refreshOverview;
+
+  window.refreshManaStrengthOverviewLayout =
+    renderOverview;
 
   if (
     document.readyState ===
