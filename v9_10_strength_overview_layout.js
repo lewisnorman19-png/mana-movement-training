@@ -1,29 +1,29 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.10.6
+   MANA MOVEMENT TRAINING v9.10.7
    STRENGTH OVERVIEW — SIMPLE / STABLE
 
-   REPLACES THE OLD OVERVIEW WORKOUT TABLE
-
-   OVERVIEW NOW SHOWS:
-   - SIMPLE DAILY TRAINING CARD
+   OVERVIEW:
+   - SIMPLE TODAY'S TRAINING CARD
    - VIEW PROGRAM BUTTON
    - TODAY'S FOCUS
-   - WEEKLY TRAINING SNAPSHOT
-   - EXISTING COACH SUPPORT / MEMBERSHIP
+   - WEEKLY SNAPSHOT
+   - COACH SUPPORT / MEMBERSHIP
 
-   IMPORTANT:
+   STABILITY:
+   - WORKS ON LAPTOP + PHONE
    - NO EXERCISE TABLE ON OVERVIEW
    - NO DIRECT WORKOUT LAUNCH FROM OVERVIEW
    - NO MUTATION OBSERVER
    - NO CONTINUOUS LOOP
-   - NO WORKOUT-PROGRESS REBUILD EVENT
+   - BOUNDED SELF-CHECKS ONLY
+   - DOES NOT TOUCH DOM IF LAYOUT IS ALREADY CORRECT
    ========================================= */
 
 (() => {
   "use strict";
 
   const BUILD =
-    "91006";
+    "91007";
 
   const PROGRAM_KEY =
     "mana-strength-v62-program";
@@ -32,20 +32,22 @@
     "mana-strength-v64-logs";
 
   const STYLE_ID =
-    "mana-v9106-overview-style";
+    "mana-v9107-overview-style";
 
   const WEEKLY_ID =
-    "manaV9106Weekly";
+    "manaV9107Weekly";
+
+  const PROGRAM_BUTTON_ID =
+    "manaV9107Program";
 
   let applying =
     false;
 
-  let layoutTimer =
+  let queueTimer =
     null;
 
-  /* =========================================
-     HELPERS
-     ========================================= */
+  let repairGeneration =
+    0;
 
   function safeJson(
     raw,
@@ -70,12 +72,19 @@
   }
 
   function loadLogs() {
-    return safeJson(
-      localStorage.getItem(
-        LOG_KEY
-      ) || "[]",
-      []
-    );
+    const logs =
+      safeJson(
+        localStorage.getItem(
+          LOG_KEY
+        ) || "[]",
+        []
+      );
+
+    return Array.isArray(
+      logs
+    )
+      ? logs
+      : [];
   }
 
   function strengthOverviewOpen() {
@@ -154,17 +163,17 @@
         now.getDate()
       );
 
-    const day =
+    const weekday =
       date.getDay();
 
-    const diff =
-      day === 0
+    const offset =
+      weekday === 0
         ? 6
-        : day - 1;
+        : weekday - 1;
 
     date.setDate(
       date.getDate() -
-      diff
+      offset
     );
 
     date.setHours(
@@ -248,10 +257,6 @@
     );
   }
 
-  /* =========================================
-     STYLES
-     ========================================= */
-
   function injectStyles() {
     if (
       document.getElementById(
@@ -271,12 +276,10 @@
 
     style.textContent = `
 
-      .mana-v9103-workout{
+      .mana-v9107-training{
         margin:14px 0;
         padding:22px 19px;
-        border:
-          1px solid
-          #5b4d1f;
+        border:1px solid #5b4d1f;
         border-radius:22px;
         background:
           linear-gradient(
@@ -286,31 +289,28 @@
           );
       }
 
-      .mana-v9103-workout-label{
+      .mana-v9107-training-label{
         color:#f3d875;
         font-size:10px;
         font-weight:900;
         letter-spacing:.13em;
       }
 
-      .mana-v9103-workout h3{
-        margin:
-          8px
-          0
-          7px;
+      .mana-v9107-training h3{
+        margin:8px 0 7px;
         color:#fff;
         font-size:24px;
         line-height:1.15;
       }
 
-      .mana-v9106-copy{
+      .mana-v9107-copy{
         margin:0;
         color:#aaa;
         font-size:12px;
         line-height:1.55;
       }
 
-      .mana-v9103-start{
+      .mana-v9107-program-btn{
         width:100%;
         min-height:54px;
         margin-top:17px;
@@ -323,24 +323,19 @@
         letter-spacing:.03em;
       }
 
-      .mana-v9103-start:active{
-        transform:
-          scale(
-            .99
-          );
+      .mana-v9107-program-btn:active{
+        transform:scale(.99);
       }
 
-      .mana-v9106-week{
+      .mana-v9107-week{
         margin:14px 0;
         padding:18px;
-        border:
-          1px solid
-          #292929;
+        border:1px solid #292929;
         border-radius:21px;
         background:#0d0d0d;
       }
 
-      .mana-v9106-week-head{
+      .mana-v9107-week-head{
         display:flex;
         align-items:flex-end;
         justify-content:space-between;
@@ -348,19 +343,19 @@
         margin-bottom:14px;
       }
 
-      .mana-v9106-week-head h3{
+      .mana-v9107-week-head h3{
         margin:0;
         color:#fff;
         font-size:20px;
       }
 
-      .mana-v9106-week-head span{
+      .mana-v9107-week-head span{
         color:#777;
         font-size:10px;
         letter-spacing:.08em;
       }
 
-      .mana-v9106-week-row{
+      .mana-v9107-week-row{
         display:flex;
         align-items:center;
         justify-content:space-between;
@@ -368,26 +363,26 @@
         padding:12px 0 10px;
       }
 
-      .mana-v9106-week-copy span{
+      .mana-v9107-week-copy span{
         display:block;
         color:#888;
         font-size:10px;
       }
 
-      .mana-v9106-week-copy strong{
+      .mana-v9107-week-copy strong{
         display:block;
         margin-top:3px;
         color:#f3d875;
         font-size:17px;
       }
 
-      .mana-v9106-week-percent{
+      .mana-v9107-week-percent{
         color:#f3d875;
         font-size:22px;
         font-weight:900;
       }
 
-      .mana-v9106-track{
+      .mana-v9107-track{
         width:100%;
         height:7px;
         overflow:hidden;
@@ -395,7 +390,7 @@
         background:#242424;
       }
 
-      .mana-v9106-fill{
+      .mana-v9107-fill{
         height:100%;
         border-radius:999px;
         background:#f3d875;
@@ -403,13 +398,11 @@
 
       @media(max-width:390px){
 
-        .mana-v9103-workout{
-          padding:
-            19px
-            16px;
+        .mana-v9107-training{
+          padding:19px 16px;
         }
 
-        .mana-v9103-workout h3{
+        .mana-v9107-training h3{
           font-size:22px;
         }
 
@@ -423,26 +416,51 @@
       );
   }
 
-  /* =========================================
-     PROGRAM NAVIGATION
-     ========================================= */
-
   function openProgramTab() {
-    const button =
-      document.querySelector(
+    document
+      .querySelector(
         '#manaV83Tabs [data-v83-tab="program"]'
-      );
-
-    if (
-      button
-    ) {
-      button.click();
-    }
+      )
+      ?.click();
   }
 
-  /* =========================================
-     SIMPLE DAILY TRAINING CARD
-     ========================================= */
+  function trainingCardCorrect() {
+    const holder =
+      document.getElementById(
+        "manaV83Content"
+      );
+
+    if (!holder) {
+      return false;
+    }
+
+    const card =
+      holder.querySelector(
+        ".mana-v9107-training"
+      );
+
+    const button =
+      holder.querySelector(
+        `#${PROGRAM_BUTTON_ID}`
+      );
+
+    const oldExerciseTable =
+      holder.querySelector(
+        ".mana-v9103-exercises"
+      );
+
+    const oldStartButton =
+      holder.querySelector(
+        "#manaV9103Start"
+      );
+
+    return Boolean(
+      card &&
+      button &&
+      !oldExerciseTable &&
+      !oldStartButton
+    );
+  }
 
   function buildTrainingCard() {
     const holder =
@@ -454,12 +472,21 @@
       return;
     }
 
+    if (
+      trainingCardCorrect()
+    ) {
+      return;
+    }
+
     const card =
       holder.querySelector(
         ".mana-v866-next"
       ) ||
       holder.querySelector(
         ".mana-v9103-workout"
+      ) ||
+      holder.querySelector(
+        ".mana-v9107-training"
       );
 
     if (!card) {
@@ -467,12 +494,12 @@
     }
 
     card.className =
-      "mana-v9103-workout";
+      "mana-v9107-training";
 
     card.innerHTML = `
 
       <div
-        class="mana-v9103-workout-label"
+        class="mana-v9107-training-label"
       >
         TODAY'S TRAINING
       </div>
@@ -482,7 +509,7 @@
       </h3>
 
       <p
-        class="mana-v9106-copy"
+        class="mana-v9107-copy"
       >
         Open your personalised program
         and choose the workout you want
@@ -491,8 +518,8 @@
 
       <button
         type="button"
-        class="mana-v9103-start"
-        id="manaV9106Program"
+        class="mana-v9107-program-btn"
+        id="${PROGRAM_BUTTON_ID}"
       >
         VIEW PROGRAM →
       </button>
@@ -501,7 +528,7 @@
 
     document
       .getElementById(
-        "manaV9106Program"
+        PROGRAM_BUTTON_ID
       )
       ?.addEventListener(
         "click",
@@ -526,10 +553,6 @@
     }
   }
 
-  /* =========================================
-     TODAY'S FOCUS POSITION
-     ========================================= */
-
   function moveDailyFocus() {
     const holder =
       document.getElementById(
@@ -539,7 +562,7 @@
     const training =
       holder
         ?.querySelector(
-          ".mana-v9103-workout"
+          ".mana-v9107-training"
         );
 
     if (
@@ -579,10 +602,6 @@
         );
     }
   }
-
-  /* =========================================
-     WEEKLY SNAPSHOT
-     ========================================= */
 
   function buildWeeklySnapshot() {
     const holder =
@@ -640,61 +659,74 @@
         WEEKLY_ID;
 
       card.className =
-        "mana-v9106-week";
+        "mana-v9107-week";
     }
 
-    card.innerHTML = `
+    const expected =
+      `${totals.current}/${totals.target}/${progress}`;
 
-      <div
-        class="mana-v9106-week-head"
-      >
-        <h3>
-          Weekly Snapshot
-        </h3>
+    if (
+      card.dataset
+        .manaSummary !==
+      expected
+    ) {
+      card.dataset
+        .manaSummary =
+          expected;
 
-        <span>
-          TRAINING
-        </span>
-      </div>
-
-      <div
-        class="mana-v9106-week-row"
-      >
+      card.innerHTML = `
 
         <div
-          class="mana-v9106-week-copy"
+          class="mana-v9107-week-head"
         >
+          <h3>
+            Weekly Snapshot
+          </h3>
+
           <span>
-            Workouts completed
+            TRAINING
           </span>
-
-          <strong>
-            ${totals.current}
-            /
-            ${totals.target}
-          </strong>
         </div>
 
         <div
-          class="mana-v9106-week-percent"
+          class="mana-v9107-week-row"
         >
-          ${progress}%
+
+          <div
+            class="mana-v9107-week-copy"
+          >
+            <span>
+              Workouts completed
+            </span>
+
+            <strong>
+              ${totals.current}
+              /
+              ${totals.target}
+            </strong>
+          </div>
+
+          <div
+            class="mana-v9107-week-percent"
+          >
+            ${progress}%
+          </div>
+
         </div>
 
-      </div>
-
-      <div
-        class="mana-v9106-track"
-      >
         <div
-          class="mana-v9106-fill"
-          style="
-            width:${progress}%;
-          "
-        ></div>
-      </div>
+          class="mana-v9107-track"
+        >
+          <div
+            class="mana-v9107-fill"
+            style="
+              width:${progress}%;
+            "
+          ></div>
+        </div>
 
-    `;
+      `;
+    }
 
     if (
       focus.nextElementSibling !==
@@ -707,10 +739,6 @@
         );
     }
   }
-
-  /* =========================================
-     APPLY
-     ========================================= */
 
   function applyLayout() {
     if (
@@ -740,67 +768,112 @@
   }
 
   function queueLayout(
-    delay = 80
+    delay = 60
   ) {
     clearTimeout(
-      layoutTimer
+      queueTimer
     );
 
-    layoutTimer =
+    queueTimer =
       setTimeout(
         applyLayout,
         delay
       );
   }
 
-  /* =========================================
-     EVENTS
-     ========================================= */
+  function scheduleBoundedRepair() {
+    const generation =
+      ++repairGeneration;
+
+    [
+      0,
+      100,
+      260,
+      600
+    ].forEach(
+      delay => {
+
+        setTimeout(
+          () => {
+
+            if (
+              generation !==
+              repairGeneration
+            ) {
+              return;
+            }
+
+            if (
+              !strengthOverviewOpen()
+            ) {
+              return;
+            }
+
+            if (
+              trainingCardCorrect()
+            ) {
+              return;
+            }
+
+            applyLayout();
+
+          },
+          delay
+        );
+
+      }
+    );
+  }
 
   function watch() {
-
     [
       "mana:program-tab-change",
       "mana:strength-synced",
       "mana:profile-synced",
-      "mana:strength-membership-change"
+      "mana:strength-membership-change",
+      "mana:workout-progress-change",
+      "mana:workout-feedback-saved"
     ].forEach(
       eventName => {
 
         window.addEventListener(
           eventName,
-          () => {
-
-            queueLayout(
-              80
-            );
-
-          }
+          scheduleBoundedRepair
         );
 
       }
+    );
+
+    document.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target.closest(
+            '#manaV83Tabs [data-v83-tab="overview"]'
+          ) ||
+          event.target.closest(
+            "#manaV83Back"
+          ) ||
+          event.target.closest(
+            "#manaV80Strength"
+          )
+        ) {
+          scheduleBoundedRepair();
+        }
+
+      },
+      true
     );
 
     window.addEventListener(
       "pageshow",
-      () => {
-
-        queueLayout(
-          100
-        );
-
-      }
+      scheduleBoundedRepair
     );
 
     window.addEventListener(
       "focus",
-      () => {
-
-        queueLayout(
-          100
-        );
-
-      }
+      scheduleBoundedRepair
     );
 
     document.addEventListener(
@@ -811,11 +884,7 @@
           document.visibilityState ===
           "visible"
         ) {
-
-          queueLayout(
-            100
-          );
-
+          scheduleBoundedRepair();
         }
 
       }
@@ -833,32 +902,22 @@
             event.key
           )
         ) {
-
-          queueLayout(
-            100
-          );
-
+          scheduleBoundedRepair();
         }
 
       }
     );
   }
 
-  /* =========================================
-     INIT
-     ========================================= */
-
   function init() {
-
     injectStyles();
 
     watch();
 
     setTimeout(
-      applyLayout,
+      scheduleBoundedRepair,
       260
     );
-
   }
 
   window.MANA_STRENGTH_OVERVIEW_LAYOUT_BUILD =
@@ -866,6 +925,9 @@
 
   window.refreshManaStrengthOverviewLayout =
     applyLayout;
+
+  window.repairManaSimpleStrengthOverview =
+    scheduleBoundedRepair;
 
   if (
     document.readyState ===
