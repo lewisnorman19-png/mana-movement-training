@@ -1,7 +1,12 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.3
+   MANA MOVEMENT TRAINING v8.3.1
    PROGRAM SHELLS
    BOTTOM NAV + SMART BACK BUTTON
+
+   STABILITY:
+   - STRENGTH OVERVIEW RENDERS DIRECTLY
+   - STRENGTH FUEL RENDERS DIRECTLY
+   - NO PLACEHOLDER CARD BEFORE REAL CONTENT
    ========================================= */
 
 (() => {
@@ -22,7 +27,6 @@
   let activeTab =
     "overview";
 
-
   const PROGRAMS = {
 
     mana28: {
@@ -41,7 +45,6 @@
       ]
     },
 
-
     strength: {
       title:
         "MANA STRENGTH",
@@ -54,7 +57,6 @@
         ["learn", "Learn"]
       ]
     },
-
 
     life: {
       title:
@@ -74,7 +76,6 @@
 
   };
 
-
   function safeJson(
     raw,
     fallback
@@ -86,7 +87,6 @@
     }
   }
 
-
   function loadProfile() {
     return safeJson(
       localStorage.getItem(
@@ -96,14 +96,12 @@
     );
   }
 
-
   function strengthSubtitle() {
     const profile =
       loadProfile();
 
     const goal =
       profile.goal || "";
-
 
     if (
       goal ===
@@ -114,7 +112,6 @@
       );
     }
 
-
     if (
       goal ===
       "Get stronger"
@@ -123,7 +120,6 @@
         "Strength Program"
       );
     }
-
 
     if (
       goal ===
@@ -134,7 +130,6 @@
       );
     }
 
-
     if (
       goal ===
       "General fitness"
@@ -144,20 +139,19 @@
       );
     }
 
-
     return (
       "Personalised Strength Program"
     );
   }
-
 
   function injectStyles() {
     if (
       document.getElementById(
         STYLE_ID
       )
-    ) return;
-
+    ) {
+      return;
+    }
 
     const style =
       document.createElement(
@@ -167,21 +161,15 @@
     style.id =
       STYLE_ID;
 
-
     style.textContent = `
 
       #${SHELL_ID}{
         position:fixed;
         inset:0;
-
         z-index:24000;
-
         display:none;
-
         overflow:auto;
-
         background:#050505;
-
         color:#fff;
 
         padding:
@@ -199,11 +187,9 @@
           );
       }
 
-
       #${SHELL_ID}.open{
         display:block;
       }
-
 
       .mana-v83-shell{
         width:min(
@@ -214,42 +200,25 @@
         margin:auto;
       }
 
-
       .mana-v83-head{
         display:flex;
-
-        justify-content:
-          space-between;
-
-        align-items:
-          flex-start;
-
+        justify-content:space-between;
+        align-items:flex-start;
         gap:16px;
-
         margin-bottom:20px;
       }
 
-
       .mana-v83-brand-wrap{
         display:flex;
-
         align-items:center;
-
         gap:13px;
       }
-
 
       .mana-v83-mark{
         width:54px;
         height:54px;
-
-        flex:
-          0
-          0
-          54px;
-
+        flex:0 0 54px;
         display:grid;
-
         place-items:center;
 
         border:
@@ -257,7 +226,6 @@
           #d4af37;
 
         color:#f3d875;
-
         background:#070707;
 
         font:
@@ -267,67 +235,40 @@
           serif;
       }
 
-
       .mana-v83-kicker{
         color:#f3d875;
-
         font-size:10px;
-
         font-weight:900;
-
         letter-spacing:.16em;
-
         margin-bottom:5px;
       }
 
-
       .mana-v83-head h1{
         margin:0;
-
         font-size:30px;
-
         line-height:1.05;
       }
 
-
       .mana-v83-sub{
         margin-top:6px;
-
         color:#aaa;
-
         font-size:13px;
-
         font-weight:700;
       }
 
-
       .mana-v83-back{
         flex:0 0 auto;
-
         min-height:42px;
-
-        padding:
-          0
-          14px;
-
+        padding:0 14px;
         border-radius:14px;
-
-        border:
-          1px solid
-          #333;
-
+        border:1px solid #333;
         background:#111;
-
         color:#f3d875;
-
         font-weight:900;
       }
 
-
       .mana-v83-card{
-        border:
-          1px solid
-          #292929;
+        border:1px solid #292929;
 
         background:
           linear-gradient(
@@ -337,103 +278,65 @@
           );
 
         border-radius:22px;
-
         padding:18px;
-
         margin:12px 0;
       }
-
 
       .mana-v83-card h2,
       .mana-v83-card h3{
         margin-top:0;
       }
 
-
       .mana-v83-card p{
         color:#aaa;
-
         line-height:1.55;
       }
 
-
       .mana-v83-primary{
         width:100%;
-
         min-height:54px;
-
         border:0;
-
         border-radius:16px;
-
         background:#f3d875;
-
         color:#111;
-
         font-weight:900;
-
         font-size:15px;
-
         margin-top:12px;
       }
 
-
       .mana-v83-grid{
         display:grid;
-
         grid-template-columns:
           1fr 1fr;
-
         gap:10px;
       }
 
-
       .mana-v83-stat{
-        border:
-          1px solid
-          #292929;
-
+        border:1px solid #292929;
         border-radius:18px;
-
         padding:14px;
-
         background:#0d0d0d;
       }
 
-
       .mana-v83-stat span{
         display:block;
-
         color:#888;
-
         font-size:11px;
       }
 
-
       .mana-v83-stat strong{
         display:block;
-
         margin-top:5px;
-
         color:#f3d875;
-
         font-size:22px;
       }
 
-
-      /* ==========================
-         BOTTOM NAV
-         ========================== */
-
       .mana-v83-tabs{
         position:fixed;
-
         left:0;
         right:0;
         bottom:0;
-
         z-index:24500;
-
         display:none;
 
         grid-template-columns:
@@ -470,64 +373,40 @@
           blur(14px);
       }
 
-
       #${SHELL_ID}.open
       .mana-v83-tabs{
         display:grid;
       }
 
-
       .mana-v83-tab{
         min-width:0;
-
         min-height:56px;
-
-        padding:
-          4px
-          2px;
-
+        padding:4px 2px;
         border:0;
-
         border-radius:12px;
-
         background:transparent;
-
         color:#888;
-
         font-size:11px;
-
         font-weight:800;
       }
 
-
       .mana-v83-tab::before{
         content:"";
-
         display:block;
-
         width:6px;
         height:6px;
-
-        margin:
-          0
-          auto
-          6px;
-
+        margin:0 auto 6px;
         border-radius:50%;
-
         background:#555;
       }
-
 
       .mana-v83-tab.active{
         color:#f3d875;
       }
 
-
       .mana-v83-tab.active::before{
         background:#f3d875;
       }
-
 
       @media(max-width:390px){
 
@@ -536,43 +415,38 @@
             1fr;
         }
 
-
         .mana-v83-head h1{
           font-size:26px;
         }
 
-
         .mana-v83-mark{
           width:48px;
           height:48px;
-
           flex-basis:48px;
-
           font-size:32px;
         }
-
 
         .mana-v83-tab{
           font-size:10px;
         }
+
       }
 
     `;
-
 
     document.head.appendChild(
       style
     );
   }
 
-
   function ensureShell() {
     if (
       document.getElementById(
         SHELL_ID
       )
-    ) return;
-
+    ) {
+      return;
+    }
 
     const shell =
       document.createElement(
@@ -581,7 +455,6 @@
 
     shell.id =
       SHELL_ID;
-
 
     shell.innerHTML = `
 
@@ -603,7 +476,6 @@
               M
             </div>
 
-
             <div>
 
               <div
@@ -612,13 +484,11 @@
                 MANA MOVEMENT
               </div>
 
-
               <h1
                 id="manaV83Title"
               >
                 Program
               </h1>
-
 
               <div
                 class="mana-v83-sub"
@@ -628,7 +498,6 @@
             </div>
 
           </div>
-
 
           <button
             type="button"
@@ -640,11 +509,9 @@
 
         </div>
 
-
         <div
           id="manaV83Content"
         ></div>
-
 
         <div
           class="mana-v83-tabs"
@@ -655,11 +522,9 @@
 
     `;
 
-
     document.body.appendChild(
       shell
     );
-
 
     document
       .getElementById(
@@ -669,15 +534,15 @@
         handleBack;
   }
 
-
   function updateBackButton() {
     const button =
       document.getElementById(
         "manaV83Back"
       );
 
-    if (!button) return;
-
+    if (!button) {
+      return;
+    }
 
     if (
       activeProgram ===
@@ -691,16 +556,13 @@
       return;
     }
 
-
     button.textContent =
       "← Home";
   }
 
-
   function goToOverview() {
     activeTab =
       "overview";
-
 
     renderTabs();
 
@@ -708,14 +570,12 @@
 
     updateBackButton();
 
-
     window.dispatchEvent(
       new CustomEvent(
         "mana:program-tab-change"
       )
     );
   }
-
 
   function handleBack() {
     if (
@@ -729,10 +589,8 @@
       return;
     }
 
-
     closeProgram();
   }
-
 
   function renderTabs() {
     const config =
@@ -745,12 +603,12 @@
         "manaV83Tabs"
       );
 
-
     if (
       !config ||
       !holder
-    ) return;
-
+    ) {
+      return;
+    }
 
     holder.innerHTML =
       config.tabs
@@ -778,7 +636,6 @@
         )
         .join("");
 
-
     holder
       .querySelectorAll(
         "[data-v83-tab]"
@@ -793,24 +650,32 @@
                 button.dataset
                   .v83Tab;
 
-
               renderTabs();
+
+              /*
+                Important:
+                specialised Strength content is
+                now rendered directly here.
+
+                No generic placeholder is painted
+                first.
+              */
 
               renderContent();
 
               updateBackButton();
-
 
               window.dispatchEvent(
                 new CustomEvent(
                   "mana:program-tab-change"
                 )
               );
+
             };
+
         }
       );
   }
-
 
   function genericCard(
     title,
@@ -835,15 +700,15 @@
     `;
   }
 
-
   function renderContent() {
     const holder =
       document.getElementById(
         "manaV83Content"
       );
 
-    if (!holder) return;
-
+    if (!holder) {
+      return;
+    }
 
     if (
       activeProgram ===
@@ -863,7 +728,6 @@
         return;
       }
 
-
       if (
         activeTab ===
         "program"
@@ -876,7 +740,6 @@
 
         return;
       }
-
 
       if (
         activeTab ===
@@ -891,7 +754,6 @@
         return;
       }
 
-
       if (
         activeTab ===
         "progress"
@@ -905,7 +767,6 @@
         return;
       }
 
-
       holder.innerHTML =
         genericCard(
           "Learn",
@@ -915,16 +776,35 @@
       return;
     }
 
-
     if (
       activeProgram ===
       "strength"
     ) {
 
+      /*
+        OVERVIEW
+
+        Do NOT insert the old placeholder card.
+        Render the real Overview immediately.
+      */
+
       if (
         activeTab ===
         "overview"
       ) {
+
+        if (
+          typeof
+            window
+              .renderManaStrengthOverview ===
+          "function"
+        ) {
+          window
+            .renderManaStrengthOverview();
+
+          return;
+        }
+
         holder.innerHTML =
           genericCard(
             "Your Strength Program",
@@ -933,7 +813,6 @@
 
         return;
       }
-
 
       if (
         activeTab ===
@@ -948,11 +827,30 @@
         return;
       }
 
+      /*
+        FUEL
+
+        Same rule:
+        real Fuel content goes straight in.
+      */
 
       if (
         activeTab ===
         "fuel"
       ) {
+
+        if (
+          typeof
+            window
+              .renderManaStrengthFuel ===
+          "function"
+        ) {
+          window
+            .renderManaStrengthFuel();
+
+          return;
+        }
+
         holder.innerHTML =
           genericCard(
             "Fuel for Strength",
@@ -961,7 +859,6 @@
 
         return;
       }
-
 
       if (
         activeTab ===
@@ -976,7 +873,6 @@
         return;
       }
 
-
       holder.innerHTML =
         genericCard(
           "Learn",
@@ -985,7 +881,6 @@
 
       return;
     }
-
 
     if (
       activeProgram ===
@@ -1005,7 +900,6 @@
         return;
       }
 
-
       if (
         activeTab ===
         "routine"
@@ -1018,7 +912,6 @@
 
         return;
       }
-
 
       if (
         activeTab ===
@@ -1033,7 +926,6 @@
         return;
       }
 
-
       if (
         activeTab ===
         "progress"
@@ -1047,7 +939,6 @@
         return;
       }
 
-
       holder.innerHTML =
         genericCard(
           "Learn",
@@ -1056,15 +947,15 @@
     }
   }
 
-
   function updateHeader() {
     const config =
       PROGRAMS[
         activeProgram
       ];
 
-    if (!config) return;
-
+    if (!config) {
+      return;
+    }
 
     document
       .getElementById(
@@ -1073,13 +964,11 @@
       .textContent =
         config.title;
 
-
     const subtitle =
       activeProgram ===
       "strength"
         ? strengthSubtitle()
         : config.subtitle;
-
 
     document
       .getElementById(
@@ -1088,10 +977,8 @@
       .textContent =
         subtitle || "";
 
-
     updateBackButton();
   }
-
 
   function openProgram(
     program
@@ -1101,11 +988,11 @@
         program
       ];
 
-    if (!config) return;
-
+    if (!config) {
+      return;
+    }
 
     ensureShell();
-
 
     activeProgram =
       program;
@@ -1113,15 +1000,17 @@
     activeTab =
       "overview";
 
-
     updateHeader();
 
-    renderTabs();
+    /*
+      Important change:
 
-    renderContent();
+      Open the shell BEFORE rendering
+      specialised content.
 
-    updateBackButton();
-
+      The Strength Overview/Fuel renderers
+      check that the shell is open.
+    */
 
     document
       .getElementById(
@@ -1132,10 +1021,14 @@
         "open"
       );
 
-
     document.body.style.overflow =
       "hidden";
 
+    renderTabs();
+
+    renderContent();
+
+    updateBackButton();
 
     window.dispatchEvent(
       new CustomEvent(
@@ -1143,7 +1036,6 @@
       )
     );
   }
-
 
   function closeProgram() {
     document
@@ -1155,11 +1047,9 @@
         "open"
       );
 
-
     document.body.style.overflow =
       "";
   }
-
 
   function wireHomeButtons() {
     const mana28 =
@@ -1177,7 +1067,6 @@
         "manaV80Life"
       );
 
-
     if (mana28) {
       mana28.onclick =
         () =>
@@ -1186,7 +1075,6 @@
           );
     }
 
-
     if (strength) {
       strength.onclick =
         () =>
@@ -1194,7 +1082,6 @@
             "strength"
           );
     }
-
 
     if (life) {
       life.onclick =
@@ -1205,30 +1092,25 @@
     }
   }
 
-
   function init() {
     injectStyles();
 
     ensureShell();
-
 
     setTimeout(
       wireHomeButtons,
       500
     );
 
-
     setTimeout(
       wireHomeButtons,
       1200
     );
 
-
     setTimeout(
       wireHomeButtons,
       2200
     );
-
 
     window.addEventListener(
       "mana:profile-synced",
@@ -1240,18 +1122,17 @@
         ) {
           updateHeader();
         }
+
       }
     );
   }
 
-
   window.openManaProgram =
     openProgram;
 
-
   if (
     document.readyState ===
-    "loading"
+      "loading"
   ) {
     document.addEventListener(
       "DOMContentLoaded",
