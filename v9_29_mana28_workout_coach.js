@@ -1,9 +1,24 @@
-/* MANA MOVEMENT TRAINING v9.29.1 — STABLE MANA 28 WORKOUT COACH */
+/* =========================================
+   MANA MOVEMENT TRAINING v9.29.2
+   MANA 28 — WORKOUT COACH CROSSOVER REPAIR
+
+   WHOLE FILE REPLACEMENT:
+   v9_29_mana28_workout_coach.js
+
+   FIXES
+   - MANA 28 COACH ONLY RUNS INSIDE MANA 28
+   - CLOSES BEFORE HOME / PROGRAM CHANGES
+   - CLOSES WHEN MANA STRENGTH OPENS
+   - CLOSES WHEN PHONE RETURNS FROM BACKGROUND
+   - CLEARS STALE COACH SCREEN
+   - RESTORES PAGE SCROLL
+   - PRESERVES MANA 28 PROGRESS
+   ========================================= */
+
 (() => {
   "use strict";
 
-  const BUILD =
-    "92910";
+  const BUILD = "92920";
 
   const STATE_KEY =
     "mana28-v927-state";
@@ -34,6 +49,9 @@
 
   let previousBodyOverflow =
     "";
+
+  let ownershipWatch =
+    null;
 
   const COACH = [
     [
@@ -185,6 +203,10 @@
     ]
   ];
 
+  /* =========================================
+     STATE
+     ========================================= */
+
   function safeJson(
     raw,
     fallback
@@ -252,6 +274,72 @@
       )
     );
   }
+
+  /* =========================================
+     PROGRAM OWNERSHIP
+     ========================================= */
+
+  function activeProgramTitle() {
+    return (
+      document
+        .getElementById(
+          "manaV83Title"
+        )
+        ?.textContent
+        ?.trim()
+        ?.toUpperCase() ||
+      ""
+    );
+  }
+
+  function programShellOpen() {
+    return Boolean(
+      document
+        .getElementById(
+          "manaV83ProgramShell"
+        )
+        ?.classList
+        .contains(
+          "open"
+        )
+    );
+  }
+
+  function mana28OwnsCoach() {
+    return Boolean(
+      programShellOpen() &&
+      activeProgramTitle() ===
+        "MANA 28"
+    );
+  }
+
+  function coachOpen() {
+    return Boolean(
+      document
+        .getElementById(
+          MODAL_ID
+        )
+        ?.classList
+        .contains(
+          "open"
+        )
+    );
+  }
+
+  function guardOwnership() {
+    if (
+      coachOpen() &&
+      !mana28OwnsCoach()
+    ) {
+      closeCoach(
+        false
+      );
+    }
+  }
+
+  /* =========================================
+     WORKOUT DATA
+     ========================================= */
 
   function readExercises() {
     return [
@@ -408,6 +496,10 @@
     };
   }
 
+  /* =========================================
+     TIMERS
+     ========================================= */
+
   function formatTime(
     totalSeconds
   ) {
@@ -468,988 +560,20 @@
     );
   }
 
-  function injectStyles() {
-    document
-      .getElementById(
-        STYLE_ID
-      )
-      ?.remove();
-
-    const style =
-      document.createElement(
-        "style"
-      );
-
-    style.id =
-      STYLE_ID;
-
-    style.textContent = `
-      #${MODAL_ID}{
-        position:fixed;
-        inset:0;
-        z-index:40000;
-        display:none;
-        overflow:auto;
-        overscroll-behavior:contain;
-        background:#050505;
-        color:#fff;
-        padding:
-          calc(env(safe-area-inset-top) + 14px)
-          14px
-          calc(env(safe-area-inset-bottom) + 28px);
-        touch-action:pan-y;
-      }
-
-      #${MODAL_ID}.open{
-        display:block;
-      }
-
-      .m929-shell{
-        width:min(
-          560px,
-          100%
-        );
-        margin:0 auto;
-      }
-
-      .m929-top{
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:12px;
-        margin-bottom:14px;
-      }
-
-      .m929-brand{
-        color:#f3d875;
-        font-size:11px;
-        font-weight:900;
-        letter-spacing:.14em;
-      }
-
-      .m929-close,
-      .m929-complete-btn,
-      .m929-nav button,
-      .m929-rest-btn,
-      .m929-finish{
-        touch-action:manipulation;
-        -webkit-tap-highlight-color:
-          transparent;
-      }
-
-      .m929-close{
-        min-height:44px;
-        padding:0 14px;
-        border:1px solid #333;
-        border-radius:13px;
-        background:#111;
-        color:#f3d875;
-        font-size:11px;
-        font-weight:900;
-        cursor:pointer;
-      }
-
-      .m929-head{
-        padding:18px;
-        border:1px solid #55491d;
-        border-radius:19px;
-        background:linear-gradient(
-          145deg,
-          #171308,
-          #090909
-        );
-      }
-
-      .m929-row{
-        display:flex;
-        justify-content:space-between;
-        gap:12px;
-        align-items:flex-start;
-      }
-
-      .m929-kicker{
-        color:#f3d875;
-        font-size:10px;
-        font-weight:900;
-        letter-spacing:.12em;
-      }
-
-      .m929-head h2{
-        margin:5px 0 0;
-        font-size:24px;
-        line-height:1.08;
-      }
-
-      .m929-timer{
-        flex:0 0 auto;
-        min-width:74px;
-        padding:9px 10px;
-        border:1px solid #4e421b;
-        border-radius:12px;
-        background:#0d0c08;
-        color:#f3d875;
-        text-align:center;
-        font-size:16px;
-        font-weight:1000;
-      }
-
-      .m929-progress-copy{
-        display:flex;
-        justify-content:space-between;
-        gap:10px;
-        margin-top:14px;
-        color:#9a9a9a;
-        font-size:10px;
-        font-weight:800;
-      }
-
-      .m929-track{
-        height:9px;
-        margin-top:8px;
-        overflow:hidden;
-        border-radius:999px;
-        background:#272727;
-      }
-
-      .m929-fill{
-        height:100%;
-        border-radius:999px;
-        background:#f3d875;
-      }
-
-      .m929-card{
-        margin-top:12px;
-        padding:18px;
-        border:1px solid #303030;
-        border-radius:18px;
-        background:linear-gradient(
-          145deg,
-          #111,
-          #090909
-        );
-      }
-
-      .m929-ex-index{
-        color:#8c8c8c;
-        font-size:10px;
-        font-weight:900;
-      }
-
-      .m929-ex-name{
-        margin-top:5px;
-        color:#fff;
-        font-size:25px;
-        font-weight:1000;
-        line-height:1.1;
-      }
-
-      .m929-dose{
-        margin-top:8px;
-        color:#f3d875;
-        font-size:18px;
-        font-weight:1000;
-      }
-
-      .m929-info-grid{
-        display:grid;
-        grid-template-columns:
-          1fr
-          1fr;
-        gap:9px;
-        margin-top:15px;
-      }
-
-      .m929-info{
-        padding:12px;
-        border:1px solid #292929;
-        border-radius:13px;
-        background:#0b0b0b;
-      }
-
-      .m929-info span{
-        display:block;
-        color:#7f7f7f;
-        font-size:9px;
-        font-weight:900;
-        letter-spacing:.08em;
-      }
-
-      .m929-info strong{
-        display:block;
-        margin-top:5px;
-        color:#fff;
-        font-size:12px;
-        line-height:1.4;
-      }
-
-      .m929-coach{
-        margin-top:14px;
-        padding:14px;
-        border-left:3px solid #f3d875;
-        border-radius:
-          0
-          12px
-          12px
-          0;
-        background:#100f09;
-      }
-
-      .m929-coach span{
-        display:block;
-        color:#f3d875;
-        font-size:9px;
-        font-weight:900;
-        letter-spacing:.1em;
-      }
-
-      .m929-coach p{
-        margin:6px 0 0;
-        color:#c4c4c4;
-        font-size:12px;
-        line-height:1.6;
-      }
-
-      .m929-complete-btn{
-        width:100%;
-        min-height:54px;
-        margin-top:15px;
-        border:0;
-        border-radius:14px;
-        background:#f3d875;
-        color:#111;
-        font-size:12px;
-        font-weight:1000;
-        cursor:pointer;
-      }
-
-      .m929-complete-btn.done{
-        border:1px solid #5f5120;
-        background:#151207;
-        color:#f3d875;
-      }
-
-      .m929-nav{
-        display:grid;
-        grid-template-columns:
-          1fr
-          1fr;
-        gap:9px;
-        margin-top:10px;
-      }
-
-      .m929-nav button,
-      .m929-rest-btn{
-        min-height:48px;
-        border:1px solid #343434;
-        border-radius:13px;
-        background:#101010;
-        color:#ddd;
-        font-size:11px;
-        font-weight:900;
-        cursor:pointer;
-      }
-
-      .m929-nav button:disabled{
-        opacity:.35;
-        cursor:not-allowed;
-      }
-
-      .m929-rest{
-        margin-top:12px;
-        padding:15px;
-        border:1px solid #2d2d2d;
-        border-radius:16px;
-        background:#0b0b0b;
-      }
-
-      .m929-rest-title{
-        color:#8b8b8b;
-        font-size:9px;
-        font-weight:900;
-        letter-spacing:.1em;
-      }
-
-      .m929-rest-time{
-        margin-top:4px;
-        color:#f3d875;
-        font-size:28px;
-        font-weight:1000;
-      }
-
-      .m929-rest-buttons{
-        display:grid;
-        grid-template-columns:
-          repeat(
-            3,
-            1fr
-          );
-        gap:8px;
-        margin-top:10px;
-      }
-
-      .m929-finish{
-        width:100%;
-        min-height:54px;
-        margin-top:13px;
-        border:1px solid #67571f;
-        border-radius:14px;
-        background:#181407;
-        color:#f3d875;
-        font-size:12px;
-        font-weight:1000;
-        cursor:pointer;
-      }
-
-      .m929-finish:disabled{
-        opacity:.4;
-        cursor:not-allowed;
-      }
-
-      .m929-status{
-        margin-top:10px;
-        color:#999;
-        font-size:10px;
-        line-height:1.5;
-        text-align:center;
-      }
-
-      @media(max-width:390px){
-        .m929-info-grid{
-          grid-template-columns:
-            1fr;
-        }
-
-        .m929-ex-name{
-          font-size:22px;
-        }
-      }
-    `;
-
-    document.head
-      .appendChild(
-        style
-      );
-  }
-
-  function ensureModal() {
-    if (
-      document.getElementById(
-        MODAL_ID
-      )
-    ) {
-      return;
-    }
-
-    const modal =
-      document.createElement(
-        "div"
-      );
-
-    modal.id =
-      MODAL_ID;
-
-    modal.innerHTML = `
-      <div class="m929-shell">
-        <div class="m929-top">
-          <div class="m929-brand">
-            MANA 28 • WORKOUT COACH
-          </div>
-
-          <button
-            type="button"
-            class="m929-close"
-            id="m929Close"
-          >
-            ← Back
-          </button>
-        </div>
-
-        <div
-          id="m929Content"
-        ></div>
-      </div>
-    `;
-
-    document.body
-      .appendChild(
-        modal
-      );
-  }
-
-  function openCoach(
-    requestedIndex =
-      null
-  ) {
-    sessionExercises =
-      readExercises();
-
-    if (
-      !sessionExercises.length
-    ) {
-      return;
-    }
-
-    const day =
-      currentDay();
-
-    const workout =
-      currentWorkout(
-        day
-      );
-
-    const existingStart =
-      workout.startedAt
-        ? new Date(
-            workout.startedAt
-          ).getTime()
-        : NaN;
-
-    workoutStartedAt =
-      Number.isFinite(
-        existingStart
-      )
-        ? existingStart
-        : Date.now();
-
-    if (
-      !workout.startedAt
-    ) {
-      workout.startedAt =
-        new Date(
-          workoutStartedAt
-        ).toISOString();
-
-      saveWorkout(
-        day,
-        workout
-      );
-    }
-
-    if (
-      Number.isFinite(
-        Number(
-          requestedIndex
-        )
-      )
-    ) {
-      activeIndex =
-        Math.max(
-          0,
-          Math.min(
-            sessionExercises.length -
-              1,
-            Number(
-              requestedIndex
-            )
-          )
-        );
-    } else {
-      const firstIncomplete =
-        workout.checks
-          .findIndex(
-            value =>
-              !value
-          );
-
-      activeIndex =
-        firstIncomplete >= 0
-          ? firstIncomplete
-          : 0;
-    }
-
-    ensureModal();
-
-    previousBodyOverflow =
-      document.body.style
-        .overflow;
-
-    document
-      .getElementById(
-        MODAL_ID
-      )
-      ?.classList
-      .add(
-        "open"
-      );
-
-    document.body.style
-      .overflow =
-        "hidden";
-
-    renderCoach();
-
-    startWorkoutTimer();
-  }
-
-  function closeCoach() {
-    document
-      .getElementById(
-        MODAL_ID
-      )
-      ?.classList
-      .remove(
-        "open"
-      );
-
-    document.body.style
-      .overflow =
-        previousBodyOverflow ||
-        "";
-
-    stopRestTimer();
-
-    stopWorkoutTimer();
-
-    setTimeout(
-      () => {
-
-        window
-          .refreshMana28Workout
-          ?.();
-
-      },
-      40
-    );
-  }
-
-  function renderCoach() {
-    const holder =
-      document.getElementById(
-        "m929Content"
-      );
-
-    if (
-      !holder ||
-      !sessionExercises.length
-    ) {
-      return;
-    }
-
-    const day =
-      currentDay();
-
-    const workout =
-      currentWorkout(
-        day
-      );
-
-    const exercise =
-      sessionExercises[
-        activeIndex
-      ];
-
-    const coach =
-      coachFor(
-        exercise.name
-      );
-
-    const completed =
-      workout.checks
-        .filter(
-          Boolean
-        )
-        .length;
-
-    const percent =
-      Math.round(
-        completed /
-        sessionExercises.length *
-        100
-      );
-
-    const allDone =
-      completed ===
-      sessionExercises.length;
-
-    holder.innerHTML = `
-      <div class="m929-head">
-        <div class="m929-row">
-          <div>
-            <div class="m929-kicker">
-              DAY ${day} WORKOUT
-            </div>
-
-            <h2>
-              ${workoutName()}
-            </h2>
-          </div>
-
-          <div
-            class="m929-timer"
-            id="m929WorkoutTimer"
-          >
-            ${formatTime(
-              elapsedWorkoutSeconds()
-            )}
-          </div>
-        </div>
-
-        <div class="m929-progress-copy">
-          <span>
-            ${completed}/${sessionExercises.length}
-            complete
-          </span>
-
-          <span>
-            ${percent}%
-          </span>
-        </div>
-
-        <div class="m929-track">
-          <div
-            class="m929-fill"
-            style="width:${percent}%"
-          ></div>
-        </div>
-      </div>
-
-      <div class="m929-card">
-        <div class="m929-ex-index">
-          EXERCISE ${activeIndex + 1}
-          OF ${sessionExercises.length}
-        </div>
-
-        <div class="m929-ex-name">
-          ${exercise.name}
-        </div>
-
-        <div class="m929-dose">
-          ${exercise.dose}
-        </div>
-
-        <div class="m929-info-grid">
-          <div class="m929-info">
-            <span>REST</span>
-
-            <strong>
-              ${coach.rest}
-            </strong>
-          </div>
-
-          <div class="m929-info">
-            <span>EQUIPMENT</span>
-
-            <strong>
-              ${coach.equipment}
-            </strong>
-          </div>
-        </div>
-
-        <div class="m929-coach">
-          <span>
-            COACHING CUE
-          </span>
-
-          <p>
-            ${coach.cue}
-          </p>
-        </div>
-
-        <div class="m929-coach">
-          <span>
-            SUBSTITUTION
-          </span>
-
-          <p>
-            ${coach.substitute}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          class="
-            m929-complete-btn
-            ${
-              workout.checks[
-                activeIndex
-              ]
-                ? "done"
-                : ""
-            }
-          "
-          id="m929CompleteExercise"
-        >
-          ${
-            workout.checks[
-              activeIndex
-            ]
-              ? "EXERCISE COMPLETE ✓"
-              : "MARK EXERCISE COMPLETE"
-          }
-        </button>
-
-        <div class="m929-nav">
-          <button
-            type="button"
-            id="m929Prev"
-            ${
-              activeIndex ===
-              0
-                ? "disabled"
-                : ""
-            }
-          >
-            ← PREVIOUS
-          </button>
-
-          <button
-            type="button"
-            id="m929Next"
-            ${
-              activeIndex ===
-              sessionExercises.length -
-              1
-                ? "disabled"
-                : ""
-            }
-          >
-            NEXT →
-          </button>
-        </div>
-      </div>
-
-      <div class="m929-rest">
-        <div class="m929-rest-title">
-          REST TIMER
-        </div>
-
-        <div
-          class="m929-rest-time"
-          id="m929RestTime"
-        >
-          ${formatTime(
-            restRemaining
-          )}
-        </div>
-
-        <div class="m929-rest-buttons">
-          <button
-            type="button"
-            class="m929-rest-btn"
-            data-m929-rest="60"
-          >
-            60 SEC
-          </button>
-
-          <button
-            type="button"
-            class="m929-rest-btn"
-            data-m929-rest="90"
-          >
-            90 SEC
-          </button>
-
-          <button
-            type="button"
-            class="m929-rest-btn"
-            data-m929-rest="120"
-          >
-            120 SEC
-          </button>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        class="m929-finish"
-        id="m929Finish"
-        ${
-          !allDone
-            ? "disabled"
-            : ""
-        }
-      >
-        ${
-          allDone
-            ? "FINISH WORKOUT ✓"
-            : "COMPLETE ALL EXERCISES TO FINISH"
-        }
-      </button>
-
-      <div class="m929-status">
-        Work at a level appropriate for you.
-        Stop if an exercise causes sharp or unusual pain.
-      </div>
-    `;
-  }
-
-  function toggleExercise() {
-    const day =
-      currentDay();
-
-    const workout =
-      currentWorkout(
-        day
-      );
-
-    workout.checks[
-      activeIndex
-    ] =
-      !workout.checks[
-        activeIndex
-      ];
-
-    saveWorkout(
-      day,
-      workout
-    );
-
-    if (
-      workout.checks[
-        activeIndex
-      ] &&
-      activeIndex <
-      sessionExercises.length -
-        1
-    ) {
-      activeIndex +=
-        1;
-
-      startRestTimer(
-        60
-      );
-    }
-
-    renderCoach();
-  }
-
-  function finishWorkout() {
-    const day =
-      currentDay();
-
-    const workout =
-      currentWorkout(
-        day
-      );
-
-    const allDone =
-      workout.checks.length ===
-        sessionExercises.length &&
-      workout.checks.every(
-        Boolean
-      );
-
-    if (
-      !allDone
-    ) {
-      return;
-    }
-
-    workout.completedAt =
-      new Date()
-        .toISOString();
-
-    saveWorkout(
-      day,
-      workout
-    );
-
-    closeCoach();
-  }
-
-  function handleClick(
-    event
-  ) {
-    if (
-      event.target.closest(
-        "#m929Close"
-      )
-    ) {
-      event.preventDefault();
-
-      closeCoach();
-
-      return;
-    }
-
-    if (
-      event.target.closest(
-        "#m929CompleteExercise"
-      )
-    ) {
-      event.preventDefault();
-
-      toggleExercise();
-
-      return;
-    }
-
-    if (
-      event.target.closest(
-        "#m929Prev"
-      )
-    ) {
-      event.preventDefault();
-
-      activeIndex =
-        Math.max(
-          0,
-          activeIndex -
-          1
-        );
-
-      renderCoach();
-
-      return;
-    }
-
-    if (
-      event.target.closest(
-        "#m929Next"
-      )
-    ) {
-      event.preventDefault();
-
-      activeIndex =
-        Math.min(
-          sessionExercises.length -
-            1,
-          activeIndex +
-            1
-        );
-
-      renderCoach();
-
-      return;
-    }
-
-    const rest =
-      event.target.closest(
-        "[data-m929-rest]"
-      );
-
-    if (
-      rest
-    ) {
-      event.preventDefault();
-
-      startRestTimer(
-        Number(
-          rest.dataset
-            .m929Rest
-        )
-      );
-
-      return;
-    }
-
-    if (
-      event.target.closest(
-        "#m929Finish"
-      )
-    ) {
-      event.preventDefault();
-
-      finishWorkout();
-    }
-  }
-
   function startWorkoutTimer() {
     stopWorkoutTimer();
 
     workoutTimer =
       setInterval(
         () => {
+
+          guardOwnership();
+
+          if (
+            !coachOpen()
+          ) {
+            return;
+          }
 
           const el =
             document.getElementById(
@@ -1553,15 +677,1365 @@
     }
   }
 
+  /* =========================================
+     STYLES
+     ========================================= */
+
+  function injectStyles() {
+    document
+      .getElementById(
+        STYLE_ID
+      )
+      ?.remove();
+
+    const style =
+      document.createElement(
+        "style"
+      );
+
+    style.id =
+      STYLE_ID;
+
+    style.textContent = `
+      #${MODAL_ID}{
+        position:fixed;
+        inset:0;
+        z-index:40000;
+        display:none;
+        overflow:auto;
+        overscroll-behavior:contain;
+        background:#050505;
+        color:#fff;
+        padding:
+          calc(env(safe-area-inset-top) + 14px)
+          14px
+          calc(env(safe-area-inset-bottom) + 28px);
+        touch-action:pan-y;
+      }
+
+      #${MODAL_ID}.open{
+        display:block;
+      }
+
+      .m929-shell{
+        width:min(
+          560px,
+          100%
+        );
+        margin:0 auto;
+      }
+
+      .m929-top{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        margin-bottom:14px;
+      }
+
+      .m929-brand{
+        color:#f3d875;
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.14em;
+      }
+
+      .m929-close,
+      .m929-complete-btn,
+      .m929-nav button,
+      .m929-rest-btn,
+      .m929-finish{
+        touch-action:manipulation;
+        -webkit-tap-highlight-color:
+          transparent;
+      }
+
+      .m929-close{
+        min-height:44px;
+        padding:0 14px;
+        border:1px solid #333;
+        border-radius:13px;
+        background:#111;
+        color:#f3d875;
+        font-size:11px;
+        font-weight:900;
+        cursor:pointer;
+      }
+
+      .m929-head{
+        padding:18px;
+        border:1px solid #55491d;
+        border-radius:19px;
+        background:
+          linear-gradient(
+            145deg,
+            #171308,
+            #090909
+          );
+      }
+
+      .m929-row{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        align-items:flex-start;
+      }
+
+      .m929-kicker{
+        color:#f3d875;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.12em;
+      }
+
+      .m929-head h2{
+        margin:5px 0 0;
+        font-size:24px;
+        line-height:1.08;
+      }
+
+      .m929-timer{
+        flex:0 0 auto;
+        min-width:74px;
+        padding:9px 10px;
+        border:1px solid #4e421b;
+        border-radius:12px;
+        background:#0d0c08;
+        color:#f3d875;
+        text-align:center;
+        font-size:16px;
+        font-weight:1000;
+      }
+
+      .m929-progress-copy{
+        display:flex;
+        justify-content:space-between;
+        gap:10px;
+        margin-top:14px;
+        color:#9a9a9a;
+        font-size:10px;
+        font-weight:800;
+      }
+
+      .m929-track{
+        height:9px;
+        margin-top:8px;
+        overflow:hidden;
+        border-radius:999px;
+        background:#272727;
+      }
+
+      .m929-fill{
+        height:100%;
+        border-radius:999px;
+        background:#f3d875;
+      }
+
+      .m929-card{
+        margin-top:12px;
+        padding:18px;
+        border:1px solid #303030;
+        border-radius:18px;
+        background:
+          linear-gradient(
+            145deg,
+            #111,
+            #090909
+          );
+      }
+
+      .m929-ex-index{
+        color:#8c8c8c;
+        font-size:10px;
+        font-weight:900;
+      }
+
+      .m929-ex-name{
+        margin-top:5px;
+        color:#fff;
+        font-size:25px;
+        font-weight:1000;
+        line-height:1.1;
+      }
+
+      .m929-dose{
+        margin-top:8px;
+        color:#f3d875;
+        font-size:18px;
+        font-weight:1000;
+      }
+
+      .m929-info-grid{
+        display:grid;
+        grid-template-columns:
+          1fr
+          1fr;
+        gap:9px;
+        margin-top:15px;
+      }
+
+      .m929-info{
+        padding:12px;
+        border:1px solid #292929;
+        border-radius:13px;
+        background:#0b0b0b;
+      }
+
+      .m929-info span{
+        display:block;
+        color:#7f7f7f;
+        font-size:9px;
+        font-weight:900;
+        letter-spacing:.08em;
+      }
+
+      .m929-info strong{
+        display:block;
+        margin-top:5px;
+        color:#fff;
+        font-size:12px;
+        line-height:1.4;
+      }
+
+      .m929-coach{
+        margin-top:14px;
+        padding:14px;
+        border-left:
+          3px solid
+          #f3d875;
+        border-radius:
+          0
+          12px
+          12px
+          0;
+        background:#100f09;
+      }
+
+      .m929-coach span{
+        display:block;
+        color:#f3d875;
+        font-size:9px;
+        font-weight:900;
+        letter-spacing:.1em;
+      }
+
+      .m929-coach p{
+        margin:6px 0 0;
+        color:#c4c4c4;
+        font-size:12px;
+        line-height:1.6;
+      }
+
+      .m929-complete-btn{
+        width:100%;
+        min-height:54px;
+        margin-top:15px;
+        border:0;
+        border-radius:14px;
+        background:#f3d875;
+        color:#111;
+        font-size:12px;
+        font-weight:1000;
+        cursor:pointer;
+      }
+
+      .m929-complete-btn.done{
+        border:
+          1px solid
+          #5f5120;
+        background:#151207;
+        color:#f3d875;
+      }
+
+      .m929-nav{
+        display:grid;
+        grid-template-columns:
+          1fr
+          1fr;
+        gap:9px;
+        margin-top:10px;
+      }
+
+      .m929-nav button,
+      .m929-rest-btn{
+        min-height:48px;
+        border:
+          1px solid
+          #343434;
+        border-radius:13px;
+        background:#101010;
+        color:#ddd;
+        font-size:11px;
+        font-weight:900;
+        cursor:pointer;
+      }
+
+      .m929-nav button:disabled{
+        opacity:.35;
+        cursor:not-allowed;
+      }
+
+      .m929-rest{
+        margin-top:12px;
+        padding:15px;
+        border:
+          1px solid
+          #2d2d2d;
+        border-radius:16px;
+        background:#0b0b0b;
+      }
+
+      .m929-rest-title{
+        color:#8b8b8b;
+        font-size:9px;
+        font-weight:900;
+        letter-spacing:.1em;
+      }
+
+      .m929-rest-time{
+        margin-top:4px;
+        color:#f3d875;
+        font-size:28px;
+        font-weight:1000;
+      }
+
+      .m929-rest-buttons{
+        display:grid;
+        grid-template-columns:
+          repeat(
+            3,
+            1fr
+          );
+        gap:8px;
+        margin-top:10px;
+      }
+
+      .m929-finish{
+        width:100%;
+        min-height:54px;
+        margin-top:13px;
+        border:
+          1px solid
+          #67571f;
+        border-radius:14px;
+        background:#181407;
+        color:#f3d875;
+        font-size:12px;
+        font-weight:1000;
+        cursor:pointer;
+      }
+
+      .m929-finish:disabled{
+        opacity:.4;
+        cursor:not-allowed;
+      }
+
+      .m929-status{
+        margin-top:10px;
+        color:#999;
+        font-size:10px;
+        line-height:1.5;
+        text-align:center;
+      }
+
+      @media(max-width:390px){
+        .m929-info-grid{
+          grid-template-columns:
+            1fr;
+        }
+
+        .m929-ex-name{
+          font-size:22px;
+        }
+      }
+    `;
+
+    document.head
+      .appendChild(
+        style
+      );
+  }
+
+  /* =========================================
+     MODAL
+     ========================================= */
+
+  function ensureModal() {
+    if (
+      document.getElementById(
+        MODAL_ID
+      )
+    ) {
+      return;
+    }
+
+    const modal =
+      document.createElement(
+        "div"
+      );
+
+    modal.id =
+      MODAL_ID;
+
+    modal.innerHTML = `
+      <div class="m929-shell">
+
+        <div class="m929-top">
+
+          <div class="m929-brand">
+            MANA 28 • WORKOUT COACH
+          </div>
+
+          <button
+            type="button"
+            class="m929-close"
+            id="m929Close"
+          >
+            ← Back
+          </button>
+
+        </div>
+
+        <div
+          id="m929Content"
+        ></div>
+
+      </div>
+    `;
+
+    document.body
+      .appendChild(
+        modal
+      );
+  }
+
+  function openCoach(
+    requestedIndex =
+      null
+  ) {
+    /*
+      NEVER OPEN OVER ANOTHER PROGRAM
+    */
+
+    if (
+      !mana28OwnsCoach()
+    ) {
+      closeCoach(
+        false
+      );
+
+      return;
+    }
+
+    sessionExercises =
+      readExercises();
+
+    if (
+      !sessionExercises.length
+    ) {
+      return;
+    }
+
+    const day =
+      currentDay();
+
+    const workout =
+      currentWorkout(
+        day
+      );
+
+    const existingStart =
+      workout.startedAt
+        ? new Date(
+            workout.startedAt
+          ).getTime()
+        : NaN;
+
+    workoutStartedAt =
+      Number.isFinite(
+        existingStart
+      )
+        ? existingStart
+        : Date.now();
+
+    if (
+      !workout.startedAt
+    ) {
+      workout.startedAt =
+        new Date(
+          workoutStartedAt
+        ).toISOString();
+
+      saveWorkout(
+        day,
+        workout
+      );
+    }
+
+    if (
+      Number.isFinite(
+        Number(
+          requestedIndex
+        )
+      )
+    ) {
+      activeIndex =
+        Math.max(
+          0,
+          Math.min(
+            sessionExercises.length -
+              1,
+            Number(
+              requestedIndex
+            )
+          )
+        );
+    } else {
+      const firstIncomplete =
+        workout.checks
+          .findIndex(
+            value =>
+              !value
+          );
+
+      activeIndex =
+        firstIncomplete >=
+        0
+          ? firstIncomplete
+          : 0;
+    }
+
+    ensureModal();
+
+    previousBodyOverflow =
+      document.body.style
+        .overflow;
+
+    document
+      .getElementById(
+        MODAL_ID
+      )
+      ?.classList
+      .add(
+        "open"
+      );
+
+    document.body.style
+      .overflow =
+        "hidden";
+
+    const modal =
+      document.getElementById(
+        MODAL_ID
+      );
+
+    if (
+      modal
+    ) {
+      modal.scrollTop =
+        0;
+    }
+
+    renderCoach();
+
+    startWorkoutTimer();
+
+    startOwnershipWatch();
+  }
+
+  function closeCoach(
+    refreshOverview =
+      true
+  ) {
+    const modal =
+      document.getElementById(
+        MODAL_ID
+      );
+
+    modal
+      ?.classList
+      .remove(
+        "open"
+      );
+
+    if (
+      modal
+    ) {
+      modal.scrollTop =
+        0;
+    }
+
+    document.body.style
+      .overflow =
+        previousBodyOverflow ||
+        "";
+
+    stopRestTimer();
+
+    stopWorkoutTimer();
+
+    stopOwnershipWatch();
+
+    restRemaining =
+      0;
+
+    if (
+      refreshOverview &&
+      mana28OwnsCoach()
+    ) {
+      setTimeout(
+        () => {
+
+          window
+            .refreshMana28Workout
+            ?.();
+
+        },
+        40
+      );
+    }
+  }
+
+  function renderCoach() {
+    if (
+      !mana28OwnsCoach()
+    ) {
+      closeCoach(
+        false
+      );
+
+      return;
+    }
+
+    const holder =
+      document.getElementById(
+        "m929Content"
+      );
+
+    if (
+      !holder ||
+      !sessionExercises.length
+    ) {
+      return;
+    }
+
+    const day =
+      currentDay();
+
+    const workout =
+      currentWorkout(
+        day
+      );
+
+    const exercise =
+      sessionExercises[
+        activeIndex
+      ];
+
+    const coach =
+      coachFor(
+        exercise.name
+      );
+
+    const completed =
+      workout.checks
+        .filter(
+          Boolean
+        )
+        .length;
+
+    const percent =
+      Math.round(
+        completed /
+        sessionExercises.length *
+        100
+      );
+
+    const allDone =
+      completed ===
+      sessionExercises.length;
+
+    holder.innerHTML = `
+      <div class="m929-head">
+
+        <div class="m929-row">
+
+          <div>
+
+            <div class="m929-kicker">
+              DAY ${day} WORKOUT
+            </div>
+
+            <h2>
+              ${workoutName()}
+            </h2>
+
+          </div>
+
+          <div
+            class="m929-timer"
+            id="m929WorkoutTimer"
+          >
+            ${formatTime(
+              elapsedWorkoutSeconds()
+            )}
+          </div>
+
+        </div>
+
+        <div class="m929-progress-copy">
+
+          <span>
+            ${completed}/${sessionExercises.length}
+            complete
+          </span>
+
+          <span>
+            ${percent}%
+          </span>
+
+        </div>
+
+        <div class="m929-track">
+
+          <div
+            class="m929-fill"
+            style="width:${percent}%"
+          ></div>
+
+        </div>
+
+      </div>
+
+      <div class="m929-card">
+
+        <div class="m929-ex-index">
+          EXERCISE ${activeIndex + 1}
+          OF ${sessionExercises.length}
+        </div>
+
+        <div class="m929-ex-name">
+          ${exercise.name}
+        </div>
+
+        <div class="m929-dose">
+          ${exercise.dose}
+        </div>
+
+        <div class="m929-info-grid">
+
+          <div class="m929-info">
+
+            <span>
+              REST
+            </span>
+
+            <strong>
+              ${coach.rest}
+            </strong>
+
+          </div>
+
+          <div class="m929-info">
+
+            <span>
+              EQUIPMENT
+            </span>
+
+            <strong>
+              ${coach.equipment}
+            </strong>
+
+          </div>
+
+        </div>
+
+        <div class="m929-coach">
+
+          <span>
+            COACHING CUE
+          </span>
+
+          <p>
+            ${coach.cue}
+          </p>
+
+        </div>
+
+        <div class="m929-coach">
+
+          <span>
+            SUBSTITUTION
+          </span>
+
+          <p>
+            ${coach.substitute}
+          </p>
+
+        </div>
+
+        <button
+          type="button"
+          class="
+            m929-complete-btn
+            ${
+              workout.checks[
+                activeIndex
+              ]
+                ? "done"
+                : ""
+            }
+          "
+          id="m929CompleteExercise"
+        >
+          ${
+            workout.checks[
+              activeIndex
+            ]
+              ? "EXERCISE COMPLETE ✓"
+              : "MARK EXERCISE COMPLETE"
+          }
+        </button>
+
+        <div class="m929-nav">
+
+          <button
+            type="button"
+            id="m929Prev"
+            ${
+              activeIndex ===
+              0
+                ? "disabled"
+                : ""
+            }
+          >
+            ← PREVIOUS
+          </button>
+
+          <button
+            type="button"
+            id="m929Next"
+            ${
+              activeIndex ===
+              sessionExercises.length -
+              1
+                ? "disabled"
+                : ""
+            }
+          >
+            NEXT →
+          </button>
+
+        </div>
+
+      </div>
+
+      <div class="m929-rest">
+
+        <div class="m929-rest-title">
+          REST TIMER
+        </div>
+
+        <div
+          class="m929-rest-time"
+          id="m929RestTime"
+        >
+          ${formatTime(
+            restRemaining
+          )}
+        </div>
+
+        <div class="m929-rest-buttons">
+
+          <button
+            type="button"
+            class="m929-rest-btn"
+            data-m929-rest="60"
+          >
+            60 SEC
+          </button>
+
+          <button
+            type="button"
+            class="m929-rest-btn"
+            data-m929-rest="90"
+          >
+            90 SEC
+          </button>
+
+          <button
+            type="button"
+            class="m929-rest-btn"
+            data-m929-rest="120"
+          >
+            120 SEC
+          </button>
+
+        </div>
+
+      </div>
+
+      <button
+        type="button"
+        class="m929-finish"
+        id="m929Finish"
+        ${
+          !allDone
+            ? "disabled"
+            : ""
+        }
+      >
+        ${
+          allDone
+            ? "FINISH WORKOUT ✓"
+            : "COMPLETE ALL EXERCISES TO FINISH"
+        }
+      </button>
+
+      <div class="m929-status">
+        Work at a level appropriate for you.
+        Stop if an exercise causes sharp or unusual pain.
+      </div>
+    `;
+  }
+
+  /* =========================================
+     CONTROLS
+     ========================================= */
+
+  function toggleExercise() {
+    if (
+      !mana28OwnsCoach()
+    ) {
+      closeCoach(
+        false
+      );
+
+      return;
+    }
+
+    const day =
+      currentDay();
+
+    const workout =
+      currentWorkout(
+        day
+      );
+
+    workout.checks[
+      activeIndex
+    ] =
+      !workout.checks[
+        activeIndex
+      ];
+
+    saveWorkout(
+      day,
+      workout
+    );
+
+    if (
+      workout.checks[
+        activeIndex
+      ] &&
+      activeIndex <
+      sessionExercises.length -
+        1
+    ) {
+      activeIndex +=
+        1;
+
+      startRestTimer(
+        60
+      );
+    }
+
+    renderCoach();
+  }
+
+  function finishWorkout() {
+    if (
+      !mana28OwnsCoach()
+    ) {
+      closeCoach(
+        false
+      );
+
+      return;
+    }
+
+    const day =
+      currentDay();
+
+    const workout =
+      currentWorkout(
+        day
+      );
+
+    const allDone =
+      workout.checks.length ===
+        sessionExercises.length &&
+      workout.checks.every(
+        Boolean
+      );
+
+    if (
+      !allDone
+    ) {
+      return;
+    }
+
+    workout.completedAt =
+      new Date()
+        .toISOString();
+
+    saveWorkout(
+      day,
+      workout
+    );
+
+    closeCoach(
+      true
+    );
+  }
+
+  function handleCoachClick(
+    event
+  ) {
+    if (
+      event.target.closest(
+        "#m929Close"
+      )
+    ) {
+      event.preventDefault();
+
+      closeCoach(
+        true
+      );
+
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "#m929CompleteExercise"
+      )
+    ) {
+      event.preventDefault();
+
+      toggleExercise();
+
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "#m929Prev"
+      )
+    ) {
+      event.preventDefault();
+
+      activeIndex =
+        Math.max(
+          0,
+          activeIndex -
+          1
+        );
+
+      renderCoach();
+
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "#m929Next"
+      )
+    ) {
+      event.preventDefault();
+
+      activeIndex =
+        Math.min(
+          sessionExercises.length -
+            1,
+          activeIndex +
+            1
+        );
+
+      renderCoach();
+
+      return;
+    }
+
+    const rest =
+      event.target.closest(
+        "[data-m929-rest]"
+      );
+
+    if (
+      rest
+    ) {
+      event.preventDefault();
+
+      startRestTimer(
+        Number(
+          rest.dataset
+            .m929Rest
+        )
+      );
+
+      return;
+    }
+
+    if (
+      event.target.closest(
+        "#m929Finish"
+      )
+    ) {
+      event.preventDefault();
+
+      finishWorkout();
+    }
+  }
+
+  /* =========================================
+     NAVIGATION REPAIR
+     ========================================= */
+
+  function handleNavigationClick(
+    event
+  ) {
+    if (
+      !coachOpen()
+    ) {
+      return;
+    }
+
+    if (
+      event.target.closest(
+        `#${MODAL_ID}`
+      )
+    ) {
+      return;
+    }
+
+    const programTab =
+      event.target.closest(
+        "#manaV83Tabs .mana-v83-tab"
+      );
+
+    const homeButton =
+      event.target.closest(
+        "#manaV83Back"
+      ) ||
+      event.target.closest(
+        ".mana-v83-back"
+      ) ||
+      event.target.closest(
+        "[data-home]"
+      );
+
+    const strengthLauncher =
+      event.target.closest(
+        "#manaV80Strength"
+      );
+
+    const mana28Launcher =
+      event.target.closest(
+        "#manaV80Mana28"
+      );
+
+    if (
+      programTab ||
+      homeButton ||
+      strengthLauncher ||
+      mana28Launcher
+    ) {
+      closeCoach(
+        false
+      );
+    }
+  }
+
+  /* =========================================
+     OWNERSHIP WATCH
+     ========================================= */
+
+  function startOwnershipWatch() {
+    stopOwnershipWatch();
+
+    ownershipWatch =
+      setInterval(
+        () => {
+
+          if (
+            !coachOpen()
+          ) {
+            stopOwnershipWatch();
+
+            return;
+          }
+
+          guardOwnership();
+
+        },
+        400
+      );
+  }
+
+  function stopOwnershipWatch() {
+    if (
+      ownershipWatch
+    ) {
+      clearInterval(
+        ownershipWatch
+      );
+
+      ownershipWatch =
+        null;
+    }
+  }
+
+  /* =========================================
+     APP / PHONE REPAIR
+     ========================================= */
+
+  function handleProgramChange() {
+    setTimeout(
+      guardOwnership,
+      0
+    );
+
+    setTimeout(
+      guardOwnership,
+      80
+    );
+  }
+
+  function handleVisibility() {
+    if (
+      document.visibilityState ===
+      "visible"
+    ) {
+      guardOwnership();
+
+      setTimeout(
+        guardOwnership,
+        100
+      );
+    }
+  }
+
+  function handlePageShow() {
+    guardOwnership();
+
+    setTimeout(
+      guardOwnership,
+      100
+    );
+  }
+
+  function handleWindowFocus() {
+    guardOwnership();
+
+    setTimeout(
+      guardOwnership,
+      80
+    );
+  }
+
+  function emergencyCleanup() {
+    const modal =
+      document.getElementById(
+        MODAL_ID
+      );
+
+    if (
+      modal &&
+      !mana28OwnsCoach()
+    ) {
+      modal.classList.remove(
+        "open"
+      );
+
+      modal.scrollTop =
+        0;
+
+      stopRestTimer();
+
+      stopWorkoutTimer();
+
+      stopOwnershipWatch();
+
+      restRemaining =
+        0;
+    }
+
+    if (
+      !coachOpen()
+    ) {
+      document.body.style
+        .overflow =
+          "";
+    }
+  }
+
+  /* =========================================
+     INIT
+     ========================================= */
+
   function init() {
     injectStyles();
 
     ensureModal();
 
+    emergencyCleanup();
+
     document.addEventListener(
       "click",
-      handleClick,
+      handleCoachClick,
       true
+    );
+
+    document.addEventListener(
+      "click",
+      handleNavigationClick,
+      true
+    );
+
+    window.addEventListener(
+      "mana:program-tab-change",
+      handleProgramChange
+    );
+
+    window.addEventListener(
+      "mana28:updated",
+      guardOwnership
+    );
+
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibility
+    );
+
+    window.addEventListener(
+      "pageshow",
+      handlePageShow
+    );
+
+    window.addEventListener(
+      "focus",
+      handleWindowFocus
+    );
+
+    setTimeout(
+      emergencyCleanup,
+      300
+    );
+
+    setTimeout(
+      emergencyCleanup,
+      1000
     );
   }
 
@@ -1573,6 +2047,9 @@
 
   window.closeMana28WorkoutCoach =
     closeCoach;
+
+  window.guardMana28WorkoutCoach =
+    guardOwnership;
 
   if (
     document.readyState ===
