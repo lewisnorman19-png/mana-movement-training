@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.10.4
+   MANA MOVEMENT TRAINING v9.10.5
    MANA STRENGTH — OVERVIEW
 
    - FULL TODAY'S WORKOUT
@@ -17,11 +17,12 @@
      THE SAME LAUNCH PATH AS PROGRAM TAB
    - CLOSES SHELL BEFORE WORKOUT
    - EXERCISE COACH REFRESHES AFTER OPEN
+   - REMOVES CONTINUOUS DOM OBSERVER
+   - STOPS OVERVIEW FLICKER / REBUILD LOOP
    ========================================= */
 
 (() => {
   "use strict";
-
 
   const STYLE_ID =
     "mana-v9104-overview-layout-style";
@@ -41,31 +42,24 @@
   const WEEKLY_ID =
     "manaV9103WeeklyProgress";
 
-
   let applying =
     false;
 
-
-  /* =========================================
-     HELPERS
-     ========================================= */
+  let layoutTimer =
+    null;
 
   function safeJson(
     raw,
     fallback
   ) {
     try {
-
       return JSON.parse(
         raw
       );
-
     } catch (_) {
-
       return fallback;
     }
   }
-
 
   function esc(
     value
@@ -91,7 +85,6 @@
       );
   }
 
-
   function formatNumber(
     value
   ) {
@@ -101,7 +94,6 @@
       )
     ).toLocaleString();
   }
-
 
   function pct(
     current,
@@ -114,7 +106,6 @@
     ) {
       return 0;
     }
-
 
     return Math.max(
       0,
@@ -133,29 +124,23 @@
     );
   }
 
-
   function strengthOverviewOpen() {
-
     const shell =
       document.getElementById(
         "manaV83ProgramShell"
       );
-
 
     const title =
       document.getElementById(
         "manaV83Title"
       );
 
-
     const active =
       document.querySelector(
         "#manaV83Tabs .mana-v83-tab.active"
       );
 
-
     return Boolean(
-
       shell
         ?.classList
         .contains(
@@ -172,13 +157,10 @@
         ?.dataset
         ?.v83Tab ===
         "overview"
-
     );
   }
 
-
   function loadProgram() {
-
     return safeJson(
       localStorage.getItem(
         PROGRAM_KEY
@@ -187,9 +169,7 @@
     );
   }
 
-
   function loadLogs() {
-
     const logs =
       safeJson(
         localStorage.getItem(
@@ -198,7 +178,6 @@
         []
       );
 
-
     return Array.isArray(
       logs
     )
@@ -206,9 +185,7 @@
       : [];
   }
 
-
   function loadFuelStore() {
-
     return safeJson(
       localStorage.getItem(
         FUEL_KEY
@@ -217,9 +194,7 @@
     );
   }
 
-
   function loadTargets() {
-
     const saved =
       safeJson(
         localStorage.getItem(
@@ -228,9 +203,7 @@
         {}
       );
 
-
     return {
-
       calories:
         Number(
           saved.calories || 0
@@ -245,35 +218,26 @@
         Number(
           saved.water || 0
         )
-
     };
   }
 
-
-  /* =========================================
-     WORKOUT
-     ========================================= */
-
   function nextWorkoutIndex() {
-
     const program =
       loadProgram();
 
-
     const logs =
       loadLogs();
-
 
     const total =
       program
         ?.sessions
         ?.length || 0;
 
-
-    if (!total) {
+    if (
+      !total
+    ) {
       return 0;
     }
-
 
     return (
       logs.length %
@@ -281,12 +245,9 @@
     );
   }
 
-
   function todaySession() {
-
     const program =
       loadProgram();
-
 
     if (
       !program
@@ -296,7 +257,6 @@
       return null;
     }
 
-
     return (
       program.sessions[
         nextWorkoutIndex()
@@ -304,16 +264,9 @@
     );
   }
 
-
-  /* =========================================
-     CURRENT WEEK
-     ========================================= */
-
   function currentWeekRange() {
-
     const now =
       new Date();
-
 
     const today =
       new Date(
@@ -322,25 +275,21 @@
         now.getDate()
       );
 
-
     const mondayOffset =
       (
         today.getDay() +
         6
       ) % 7;
 
-
     const start =
       new Date(
         today
       );
 
-
     start.setDate(
       today.getDate() -
       mondayOffset
     );
-
 
     start.setHours(
       0,
@@ -349,18 +298,15 @@
       0
     );
 
-
     const end =
       new Date(
         start
       );
 
-
     end.setDate(
       start.getDate() +
       7
     );
-
 
     return {
       start,
@@ -368,13 +314,10 @@
     };
   }
 
-
   function dateKey(
     date
   ) {
-
     return [
-
       date.getFullYear(),
 
       String(
@@ -390,20 +333,15 @@
         2,
         "0"
       )
-
     ].join("-");
   }
 
-
   function currentWeekKeysToToday() {
-
     const range =
       currentWeekRange();
 
-
     const now =
       new Date();
-
 
     const today =
       new Date(
@@ -412,62 +350,45 @@
         now.getDate()
       );
 
-
     const keys =
       [];
-
 
     const cursor =
       new Date(
         range.start
       );
 
-
     while (
       cursor <=
       today
     ) {
-
       keys.push(
         dateKey(
           cursor
         )
       );
 
-
       cursor.setDate(
         cursor.getDate() +
         1
       );
-
     }
-
 
     return keys;
   }
 
-
-  /* =========================================
-     FUEL TOTALS
-     ========================================= */
-
   function fuelTotalsForDay(
     day
   ) {
-
     const totals = {
-
       calories:0,
-
       protein:0,
 
       water:
         Number(
           day?.water || 0
         )
-
     };
-
 
     Object
       .values(
@@ -488,7 +409,6 @@
                     0
                   );
 
-
                 totals.protein +=
                   Number(
                     item?.protein ||
@@ -501,35 +421,24 @@
         }
       );
 
-
     return totals;
   }
 
-
   function weeklyFuelTotals() {
-
     const store =
       loadFuelStore();
-
 
     const targets =
       loadTargets();
 
-
     const keys =
       currentWeekKeysToToday();
 
-
     const totals = {
-
       calories:0,
-
       protein:0,
-
       water:0
-
     };
-
 
     keys.forEach(
       key => {
@@ -539,14 +448,11 @@
             store[key] || {}
           );
 
-
         totals.calories +=
           day.calories;
 
-
         totals.protein +=
           day.protein;
-
 
         totals.water +=
           day.water;
@@ -554,9 +460,7 @@
       }
     );
 
-
     return {
-
       calories:{
         current:
           totals.calories,
@@ -565,7 +469,6 @@
           targets.calories *
           7
       },
-
 
       protein:{
         current:
@@ -576,7 +479,6 @@
           7
       },
 
-
       water:{
         current:
           totals.water,
@@ -585,28 +487,18 @@
           targets.water *
           7
       }
-
     };
   }
 
-
-  /* =========================================
-     WORKOUT TOTALS
-     ========================================= */
-
   function weeklyWorkoutTotals() {
-
     const program =
       loadProgram();
-
 
     const logs =
       loadLogs();
 
-
     const range =
       currentWeekRange();
-
 
     const target =
       Math.max(
@@ -620,7 +512,6 @@
         )
       );
 
-
     const completed =
       logs.filter(
         log => {
@@ -631,12 +522,10 @@
             return false;
           }
 
-
           const date =
             new Date(
               log.date
             );
-
 
           if (
             Number.isNaN(
@@ -645,7 +534,6 @@
           ) {
             return false;
           }
-
 
           return (
             date >=
@@ -658,24 +546,15 @@
         }
       ).length;
 
-
     return {
-
       current:
         completed,
 
       target
-
     };
   }
 
-
-  /* =========================================
-     STYLES
-     ========================================= */
-
   function injectStyles() {
-
     if (
       document.getElementById(
         STYLE_ID
@@ -684,45 +563,28 @@
       return;
     }
 
-
     const style =
       document.createElement(
         "style"
       );
 
-
     style.id =
       STYLE_ID;
 
-
     style.textContent = `
-
       .mana-v9103-workout{
-        margin:
-          14px
-          0;
-
-        padding:
-          21px;
-
-        border:
-          2px solid
-          #6e5c20;
-
-        border-radius:
-          22px;
-
+        margin:14px 0;
+        padding:21px;
+        border:2px solid #6e5c20;
+        border-radius:22px;
         background:
           linear-gradient(
             145deg,
             #211b08,
             #0b0b0b 68%
           );
-
         box-shadow:
-          0
-          12px
-          32px
+          0 12px 32px
           rgba(
             212,
             175,
@@ -731,330 +593,210 @@
           );
       }
 
-
       .mana-v9103-workout-label{
         color:#f3d875;
-
         font-size:10px;
-
         font-weight:900;
-
         letter-spacing:.13em;
-
         text-transform:uppercase;
       }
 
-
       .mana-v9103-workout h3{
-        margin:
-          7px
-          0
-          4px;
-
+        margin:7px 0 4px;
         color:#fff;
-
         font-size:25px;
-
         line-height:1.08;
       }
 
-
       .mana-v9103-session-label{
         margin-top:5px;
-
         color:#a99a5c;
-
         font-size:10px;
-
         font-weight:800;
-
         letter-spacing:.06em;
       }
 
-
       .mana-v9103-exercises{
         margin-top:18px;
-
         border-top:
           1px solid
           #342e18;
       }
 
-
       .mana-v9103-exercise{
         display:grid;
-
         grid-template-columns:
           31px
           minmax(
             0,
             1fr
           );
-
         gap:11px;
-
         align-items:center;
-
-        padding:
-          13px
-          2px;
-
+        padding:13px 2px;
         border-bottom:
           1px solid
           #292719;
       }
 
-
       .mana-v9103-exercise:last-child{
         border-bottom:0;
       }
 
-
       .mana-v9103-number{
         width:31px;
         height:31px;
-
         display:grid;
-
         place-items:center;
-
         border:
           1px solid
           #4c421e;
-
         border-radius:10px;
-
         background:#111009;
-
         color:#f3d875;
-
         font-size:10px;
-
         font-weight:900;
       }
-
 
       .mana-v9103-exercise strong{
         display:block;
-
         color:#eee;
-
         font-size:13px;
-
         line-height:1.3;
       }
 
-
       .mana-v9103-exercise span{
         display:block;
-
         margin-top:4px;
-
         color:#888;
-
         font-size:10px;
-
         line-height:1.4;
       }
 
-
       .mana-v9103-start{
         width:100%;
-
         min-height:56px;
-
         margin-top:17px;
-
         border:0;
-
         border-radius:16px;
-
         background:#f3d875;
-
         color:#111;
-
         font-size:14px;
-
         font-weight:900;
-
         cursor:pointer;
       }
-
 
       .mana-v9103-start:active{
         transform:
           scale(.99);
       }
 
-
       #${WEEKLY_ID}{
-        margin:
-          14px
-          0;
-
-        padding:
-          18px;
-
+        margin:14px 0;
+        padding:18px;
         border:
           1px solid
           #302d20;
-
-        border-radius:
-          21px;
-
+        border-radius:21px;
         background:#0d0d0d;
       }
 
-
       .mana-v9103-week-head{
         display:flex;
-
         justify-content:
           space-between;
-
         align-items:flex-end;
-
         gap:10px;
-
         margin-bottom:14px;
       }
 
-
       .mana-v9103-week-head h3{
         margin:0;
-
         color:#fff;
-
         font-size:20px;
       }
 
-
       .mana-v9103-week-head span{
         color:#777;
-
         font-size:9px;
-
         font-weight:800;
-
         letter-spacing:.08em;
-
         text-transform:uppercase;
       }
-
 
       .mana-v9103-week-grid{
         display:grid;
-
         grid-template-columns:
           1fr
           1fr;
-
         gap:10px;
       }
 
-
       .mana-v9103-week-card{
         padding:14px;
-
         border:
           1px solid
           #292929;
-
-        border-radius:
-          16px;
-
+        border-radius:16px;
         background:#090909;
       }
 
-
       .mana-v9103-week-top{
         display:flex;
-
         justify-content:
           space-between;
-
         align-items:center;
-
         gap:8px;
       }
 
-
       .mana-v9103-week-label{
         color:#aaa;
-
         font-size:10px;
-
         font-weight:900;
-
         letter-spacing:.05em;
-
         text-transform:uppercase;
       }
 
-
       .mana-v9103-week-percent{
         color:#f3d875;
-
         font-size:14px;
-
         font-weight:900;
       }
-
 
       .mana-v9103-week-value{
         margin-top:7px;
-
         color:#fff;
-
         font-size:18px;
-
         font-weight:900;
-
         line-height:1.2;
       }
 
-
       .mana-v9103-week-value span{
         color:#777;
-
         font-size:10px;
-
         font-weight:700;
       }
 
-
       .mana-v9103-week-track{
         height:7px;
-
         margin-top:11px;
-
         overflow:hidden;
-
         border-radius:999px;
-
         background:#242424;
       }
 
-
       .mana-v9103-week-fill{
         height:100%;
-
         border-radius:999px;
-
         background:#f3d875;
       }
 
-
       .mana-v9103-week-note{
         margin-top:13px;
-
         color:#707070;
-
         font-size:9px;
-
         line-height:1.45;
       }
-
 
       .mana-v9103-coach{
         margin-top:
@@ -1072,19 +814,16 @@
           ) !important;
       }
 
-
       .mana-v9103-coach
       .mana-v866-section-head{
         margin-bottom:
           0 !important;
       }
 
-
       .mana-v9103-coach
       .mana-v866-section-head span{
         color:#f3d875;
       }
-
 
       .mana-v9103-coach
       > div:not(
@@ -1095,11 +834,9 @@
         display:none !important;
       }
 
-
       #manaV94CheckinCard{
         display:none !important;
       }
-
 
       #manaV95ClientChatCard{
         margin-top:
@@ -1119,14 +856,12 @@
           #0a0a0a !important;
       }
 
-
       #manaV95ClientChatCard
       .mana-v950-card-kicker,
       #manaV95ClientChatCard
       .mana-v950-live{
         display:none !important;
       }
-
 
       #manaV95ClientChatCard
       .mana-v950-card-title{
@@ -1136,7 +871,6 @@
         font-size:
           16px !important;
       }
-
 
       #manaV95ClientChatCard
       .mana-v950-card-preview{
@@ -1151,7 +885,6 @@
         line-height:
           1.45 !important;
       }
-
 
       #manaV95ClientChatCard
       .mana-v950-open{
@@ -1179,25 +912,20 @@
           900 !important;
       }
 
-
       @media(
         max-width:390px
       ){
-
         .mana-v9103-workout{
           padding:18px;
         }
-
 
         .mana-v9103-workout h3{
           font-size:22px;
         }
 
-
         .mana-v9103-week-grid{
           gap:7px;
         }
-
 
         .mana-v9103-week-card{
           padding:
@@ -1205,49 +933,29 @@
             9px;
         }
 
-
         .mana-v9103-week-value{
           font-size:15px;
         }
 
-
         .mana-v9103-week-percent{
           font-size:12px;
         }
-
       }
-
     `;
-
 
     document.head.appendChild(
       style
     );
   }
 
-
-  /* =========================================
-     START TODAY'S WORKOUT
-     ========================================= */
-
   function startWorkout() {
-
     const index =
       nextWorkoutIndex();
-
-
-    /*
-      Match the Program-tab launch path.
-
-      The Strength shell must close first,
-      then the v6.4 workout opens cleanly.
-    */
 
     const shell =
       document.getElementById(
         "manaV83ProgramShell"
       );
-
 
     shell
       ?.classList
@@ -1255,10 +963,8 @@
         "open"
       );
 
-
     document.body.style.overflow =
       "";
-
 
     if (
       typeof
@@ -1266,17 +972,10 @@
           .openManaStrengthWorkout ===
       "function"
     ) {
-
       window
         .openManaStrengthWorkout(
           index
         );
-
-
-      /*
-        Make sure v9.16 enhances the
-        newly-built v6.4 exercise cards.
-      */
 
       [
         40,
@@ -1296,10 +995,8 @@
                     .refreshManaExerciseCoach ===
                 "function"
               ) {
-
                 window
                   .refreshManaExerciseCoach();
-
               }
 
             },
@@ -1309,16 +1006,8 @@
         }
       );
 
-
       return;
     }
-
-
-    /*
-      Fallback:
-      reopen Strength and send the user
-      to the Program tab.
-    */
 
     if (
       typeof
@@ -1326,14 +1015,11 @@
           .openManaProgram ===
       "function"
     ) {
-
       window
         .openManaProgram(
           "strength"
         );
-
     }
-
 
     setTimeout(
       () => {
@@ -1349,48 +1035,41 @@
     );
   }
 
-
-  /* =========================================
-     FULL WORKOUT CARD
-     ========================================= */
-
   function buildWorkoutCard() {
-
     const holder =
       document.getElementById(
         "manaV83Content"
       );
 
-
-    if (!holder) {
+    if (
+      !holder
+    ) {
       return;
     }
-
 
     const next =
       holder.querySelector(
         ".mana-v866-next"
       );
 
-
-    if (!next) {
+    if (
+      !next
+    ) {
       return;
     }
-
 
     const session =
       todaySession();
 
-
-    if (!session) {
+    if (
+      !session
+    ) {
       return;
     }
-
 
     const sessionName =
       session[0] ||
       "Strength Session";
-
 
     const exercises =
       Array.isArray(
@@ -1399,24 +1078,19 @@
         ? session[1]
         : [];
 
-
     const sessionNumber =
       nextWorkoutIndex() +
       1;
 
-
     next.className =
       "mana-v9103-workout";
 
-
     next.innerHTML = `
-
       <div
         class="mana-v9103-workout-label"
       >
         TODAY'S WORKOUT
       </div>
-
 
       <h3>
         ${esc(
@@ -1424,18 +1098,15 @@
         )}
       </h3>
 
-
       <div
         class="mana-v9103-session-label"
       >
         SESSION ${sessionNumber}
       </div>
 
-
       <div
         class="mana-v9103-exercises"
       >
-
         ${
           exercises
             .map(
@@ -1443,20 +1114,16 @@
                 exercise,
                 index
               ) => `
-
                 <div
                   class="mana-v9103-exercise"
                 >
-
                   <div
                     class="mana-v9103-number"
                   >
                     ${index + 1}
                   </div>
 
-
                   <div>
-
                     <strong>
                       ${esc(
                         exercise?.[0] ||
@@ -1464,25 +1131,19 @@
                       )}
                     </strong>
 
-
                     <span>
                       ${esc(
                         exercise?.[1] ||
                         ""
                       )}
                     </span>
-
                   </div>
-
                 </div>
-
               `
             )
             .join("")
         }
-
       </div>
-
 
       <button
         type="button"
@@ -1491,9 +1152,7 @@
       >
         START WORKOUT →
       </button>
-
     `;
-
 
     document
       .getElementById(
@@ -1504,35 +1163,26 @@
         startWorkout
       );
 
-
     const welcome =
       holder.querySelector(
         ".mana-v866-welcome"
       );
 
-
-    if (welcome) {
-
+    if (
+      welcome
+    ) {
       welcome.insertAdjacentElement(
         "afterend",
         next
       );
-
     }
   }
 
-
-  /* =========================================
-     DAILY FOCUS
-     ========================================= */
-
   function moveDailyFocus() {
-
     const holder =
       document.getElementById(
         "manaV83Content"
       );
-
 
     const workout =
       holder
@@ -1540,14 +1190,12 @@
           ".mana-v9103-workout"
         );
 
-
     if (
       !holder ||
       !workout
     ) {
       return;
     }
-
 
     const focus =
       Array
@@ -1567,21 +1215,15 @@
               "Today's Focus"
         );
 
-
-    if (focus) {
-
+    if (
+      focus
+    ) {
       workout.insertAdjacentElement(
         "afterend",
         focus
       );
-
     }
   }
-
-
-  /* =========================================
-     WEEKLY PROGRESS
-     ========================================= */
 
   function progressCardHTML(
     label,
@@ -1590,17 +1232,13 @@
     unit,
     percent
   ) {
-
     return `
-
       <div
         class="mana-v9103-week-card"
       >
-
         <div
           class="mana-v9103-week-top"
         >
-
           <div
             class="mana-v9103-week-label"
           >
@@ -1609,15 +1247,12 @@
             )}
           </div>
 
-
           <div
             class="mana-v9103-week-percent"
           >
             ${percent}%
           </div>
-
         </div>
-
 
         <div
           class="mana-v9103-week-value"
@@ -1639,38 +1274,31 @@
           }
         </div>
 
-
         <div
           class="mana-v9103-week-track"
         >
-
           <div
             class="mana-v9103-week-fill"
             style="
               width:${percent}%;
             "
           ></div>
-
         </div>
-
       </div>
-
     `;
   }
 
-
   function buildWeeklyProgress() {
-
     const holder =
       document.getElementById(
         "manaV83Content"
       );
 
-
-    if (!holder) {
+    if (
+      !holder
+    ) {
       return;
     }
-
 
     const focus =
       Array
@@ -1690,39 +1318,34 @@
               "Today's Focus"
         );
 
-
-    if (!focus) {
+    if (
+      !focus
+    ) {
       return;
     }
-
 
     let weekly =
       document.getElementById(
         WEEKLY_ID
       );
 
-
-    if (!weekly) {
-
+    if (
+      !weekly
+    ) {
       weekly =
         document.createElement(
           "div"
         );
 
-
       weekly.id =
         WEEKLY_ID;
-
     }
-
 
     const fuel =
       weeklyFuelTotals();
 
-
     const workouts =
       weeklyWorkoutTotals();
-
 
     const caloriePercent =
       pct(
@@ -1730,13 +1353,11 @@
         fuel.calories.target
       );
 
-
     const proteinPercent =
       pct(
         fuel.protein.current,
         fuel.protein.target
       );
-
 
     const waterPercent =
       pct(
@@ -1744,13 +1365,11 @@
         fuel.water.target
       );
 
-
     const workoutPercent =
       pct(
         workouts.current,
         workouts.target
       );
-
 
     const waterCurrent =
       (
@@ -1760,7 +1379,6 @@
         1
       );
 
-
     const waterTarget =
       (
         fuel.water.target /
@@ -1769,13 +1387,10 @@
         1
       );
 
-
     weekly.innerHTML = `
-
       <div
         class="mana-v9103-week-head"
       >
-
         <h3>
           This Week
         </h3>
@@ -1783,14 +1398,11 @@
         <span>
           WEEKLY PROGRESS
         </span>
-
       </div>
-
 
       <div
         class="mana-v9103-week-grid"
       >
-
         ${progressCardHTML(
           "Calories",
 
@@ -1806,7 +1418,6 @@
 
           caloriePercent
         )}
-
 
         ${progressCardHTML(
           "Protein",
@@ -1824,7 +1435,6 @@
           proteinPercent
         )}
 
-
         ${progressCardHTML(
           "Water",
 
@@ -1836,7 +1446,6 @@
 
           waterPercent
         )}
-
 
         ${progressCardHTML(
           "Workouts",
@@ -1853,9 +1462,7 @@
 
           workoutPercent
         )}
-
       </div>
-
 
       <div
         class="mana-v9103-week-note"
@@ -1866,9 +1473,7 @@
         against your planned training
         days for this week.
       </div>
-
     `;
-
 
     focus.insertAdjacentElement(
       "afterend",
@@ -1876,25 +1481,17 @@
     );
   }
 
-
-  /* =========================================
-     COACH SUPPORT
-     ========================================= */
-
   function simplifyCoachSupport() {
-
     const holder =
       document.getElementById(
         "manaV83Content"
       );
-
 
     const coach =
       holder
         ?.querySelector(
           ".mana-v866-coach"
         );
-
 
     if (
       !holder ||
@@ -1903,58 +1500,49 @@
       return;
     }
 
-
     coach.classList.add(
       "mana-v9103-coach"
     );
-
 
     const heading =
       coach.querySelector(
         ".mana-v866-section-head h3"
       );
 
-
-    if (heading) {
-
+    if (
+      heading
+    ) {
       heading.textContent =
         "Coach Support";
-
     }
-
 
     const badge =
       coach.querySelector(
         ".mana-v866-section-head span"
       );
 
-
-    if (badge) {
-
+    if (
+      badge
+    ) {
       badge.textContent =
         "MESSAGE";
-
     }
-
 
     holder.appendChild(
       coach
     );
-
 
     const chatButton =
       document.getElementById(
         "manaV95ClientOpen"
       );
 
-
-    if (chatButton) {
-
+    if (
+      chatButton
+    ) {
       chatButton.textContent =
         "MESSAGE YOUR COACH →";
-
     }
-
 
     const chatTitle =
       document
@@ -1965,22 +1553,15 @@
           ".mana-v950-card-title"
         );
 
-
-    if (chatTitle) {
-
+    if (
+      chatTitle
+    ) {
       chatTitle.textContent =
         "Coach Chat";
-
     }
   }
 
-
-  /* =========================================
-     APPLY
-     ========================================= */
-
   function applyLayout() {
-
     if (
       applying ||
       !strengthOverviewOpen()
@@ -1988,13 +1569,10 @@
       return;
     }
 
-
     applying =
       true;
 
-
     try {
-
       buildWorkoutCard();
 
       moveDailyFocus();
@@ -2002,98 +1580,81 @@
       buildWeeklyProgress();
 
       simplifyCoachSupport();
-
     } finally {
-
       applying =
         false;
-
     }
   }
 
+  function queueLayout(
+    delay = 100
+  ) {
+    clearTimeout(
+      layoutTimer
+    );
 
-  /* =========================================
-     WATCH
-     ========================================= */
+    layoutTimer =
+      setTimeout(
+        applyLayout,
+        delay
+      );
+  }
 
   function watch() {
-
-    window.addEventListener(
+    [
       "mana:program-tab-change",
-      () => {
-
-        setTimeout(
-          applyLayout,
-          120
-        );
-
-
-        setTimeout(
-          applyLayout,
-          350
-        );
-
-      }
-    );
-
-
-    window.addEventListener(
       "mana:strength-synced",
-      () => {
-
-        setTimeout(
-          applyLayout,
-          120
-        );
-
-
-        setTimeout(
-          applyLayout,
-          350
-        );
-
-      }
-    );
-
-
-    window.addEventListener(
       "mana:profile-synced",
-      () => {
-
-        setTimeout(
-          applyLayout,
-          120
-        );
-
-      }
-    );
-
-
-    window.addEventListener(
       "mana:strength-membership-change",
-      () => {
+      "mana:workout-progress-change"
+    ].forEach(
+      eventName => {
 
-        setTimeout(
-          applyLayout,
-          150
+        window.addEventListener(
+          eventName,
+          () => {
+            queueLayout(
+              110
+            );
+          }
         );
 
       }
     );
-
 
     window.addEventListener(
       "focus",
       () => {
-
-        setTimeout(
-          applyLayout,
+        queueLayout(
           120
         );
-
       }
     );
 
+    window.addEventListener(
+      "pageshow",
+      () => {
+        queueLayout(
+          120
+        );
+      }
+    );
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          queueLayout(
+            120
+          );
+        }
+
+      }
+    );
 
     window.addEventListener(
       "storage",
@@ -2109,104 +1670,38 @@
             event.key
           )
         ) {
-
-          setTimeout(
-            applyLayout,
+          queueLayout(
             100
           );
-
         }
 
-      }
-    );
-
-
-    let timer =
-      null;
-
-
-    const observer =
-      new MutationObserver(
-        () => {
-
-          if (
-            applying
-          ) {
-            return;
-          }
-
-
-          clearTimeout(
-            timer
-          );
-
-
-          timer =
-            setTimeout(
-              applyLayout,
-              100
-            );
-
-        }
-      );
-
-
-    observer.observe(
-      document.body,
-      {
-        childList:true,
-        subtree:true
       }
     );
   }
 
-
-  /* =========================================
-     INIT
-     ========================================= */
-
   function init() {
-
     injectStyles();
 
     watch();
 
-
-    [
-      700,
-      1200,
-      1800,
-      2600
-    ].forEach(
-      delay => {
-
-        setTimeout(
-          applyLayout,
-          delay
-        );
-
-      }
+    setTimeout(
+      applyLayout,
+      220
     );
   }
 
-
   window.refreshManaStrengthOverviewLayout =
     applyLayout;
-
 
   if (
     document.readyState ===
       "loading"
   ) {
-
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
-
   } else {
-
     init();
   }
-
 })();
