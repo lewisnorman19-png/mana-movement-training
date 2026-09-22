@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.30.1
+   MANA MOVEMENT TRAINING v9.30.2
    STRENGTH + MANA 28 STABILITY BRIDGE
 
    - ONE CONTROLLED STRENGTH RESTORE
@@ -13,7 +13,7 @@
   "use strict";
 
   const BUILD =
-    "93010";
+    "93020";
 
   const LOG_KEY =
     "mana-strength-v64-logs";
@@ -170,9 +170,18 @@
       return;
     }
 
-    callRefresh(
-      "refreshManaStrengthOverviewLayout"
-    );
+    /*
+      IMPORTANT:
+      The Strength Overview is now rendered
+      directly in its final form by v8.6.
+
+      Do NOT rebuild the whole Overview here.
+
+      Rebuilding it from the stability bridge
+      caused the visible flicker after navigation.
+
+      Only refresh the small Overview decorators.
+    */
 
     callRefresh(
       "refreshManaWorkoutProgress"
@@ -615,7 +624,7 @@
 
   if (
     document.readyState ===
-    "loading"
+      "loading"
   ) {
     document.addEventListener(
       "DOMContentLoaded",
@@ -624,4 +633,5 @@
   } else {
     init();
   }
+
 })();
