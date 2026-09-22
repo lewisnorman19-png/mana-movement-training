@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.20.5
+   MANA MOVEMENT TRAINING v9.20.1
    WORKOUT IN PROGRESS + RELIABLE TIMING SAVE
 
    - ONE VISIBLE WORKOUT TIMER
@@ -13,6 +13,11 @@
    - SAVES DURATION SECONDS / MINUTES
    - SAVES COMPLETION %
    - ROBUSTLY ATTACHES TIMING TO NEW LOG
+
+   STABILITY REPAIR:
+   - NO CONTINUOUS MUTATION OBSERVER
+   - ONE DEBOUNCED EVENT REFRESH
+   - REDUCES OVERVIEW REBUILD FLICKER
    ========================================= */
 
 (() => {
@@ -45,7 +50,7 @@
   let pendingCompletion =
     null;
 
-  let observerTimer =
+  let eventRefreshTimer =
     null;
 
   let timerLoop =
@@ -546,7 +551,7 @@
       new Event(
         "input",
         {
-          bubbles: true
+          bubbles:true
         }
       )
     );
@@ -728,31 +733,19 @@
       Date.now();
 
     saveState({
-      dayIndex:
-        index,
-
-      elapsedMs:
-        0,
-
-      running:
-        true,
-
-      segmentStartedAt:
-        now,
-
-      completedSets:
-        {},
-
-      startedAt:
-        now,
+      dayIndex:index,
+      elapsedMs:0,
+      running:true,
+      segmentStartedAt:now,
+      completedSets:{},
+      startedAt:now,
 
       startedAtISO:
         new Date(
           now
         ).toISOString(),
 
-      updatedAt:
-        now,
+      updatedAt:now,
 
       logCountAtStart:
         loadLogs()
@@ -937,9 +930,10 @@
       }
     `;
 
-    document.head.appendChild(
-      style
-    );
+    document.head
+      .appendChild(
+        style
+      );
   }
 
   function addExerciseTickAll() {
@@ -963,7 +957,9 @@
               ".mana-v64-controls"
             );
 
-          if (!controls) {
+          if (
+            !controls
+          ) {
             return;
           }
 
@@ -1035,7 +1031,9 @@
         "manaV64Complete"
       );
 
-    if (!complete) {
+    if (
+      !complete
+    ) {
       return;
     }
 
@@ -1107,7 +1105,9 @@
         "manaV64Complete"
       );
 
-    if (!complete) {
+    if (
+      !complete
+    ) {
       return;
     }
 
@@ -1210,7 +1210,9 @@
         ".mana-v9103-workout"
       );
 
-    if (!card) {
+    if (
+      !card
+    ) {
       return;
     }
 
@@ -1328,7 +1330,9 @@
         "manaV82Current"
       );
 
-    if (!card) {
+    if (
+      !card
+    ) {
       return;
     }
 
@@ -1349,7 +1353,9 @@
         ".mana-v82-current-open"
       );
 
-    if (!state) {
+    if (
+      !state
+    ) {
       if (
         openText
       ) {
@@ -1465,14 +1471,8 @@
 
         pauseTimer();
 
-        setTimeout(
-          refreshEverything,
-          150
-        );
-
-        setTimeout(
-          refreshEverything,
-          450
+        queueRefresh(
+          160
         );
 
       },
@@ -1486,7 +1486,9 @@
     const state =
       loadState();
 
-    if (!state) {
+    if (
+      !state
+    ) {
       return null;
     }
 
@@ -1761,7 +1763,7 @@
       true;
 
     log.workoutTimingVersion =
-      "9.20.5";
+      "9.20.1";
 
     saveLogs(
       logs
@@ -1771,7 +1773,7 @@
       new CustomEvent(
         "mana:workout-timing-saved",
         {
-          detail: {
+          detail:{
             id:
               log.id ||
               "",
@@ -1829,7 +1831,9 @@
 
             clearState();
 
-            refreshEverything();
+            queueRefresh(
+              100
+            );
           }
 
         },
@@ -1844,14 +1848,8 @@
 
     clearState();
 
-    setTimeout(
-      refreshEverything,
-      100
-    );
-
-    setTimeout(
-      refreshEverything,
-      500
+    queueRefresh(
+      120
     );
   }
 
@@ -1927,55 +1925,26 @@
     }
   }
 
-  function watchDOM() {
-    const observer =
-      new MutationObserver(
-        () => {
-
-          clearTimeout(
-            observerTimer
-          );
-
-          observerTimer =
-            setTimeout(
-              () => {
-
-                wrapWorkoutOpen();
-
-                refreshEverything();
-
-              },
-              70
-            );
-
-        }
-      );
-
-    observer.observe(
-      document.body,
-      {
-        childList:
-          true,
-
-        subtree:
-          true,
-
-        attributes:
-          true,
-
-        attributeFilter:
-          [
-            "class"
-          ]
-      }
+  function queueRefresh(
+    delay = 100
+  ) {
+    clearTimeout(
+      eventRefreshTimer
     );
+
+    eventRefreshTimer =
+      setTimeout(
+        refreshEverything,
+        delay
+      );
   }
 
   function watchEvents() {
     [
       "mana:program-tab-change",
       "mana:workout-progress-change",
-      "mana:profile-synced"
+      "mana:profile-synced",
+      "mana:strength-synced"
     ].forEach(
       eventName => {
 
@@ -1983,18 +1952,39 @@
           eventName,
           () => {
 
-            setTimeout(
-              refreshEverything,
-              80
-            );
-
-            setTimeout(
-              refreshEverything,
-              350
+            queueRefresh(
+              110
             );
 
           }
         );
+
+      }
+    );
+
+    window.addEventListener(
+      "pageshow",
+      () => {
+
+        queueRefresh(
+          120
+        );
+
+      }
+    );
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          queueRefresh(
+            120
+          );
+        }
 
       }
     );
@@ -2013,33 +2003,24 @@
 
     watchComplete();
 
-    watchDOM();
-
     watchEvents();
 
-    [
-      100,
-      300,
-      700,
-      1200,
-      2200
-    ].forEach(
-      delay => {
+    setTimeout(
+      () => {
 
-        setTimeout(
-          () => {
+        takeTimerControl();
 
-            takeTimerControl();
+        wrapWorkoutOpen();
 
-            wrapWorkoutOpen();
+        refreshEverything();
 
-            refreshEverything();
+      },
+      160
+    );
 
-          },
-          delay
-        );
-
-      }
+    setTimeout(
+      refreshEverything,
+      520
     );
   }
 
@@ -2047,7 +2028,7 @@
     refreshEverything;
 
   window.MANA_WORKOUT_TIMING_BUILD =
-    "92005";
+    "92010";
 
   if (
     document.readyState ===
@@ -2060,5 +2041,4 @@
   } else {
     init();
   }
-
 })();
