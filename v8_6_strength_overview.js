@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.6.7
+   MANA MOVEMENT TRAINING v8.6.8
    MANA STRENGTH — OVERVIEW
 
    PERSONALISED WELCOME
@@ -8,10 +8,11 @@
    NEXT UP
    MEMBERSHIP LEVELS
 
-   v8.6.7:
+   v8.6.8:
    - SINGLE BASE OVERVIEW RENDER
    - ASYNC COACH DATA LOADS BEFORE RENDER
    - NO DOUBLE OVERVIEW REBUILD
+   - NO EXTRA REFRESH ON TAB CHANGE
    - STABLE WORKOUT / CHAT RESTORE
    ========================================= */
 
@@ -432,6 +433,7 @@
         targets.protein;
 
     return {
+
       workout:{
         done:
           workoutDone,
@@ -493,6 +495,7 @@
             ? "Recovery focus completed"
             : "Mobility, walk, sleep or recovery work"
       }
+
     };
   }
 
@@ -607,6 +610,7 @@
       loadProgram();
 
     try {
+
       if (
         typeof supabaseClient ===
           "function" &&
@@ -614,6 +618,7 @@
           "undefined" &&
         currentUser?.id
       ) {
+
         const c =
           await supabaseClient();
 
@@ -654,6 +659,7 @@
           request => {
 
             coachActivity.push({
+
               type:"coach",
 
               title:
@@ -665,16 +671,21 @@
               time:
                 request.requested_at ||
                 null
+
             });
 
           }
         );
+
       }
+
     } catch (error) {
+
       console.warn(
         "Mana Strength coach activity",
         error
       );
+
     }
 
     if (
@@ -682,7 +693,9 @@
         ?.sessions
         ?.length
     ) {
+
       coachActivity.push({
+
         type:"program",
 
         title:
@@ -692,7 +705,9 @@
           `${program.sessions.length} personalised training day${program.sessions.length === 1 ? "" : "s"} available.`,
 
         time:null
+
       });
+
     }
 
     coachActivityLoaded =
@@ -805,9 +820,11 @@
       )
       .map(
         item => `
+
           <div
             class="mana-v866-feed-item"
           >
+
             <div
               class="
                 mana-v866-feed-icon
@@ -828,6 +845,7 @@
             <div
               class="mana-v866-feed-copy"
             >
+
               <strong>
                 ${esc(
                   item.title
@@ -839,6 +857,7 @@
                   item.text
                 )}
               </span>
+
             </div>
 
             <div
@@ -850,7 +869,9 @@
                 )
               )}
             </div>
+
           </div>
+
         `
       )
       .join("");
@@ -866,6 +887,7 @@
       );
 
     return `
+
       <button
         type="button"
         class="
@@ -879,6 +901,7 @@
             : "disabled"
         }
       >
+
         <span
           class="mana-v866-check"
         >
@@ -892,6 +915,7 @@
         <span
           class="mana-v866-focus-copy"
         >
+
           <strong>
             ${esc(
               item.title
@@ -903,6 +927,7 @@
               item.detail
             )}
           </small>
+
         </span>
 
         ${
@@ -922,7 +947,9 @@
               </span>
             `
         }
+
       </button>
+
     `;
   }
 
@@ -930,9 +957,11 @@
     text
   ) {
     return `
+
       <div
         class="mana-v866-feature"
       >
+
         <span
           class="mana-v866-feature-check"
         >
@@ -942,7 +971,9 @@
         <span>
           ${text}
         </span>
+
       </div>
+
     `;
   }
 
@@ -964,6 +995,7 @@
       STYLE_ID;
 
     style.textContent = `
+
       .mana-v866-welcome{
         margin-bottom:14px;
         padding:26px 21px;
@@ -1372,6 +1404,7 @@
       }
 
       @media(max-width:390px){
+
         .mana-v866-feed-item{
           grid-template-columns:
             36px
@@ -1381,7 +1414,9 @@
         .mana-v866-feed-time{
           grid-column:2;
         }
+
       }
+
     `;
 
     document.head.appendChild(
@@ -1469,9 +1504,11 @@
       "Your next strength session";
 
     holder.innerHTML = `
+
       <div
         class="mana-v866-welcome"
       >
+
         <div
           class="mana-v866-kicker"
         >
@@ -1489,14 +1526,17 @@
             message
           )}
         </div>
+
       </div>
 
       <div
         class="mana-v866-section"
       >
+
         <div
           class="mana-v866-section-head"
         >
+
           <h3>
             Today's Focus
           </h3>
@@ -1504,14 +1544,17 @@
           <span>
             DAILY FOUNDATIONS
           </span>
+
         </div>
 
         <div
           class="mana-v866-progress-wrap"
         >
+
           <div
             class="mana-v866-progress-row"
           >
+
             <strong>
               ${completed} of 4 complete
             </strong>
@@ -1519,23 +1562,28 @@
             <span>
               ${percent}%
             </span>
+
           </div>
 
           <div
             class="mana-v866-progress"
           >
+
             <div
               class="mana-v866-progress-fill"
               style="
                 width:${percent}%;
               "
             ></div>
+
           </div>
+
         </div>
 
         <div
           class="mana-v866-focus"
         >
+
           ${focusRow(
             foundations.workout
           )}
@@ -1554,7 +1602,9 @@
               manual:true
             }
           )}
+
         </div>
+
       </div>
 
       <div
@@ -1563,9 +1613,11 @@
           mana-v866-coach
         "
       >
+
         <div
           class="mana-v866-section-head"
         >
+
           <h3>
             Coach Activity
           </h3>
@@ -1573,11 +1625,13 @@
           <span>
             LIVE
           </span>
+
         </div>
 
         <div>
           ${coachActivityHTML()}
         </div>
+
       </div>
 
       <div
@@ -1586,6 +1640,7 @@
           mana-v866-next
         "
       >
+
         <div
           class="mana-v866-next-label"
         >
@@ -1613,14 +1668,17 @@
         >
           Open the Program tab when you're ready to train →
         </div>
+
       </div>
 
       <div
         class="mana-v866-section"
       >
+
         <div
           class="mana-v866-section-head"
         >
+
           <h3>
             Mana Strength Membership
           </h3>
@@ -1628,6 +1686,7 @@
           <span>
             MONTHLY
           </span>
+
         </div>
 
         <div
@@ -1641,9 +1700,11 @@
         <div
           class="mana-v866-plans"
         >
+
           <div
             class="mana-v866-plan"
           >
+
             <div
               class="mana-v866-plan-name"
             >
@@ -1659,6 +1720,7 @@
             <div
               class="mana-v866-price"
             >
+
               <strong>
                 $39.99
               </strong>
@@ -1666,11 +1728,13 @@
               <span>
                 AUD / month
               </span>
+
             </div>
 
             <div
               class="mana-v866-features"
             >
+
               ${feature(
                 "Personalised strength program"
               )}
@@ -1690,7 +1754,9 @@
               ${feature(
                 "Mana meal selections"
               )}
+
             </div>
+
           </div>
 
           <div
@@ -1699,6 +1765,7 @@
               featured
             "
           >
+
             <div
               class="mana-v866-plan-badge"
             >
@@ -1720,6 +1787,7 @@
             <div
               class="mana-v866-price"
             >
+
               <strong>
                 $79.99
               </strong>
@@ -1727,11 +1795,13 @@
               <span>
                 AUD / month
               </span>
+
             </div>
 
             <div
               class="mana-v866-features"
             >
+
               ${feature(
                 "Everything in Mana Strength"
               )}
@@ -1751,12 +1821,15 @@
               ${feature(
                 "Program adjustments when needed"
               )}
+
             </div>
+
           </div>
 
           <div
             class="mana-v866-plan"
           >
+
             <div
               class="mana-v866-plan-name"
             >
@@ -1772,6 +1845,7 @@
             <div
               class="mana-v866-price"
             >
+
               <strong>
                 $149.99
               </strong>
@@ -1779,11 +1853,13 @@
               <span>
                 AUD / month
               </span>
+
             </div>
 
             <div
               class="mana-v866-features"
             >
+
               ${feature(
                 "Everything in Coach Support"
               )}
@@ -1803,8 +1879,11 @@
               ${feature(
                 "Priority program adjustments"
               )}
+
             </div>
+
           </div>
+
         </div>
 
         <div
@@ -1814,7 +1893,9 @@
           will be connected before paid
           memberships go live.
         </div>
+
       </div>
+
     `;
 
     document
@@ -1870,8 +1951,21 @@
   }
 
   function watch() {
+
+    /*
+      IMPORTANT:
+      Do NOT listen to mana:program-tab-change.
+
+      v8.3 now directly renders the real
+      Strength Overview when the tab opens.
+
+      Listening to program-tab-change here
+      caused a second full render shortly
+      after the first one and created the
+      visible flicker.
+    */
+
     [
-      "mana:program-tab-change",
       "mana:strength-synced",
       "mana:profile-synced"
     ].forEach(
@@ -1997,11 +2091,16 @@
     document.readyState ===
       "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
+
   } else {
+
     init();
+
   }
+
 })();
