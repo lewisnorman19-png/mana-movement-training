@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v8.6.8
+   MANA MOVEMENT TRAINING v8.6.9
    MANA STRENGTH — OVERVIEW
 
    PERSONALISED WELCOME
@@ -8,12 +8,12 @@
    NEXT UP
    MEMBERSHIP LEVELS
 
-   v8.6.8:
+   v8.6.9:
    - SINGLE BASE OVERVIEW RENDER
-   - ASYNC COACH DATA LOADS BEFORE RENDER
-   - NO DOUBLE OVERVIEW REBUILD
-   - NO EXTRA REFRESH ON TAB CHANGE
-   - STABLE WORKOUT / CHAT RESTORE
+   - NO EXTRA TAB-CHANGE REBUILD
+   - REAPPLIES SIMPLE OVERVIEW LAYOUT
+   - RESTORES COACH CHAT
+   - RESTORES TRAINING PERCENTAGE
    ========================================= */
 
 (() => {
@@ -281,24 +281,11 @@
     if (
       typeof
         window
-          .repairManaStrengthOverview ===
-      "function"
-    ) {
-      window
-        .repairManaStrengthOverview();
-    }
-
-    if (
-      typeof
-        window
           .refreshManaTrainingPercentage ===
       "function"
     ) {
-      setTimeout(
-        window
-          .refreshManaTrainingPercentage,
-        120
-      );
+      window
+        .refreshManaTrainingPercentage();
     }
   }
 
@@ -1906,6 +1893,51 @@
         "click",
         toggleRecovery
       );
+
+    /*
+      Every base Overview rebuild must immediately
+      restore the simplified Overview layout.
+    */
+
+    if (
+      typeof
+        window
+          .refreshManaStrengthOverviewLayout ===
+      "function"
+    ) {
+      window
+        .refreshManaStrengthOverviewLayout();
+    }
+
+    /*
+      Restore Coach Chat after the base
+      Overview HTML is recreated.
+    */
+
+    if (
+      typeof
+        window
+          .refreshManaStrengthChat ===
+      "function"
+    ) {
+      window
+        .refreshManaStrengthChat();
+    }
+
+    /*
+      Restore training percentage after
+      the base Overview HTML is recreated.
+    */
+
+    if (
+      typeof
+        window
+          .refreshManaTrainingPercentage ===
+      "function"
+    ) {
+      window
+        .refreshManaTrainingPercentage();
+    }
   }
 
   async function refreshOverview() {
@@ -1924,16 +1956,6 @@
     }
 
     renderOverview();
-
-    if (
-      typeof
-        window
-          .repairManaStrengthOverview ===
-      "function"
-    ) {
-      window
-        .repairManaStrengthOverview();
-    }
   }
 
   function queueOverviewRefresh(
@@ -1953,16 +1975,10 @@
   function watch() {
 
     /*
-      IMPORTANT:
-      Do NOT listen to mana:program-tab-change.
+      Do not listen to mana:program-tab-change.
 
-      v8.3 now directly renders the real
-      Strength Overview when the tab opens.
-
-      Listening to program-tab-change here
-      caused a second full render shortly
-      after the first one and created the
-      visible flicker.
+      The Program Shell now directly renders
+      the real Overview.
     */
 
     [
