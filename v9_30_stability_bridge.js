@@ -1,26 +1,19 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.30.0
+   MANA MOVEMENT TRAINING v9.30.1
    STRENGTH + MANA 28 STABILITY BRIDGE
 
-   WHOLE NEW FILE:
-   v9_30_stability_bridge.js
-
-   REPAIRS
-   - STOPS OLD MANA 28 COACH FROM LEAKING INTO MANA STRENGTH
-   - PHYSICALLY REMOVES STALE MANA 28 COACH MODAL WHEN LEAVING MANA 28
-   - RESTORES MANA STRENGTH OVERVIEW WORKOUT CARD
-   - RESTORES MANA STRENGTH COACH CHAT CARD
-   - RESTORES IN-PROGRESS WORKOUT STATE
-   - PRESERVES WORKOUT FEEDBACK / COACH COMMENTS
-   - MAKES WORKOUT COMPLETE SCREEN VISIBLE ABOVE STALE OVERLAYS
-   - USES BOUNDED EVENT-DRIVEN REFRESHES ONLY
-   - NO MUTATION OBSERVER
+   - ONE CONTROLLED STRENGTH RESTORE
+   - NO REPEATED OVERVIEW REBUILD PASSES
+   - REMOVES STALE MANA 28 COACH
+   - PRESERVES WORKOUT COMMENTS
+   - PRESERVES COACH CHAT
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "93000";
+  const BUILD =
+    "93010";
 
   const LOG_KEY =
     "mana-strength-v64-logs";
@@ -150,22 +143,6 @@
     }
   }
 
-  function overviewHasWorkout() {
-    return Boolean(
-      document.querySelector(
-        "#manaV83Content .mana-v9103-workout"
-      )
-    );
-  }
-
-  function overviewHasCoachChat() {
-    return Boolean(
-      document.getElementById(
-        "manaV95ClientChatCard"
-      )
-    );
-  }
-
   function callRefresh(
     functionName
   ) {
@@ -208,59 +185,18 @@
     callRefresh(
       "refreshManaWorkoutFeedback"
     );
-
-    if (
-      !overviewHasWorkout() ||
-      !overviewHasCoachChat()
-    ) {
-      clearTimeout(
-        refreshTimer
-      );
-
-      refreshTimer =
-        setTimeout(
-          () => {
-
-            if (
-              !strengthOverviewOpen()
-            ) {
-              return;
-            }
-
-            callRefresh(
-              "refreshManaStrengthOverviewLayout"
-            );
-
-            callRefresh(
-              "refreshManaWorkoutProgress"
-            );
-
-            callRefresh(
-              "refreshManaStrengthChat"
-            );
-
-          },
-          180
-        );
-    }
   }
 
   function boundedStrengthRestore() {
-    [
-      0,
-      90,
-      260,
-      550
-    ].forEach(
-      delay => {
-
-        setTimeout(
-          refreshStrengthOverview,
-          delay
-        );
-
-      }
+    clearTimeout(
+      refreshTimer
     );
+
+    refreshTimer =
+      setTimeout(
+        refreshStrengthOverview,
+        160
+      );
   }
 
   function readVisibleFeedback() {
@@ -402,28 +338,6 @@
       return false;
     }
 
-    const latestDate =
-      new Date(
-        latest.date ||
-        latest.completedAt ||
-        0
-      ).getTime();
-
-    if (
-      !Number.isFinite(
-        latestDate
-      ) ||
-      Math.abs(
-        latestDate -
-        Number(
-          feedback.capturedAt
-        )
-      ) >
-      30000
-    ) {
-      return false;
-    }
-
     if (
       feedback.effort
     ) {
@@ -456,25 +370,15 @@
   }
 
   function retryFeedbackSave() {
-    [
-      40,
-      140,
-      350,
-      700
-    ].forEach(
-      delay => {
-
-        setTimeout(
-          () => {
-
-            applyFeedbackBackup();
-
-          },
-          delay
-        );
-
-      }
+    clearTimeout(
+      completionRepairTimer
     );
+
+    completionRepairTimer =
+      setTimeout(
+        applyFeedbackBackup,
+        180
+      );
   }
 
   function protectWorkoutCompleteScreen() {
@@ -506,34 +410,6 @@
     }
   }
 
-  function boundedCompletionRepair() {
-    clearTimeout(
-      completionRepairTimer
-    );
-
-    [
-      80,
-      220,
-      500,
-      900
-    ].forEach(
-      delay => {
-
-        setTimeout(
-          () => {
-
-            protectWorkoutCompleteScreen();
-
-            retryFeedbackSave();
-
-          },
-          delay
-        );
-
-      }
-    );
-  }
-
   function handleDocumentClick(
     event
   ) {
@@ -555,7 +431,14 @@
 
       removeStaleMana28Coach();
 
-      boundedCompletionRepair();
+      setTimeout(
+        () => {
+          protectWorkoutCompleteScreen();
+
+          retryFeedbackSave();
+        },
+        180
+      );
 
       return;
     }
@@ -603,20 +486,13 @@
 
     retryFeedbackSave();
 
-    boundedCompletionRepair();
+    protectWorkoutCompleteScreen();
 
-    setTimeout(
-      () => {
-
-        if (
-          strengthOverviewOpen()
-        ) {
-          boundedStrengthRestore();
-        }
-
-      },
-      350
-    );
+    if (
+      strengthOverviewOpen()
+    ) {
+      boundedStrengthRestore();
+    }
   }
 
   function handleVisibility() {
@@ -707,31 +583,21 @@
       }
     );
 
-    [
-      250,
-      700,
-      1400
-    ].forEach(
-      delay => {
+    setTimeout(
+      () => {
 
-        setTimeout(
-          () => {
+        removeStaleMana28Coach();
 
-            removeStaleMana28Coach();
+        if (
+          strengthOverviewOpen()
+        ) {
+          refreshStrengthOverview();
+        }
 
-            if (
-              strengthOverviewOpen()
-            ) {
-              refreshStrengthOverview();
-            }
+        protectWorkoutCompleteScreen();
 
-            protectWorkoutCompleteScreen();
-
-          },
-          delay
-        );
-
-      }
+      },
+      320
     );
   }
 
