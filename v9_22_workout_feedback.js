@@ -1,18 +1,19 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.22.0
+   MANA MOVEMENT TRAINING v9.22.1
    WORKOUT FEEDBACK
 
    - SESSION EFFORT
    - WORKOUT NOTE
    - SAVES INTO COMPLETED WORKOUT LOG
    - SHOWS FEEDBACK IN PROGRESS HISTORY
-   - DOES NOT TOUCH TIMER / ROUTING /
-     OVERVIEW / PAUSE LOGIC
+
+   STABILITY:
+   - NO CONTINUOUS MUTATION OBSERVER
+   - EVENT-DRIVEN REFRESH ONLY
    ========================================= */
 
 (() => {
   "use strict";
-
 
   const STYLE_ID =
     "mana-v922-feedback-style";
@@ -23,40 +24,26 @@
   const LOG_KEY =
     "mana-strength-v64-logs";
 
-
   let pendingFeedback =
     null;
 
-  let decorateTimer =
+  let feedbackRefreshTimer =
     null;
-
-
-  /* =========================================
-     HELPERS
-     ========================================= */
 
   function safeJson(
     raw,
     fallback
   ) {
-
     try {
-
       return JSON.parse(
         raw
       );
-
     } catch (_) {
-
       return fallback;
-
     }
-
   }
 
-
   function loadLogs() {
-
     const logs =
       safeJson(
         localStorage.getItem(
@@ -65,36 +52,27 @@
         []
       );
 
-
     return Array.isArray(
       logs
     )
       ? logs
       : [];
-
   }
-
 
   function saveLogs(
     logs
   ) {
-
     try {
-
       localStorage.setItem(
         LOG_KEY,
         JSON.stringify(
           logs
         )
       );
-
     } catch (_) {}
-
   }
 
-
   function workoutOpen() {
-
     return Boolean(
       document
         .getElementById(
@@ -105,32 +83,25 @@
           "open"
         )
     );
-
   }
 
-
   function progressOpen() {
-
     const shell =
       document.getElementById(
         "manaV83ProgramShell"
       );
-
 
     const title =
       document.getElementById(
         "manaV83Title"
       );
 
-
     const tab =
       document.querySelector(
         "#manaV83Tabs .mana-v83-tab.active"
       );
 
-
     return Boolean(
-
       shell
         ?.classList
         .contains(
@@ -147,16 +118,12 @@
         ?.dataset
         ?.v83Tab ===
         "progress"
-
     );
-
   }
-
 
   function esc(
     value
   ) {
-
     return String(
       value ?? ""
     )
@@ -176,16 +143,9 @@
         '"',
         "&quot;"
       );
-
   }
 
-
-  /* =========================================
-     STYLES
-     ========================================= */
-
   function injectStyles() {
-
     if (
       document.getElementById(
         STYLE_ID
@@ -194,29 +154,22 @@
       return;
     }
 
-
     const style =
       document.createElement(
         "style"
       );
 
-
     style.id =
       STYLE_ID;
 
-
     style.textContent = `
-
       .mana-v922-feedback{
         margin-top:18px;
         padding:16px;
-
         border:
           1px solid
           #35301f;
-
         border-radius:18px;
-
         background:
           linear-gradient(
             145deg,
@@ -224,7 +177,6 @@
             #090909
           );
       }
-
 
       .mana-v922-kicker{
         color:#f3d875;
@@ -234,7 +186,6 @@
         text-transform:uppercase;
       }
 
-
       .mana-v922-title{
         margin-top:5px;
         color:#fff;
@@ -242,14 +193,12 @@
         font-weight:900;
       }
 
-
       .mana-v922-copy{
         margin-top:4px;
         color:#777;
         font-size:10px;
         line-height:1.45;
       }
-
 
       .mana-v922-label{
         display:block;
@@ -262,7 +211,6 @@
         letter-spacing:.05em;
       }
 
-
       .mana-v922-effort{
         display:grid;
         grid-template-columns:
@@ -273,25 +221,17 @@
         gap:7px;
       }
 
-
       .mana-v922-effort button{
         min-height:44px;
         padding:8px 5px;
-
-        border:
-          1px solid
-          #333;
-
+        border:1px solid #333;
         border-radius:12px;
-
         background:#101010;
-
         color:#aaa;
-
         font-size:10px;
         font-weight:900;
+        touch-action:manipulation;
       }
-
 
       .mana-v922-effort button.active{
         border-color:#f3d875;
@@ -299,114 +239,72 @@
         color:#111;
       }
 
-
       .mana-v922-note{
         width:100% !important;
         min-height:88px;
-
         margin:0 !important;
         padding:12px !important;
-
         resize:vertical;
-
         border:
           1px solid
           #333 !important;
-
         border-radius:
           13px !important;
-
         background:
           #0b0b0b !important;
-
         color:#fff !important;
-
         font-size:
           14px !important;
-
         line-height:1.45;
       }
-
 
       .mana-v922-history{
         grid-column:
           1 / -1;
-
         margin-top:7px;
         padding-top:8px;
-
         border-top:
           1px solid
           #242424;
       }
 
-
       .mana-v922-history-effort{
         display:inline-flex;
         align-items:center;
-
-        padding:
-          4px
-          7px;
-
+        padding:4px 7px;
         border:
           1px solid
           #4b401c;
-
-        border-radius:
-          999px;
-
+        border-radius:999px;
         color:#f3d875;
-
-        font-size:
-          9px;
-
-        font-weight:
-          900;
-
-        text-transform:
-          uppercase;
+        font-size:9px;
+        font-weight:900;
+        text-transform:uppercase;
       }
-
 
       .mana-v922-history-note{
         margin-top:6px;
-
         color:#aaa;
-
-        font-size:
-          10px;
-
+        font-size:10px;
         line-height:1.45;
       }
 
-
       @media(max-width:380px){
-
         .mana-v922-effort{
           grid-template-columns:
             1fr
             1fr;
         }
-
       }
-
     `;
 
-
-    document.head.appendChild(
-      style
-    );
-
+    document.head
+      .appendChild(
+        style
+      );
   }
 
-
-  /* =========================================
-     WORKOUT FEEDBACK UI
-     ========================================= */
-
   function addFeedbackForm() {
-
     if (
       !workoutOpen() ||
       document.getElementById(
@@ -416,23 +314,21 @@
       return;
     }
 
-
     const complete =
       document.getElementById(
         "manaV64Complete"
       );
 
-
-    if (!complete) {
+    if (
+      !complete
+    ) {
       return;
     }
-
 
     const wrap =
       document.createElement(
         "div"
       );
-
 
     wrap.id =
       FEEDBACK_ID;
@@ -440,24 +336,19 @@
     wrap.className =
       "mana-v922-feedback";
 
-
     wrap.innerHTML = `
-
       <div class="mana-v922-kicker">
         SESSION FEEDBACK
       </div>
-
 
       <div class="mana-v922-title">
         How did that session feel?
       </div>
 
-
       <div class="mana-v922-copy">
         Optional — save a quick effort rating
         and note with this workout.
       </div>
-
 
       <label
         class="mana-v922-label"
@@ -465,19 +356,16 @@
         Session effort
       </label>
 
-
       <div
         class="mana-v922-effort"
         id="manaV922Effort"
       >
-
         <button
           type="button"
           data-v922-effort="Easy"
         >
           EASY
         </button>
-
 
         <button
           type="button"
@@ -486,7 +374,6 @@
           SOLID
         </button>
 
-
         <button
           type="button"
           data-v922-effort="Hard"
@@ -494,16 +381,13 @@
           HARD
         </button>
 
-
         <button
           type="button"
           data-v922-effort="Max"
         >
           MAX
         </button>
-
       </div>
-
 
       <label
         class="mana-v922-label"
@@ -512,31 +396,19 @@
         Workout note
       </label>
 
-
       <textarea
         id="manaV922Note"
         class="mana-v922-note"
         maxlength="500"
         placeholder="How did you feel? Anything to remember for next time?"
       ></textarea>
-
     `;
-
-
-    /*
-      Put feedback directly before the
-      final Complete workout button.
-
-      v9.20 Pause / Tick All can still sit
-      above it without us changing them.
-    */
 
     complete
       .insertAdjacentElement(
         "beforebegin",
         wrap
       );
-
 
     wrap
       .querySelectorAll(
@@ -565,7 +437,6 @@
                   }
                 );
 
-
               button
                 .classList
                 .add(
@@ -577,16 +448,9 @@
 
         }
       );
-
   }
 
-
-  /* =========================================
-     READ FEEDBACK
-     ========================================= */
-
   function readFeedback() {
-
     const effort =
       document.querySelector(
         "#manaV922Effort [data-v922-effort].active"
@@ -594,7 +458,6 @@
       ?.dataset
       ?.v922Effort ||
       "";
-
 
     const note =
       document
@@ -605,45 +468,38 @@
         ?.trim() ||
       "";
 
-
     return {
       effort,
       note
     };
-
   }
 
-
-  /* =========================================
-     SAVE INTO COMPLETED LOG
-     ========================================= */
-
   function saveFeedbackToLatestLog() {
-
-    if (!pendingFeedback) {
+    if (
+      !pendingFeedback
+    ) {
       return;
     }
-
 
     const logs =
       loadLogs();
 
-
-    if (!logs.length) {
+    if (
+      !logs.length
+    ) {
       return;
     }
-
 
     const last =
       logs[
         logs.length - 1
       ];
 
-
-    if (!last) {
+    if (
+      !last
+    ) {
       return;
     }
-
 
     last.sessionEffort =
       pendingFeedback.effort ||
@@ -653,31 +509,21 @@
       pendingFeedback.note ||
       "";
 
-
     saveLogs(
       logs
     );
 
-
     pendingFeedback =
       null;
-
 
     window.dispatchEvent(
       new CustomEvent(
         "mana:workout-feedback-saved"
       )
     );
-
   }
 
-
-  /* =========================================
-     COMPLETE WORKOUT WATCH
-     ========================================= */
-
   function watchComplete() {
-
     document.addEventListener(
       "click",
       event => {
@@ -690,12 +536,6 @@
           return;
         }
 
-
-        /*
-          Capture feedback before v6.4
-          closes / rebuilds the workout.
-        */
-
         pendingFeedback =
           readFeedback();
 
@@ -703,20 +543,15 @@
       true
     );
 
-
-    /*
-      v6.4 dispatches this only after
-      the workout has successfully saved.
-    */
-
     window.addEventListener(
       "mana:strength-synced",
       () => {
 
-        if (!pendingFeedback) {
+        if (
+          !pendingFeedback
+        ) {
           return;
         }
-
 
         setTimeout(
           saveFeedbackToLatestLog,
@@ -725,22 +560,14 @@
 
       }
     );
-
   }
 
-
-  /* =========================================
-     PROGRESS HISTORY
-     ========================================= */
-
   function decorateProgressHistory() {
-
     if (
       !progressOpen()
     ) {
       return;
     }
-
 
     const rows =
       [
@@ -749,11 +576,11 @@
         )
       ];
 
-
-    if (!rows.length) {
+    if (
+      !rows.length
+    ) {
       return;
     }
-
 
     const recent =
       loadLogs()
@@ -761,7 +588,6 @@
           -8
         )
         .reverse();
-
 
     rows.forEach(
       (
@@ -775,17 +601,16 @@
           )
           ?.remove();
 
-
         const log =
           recent[
             index
           ];
 
-
-        if (!log) {
+        if (
+          !log
+        ) {
           return;
         }
-
 
         const effort =
           String(
@@ -793,13 +618,11 @@
             ""
           ).trim();
 
-
         const note =
           String(
             log.workoutNote ||
             ""
           ).trim();
-
 
         if (
           !effort &&
@@ -808,19 +631,15 @@
           return;
         }
 
-
         const extra =
           document.createElement(
             "div"
           );
 
-
         extra.className =
           "mana-v922-history";
 
-
         extra.innerHTML = `
-
           ${
             effort
               ? `
@@ -835,7 +654,6 @@
               : ""
           }
 
-
           ${
             note
               ? `
@@ -849,9 +667,7 @@
               `
               : ""
           }
-
         `;
-
 
         row.appendChild(
           extra
@@ -859,165 +675,108 @@
 
       }
     );
-
   }
 
-
-  /* =========================================
-     REFRESH
-     ========================================= */
-
   function refresh() {
-
     if (
       workoutOpen()
     ) {
-
       addFeedbackForm();
-
     }
-
 
     if (
       progressOpen()
     ) {
-
       decorateProgressHistory();
-
     }
-
   }
 
+  function queueRefresh(
+    delay = 120
+  ) {
+    clearTimeout(
+      feedbackRefreshTimer
+    );
 
-  /* =========================================
-     EVENTS
-     ========================================= */
+    feedbackRefreshTimer =
+      setTimeout(
+        refresh,
+        delay
+      );
+  }
 
   function watchEvents() {
-
     [
       "mana:program-tab-change",
       "mana:strength-synced",
-      "mana:workout-feedback-saved"
+      "mana:workout-feedback-saved",
+      "mana:workout-progress-change"
     ].forEach(
       eventName => {
 
         window.addEventListener(
           eventName,
           () => {
-
-            [
-              80,
-              250,
-              600
-            ].forEach(
-              delay => {
-
-                setTimeout(
-                  refresh,
-                  delay
-                );
-
-              }
+            queueRefresh(
+              140
             );
-
           }
         );
 
       }
     );
 
-  }
-
-
-  /* =========================================
-     DOM WATCH
-     ========================================= */
-
-  function watchDOM() {
-
-    const observer =
-      new MutationObserver(
-        () => {
-
-          clearTimeout(
-            decorateTimer
-          );
-
-
-          decorateTimer =
-            setTimeout(
-              refresh,
-              100
-            );
-
-        }
-      );
-
-
-    observer.observe(
-      document.body,
-      {
-        childList:true,
-        subtree:true
+    window.addEventListener(
+      "pageshow",
+      () => {
+        queueRefresh(
+          140
+        );
       }
     );
 
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+          queueRefresh(
+            140
+          );
+        }
+
+      }
+    );
   }
 
-
-  /* =========================================
-     INIT
-     ========================================= */
-
   function init() {
-
     injectStyles();
 
     watchComplete();
 
     watchEvents();
 
-    watchDOM();
-
-
-    [
-      300,
-      700,
-      1300,
-      2200
-    ].forEach(
-      delay => {
-
-        setTimeout(
-          refresh,
-          delay
-        );
-
-      }
+    setTimeout(
+      refresh,
+      260
     );
-
   }
-
 
   window.refreshManaWorkoutFeedback =
     refresh;
-
 
   if (
     document.readyState ===
       "loading"
   ) {
-
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
-
   } else {
-
     init();
-
   }
-
 })();
