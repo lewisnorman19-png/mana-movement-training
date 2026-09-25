@@ -1,11 +1,13 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.34.1
+   MANA MOVEMENT TRAINING v9.34.4
    MANA LIFE — OVERVIEW POLISH
 
    PURPOSE:
    - Tighten Overview spacing
    - Improve phone + laptop margins
-   - Align yellow affirmation + whakataukī lines
+   - Remove yellow line from affirmation
+   - Keep yellow line on whakataukī
+   - Align hero, affirmation and whakataukī text
    - Keep readable text sizes
    - Does NOT affect Routine / Reclaim /
      Progress / Learn
@@ -16,7 +18,7 @@
   "use strict";
 
   const BUILD =
-    "93410";
+    "93440";
 
   const STYLE_ID =
     "mana-v934-life-overview-style";
@@ -114,30 +116,52 @@
 
 
       /*
-        ALIGN BOTH GOLD VERTICAL LINES
+        AFFIRMATION
 
-        Hero text begins 20px in.
-        The affirmation sits inside the hero,
-        so its line naturally begins at that
-        same 20px position.
-
-        The whakataukī sits outside the hero,
-        so give it a matching 20px left inset.
+        No yellow line.
+        No extra left padding.
+        Text therefore starts on the same
+        line as the hero text.
       */
 
-     #manaV83ProgramShell
-.${OVERVIEW_CLASS}
-.mana-v933-whakatauki{
-  margin:
-    9px
-    0;
+      #manaV83ProgramShell
+      .${OVERVIEW_CLASS}
+      .mana-v933-affirmation{
+        margin-top:13px;
 
-  padding:
-    15px
-    18px
-    15px
-    38px;
-}
+        border-left:none;
+
+        padding:
+          15px
+          0;
+      }
+
+
+      /*
+        WHAKATAUKĪ
+
+        Keep the 4px yellow line.
+
+        4px border + 16px left padding
+        = 20px total.
+
+        That matches the hero text
+        and affirmation text line.
+      */
+
+      #manaV83ProgramShell
+      .${OVERVIEW_CLASS}
+      .mana-v933-whakatauki{
+        margin:
+          9px
+          0;
+
+        padding:
+          15px
+          0
+          15px
+          16px;
+      }
 
 
       #manaV83ProgramShell
@@ -174,19 +198,6 @@
 
 
       #manaV83ProgramShell
-.${OVERVIEW_CLASS}
-.mana-v933-affirmation{
-  margin-top:13px;
-
-  border-left:none;
-
-  padding:
-    15px
-    17px;
-}
-
-
-      #manaV83ProgramShell
       .${OVERVIEW_CLASS}
       .mana-v933-progress-row{
         margin:
@@ -208,7 +219,7 @@
 
 
       /*
-        Laptop / larger screen
+        LAPTOP / LARGER SCREEN
       */
 
       @media(
@@ -260,9 +271,26 @@
 
 
         /*
-          Hero text now starts 16px in,
-          so match the whakataukī line
-          to 16px on phone.
+          Affirmation follows the same
+          16px text line as the hero.
+        */
+
+        #manaV83ProgramShell
+        .${OVERVIEW_CLASS}
+        .mana-v933-affirmation{
+          margin-top:12px;
+
+          border-left:none;
+
+          padding:
+            14px
+            0;
+        }
+
+
+        /*
+          4px yellow border + 12px padding
+          = same 16px text line.
         */
 
         #manaV83ProgramShell
@@ -270,13 +298,13 @@
         .mana-v933-whakatauki{
           margin:
             8px
-            0
-            8px
-            16px;
+            0;
 
           padding:
             14px
-            15px;
+            0
+            14px
+            12px;
         }
 
 
@@ -300,22 +328,11 @@
             0;
         }
 
-
-        #manaV83ProgramShell
-        .${OVERVIEW_CLASS}
-        .mana-v933-affirmation{
-          margin-top:12px;
-
-          padding:
-            14px
-            15px;
-        }
-
       }
 
 
       /*
-        Very narrow phone
+        VERY NARROW PHONE
       */
 
       @media(
@@ -340,16 +357,16 @@
 
 
         /*
-          Hero text begins 15px in here,
-          so keep the two yellow lines
-          visually aligned.
+          Hero text begins 15px in.
+
+          4px yellow border +
+          11px padding = 15px.
         */
 
         #manaV83ProgramShell
         .${OVERVIEW_CLASS}
         .mana-v933-whakatauki{
-          margin-left:
-            15px;
+          padding-left:11px;
         }
 
 
