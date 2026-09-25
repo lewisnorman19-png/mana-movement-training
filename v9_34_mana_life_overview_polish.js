@@ -125,19 +125,19 @@
         so give it a matching 20px left inset.
       */
 
-      #manaV83ProgramShell
-      .${OVERVIEW_CLASS}
-      .mana-v933-whakatauki{
-        margin:
-          9px
-          0
-          9px
-          20px;
+     #manaV83ProgramShell
+.${OVERVIEW_CLASS}
+.mana-v933-whakatauki{
+  margin:
+    9px
+    0;
 
-        padding:
-          15px
-          18px;
-      }
+  padding:
+    15px
+    18px
+    15px
+    38px;
+}
 
 
       #manaV83ProgramShell
@@ -174,14 +174,16 @@
 
 
       #manaV83ProgramShell
-      .${OVERVIEW_CLASS}
-      .mana-v933-affirmation{
-        margin-top:13px;
+.${OVERVIEW_CLASS}
+.mana-v933-affirmation{
+  margin-top:13px;
 
-        padding:
-          15px
-          17px;
-      }
+  border-left:none;
+
+  padding:
+    15px
+    17px;
+}
 
 
       #manaV83ProgramShell
