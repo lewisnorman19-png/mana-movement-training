@@ -1,13 +1,20 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.33.0
-   MANA LIFE — RECLAIM
+   MANA MOVEMENT TRAINING v9.33.1
+   MANA LIFE — RECLAIM + TE REO + SUPPORT
 
    BUILDS:
    - Overview
    - Daily Routine
    - Reclaim tools
    - Progress
-   - Learn
+   - Learn + everyday te reo Māori
+   - Support Chat entry points
+
+   UPGRADES:
+   - Whakataukī on every Mana Life tab
+   - Larger readable type across Mana Life
+   - Everyday Māori phrases + English meanings
+   - Reuses the existing secure Mana coach chat
 
    STORAGE:
    - mana-life-v933-state
@@ -22,69 +29,53 @@
 (() => {
   "use strict";
 
-  const BUILD =
-    "93300";
+  const BUILD = "93310";
+  const STATE_KEY = "mana-life-v933-state";
+  const STYLE_ID = "mana-v933-life-style";
+  const ROOT_ID = "manaV933Life";
 
-  const STATE_KEY =
-    "mana-life-v933-state";
-
-  const STYLE_ID =
-    "mana-v933-life-style";
-
-  const ROOT_ID =
-    "manaV933Life";
-
-  let renderTimer =
-    null;
+  let renderTimer = null;
 
   const ROUTINE = [
     {
       key:"bed",
       title:"Make the bed",
-      detail:
-        "Start with one completed action."
+      detail:"Start with one completed action."
     },
     {
       key:"water",
       title:"Hydrate",
-      detail:
-        "Get water in early."
+      detail:"Get water in early."
     },
     {
       key:"move",
       title:"Move your body",
-      detail:
-        "Walk, train or do purposeful movement."
+      detail:"Walk, train or do purposeful movement."
     },
     {
       key:"food",
       title:"Eat properly",
-      detail:
-        "Build the day around useful food, not emotion."
+      detail:"Build the day around useful food, not emotion."
     },
     {
       key:"outside",
       title:"Get outside",
-      detail:
-        "Fresh air, daylight and a change of environment."
+      detail:"Fresh air, daylight and a change of environment."
     },
     {
       key:"task",
       title:"Complete one important task",
-      detail:
-        "Do something that moves your life forward."
+      detail:"Do something that moves your life forward."
     },
     {
       key:"connection",
       title:"Connect with someone",
-      detail:
-        "A mate, family member or someone you trust."
+      detail:"A mate, family member or someone you trust."
     },
     {
       key:"phone",
       title:"Create phone space",
-      detail:
-        "Give yourself time without checking messages or socials."
+      detail:"Give yourself time without checking messages or socials."
     }
   ];
 
@@ -100,6 +91,48 @@
     "I can carry the lesson without carrying the chaos.",
     "Today I choose movement, structure and purpose."
   ];
+
+  const WHAKATAUKI = {
+    overview:{
+      maori:
+        "Kia kaha, kia māia, kia manawanui.",
+
+      english:
+        "Be strong, be brave, be steadfast."
+    },
+
+    routine:{
+      maori:
+        "Mā te huruhuru te manu ka rere.",
+
+      english:
+        "With feathers a bird can fly — small things build the strength to move forward."
+    },
+
+    reclaim:{
+      maori:
+        "Titiro whakamuri, kōkiri whakamua.",
+
+      english:
+        "Look back and reflect so you can move forward."
+    },
+
+    progress:{
+      maori:
+        "Iti noa ana, he pito mata.",
+
+      english:
+        "Small beginnings can hold great potential."
+    },
+
+    learn:{
+      maori:
+        "Mā te kimi ka kite, mā te kite ka mōhio, mā te mōhio ka mārama.",
+
+      english:
+        "Through seeking comes discovery; through discovery comes knowing; through knowing comes understanding."
+    }
+  };
 
   const RECLAIM_TOOLS = [
     {
@@ -185,6 +218,72 @@
     }
   ];
 
+  const PHRASES = [
+    {
+      maori:
+        "Kia ora",
+
+      english:
+        "Hello / thank you / an expression of goodwill."
+    },
+
+    {
+      maori:
+        "Kei te pēhea koe?",
+
+      english:
+        "How are you?"
+    },
+
+    {
+      maori:
+        "Kei te pai ahau.",
+
+      english:
+        "I am good / I am well."
+    },
+
+    {
+      maori:
+        "Ngā mihi",
+
+      english:
+        "Greetings / thanks / acknowledgements."
+    },
+
+    {
+      maori:
+        "Kia pai tō rā.",
+
+      english:
+        "Have a good day."
+    },
+
+    {
+      maori:
+        "Ka kite anō.",
+
+      english:
+        "See you again."
+    },
+
+    {
+      maori:
+        "Kia kaha.",
+
+      english:
+        "Be strong / stay strong."
+    },
+
+    {
+      maori:
+        "Kia manawanui.",
+
+      english:
+        "Be patient / be steadfast."
+    }
+  ];
+
 
   /* =========================================
      HELPERS
@@ -195,10 +294,13 @@
     fallback
   ) {
     try {
+
       return JSON.parse(
         raw
       );
+
     } catch (_) {
+
       return fallback;
     }
   }
@@ -234,12 +336,15 @@
   ) {
     return [
       date.getFullYear(),
+
       String(
-        date.getMonth() + 1
+        date.getMonth() +
+        1
       ).padStart(
         2,
         "0"
       ),
+
       String(
         date.getDate()
       ).padStart(
@@ -346,6 +451,7 @@
       );
 
     return Boolean(
+
       shell
         ?.classList
         .contains(
@@ -357,6 +463,7 @@
         ?.trim()
         ?.toUpperCase() ===
         "MANA LIFE"
+
     );
   }
 
@@ -370,6 +477,7 @@
       ] || {};
 
     return {
+
       routine:
         data.routine &&
         typeof data.routine ===
@@ -443,6 +551,7 @@
         -totalDays;
       offset -= 1
     ) {
+
       if (
         completedRoutineCount(
           state,
@@ -451,6 +560,7 @@
           )
         ) > 0
       ) {
+
         count +=
           1;
       }
@@ -471,6 +581,7 @@
       offset > -365;
       offset -= 1
     ) {
+
       const count =
         completedRoutineCount(
           state,
@@ -482,22 +593,18 @@
       if (
         count > 0
       ) {
+
         streak +=
           1;
 
         continue;
       }
 
-      /*
-        Today may not have started yet.
-        Do not kill an existing streak
-        simply because today's routine
-        is still empty.
-      */
-
       if (
-        offset === 0
+        offset ===
+        0
       ) {
+
         continue;
       }
 
@@ -546,26 +653,222 @@
   }
 
 
+  function whakataukiHtml(
+    tab
+  ) {
+    const item =
+      WHAKATAUKI[
+        tab
+      ] ||
+      WHAKATAUKI.overview;
+
+    return `
+
+      <div
+        class="mana-v933-whakatauki"
+      >
+
+        <div
+          class="mana-v933-whakatauki-label"
+        >
+          WHAKATAUKĪ
+        </div>
+
+        <strong>
+          ${esc(
+            item.maori
+          )}
+        </strong>
+
+        <span>
+          ${esc(
+            item.english
+          )}
+        </span>
+
+      </div>
+
+    `;
+  }
+
+
+  /* =========================================
+     SUPPORT CHAT
+     ========================================= */
+
+  function openSupportChat() {
+    if (
+      typeof
+        window
+          .openManaStrengthClientChat !==
+      "function"
+    ) {
+
+      alert(
+        "Support Chat is not available yet."
+      );
+
+      return;
+    }
+
+
+    window
+      .openManaStrengthClientChat();
+
+
+    /*
+      Reuse the existing secure Mana chat,
+      but relabel it for Mana Life.
+
+      Reopening Strength chat resets its
+      normal Strength wording.
+    */
+
+    setTimeout(
+      () => {
+
+        const kicker =
+          document.getElementById(
+            "manaV95ChatKicker"
+          );
+
+        const title =
+          document.getElementById(
+            "manaV95ChatTitle"
+          );
+
+        const sub =
+          document.getElementById(
+            "manaV95ChatSub"
+          );
+
+        const input =
+          document.getElementById(
+            "manaV95Input"
+          );
+
+
+        if (
+          kicker
+        ) {
+
+          kicker.textContent =
+            "MANA LIFE";
+        }
+
+
+        if (
+          title
+        ) {
+
+          title.textContent =
+            "Support Chat";
+        }
+
+
+        if (
+          sub
+        ) {
+
+          sub.textContent =
+            "A private conversation with Lewis inside Mana.";
+        }
+
+
+        if (
+          input
+        ) {
+
+          input.placeholder =
+            "Write a message...";
+        }
+
+      },
+      40
+    );
+  }
+
+
+  function supportCardHtml() {
+    return `
+
+      <div
+        class="
+          mana-v933-card
+          mana-v933-support
+        "
+      >
+
+        <div
+          class="mana-v933-card-head"
+        >
+
+          <div>
+
+            <div
+              class="mana-v933-kicker"
+            >
+              SUPPORT
+            </div>
+
+            <h3>
+              You don't have to carry it alone
+            </h3>
+
+          </div>
+
+
+          <span
+            class="mana-v933-pill"
+          >
+            CHAT
+          </span>
+
+        </div>
+
+
+        <p>
+          Need another perspective or some
+          accountability? Open a private
+          conversation with Lewis inside Mana.
+        </p>
+
+
+        <button
+          type="button"
+          class="mana-v933-primary"
+          data-v933-support-chat
+        >
+          OPEN SUPPORT CHAT →
+        </button>
+
+      </div>
+
+    `;
+  }
+
+
   /* =========================================
      STYLES
      ========================================= */
 
   function injectStyles() {
-    if (
-      document.getElementById(
+    document
+      .getElementById(
         STYLE_ID
       )
-    ) {
-      return;
-    }
+      ?.remove();
+
 
     const style =
       document.createElement(
         "style"
       );
 
+
     style.id =
       STYLE_ID;
+
 
     style.textContent = `
 
@@ -575,20 +878,37 @@
       }
 
 
+      #${ROOT_ID},
+      #${ROOT_ID} button,
+      #${ROOT_ID} textarea{
+        -webkit-font-smoothing:
+          antialiased;
+      }
+
+
       .mana-v933-hero{
         margin-bottom:14px;
-        padding:26px 21px;
+
+        padding:
+          26px
+          21px;
 
         border:
           1px solid
           #5a4a18;
 
-        border-radius:24px;
+        border-radius:
+          24px;
 
         background:
           radial-gradient(
             circle at 85% 10%,
-            rgba(243,216,117,.12),
+            rgba(
+              243,
+              216,
+              117,
+              .12
+            ),
             transparent 34%
           ),
           linear-gradient(
@@ -602,10 +922,10 @@
       .mana-v933-kicker{
         color:#f3d875;
 
-        font-size:10px;
+        font-size:11px;
         font-weight:900;
 
-        letter-spacing:.14em;
+        letter-spacing:.12em;
 
         text-transform:
           uppercase;
@@ -614,29 +934,91 @@
 
       .mana-v933-hero h2{
         margin:
-          7px
+          8px
           0
-          9px;
+          10px;
 
         color:#fff;
 
         font-size:
           clamp(
-            30px,
+            32px,
             8vw,
-            40px
+            42px
           );
 
-        line-height:1.05;
+        line-height:1.06;
       }
 
 
       .mana-v933-hero p{
         margin:0;
 
-        color:#aaa;
+        color:#b9b9b9;
 
-        font-size:13px;
+        font-size:15px;
+
+        line-height:1.65;
+      }
+
+
+      .mana-v933-whakatauki{
+        margin:
+          14px
+          0;
+
+        padding:18px;
+
+        border-left:
+          4px solid
+          #f3d875;
+
+        border-radius:
+          0
+          16px
+          16px
+          0;
+
+        background:
+          linear-gradient(
+            145deg,
+            #151307,
+            #0a0a0a
+          );
+      }
+
+
+      .mana-v933-whakatauki-label{
+        color:#8e7e47;
+
+        font-size:11px;
+        font-weight:900;
+
+        letter-spacing:.12em;
+      }
+
+
+      .mana-v933-whakatauki strong{
+        display:block;
+
+        margin-top:7px;
+
+        color:#f3d875;
+
+        font-size:18px;
+
+        line-height:1.5;
+      }
+
+
+      .mana-v933-whakatauki span{
+        display:block;
+
+        margin-top:7px;
+
+        color:#c0c0c0;
+
+        font-size:14px;
 
         line-height:1.6;
       }
@@ -647,7 +1029,7 @@
           14px
           0;
 
-        padding:18px;
+        padding:19px;
 
         border:
           1px solid
@@ -660,8 +1042,7 @@
 
 
       .mana-v933-card.gold{
-        border-color:
-          #5b4d1f;
+        border-color:#5b4d1f;
 
         background:
           linear-gradient(
@@ -669,6 +1050,11 @@
             #191609,
             #0a0a0a
           );
+      }
+
+
+      .mana-v933-support{
+        border-color:#51451d;
       }
 
 
@@ -687,27 +1073,29 @@
 
       .mana-v933-card h3{
         margin:
-          5px
+          6px
           0
           0;
 
         color:#fff;
 
-        font-size:20px;
+        font-size:21px;
+
+        line-height:1.3;
       }
 
 
       .mana-v933-card p{
         margin:
-          8px
+          9px
           0
           0;
 
-        color:#aaa;
+        color:#b5b5b5;
 
-        font-size:12px;
+        font-size:14px;
 
-        line-height:1.6;
+        line-height:1.65;
       }
 
 
@@ -723,37 +1111,34 @@
         align-items:
           center;
 
-        min-height:28px;
+        min-height:30px;
 
         padding:
           0
-          9px;
+          10px;
 
         border:
           1px solid
           #4f431b;
 
-        border-radius:
-          999px;
+        border-radius:999px;
 
-        background:
-          #151207;
+        background:#151207;
 
-        color:
-          #f3d875;
+        color:#f3d875;
 
-        font-size:9px;
+        font-size:10px;
         font-weight:900;
       }
 
 
       .mana-v933-affirmation{
-        margin-top:15px;
+        margin-top:16px;
 
-        padding:17px;
+        padding:18px;
 
         border-left:
-          3px solid
+          4px solid
           #f3d875;
 
         border-radius:
@@ -769,9 +1154,9 @@
       .mana-v933-affirmation span{
         display:block;
 
-        color:#8e7e47;
+        color:#9b8a4b;
 
-        font-size:9px;
+        font-size:11px;
         font-weight:900;
 
         letter-spacing:.1em;
@@ -781,13 +1166,13 @@
       .mana-v933-affirmation strong{
         display:block;
 
-        margin-top:7px;
+        margin-top:8px;
 
         color:#f3d875;
 
-        font-size:17px;
+        font-size:18px;
 
-        line-height:1.45;
+        line-height:1.5;
       }
 
 
@@ -803,32 +1188,34 @@
         gap:12px;
 
         margin:
-          14px
+          15px
           0
-          7px;
+          8px;
       }
 
 
       .mana-v933-progress-row strong{
         color:#f3d875;
-        font-size:12px;
+
+        font-size:14px;
       }
 
 
       .mana-v933-progress-row span{
-        color:#777;
-        font-size:10px;
+        color:#999;
+
+        font-size:12px;
       }
 
 
       .mana-v933-track{
         width:100%;
-        height:7px;
+
+        height:8px;
 
         overflow:hidden;
 
-        border-radius:
-          999px;
+        border-radius:999px;
 
         background:#222;
       }
@@ -837,11 +1224,9 @@
       .mana-v933-fill{
         height:100%;
 
-        border-radius:
-          999px;
+        border-radius:999px;
 
-        background:
-          #f3d875;
+        background:#f3d875;
       }
 
 
@@ -849,13 +1234,13 @@
       .mana-v933-secondary{
         width:100%;
 
-        min-height:52px;
+        min-height:54px;
 
-        margin-top:13px;
+        margin-top:14px;
 
         border-radius:15px;
 
-        font-size:12px;
+        font-size:13px;
         font-weight:900;
 
         cursor:pointer;
@@ -865,8 +1250,7 @@
       .mana-v933-primary{
         border:0;
 
-        background:
-          #f3d875;
+        background:#f3d875;
 
         color:#111;
       }
@@ -901,7 +1285,7 @@
 
 
       .mana-v933-stat{
-        padding:15px;
+        padding:16px;
 
         border:
           1px solid
@@ -916,10 +1300,12 @@
       .mana-v933-stat span{
         display:block;
 
-        color:#888;
+        color:#999;
 
-        font-size:9px;
+        font-size:11px;
         font-weight:900;
+
+        line-height:1.4;
 
         text-transform:
           uppercase;
@@ -929,42 +1315,42 @@
       .mana-v933-stat strong{
         display:block;
 
-        margin-top:6px;
+        margin-top:7px;
 
         color:#f3d875;
 
-        font-size:23px;
+        font-size:25px;
       }
 
 
       .mana-v933-routine{
         display:grid;
 
-        gap:9px;
+        gap:10px;
 
-        margin-top:14px;
+        margin-top:15px;
       }
 
 
       .mana-v933-routine-row{
         width:100%;
 
-        min-height:68px;
+        min-height:72px;
 
         display:grid;
 
         grid-template-columns:
-          38px
+          40px
           minmax(
             0,
             1fr
           );
 
-        gap:11px;
+        gap:12px;
 
         align-items:center;
 
-        padding:12px;
+        padding:13px;
 
         border:
           1px solid
@@ -995,10 +1381,11 @@
 
 
       .mana-v933-check{
-        width:32px;
-        height:32px;
+        width:34px;
+        height:34px;
 
         display:grid;
+
         place-items:center;
 
         border:
@@ -1007,17 +1394,16 @@
 
         border-radius:10px;
 
+        font-size:15px;
         font-weight:1000;
       }
 
 
       .mana-v933-routine-row.done
       .mana-v933-check{
-        border-color:
-          #f3d875;
+        border-color:#f3d875;
 
-        background:
-          #f3d875;
+        background:#f3d875;
 
         color:#111;
       }
@@ -1026,31 +1412,33 @@
       .mana-v933-routine-copy strong{
         display:block;
 
-        font-size:12px;
+        font-size:14px;
+
+        line-height:1.4;
       }
 
 
       .mana-v933-routine-copy small{
         display:block;
 
-        margin-top:3px;
+        margin-top:4px;
 
-        color:#888;
+        color:#aaa;
 
-        font-size:10px;
+        font-size:12px;
 
-        line-height:1.4;
+        line-height:1.5;
       }
 
 
       .mana-v933-textarea{
         width:100%;
 
-        min-height:110px;
+        min-height:120px;
 
-        margin-top:12px;
+        margin-top:13px;
 
-        padding:13px;
+        padding:14px;
 
         border:
           1px solid
@@ -1066,7 +1454,9 @@
 
         font:inherit;
 
-        line-height:1.55;
+        font-size:14px;
+
+        line-height:1.6;
       }
 
 
@@ -1079,14 +1469,14 @@
             1fr
           );
 
-        gap:7px;
+        gap:8px;
 
-        margin-top:12px;
+        margin-top:13px;
       }
 
 
       .mana-v933-mood{
-        min-height:48px;
+        min-height:50px;
 
         border:
           1px solid
@@ -1096,8 +1486,9 @@
 
         background:#0a0a0a;
 
-        color:#777;
+        color:#999;
 
+        font-size:14px;
         font-weight:900;
 
         cursor:pointer;
@@ -1114,7 +1505,7 @@
 
 
       .mana-v933-tool{
-        margin-top:10px;
+        margin-top:11px;
 
         overflow:hidden;
 
@@ -1131,7 +1522,7 @@
       .mana-v933-tool-button{
         width:100%;
 
-        min-height:58px;
+        min-height:62px;
 
         display:flex;
 
@@ -1142,12 +1533,11 @@
 
         gap:12px;
 
-        padding:13px;
+        padding:14px;
 
         border:0;
 
-        background:
-          transparent;
+        background:transparent;
 
         color:#fff;
 
@@ -1158,14 +1548,16 @@
 
 
       .mana-v933-tool-button strong{
-        font-size:12px;
+        font-size:14px;
+
+        line-height:1.4;
       }
 
 
       .mana-v933-tool-button span{
         color:#f3d875;
 
-        font-size:20px;
+        font-size:21px;
       }
 
 
@@ -1174,14 +1566,14 @@
 
         padding:
           0
-          13px
-          14px;
+          14px
+          16px;
 
-        color:#aaa;
+        color:#b5b5b5;
 
-        font-size:11px;
+        font-size:14px;
 
-        line-height:1.65;
+        line-height:1.7;
       }
 
 
@@ -1201,9 +1593,9 @@
 
 
       .mana-v933-prompt{
-        margin-top:10px;
+        margin-top:11px;
 
-        padding:14px;
+        padding:15px;
 
         border:
           1px solid
@@ -1220,7 +1612,14 @@
 
         color:#f3d875;
 
-        font-size:11px;
+        font-size:14px;
+
+        line-height:1.4;
+      }
+
+
+      .mana-v933-prompt p{
+        font-size:14px;
       }
 
 
@@ -1235,12 +1634,12 @@
 
         gap:7px;
 
-        margin-top:13px;
+        margin-top:14px;
       }
 
 
       .mana-v933-day{
-        min-height:58px;
+        min-height:60px;
 
         display:flex;
 
@@ -1263,15 +1662,15 @@
 
         background:#090909;
 
-        color:#666;
+        color:#888;
 
-        font-size:9px;
+        font-size:10px;
         font-weight:900;
       }
 
 
       .mana-v933-day strong{
-        font-size:14px;
+        font-size:15px;
       }
 
 
@@ -1292,7 +1691,7 @@
 
 
       .mana-v933-learn-item{
-        margin-top:9px;
+        margin-top:10px;
 
         overflow:hidden;
 
@@ -1309,7 +1708,7 @@
       .mana-v933-learn-button{
         width:100%;
 
-        min-height:58px;
+        min-height:62px;
 
         display:flex;
 
@@ -1320,12 +1719,11 @@
 
         gap:12px;
 
-        padding:14px;
+        padding:15px;
 
         border:0;
 
-        background:
-          transparent;
+        background:transparent;
 
         color:#fff;
 
@@ -1335,10 +1733,17 @@
       }
 
 
+      .mana-v933-learn-button strong{
+        font-size:14px;
+
+        line-height:1.4;
+      }
+
+
       .mana-v933-learn-button span{
         color:#f3d875;
 
-        font-size:20px;
+        font-size:21px;
       }
 
 
@@ -1347,14 +1752,14 @@
 
         padding:
           0
-          14px
-          15px;
+          15px
+          16px;
 
-        color:#aaa;
+        color:#b5b5b5;
 
-        font-size:11px;
+        font-size:14px;
 
-        line-height:1.65;
+        line-height:1.7;
       }
 
 
@@ -1364,23 +1769,85 @@
       }
 
 
+      .mana-v933-phrase{
+        margin-top:10px;
+
+        padding:15px;
+
+        border:
+          1px solid
+          #303030;
+
+        border-radius:15px;
+
+        background:#090909;
+      }
+
+
+      .mana-v933-phrase strong{
+        display:block;
+
+        color:#f3d875;
+
+        font-size:16px;
+
+        line-height:1.4;
+      }
+
+
+      .mana-v933-phrase span{
+        display:block;
+
+        margin-top:5px;
+
+        color:#c0c0c0;
+
+        font-size:14px;
+
+        line-height:1.55;
+      }
+
+
+      .mana-v933-note{
+        margin-top:12px;
+
+        color:#999;
+
+        font-size:12px;
+
+        line-height:1.6;
+      }
+
+
       @media(
         max-width:390px
       ){
 
         .mana-v933-hero{
           padding:
-            22px
+            23px
             18px;
+        }
+
+
+        .mana-v933-card{
+          padding:17px;
+        }
+
+
+        .mana-v933-whakatauki{
+          padding:16px;
         }
 
       }
 
     `;
 
-    document.head.appendChild(
-      style
-    );
+
+    document.head
+      .appendChild(
+        style
+      );
   }
 
 
@@ -1406,6 +1873,7 @@
         state
       );
 
+
     return `
 
       <div
@@ -1422,9 +1890,11 @@
             MANA LIFE • RECLAIM
           </div>
 
+
           <h2>
             Build yourself forward.
           </h2>
+
 
           <p>
             Structure the day,
@@ -1441,6 +1911,7 @@
               TODAY'S AFFIRMATION
             </span>
 
+
             <strong>
               ${esc(
                 affirmationOfDay()
@@ -1450,6 +1921,11 @@
           </div>
 
         </div>
+
+
+        ${whakataukiHtml(
+          "overview"
+        )}
 
 
         <div
@@ -1471,11 +1947,13 @@
                 TODAY
               </div>
 
+
               <h3>
                 Your Daily Routine
               </h3>
 
             </div>
+
 
             <span
               class="mana-v933-pill"
@@ -1500,6 +1978,7 @@
             <strong>
               ${done} complete
             </strong>
+
 
             <span>
               ${percent}%
@@ -1538,26 +2017,37 @@
           <div
             class="mana-v933-stat"
           >
+
             <span>
               Current streak
             </span>
 
+
             <strong>
-              ${currentStreak(state)}
+              ${currentStreak(
+                state
+              )}
             </strong>
+
           </div>
 
 
           <div
             class="mana-v933-stat"
           >
+
             <span>
               Active days this week
             </span>
 
+
             <strong>
-              ${activeDays(state,7)}/7
+              ${activeDays(
+                state,
+                7
+              )}/7
             </strong>
+
           </div>
 
         </div>
@@ -1573,9 +2063,11 @@
             RECLAIM
           </div>
 
+
           <h3>
             When your head gets noisy
           </h3>
+
 
           <p>
             Use Reclaim before reacting.
@@ -1583,6 +2075,7 @@
             separate what you can control
             and decide what action actually helps.
           </p>
+
 
           <button
             type="button"
@@ -1593,6 +2086,9 @@
           </button>
 
         </div>
+
+
+        ${supportCardHtml()}
 
 
         ${
@@ -1609,13 +2105,16 @@
                   TODAY'S CHECK-IN
                 </div>
 
+
                 <h3>
                   Mood ${day.mood}/5
                 </h3>
 
+
                 <p>
-                  Measure the direction of
-                  the week, not just one moment.
+                  Measure the direction
+                  of the week,
+                  not just one moment.
                 </p>
 
               </div>
@@ -1652,6 +2151,7 @@
         state
       );
 
+
     return `
 
       <div
@@ -1668,9 +2168,11 @@
             DAILY ROUTINE
           </div>
 
+
           <h2>
             Build the day first.
           </h2>
+
 
           <p>
             Tick the actions as you
@@ -1686,6 +2188,7 @@
             <strong>
               ${done}/${ROUTINE.length} complete
             </strong>
+
 
             <span>
               ${percent}%
@@ -1706,6 +2209,11 @@
           </div>
 
         </div>
+
+
+        ${whakataukiHtml(
+          "routine"
+        )}
 
 
         <div
@@ -1734,6 +2242,7 @@
                           item.key
                         ]
                     );
+
 
                   return `
 
@@ -1775,6 +2284,7 @@
                           )}
                         </strong>
 
+
                         <small>
                           ${esc(
                             item.detail
@@ -1805,9 +2315,11 @@
             DAILY CHECK-IN
           </div>
 
+
           <h3>
             How are you travelling?
           </h3>
+
 
           <p>
             1 = rough day.
@@ -1894,6 +2406,7 @@
         ""
       );
 
+
     return `
 
       <div
@@ -1910,9 +2423,11 @@
             RECLAIM
           </div>
 
+
           <h2>
             Respond. Don't react.
           </h2>
+
 
           <p>
             Put the thought somewhere safe,
@@ -1922,6 +2437,11 @@
           </p>
 
         </div>
+
+
+        ${whakataukiHtml(
+          "reclaim"
+        )}
 
 
         <div
@@ -1937,9 +2457,11 @@
             RIGHT NOW
           </div>
 
+
           <h3>
             Write it before you send it
           </h3>
+
 
           <p>
             Use this space for the message,
@@ -1987,6 +2509,7 @@
               1. What am I feeling?
             </strong>
 
+
             <p>
               Name the emotion without
               immediately turning it
@@ -2004,10 +2527,11 @@
               2. What can I control?
             </strong>
 
+
             <p>
               Your words, behaviour,
-              routine, boundaries and
-              what you do next.
+              routine, boundaries
+              and what you do next.
             </p>
 
           </div>
@@ -2020,6 +2544,7 @@
             <strong>
               3. What action helps tomorrow?
             </strong>
+
 
             <p>
               Choose the action that moves
@@ -2067,6 +2592,7 @@
                       )}
                     </strong>
 
+
                     <span>
                       ⌄
                     </span>
@@ -2090,6 +2616,9 @@
 
         </div>
 
+
+        ${supportCardHtml()}
+
       </div>
 
     `;
@@ -2106,15 +2635,18 @@
     const week =
       [];
 
+
     for (
       let offset = -6;
       offset <= 0;
       offset += 1
     ) {
+
       const key =
         dayOffsetKey(
           offset
         );
+
 
       const count =
         completedRoutineCount(
@@ -2122,13 +2654,17 @@
           key
         );
 
+
       const date =
         new Date(
           `${key}T12:00:00`
         );
 
+
       week.push({
+
         key,
+
         count,
 
         label:
@@ -2183,9 +2719,11 @@
             MANA LIFE PROGRESS
           </div>
 
+
           <h2>
             Build evidence.
           </h2>
+
 
           <p>
             Progress is the pattern
@@ -2194,6 +2732,11 @@
           </p>
 
         </div>
+
+
+        ${whakataukiHtml(
+          "progress"
+        )}
 
 
         <div
@@ -2207,6 +2750,7 @@
             <span>
               Current streak
             </span>
+
 
             <strong>
               ${currentStreak(
@@ -2224,6 +2768,7 @@
             <span>
               Active days
             </span>
+
 
             <strong>
               ${activeDays(
@@ -2243,6 +2788,7 @@
               Full routine days
             </span>
 
+
             <strong>
               ${fullDays}
             </strong>
@@ -2257,6 +2803,7 @@
             <span>
               Actions this week
             </span>
+
 
             <strong>
               ${totalActions}
@@ -2307,6 +2854,7 @@
                       )}
                     </span>
 
+
                     <strong>
                       ${item.count}
                     </strong>
@@ -2339,9 +2887,11 @@
             THE MEASURE
           </div>
 
+
           <h3>
             Direction over perfection
           </h3>
+
 
           <p>
             A missed day does not erase
@@ -2379,9 +2929,11 @@
             LEARN
           </div>
 
+
           <h2>
             Rebuild with purpose.
           </h2>
+
 
           <p>
             Simple principles for keeping
@@ -2392,9 +2944,21 @@
         </div>
 
 
+        ${whakataukiHtml(
+          "learn"
+        )}
+
+
         <div
           class="mana-v933-card"
         >
+
+          <div
+            class="mana-v933-kicker"
+          >
+            RECLAIM PRINCIPLES
+          </div>
+
 
           ${LEARN
             .map(
@@ -2419,6 +2983,7 @@
                       )}
                     </strong>
 
+
                     <span>
                       ⌄
                     </span>
@@ -2442,6 +3007,72 @@
 
         </div>
 
+
+        <div
+          class="mana-v933-card"
+        >
+
+          <div
+            class="mana-v933-kicker"
+          >
+            TE REO FOR EVERYDAY LIFE
+          </div>
+
+
+          <h3>
+            A little reo each day
+          </h3>
+
+
+          <p>
+            Start with simple phrases
+            you can recognise, understand
+            and use naturally.
+          </p>
+
+
+          ${PHRASES
+            .map(
+              item => `
+
+                <div
+                  class="mana-v933-phrase"
+                >
+
+                  <strong>
+                    ${esc(
+                      item.maori
+                    )}
+                  </strong>
+
+
+                  <span>
+                    ${esc(
+                      item.english
+                    )}
+                  </span>
+
+                </div>
+
+              `
+            )
+            .join("")}
+
+
+          <div
+            class="mana-v933-note"
+          >
+            Meanings can shift slightly
+            with context. The goal here
+            is confidence with useful,
+            everyday language.
+          </div>
+
+        </div>
+
+
+        ${supportCardHtml()}
+
       </div>
 
     `;
@@ -2452,6 +3083,24 @@
      WIRING
      ========================================= */
 
+  function wireSupportChat() {
+    document
+      .querySelectorAll(
+        "[data-v933-support-chat]"
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            openSupportChat
+          );
+
+        }
+      );
+  }
+
+
   function wireOverview() {
     document
       .getElementById(
@@ -2460,9 +3109,11 @@
       ?.addEventListener(
         "click",
         () => {
+
           goToTab(
             "routine"
           );
+
         }
       );
 
@@ -2474,11 +3125,16 @@
       ?.addEventListener(
         "click",
         () => {
+
           goToTab(
             "reclaim"
           );
+
         }
       );
+
+
+    wireSupportChat();
   }
 
 
@@ -2490,59 +3146,58 @@
       .forEach(
         button => {
 
-          button
-            .addEventListener(
-              "click",
-              () => {
+          button.addEventListener(
+            "click",
+            () => {
 
-                const state =
-                  loadState();
+              const state =
+                loadState();
 
-                const key =
-                  todayKey();
-
-
-                state.days[key] =
-                  state.days[key] ||
-                  {};
+              const key =
+                todayKey();
 
 
+              state.days[key] =
+                state.days[key] ||
+                {};
+
+
+              state
+                .days[key]
+                .routine =
                 state
                   .days[key]
-                  .routine =
-                  state
-                    .days[key]
-                    .routine ||
-                  {};
+                  .routine ||
+                {};
 
 
-                const itemKey =
-                  button
-                    .dataset
-                    .v933Routine;
+              const itemKey =
+                button
+                  .dataset
+                  .v933Routine;
 
 
-                state
+              state
+                .days[key]
+                .routine[
+                  itemKey
+                ] =
+                !state
                   .days[key]
                   .routine[
                     itemKey
-                  ] =
-                  !state
-                    .days[key]
-                    .routine[
-                      itemKey
-                    ];
+                  ];
 
 
-                saveState(
-                  state
-                );
+              saveState(
+                state
+              );
 
 
-                render();
+              render();
 
-              }
-            );
+            }
+          );
 
         }
       );
@@ -2555,42 +3210,41 @@
       .forEach(
         button => {
 
-          button
-            .addEventListener(
-              "click",
-              () => {
+          button.addEventListener(
+            "click",
+            () => {
 
-                const state =
-                  loadState();
+              const state =
+                loadState();
 
-                const key =
-                  todayKey();
-
-
-                state.days[key] =
-                  state.days[key] ||
-                  {};
+              const key =
+                todayKey();
 
 
-                state
-                  .days[key]
-                  .mood =
-                  Number(
-                    button
-                      .dataset
-                      .v933Mood
-                  );
+              state.days[key] =
+                state.days[key] ||
+                {};
 
 
-                saveState(
-                  state
+              state
+                .days[key]
+                .mood =
+                Number(
+                  button
+                    .dataset
+                    .v933Mood
                 );
 
 
-                render();
+              saveState(
+                state
+              );
 
-              }
-            );
+
+              render();
+
+            }
+          );
 
         }
       );
@@ -2691,25 +3345,27 @@
       .forEach(
         button => {
 
-          button
-            .addEventListener(
-              "click",
-              () => {
+          button.addEventListener(
+            "click",
+            () => {
 
-                button
-                  .closest(
-                    ".mana-v933-tool"
-                  )
-                  ?.classList
-                  .toggle(
-                    "open"
-                  );
+              button
+                .closest(
+                  ".mana-v933-tool"
+                )
+                ?.classList
+                .toggle(
+                  "open"
+                );
 
-              }
-            );
+            }
+          );
 
         }
       );
+
+
+    wireSupportChat();
   }
 
 
@@ -2721,25 +3377,27 @@
       .forEach(
         button => {
 
-          button
-            .addEventListener(
-              "click",
-              () => {
+          button.addEventListener(
+            "click",
+            () => {
 
-                button
-                  .closest(
-                    ".mana-v933-learn-item"
-                  )
-                  ?.classList
-                  .toggle(
-                    "open"
-                  );
+              button
+                .closest(
+                  ".mana-v933-learn-item"
+                )
+                ?.classList
+                .toggle(
+                  "open"
+                );
 
-              }
-            );
+            }
+          );
 
         }
       );
+
+
+    wireSupportChat();
   }
 
 
@@ -2921,6 +3579,7 @@
     if (
       lifeOpen()
     ) {
+
       render();
     }
   }
@@ -2928,6 +3587,10 @@
 
   window.renderManaLife =
     render;
+
+
+  window.openManaLifeSupport =
+    openSupportChat;
 
 
   window.MANA_LIFE_BUILD =
