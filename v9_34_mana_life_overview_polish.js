@@ -1,10 +1,11 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.34.0
+   MANA MOVEMENT TRAINING v9.34.1
    MANA LIFE — OVERVIEW POLISH
 
    PURPOSE:
    - Tighten Overview spacing
    - Improve phone + laptop margins
+   - Align yellow affirmation + whakataukī lines
    - Keep readable text sizes
    - Does NOT affect Routine / Reclaim /
      Progress / Learn
@@ -15,7 +16,7 @@
   "use strict";
 
   const BUILD =
-    "93400";
+    "93410";
 
   const STYLE_ID =
     "mana-v934-life-overview-style";
@@ -112,12 +113,26 @@
       }
 
 
+      /*
+        ALIGN BOTH GOLD VERTICAL LINES
+
+        Hero text begins 20px in.
+        The affirmation sits inside the hero,
+        so its line naturally begins at that
+        same 20px position.
+
+        The whakataukī sits outside the hero,
+        so give it a matching 20px left inset.
+      */
+
       #manaV83ProgramShell
       .${OVERVIEW_CLASS}
       .mana-v933-whakatauki{
         margin:
           9px
-          0;
+          0
+          9px
+          20px;
 
         padding:
           15px
@@ -192,10 +207,6 @@
 
       /*
         Laptop / larger screen
-
-        Give Mana Life Overview slightly
-        more breathing room horizontally
-        without changing other programs.
       */
 
       @media(
@@ -218,10 +229,6 @@
 
       /*
         PHONE
-
-        The main fix:
-        reduce wasted outer/internal space
-        while keeping readable type.
       */
 
       @media(
@@ -250,12 +257,20 @@
         }
 
 
+        /*
+          Hero text now starts 16px in,
+          so match the whakataukī line
+          to 16px on phone.
+        */
+
         #manaV83ProgramShell
         .${OVERVIEW_CLASS}
         .mana-v933-whakatauki{
           margin:
             8px
-            0;
+            0
+            8px
+            16px;
 
           padding:
             14px
@@ -318,6 +333,20 @@
         .mana-v933-hero{
           padding:
             18px
+            15px;
+        }
+
+
+        /*
+          Hero text begins 15px in here,
+          so keep the two yellow lines
+          visually aligned.
+        */
+
+        #manaV83ProgramShell
+        .${OVERVIEW_CLASS}
+        .mana-v933-whakatauki{
+          margin-left:
             15px;
         }
 
