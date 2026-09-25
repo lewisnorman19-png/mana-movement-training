@@ -1,55 +1,32 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.27.0
-   MANA 28 — GUIDED 28 DAY PROGRAM
+   MANA MOVEMENT TRAINING v9.27.1
+   MANA 28 — FAMILIAR STRENGTH-STYLE LAYOUT
 
-   WHOLE FILE:
-   v9_27_mana28.js
-
-   BUILDS:
-   - MANA 28 OVERVIEW
-   - DAY 1–28 PROGRESSION
-   - DAILY FOCUS + WHAKATAUKI
-   - DAILY WORKOUT
-   - DAILY ACTIONS
-   - FUEL SNAPSHOT
-   - RECOVERY / REFLECTION
-   - COMPLETE DAY + UNLOCK NEXT DAY
-   - PROGRAM TAB
-   - FUEL TAB
-   - PROGRESS TAB
-   - LEARN TAB
-
-   DOES NOT ALTER MANA STRENGTH
+   PURPOSE:
+   - Makes MANA 28 Overview feel familiar to MANA Strength
+   - Makes Program use the same card-based visual language
+   - Preserves existing MANA 28 state and progress
+   - Preserves compatibility with v9.28 workout upgrade
+   - Preserves compatibility with v9.29 workout coach
+   - No MutationObserver
+   - No repeated render loop
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "92700";
+  const BUILD = "92710";
+  const STATE_KEY = "mana28-v927-state";
+  const FUEL_KEY = "mana-fuel-v571";
+  const TARGET_KEY = "mana-fuel-v58-targets";
+  const STYLE_ID = "mana-v927-mana28-style";
+  const ROOT_ID = "manaV927Mana28";
+  const TOTAL_DAYS = 28;
 
-  const STATE_KEY =
-    "mana28-v927-state";
-
-  const FUEL_KEY =
-    "mana-fuel-v571";
-
-  const TARGET_KEY =
-    "mana-fuel-v58-targets";
-
-  const STYLE_ID =
-    "mana-v927-mana28-style";
-
-  const ROOT_ID =
-    "manaV927Mana28";
-
-  const TOTAL_DAYS =
-    28;
-
-  let renderTimer =
-    null;
+  let renderTimer = null;
 
   /* =========================================
-     CONTENT
+     28-DAY CONTENT
      ========================================= */
 
   const DAYS = [
@@ -109,7 +86,6 @@
       workout: "Recovery Day",
       actions: ["Review wins", "Identify one obstacle", "Plan next week", "Do something that restores you"]
     },
-
     {
       title: "Raise The Standard",
       focus: "Week two begins",
@@ -166,7 +142,6 @@
       workout: "Recovery Day",
       actions: ["Review two weeks", "Take progress photo if wanted", "Plan week three", "Rest without guilt"]
     },
-
     {
       title: "Begin Again",
       focus: "Fresh week, same purpose",
@@ -223,7 +198,6 @@
       workout: "Recovery Day",
       actions: ["Review week", "Stretch", "Plan final seven days", "Write three wins"]
     },
-
     {
       title: "Finish Strong",
       focus: "Final week",
@@ -329,6 +303,14 @@
     return Math.max(min, Math.min(max, value));
   }
 
+  function esc(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
   function todayKey() {
     const d = new Date();
 
@@ -340,45 +322,57 @@
   }
 
   function loadState() {
-    const state =
+    const raw =
       safeJson(
         localStorage.getItem(STATE_KEY) || "{}",
         {}
       );
 
     return {
+      ...raw,
+
       startedAt:
-        state.startedAt || null,
+        raw.startedAt || null,
 
       currentDay:
         clamp(
-          Number(state.currentDay || 1),
+          Number(raw.currentDay || 1),
           1,
           TOTAL_DAYS
         ),
 
       completedDays:
-        Array.isArray(state.completedDays)
-          ? state.completedDays
+        Array.isArray(raw.completedDays)
+          ? raw.completedDays
               .map(Number)
               .filter(day => day >= 1 && day <= TOTAL_DAYS)
           : [],
 
       actions:
-        state.actions &&
-        typeof state.actions === "object"
-          ? state.actions
+        raw.actions &&
+        typeof raw.actions === "object"
+          ? raw.actions
           : {},
 
       reflections:
-        state.reflections &&
-        typeof state.reflections === "object"
-          ? state.reflections
+        raw.reflections &&
+        typeof raw.reflections === "object"
+          ? raw.reflections
+          : {},
+
+      workouts:
+        raw.workouts &&
+        typeof raw.workouts === "object"
+          ? raw.workouts
           : {},
 
       selectedDay:
         clamp(
-          Number(state.selectedDay || state.currentDay || 1),
+          Number(
+            raw.selectedDay ||
+            raw.currentDay ||
+            1
+          ),
           1,
           TOTAL_DAYS
         )
@@ -392,7 +386,9 @@
     );
 
     window.dispatchEvent(
-      new CustomEvent("mana28:updated")
+      new CustomEvent(
+        "mana28:updated"
+      )
     );
   }
 
@@ -401,7 +397,10 @@
       state.startedAt =
         new Date().toISOString();
 
-      saveState(state);
+      localStorage.setItem(
+        STATE_KEY,
+        JSON.stringify(state)
+      );
     }
 
     return state;
@@ -414,7 +413,8 @@
           "#manaV83Tabs .mana-v83-tab.active"
         )
         ?.dataset
-        ?.v83Tab || "overview"
+        ?.v83Tab ||
+      "overview"
     );
   }
 
@@ -430,8 +430,14 @@
       );
 
     return Boolean(
-      shell?.classList.contains("open") &&
-      title?.textContent?.trim()?.toUpperCase() === "MANA 28"
+      shell
+        ?.classList
+        .contains("open") &&
+      title
+        ?.textContent
+        ?.trim()
+        ?.toUpperCase() ===
+        "MANA 28"
     );
   }
 
@@ -442,10 +448,12 @@
         {}
       );
 
-    return data &&
+    return (
+      data &&
       typeof data === "object"
         ? data
-        : {};
+        : {}
+    );
   }
 
   function loadTargets() {
@@ -456,9 +464,14 @@
       );
 
     return {
-      calories: Number(data.calories || 0),
-      protein: Number(data.protein || 0),
-      water: Number(data.water || 0)
+      calories:
+        Number(data.calories || 0),
+
+      protein:
+        Number(data.protein || 0),
+
+      water:
+        Number(data.water || 0)
     };
   }
 
@@ -467,20 +480,23 @@
       loadFuel()[todayKey()] || {};
 
     const totals = {
-      calories: 0,
-      protein: 0,
-      water: Number(day.water || 0)
+      calories:0,
+      protein:0,
+      water:
+        Number(day.water || 0)
     };
 
-    Object.values(day.meals || {})
+    Object
+      .values(day.meals || {})
       .forEach(items => {
-        (items || []).forEach(item => {
-          totals.calories +=
-            Number(item?.calories || 0);
+        (items || [])
+          .forEach(item => {
+            totals.calories +=
+              Number(item?.calories || 0);
 
-          totals.protein +=
-            Number(item?.protein || 0);
-        });
+            totals.protein +=
+              Number(item?.protein || 0);
+          });
       });
 
     return totals;
@@ -503,14 +519,19 @@
   function currentDayData(state) {
     const day =
       clamp(
-        Number(state.selectedDay || state.currentDay || 1),
+        Number(
+          state.selectedDay ||
+          state.currentDay ||
+          1
+        ),
         1,
         TOTAL_DAYS
       );
 
     return {
       day,
-      data: DAYS[day - 1]
+      data:
+        DAYS[day - 1]
     };
   }
 
@@ -531,18 +552,20 @@
 
   function actionsForDay(state, day) {
     const stored =
-      state.actions[String(day)];
+      state.actions[
+        String(day)
+      ];
 
-    if (Array.isArray(stored)) {
-      return stored;
-    }
-
-    return [];
+    return Array.isArray(stored)
+      ? stored
+      : [];
   }
 
   function reflectionForDay(state, day) {
     return String(
-      state.reflections[String(day)] || ""
+      state.reflections[
+        String(day)
+      ] || ""
     );
   }
 
@@ -562,17 +585,98 @@
       total,
       percent:
         total
-          ? Math.round(done / total * 100)
+          ? Math.round(
+              done /
+              total *
+              100
+            )
           : 0
     };
   }
 
-  function esc(value) {
-    return String(value ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;");
+  function weekRange(week) {
+    const start =
+      (week - 1) * 7 + 1;
+
+    const end =
+      Math.min(
+        TOTAL_DAYS,
+        start + 6
+      );
+
+    return {
+      start,
+      end
+    };
+  }
+
+  function workoutPrescription(day) {
+    const type =
+      DAYS[
+        day - 1
+      ]
+        .workout
+        .toLowerCase();
+
+    if (
+      type.includes(
+        "recovery"
+      )
+    ) {
+      return (
+        "20–30 min easy walk or bike • " +
+        "8–10 min mobility • keep effort comfortable."
+      );
+    }
+
+    if (
+      type.includes(
+        "upper"
+      )
+    ) {
+      return (
+        "Push • Pull • Shoulders • Arms • Core. " +
+        "Controlled technique and quality reps."
+      );
+    }
+
+    if (
+      type.includes(
+        "lower"
+      )
+    ) {
+      return (
+        "Squat or leg press • Hinge • " +
+        "Single-leg work • Hamstrings • Calves • Core."
+      );
+    }
+
+    if (
+      type.includes(
+        "conditioning"
+      )
+    ) {
+      return (
+        "20–30 min conditioning at a sustainable effort " +
+        "plus core work."
+      );
+    }
+
+    if (
+      type.includes(
+        "walk"
+      )
+    ) {
+      return (
+        "Purposeful walk plus a short core circuit " +
+        "and mobility."
+      );
+    }
+
+    return (
+      "Full body: lower-body push • upper push • " +
+      "upper pull • hinge • accessory • core."
+    );
   }
 
   /* =========================================
@@ -581,11 +685,15 @@
 
   function injectStyles() {
     document
-      .getElementById(STYLE_ID)
+      .getElementById(
+        STYLE_ID
+      )
       ?.remove();
 
     const style =
-      document.createElement("style");
+      document.createElement(
+        "style"
+      );
 
     style.id =
       STYLE_ID;
@@ -593,55 +701,60 @@
     style.textContent = `
       #${ROOT_ID}{
         width:100%;
-        padding-bottom:28px;
+        padding-bottom:30px;
       }
 
       .mana-v927-hero{
-        padding:22px 18px;
-        border:1px solid #4c4019;
-        border-radius:22px;
+        margin-bottom:14px;
+        padding:26px 21px;
+        border:1px solid #5a4a18;
+        border-radius:24px;
         background:
           radial-gradient(
             circle at 85% 10%,
-            rgba(243,216,117,.13),
-            transparent 30%
+            rgba(243,216,117,.12),
+            transparent 34%
           ),
-          linear-gradient(145deg,#151208,#090909);
+          linear-gradient(145deg,#1c1708,#090909);
       }
 
       .mana-v927-kicker{
         color:#f3d875;
-        font-size:11px;
+        font-size:10px;
         font-weight:900;
         letter-spacing:.14em;
+        text-transform:uppercase;
       }
 
       .mana-v927-hero h2{
-        margin:6px 0 6px;
-        font-size:28px;
+        margin:7px 0 8px;
+        color:#fff;
+        font-size:clamp(30px,8vw,40px);
         line-height:1.05;
       }
 
       .mana-v927-hero p{
         margin:0;
-        color:#a7a7a7;
+        color:#aaa;
         font-size:13px;
-        line-height:1.55;
+        line-height:1.6;
       }
 
       .mana-v927-progress-line{
         display:flex;
         justify-content:space-between;
         gap:12px;
-        margin-top:18px;
-        color:#d8c672;
-        font-size:11px;
+        margin-top:17px;
+        color:#9c8a4b;
+        font-size:10px;
         font-weight:900;
+        letter-spacing:.04em;
       }
 
       .mana-v927-track{
-        height:9px;
-        margin-top:9px;
+        width:100%;
+        height:7px;
+        margin-top:8px;
         overflow:hidden;
         border-radius:999px;
         background:#242424;
@@ -657,18 +770,19 @@
         display:grid;
         grid-template-columns:repeat(2,1fr);
         gap:10px;
-        margin-top:12px;
+        margin:14px 0;
       }
 
       .mana-v927-stat,
-      .mana-v927-card{
-        border:1px solid #2d2d2d;
-        border-radius:18px;
-        background:linear-gradient(145deg,#111,#090909);
+      .mana-v927-card,
+      .mana-v927-program-card{
+        border:1px solid #292929;
+        background:#0d0d0d;
       }
 
       .mana-v927-stat{
-        padding:14px;
+        padding:15px;
+        border-radius:18px;
       }
 
       .mana-v927-stat span{
@@ -677,6 +791,7 @@
         font-size:10px;
         font-weight:900;
         text-transform:uppercase;
+        letter-spacing:.05em;
       }
 
       .mana-v927-stat strong{
@@ -687,8 +802,14 @@
       }
 
       .mana-v927-card{
-        margin-top:12px;
-        padding:17px;
+        margin:14px 0;
+        padding:18px;
+        border-radius:21px;
+      }
+
+      .mana-v927-today{
+        border-color:#5b4d1f;
+        background:linear-gradient(145deg,#191609,#0a0a0a);
       }
 
       .mana-v927-card-head{
@@ -700,7 +821,8 @@
 
       .mana-v927-card h3{
         margin:0;
-        font-size:18px;
+        color:#fff;
+        font-size:20px;
       }
 
       .mana-v927-card p{
@@ -709,13 +831,8 @@
         line-height:1.55;
       }
 
-      .mana-v927-small{
-        color:#858585;
-        font-size:10px;
-        line-height:1.5;
-      }
-
       .mana-v927-pill{
+        flex:0 0 auto;
         display:inline-flex;
         align-items:center;
         min-height:28px;
@@ -729,61 +846,62 @@
       }
 
       .mana-v927-day-title{
-        margin-top:5px;
+        margin-top:6px;
         color:#fff;
         font-size:24px;
         font-weight:900;
-        line-height:1.1;
+        line-height:1.12;
       }
 
       .mana-v927-focus{
-        margin-top:6px;
-        color:#d7c46c;
+        margin-top:5px;
+        color:#aaa;
         font-size:12px;
-        font-weight:900;
+        font-weight:700;
       }
 
       .mana-v927-quote{
-        margin-top:13px;
+        margin-top:14px;
         padding:14px;
         border-left:3px solid #f3d875;
         border-radius:0 12px 12px 0;
-        background:#100f0a;
+        background:#100f09;
       }
 
       .mana-v927-quote strong{
         display:block;
         color:#f3d875;
-        font-size:13px;
-        line-height:1.5;
+        font-size:12px;
+        line-height:1.45;
       }
 
       .mana-v927-quote span{
         display:block;
-        margin-top:7px;
-        color:#999;
+        margin-top:6px;
+        color:#aaa;
         font-size:11px;
         line-height:1.55;
       }
 
       .mana-v927-workout{
-        margin-top:12px;
-        padding:14px;
-        border:1px solid #35301b;
-        border-radius:15px;
-        background:#0e0d08;
+        margin-top:14px;
+        padding:17px;
+        border:1px solid #5b4d1f;
+        border-radius:18px;
+        background:linear-gradient(145deg,#181507,#0a0a0a);
       }
 
       .mana-v927-workout-label{
-        color:#888;
+        color:#f3d875;
         font-size:9px;
         font-weight:900;
+        letter-spacing:.1em;
       }
 
       .mana-v927-workout-name{
         margin-top:5px;
         color:#fff;
-        font-size:16px;
+        font-size:20px;
         font-weight:900;
       }
 
@@ -794,36 +912,50 @@
         line-height:1.5;
       }
 
+      .mana-v927-view-program{
+        width:100%;
+        min-height:52px;
+        margin-top:14px;
+        border:0;
+        border-radius:15px;
+        background:#f3d875;
+        color:#111;
+        font-size:12px;
+        font-weight:900;
+        cursor:pointer;
+      }
+
       .mana-v927-action{
         width:100%;
+        min-height:64px;
         display:grid;
-        grid-template-columns:34px 1fr;
-        gap:10px;
+        grid-template-columns:36px minmax(0,1fr);
+        gap:11px;
         align-items:center;
-        margin-top:8px;
-        padding:11px;
-        border:1px solid #2c2c2c;
-        border-radius:13px;
-        background:#0b0b0b;
-        color:#ddd;
+        margin-top:9px;
+        padding:12px;
+        border:1px solid #292929;
+        border-radius:16px;
+        background:#090909;
+        color:#eee;
         text-align:left;
         cursor:pointer;
       }
 
       .mana-v927-check{
-        width:28px;
-        height:28px;
+        width:32px;
+        height:32px;
         display:grid;
         place-items:center;
-        border:1px solid #555;
-        border-radius:50%;
-        color:#777;
+        border:2px solid #464646;
+        border-radius:10px;
+        color:#111;
         font-weight:1000;
       }
 
       .mana-v927-action.done{
-        border-color:#5e5120;
-        background:#121006;
+        border-color:#57491c;
+        background:linear-gradient(145deg,#171407,#090909);
       }
 
       .mana-v927-action.done .mana-v927-check{
@@ -835,15 +967,36 @@
       .mana-v927-action-copy{
         font-size:12px;
         font-weight:800;
-        line-height:1.35;
+        line-height:1.4;
+      }
+
+      .mana-v927-focus-progress{
+        margin:14px 0 4px;
+      }
+
+      .mana-v927-focus-progress-row{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        margin-bottom:7px;
+      }
+
+      .mana-v927-focus-progress-row strong{
+        color:#f3d875;
+        font-size:12px;
+      }
+
+      .mana-v927-focus-progress-row span{
+        color:#777;
+        font-size:10px;
       }
 
       .mana-v927-primary,
       .mana-v927-secondary{
         width:100%;
-        min-height:50px;
+        min-height:52px;
         margin-top:12px;
-        border-radius:14px;
+        border-radius:15px;
         font-size:12px;
         font-weight:900;
         cursor:pointer;
@@ -880,38 +1033,164 @@
         line-height:1.5;
       }
 
-      .mana-v927-day-grid{
-        display:grid;
-        grid-template-columns:repeat(7,1fr);
-        gap:7px;
-        margin-top:12px;
+      .mana-v927-snapshot{
+        margin:14px 0;
+        padding:18px;
+        border:1px solid #292929;
+        border-radius:21px;
+        background:#0d0d0d;
       }
 
-      .mana-v927-day-btn{
-        aspect-ratio:1;
-        border:1px solid #323232;
-        border-radius:11px;
-        background:#0b0b0b;
+      .mana-v927-snapshot-row{
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:14px;
+      }
+
+      .mana-v927-snapshot-copy span{
+        display:block;
+        color:#888;
+        font-size:10px;
+        text-transform:uppercase;
+      }
+
+      .mana-v927-snapshot-copy strong{
+        display:block;
+        margin-top:4px;
+        color:#f3d875;
+        font-size:18px;
+      }
+
+      .mana-v927-snapshot-percent{
+        color:#f3d875;
+        font-size:22px;
+        font-weight:900;
+      }
+
+      .mana-v927-week{
+        margin:18px 0 8px;
+      }
+
+      .mana-v927-week:first-child{
+        margin-top:0;
+      }
+
+      .mana-v927-week-title{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        margin-bottom:9px;
+        color:#f3d875;
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.1em;
+      }
+
+      .mana-v927-week-title span:last-child{
+        color:#777;
+        font-size:9px;
+      }
+
+      .mana-v927-program-card{
+        margin:9px 0;
+        padding:17px;
+        border-radius:19px;
+        background:linear-gradient(145deg,#111,#090909);
+      }
+
+      .mana-v927-program-card.current{
+        border-color:#6b591e;
+        background:linear-gradient(145deg,#191608,#090909);
+      }
+
+      .mana-v927-program-card.done{
+        border-color:#50441d;
+      }
+
+      .mana-v927-program-card.locked{
+        opacity:.48;
+      }
+
+      .mana-v927-program-top{
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        align-items:flex-start;
+      }
+
+      .mana-v927-program-day{
+        color:#f3d875;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.1em;
+      }
+
+      .mana-v927-program-title{
+        margin-top:5px;
+        color:#fff;
+        font-size:20px;
+        font-weight:900;
+        line-height:1.2;
+      }
+
+      .mana-v927-program-session{
+        margin-top:8px;
+        color:#d0bd70;
+        font-size:12px;
+        font-weight:800;
+      }
+
+      .mana-v927-program-focus{
+        margin-top:5px;
         color:#888;
         font-size:11px;
+      }
+
+      .mana-v927-program-status{
+        flex:0 0 auto;
+        padding:6px 9px;
+        border:1px solid #333;
+        border-radius:999px;
+        color:#888;
+        font-size:9px;
+        font-weight:900;
+      }
+
+      .mana-v927-program-card.current
+      .mana-v927-program-status,
+      .mana-v927-program-card.done
+      .mana-v927-program-status{
+        border-color:#66561f;
+        color:#f3d875;
+      }
+
+      .mana-v927-program-copy{
+        margin-top:12px;
+        padding-top:12px;
+        border-top:1px solid #252525;
+        color:#999;
+        font-size:11px;
+        line-height:1.5;
+      }
+
+      .mana-v927-program-open{
+        width:100%;
+        min-height:50px;
+        margin-top:13px;
+        border:0;
+        border-radius:14px;
+        background:#f3d875;
+        color:#111;
+        font-size:12px;
         font-weight:900;
         cursor:pointer;
       }
 
-      .mana-v927-day-btn.current{
-        border-color:#f3d875;
-        color:#f3d875;
-        box-shadow:0 0 0 1px rgba(243,216,117,.15);
-      }
-
-      .mana-v927-day-btn.done{
-        border-color:#5c4c18;
-        background:#191505;
-        color:#f3d875;
-      }
-
-      .mana-v927-day-btn.locked{
-        opacity:.3;
+      .mana-v927-program-open:disabled{
+        border:1px solid #333;
+        background:#111;
+        color:#666;
         cursor:not-allowed;
       }
 
@@ -943,6 +1222,40 @@
         font-size:17px;
       }
 
+      .mana-v927-day-grid{
+        display:grid;
+        grid-template-columns:repeat(7,1fr);
+        gap:7px;
+        margin-top:12px;
+      }
+
+      .mana-v927-day-btn{
+        aspect-ratio:1;
+        border:1px solid #323232;
+        border-radius:11px;
+        background:#0b0b0b;
+        color:#888;
+        font-size:11px;
+        font-weight:900;
+        cursor:pointer;
+      }
+
+      .mana-v927-day-btn.current{
+        border-color:#f3d875;
+        color:#f3d875;
+      }
+
+      .mana-v927-day-btn.done{
+        border-color:#5c4c18;
+        background:#191505;
+        color:#f3d875;
+      }
+
+      .mana-v927-day-btn.locked{
+        opacity:.3;
+        cursor:not-allowed;
+      }
+
       .mana-v927-learn-item{
         margin-top:9px;
         border:1px solid #2c2c2c;
@@ -953,9 +1266,9 @@
 
       .mana-v927-learn-open{
         width:100%;
-        display:grid;
-        grid-template-columns:1fr 36px;
-        gap:10px;
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
         align-items:center;
         padding:14px;
         border:0;
@@ -965,23 +1278,14 @@
         cursor:pointer;
       }
 
-      .mana-v927-learn-open strong{
-        font-size:14px;
-      }
-
       .mana-v927-arrow{
-        width:34px;
-        height:34px;
-        display:grid;
-        place-items:center;
-        border:1px solid #4a401e;
-        border-radius:50%;
         color:#f3d875;
         font-size:20px;
         transition:transform .2s ease;
       }
 
-      .mana-v927-learn-item.open .mana-v927-arrow{
+      .mana-v927-learn-item.open
+      .mana-v927-arrow{
         transform:rotate(180deg);
       }
 
@@ -993,7 +1297,8 @@
         line-height:1.65;
       }
 
-      .mana-v927-learn-item.open .mana-v927-learn-body{
+      .mana-v927-learn-item.open
+      .mana-v927-learn-body{
         display:block;
       }
 
@@ -1016,17 +1321,22 @@
       }
 
       @media(max-width:420px){
-        .mana-v927-day-grid{
-          grid-template-columns:repeat(4,1fr);
+        .mana-v927-grid{
+          grid-template-columns:1fr 1fr;
         }
 
         .mana-v927-fuel-grid{
           grid-template-columns:1fr;
         }
+
+        .mana-v927-program-title{
+          font-size:18px;
+        }
       }
     `;
 
-    document.head.appendChild(style);
+    document.head
+      .appendChild(style);
   }
 
   /* =========================================
@@ -1038,49 +1348,70 @@
       currentDayData(state);
 
     const actions =
-      actionCompletion(state, day);
+      actionCompletion(
+        state,
+        day
+      );
 
     const complete =
-      dayComplete(state, day);
+      dayComplete(
+        state,
+        day
+      );
 
     const percent =
-      completionPercent(state);
+      completionPercent(
+        state
+      );
 
     return `
       <div id="${ROOT_ID}">
+
         <div class="mana-v927-hero">
-          <div class="mana-v927-kicker">MANA 28 • MOVE WITH PURPOSE</div>
-          <h2>Day ${day} of 28</h2>
-          <p>Training, Fuel, daily action and mindset — one day at a time.</p>
+          <div class="mana-v927-kicker">
+            MANA 28 • MOVE WITH PURPOSE
+          </div>
+
+          <h2>
+            Day ${day} of 28
+          </h2>
+
+          <p>
+            One day at a time — train, Fuel,
+            take the daily actions and keep moving forward.
+          </p>
 
           <div class="mana-v927-progress-line">
-            <span>${completedCount(state)} days complete</span>
-            <span>${percent}%</span>
+            <span>
+              ${completedCount(state)} days complete
+            </span>
+            <span>
+              ${percent}%
+            </span>
           </div>
 
           <div class="mana-v927-track">
-            <div class="mana-v927-fill" style="width:${percent}%"></div>
+            <div
+              class="mana-v927-fill"
+              style="width:${percent}%"
+            ></div>
           </div>
         </div>
 
-        <div class="mana-v927-grid">
-          <div class="mana-v927-stat">
-            <span>Current day</span>
-            <strong>${day}</strong>
-          </div>
-
-          <div class="mana-v927-stat">
-            <span>Daily actions</span>
-            <strong>${actions.done}/${actions.total}</strong>
-          </div>
-        </div>
-
-        <div class="mana-v927-card">
+        <div class="mana-v927-card mana-v927-today">
           <div class="mana-v927-card-head">
             <div>
-              <div class="mana-v927-kicker">TODAY</div>
-              <div class="mana-v927-day-title">${esc(data.title)}</div>
-              <div class="mana-v927-focus">${esc(data.focus)}</div>
+              <div class="mana-v927-kicker">
+                TODAY
+              </div>
+
+              <div class="mana-v927-day-title">
+                ${esc(data.title)}
+              </div>
+
+              <div class="mana-v927-focus">
+                ${esc(data.focus)}
+              </div>
             </div>
 
             <span class="mana-v927-pill">
@@ -1089,24 +1420,87 @@
           </div>
 
           <div class="mana-v927-quote">
-            <strong>${esc(data.whakatauki)}</strong>
-            <span>${esc(data.meaning)}</span>
+            <strong>
+              ${esc(data.whakatauki)}
+            </strong>
+
+            <span>
+              ${esc(data.meaning)}
+            </span>
           </div>
 
           <div class="mana-v927-workout">
-            <div class="mana-v927-workout-label">TODAY’S MOVEMENT</div>
-            <div class="mana-v927-workout-name">${esc(data.workout)}</div>
-            <div class="mana-v927-workout-copy">
-              Move with quality. Use the Program tab for the day-by-day plan.
+            <div class="mana-v927-workout-label">
+              TODAY'S TRAINING
             </div>
+
+            <div class="mana-v927-workout-name">
+              ${esc(data.workout)}
+            </div>
+
+            <div class="mana-v927-workout-copy">
+              Open Program to see the session and
+              choose today's training.
+            </div>
+
+            <button
+              type="button"
+              class="mana-v927-view-program"
+              id="manaV927ViewProgram"
+            >
+              VIEW PROGRAM →
+            </button>
           </div>
         </div>
 
-        ${actionsHtml(state, day)}
+        ${actionsHtml(
+          state,
+          day
+        )}
+
+        <div class="mana-v927-snapshot">
+          <div class="mana-v927-card-head">
+            <h3>
+              28-Day Snapshot
+            </h3>
+
+            <span class="mana-v927-kicker">
+              PROGRESS
+            </span>
+          </div>
+
+          <div class="mana-v927-snapshot-row">
+            <div class="mana-v927-snapshot-copy">
+              <span>
+                Days completed
+              </span>
+
+              <strong>
+                ${completedCount(state)} / 28
+              </strong>
+            </div>
+
+            <div class="mana-v927-snapshot-percent">
+              ${percent}%
+            </div>
+          </div>
+
+          <div class="mana-v927-track">
+            <div
+              class="mana-v927-fill"
+              style="width:${percent}%"
+            ></div>
+          </div>
+        </div>
 
         <div class="mana-v927-card">
-          <div class="mana-v927-kicker">REFLECT</div>
-          <h3 style="margin-top:5px;">One thought from today</h3>
+          <div class="mana-v927-kicker">
+            REFLECT
+          </div>
+
+          <h3 style="margin-top:5px;">
+            One thought from today
+          </h3>
 
           <textarea
             class="mana-v927-reflection"
@@ -1132,51 +1526,115 @@
           ${complete ? "DAY COMPLETE ✓" : "COMPLETE DAY"}
         </button>
 
-        ${complete && day < TOTAL_DAYS ? `
-          <button
-            type="button"
-            class="mana-v927-secondary"
-            id="manaV927NextDay"
-          >
-            GO TO DAY ${day + 1} →
-          </button>
-        ` : ""}
+        ${
+          complete &&
+          day < TOTAL_DAYS
+            ? `
+              <button
+                type="button"
+                class="mana-v927-secondary"
+                id="manaV927NextDay"
+              >
+                GO TO DAY ${day + 1} →
+              </button>
+            `
+            : ""
+        }
 
-        ${completedCount(state) === TOTAL_DAYS ? completionHtml() : ""}
+        ${
+          completedCount(state) === TOTAL_DAYS
+            ? completionHtml()
+            : ""
+        }
+
       </div>
     `;
   }
 
-  function actionsHtml(state, day) {
+  function actionsHtml(
+    state,
+    day
+  ) {
     const list =
-      DAYS[day - 1].actions;
+      DAYS[
+        day - 1
+      ].actions;
 
     const stored =
-      actionsForDay(state, day);
+      actionsForDay(
+        state,
+        day
+      );
+
+    const progress =
+      actionCompletion(
+        state,
+        day
+      );
 
     return `
       <div class="mana-v927-card">
+
         <div class="mana-v927-card-head">
           <div>
-            <div class="mana-v927-kicker">DAILY ACTIONS</div>
-            <h3 style="margin-top:5px;">Keep the promises</h3>
+            <div class="mana-v927-kicker">
+              DAILY ACTIONS
+            </div>
+
+            <h3 style="margin-top:5px;">
+              Today's Focus
+            </h3>
           </div>
 
           <span class="mana-v927-pill">
-            ${actionCompletion(state, day).done}/${list.length}
+            ${progress.done}/${list.length}
           </span>
         </div>
 
-        ${list.map((item, index) => `
-          <button
-            type="button"
-            class="mana-v927-action ${stored[index] ? "done" : ""}"
-            data-v927-action="${index}"
-          >
-            <span class="mana-v927-check">${stored[index] ? "✓" : ""}</span>
-            <span class="mana-v927-action-copy">${esc(item)}</span>
-          </button>
-        `).join("")}
+        <div class="mana-v927-focus-progress">
+          <div class="mana-v927-focus-progress-row">
+            <strong>
+              ${progress.done} of ${list.length} complete
+            </strong>
+
+            <span>
+              ${progress.percent}%
+            </span>
+          </div>
+
+          <div class="mana-v927-track">
+            <div
+              class="mana-v927-fill"
+              style="width:${progress.percent}%"
+            ></div>
+          </div>
+        </div>
+
+        ${
+          list
+            .map(
+              (item, index) => `
+                <button
+                  type="button"
+                  class="
+                    mana-v927-action
+                    ${stored[index] ? "done" : ""}
+                  "
+                  data-v927-action="${index}"
+                >
+                  <span class="mana-v927-check">
+                    ${stored[index] ? "✓" : ""}
+                  </span>
+
+                  <span class="mana-v927-action-copy">
+                    ${esc(item)}
+                  </span>
+                </button>
+              `
+            )
+            .join("")
+        }
+
       </div>
     `;
   }
@@ -1184,10 +1642,22 @@
   function completionHtml() {
     return `
       <div class="mana-v927-card mana-v927-complete">
-        <div class="mana-v927-complete-mark">✓</div>
-        <div class="mana-v927-kicker">MANA 28 COMPLETE</div>
-        <h3 style="margin:7px 0 5px;font-size:24px;">28 Days. Done.</h3>
-        <p>You built evidence that you can show up, move with purpose and follow through.</p>
+        <div class="mana-v927-complete-mark">
+          ✓
+        </div>
+
+        <div class="mana-v927-kicker">
+          MANA 28 COMPLETE
+        </div>
+
+        <h3 style="margin:7px 0 5px;font-size:24px;">
+          28 Days. Done.
+        </h3>
+
+        <p>
+          You built evidence that you can show up,
+          move with purpose and follow through.
+        </p>
       </div>
     `;
   }
@@ -1196,108 +1666,191 @@
      PROGRAM
      ========================================= */
 
-  function programHtml(state) {
-    const selected =
-      state.selectedDay;
-
+  function programCardHtml(
+    state,
+    day
+  ) {
     const data =
-      DAYS[selected - 1];
+      DAYS[
+        day - 1
+      ];
+
+    const unlocked =
+      dayUnlocked(
+        state,
+        day
+      );
+
+    const done =
+      dayComplete(
+        state,
+        day
+      );
+
+    const current =
+      day ===
+      state.currentDay;
+
+    const status =
+      done
+        ? "COMPLETE"
+        : current
+          ? "CURRENT"
+          : unlocked
+            ? "AVAILABLE"
+            : "LOCKED";
 
     return `
-      <div id="${ROOT_ID}">
-        <div class="mana-v927-hero">
-          <div class="mana-v927-kicker">YOUR 28-DAY PROGRAM</div>
-          <h2>Day ${selected}: ${esc(data.title)}</h2>
-          <p>Select an unlocked day below. Tomorrow unlocks when today is completed.</p>
-        </div>
+      <div
+        class="
+          mana-v927-program-card
+          ${current ? "current" : ""}
+          ${done ? "done" : ""}
+          ${!unlocked ? "locked" : ""}
+        "
+      >
+        <div class="mana-v927-program-top">
+          <div>
+            <div class="mana-v927-program-day">
+              DAY ${day}
+            </div>
 
-        <div class="mana-v927-card">
-          <div class="mana-v927-day-grid">
-            ${DAYS.map((_, index) => {
-              const day =
-                index + 1;
+            <div class="mana-v927-program-title">
+              ${esc(data.title)}
+            </div>
 
-              const unlocked =
-                dayUnlocked(state, day);
+            <div class="mana-v927-program-session">
+              ${esc(data.workout)}
+            </div>
 
-              const done =
-                dayComplete(state, day);
-
-              return `
-                <button
-                  type="button"
-                  class="
-                    mana-v927-day-btn
-                    ${day === selected ? "current" : ""}
-                    ${done ? "done" : ""}
-                    ${!unlocked ? "locked" : ""}
-                  "
-                  data-v927-day="${day}"
-                  ${!unlocked ? "disabled" : ""}
-                >
-                  ${done ? "✓" : day}
-                </button>
-              `;
-            }).join("")}
-          </div>
-        </div>
-
-        <div class="mana-v927-card">
-          <div class="mana-v927-kicker">DAY ${selected}</div>
-          <div class="mana-v927-day-title">${esc(data.title)}</div>
-          <div class="mana-v927-focus">${esc(data.focus)}</div>
-
-          <div class="mana-v927-workout">
-            <div class="mana-v927-workout-label">SESSION</div>
-            <div class="mana-v927-workout-name">${esc(data.workout)}</div>
-
-            <div class="mana-v927-workout-copy">
-              ${workoutPrescription(selected)}
+            <div class="mana-v927-program-focus">
+              ${esc(data.focus)}
             </div>
           </div>
 
-          <div class="mana-v927-quote">
-            <strong>${esc(data.whakatauki)}</strong>
-            <span>${esc(data.meaning)}</span>
+          <div class="mana-v927-program-status">
+            ${status}
           </div>
-
-          <button
-            type="button"
-            class="mana-v927-primary"
-            id="manaV927OpenDay"
-          >
-            OPEN DAY ${selected}
-          </button>
         </div>
+
+        <div class="mana-v927-program-copy">
+          ${esc(
+            workoutPrescription(
+              day
+            )
+          )}
+        </div>
+
+        <button
+          type="button"
+          class="mana-v927-program-open"
+          data-v927-open-day="${day}"
+          ${!unlocked ? "disabled" : ""}
+        >
+          ${
+            done
+              ? "VIEW DAY →"
+              : current
+                ? "OPEN TODAY →"
+                : unlocked
+                  ? "OPEN DAY →"
+                  : "LOCKED"
+          }
+        </button>
       </div>
     `;
   }
 
-  function workoutPrescription(day) {
-    const type =
-      DAYS[day - 1].workout.toLowerCase();
+  function programHtml(state) {
+    const percent =
+      completionPercent(
+        state
+      );
 
-    if (type.includes("recovery")) {
-      return "20–30 min easy walk or bike • 8–10 min mobility • keep effort comfortable.";
-    }
+    const weeks =
+      [1,2,3,4]
+        .map(week => {
+          const range =
+            weekRange(
+              week
+            );
 
-    if (type.includes("upper")) {
-      return "Push • Pull • Shoulders • Arms • Core. 5–6 movements, 3 working sets each, controlled technique.";
-    }
+          const cards =
+            [];
 
-    if (type.includes("lower")) {
-      return "Squat or leg press • Hinge • Single-leg or supported work • Hamstrings • Calves • Core.";
-    }
+          for (
+            let day =
+              range.start;
+            day <=
+              range.end;
+            day += 1
+          ) {
+            cards.push(
+              programCardHtml(
+                state,
+                day
+              )
+            );
+          }
 
-    if (type.includes("conditioning")) {
-      return "20–30 min conditioning at a sustainable effort plus 8–10 min core work.";
-    }
+          return `
+            <div class="mana-v927-week">
+              <div class="mana-v927-week-title">
+                <span>
+                  WEEK ${week}
+                </span>
 
-    if (type.includes("walk")) {
-      return "30 min purposeful walk plus a short core circuit and mobility.";
-    }
+                <span>
+                  DAYS ${range.start}–${range.end}
+                </span>
+              </div>
 
-    return "Full body: lower-body push • upper push • upper pull • hinge • accessory • core. 3 working sets each.";
+              ${cards.join("")}
+            </div>
+          `;
+        })
+        .join("");
+
+    return `
+      <div id="${ROOT_ID}">
+
+        <div class="mana-v927-hero">
+          <div class="mana-v927-kicker">
+            YOUR MANA 28 PROGRAM
+          </div>
+
+          <h2>
+            28 days. One clear path.
+          </h2>
+
+          <p>
+            Just like Mana Strength, choose the day,
+            open it and follow the session.
+            Future days unlock as you progress.
+          </p>
+
+          <div class="mana-v927-progress-line">
+            <span>
+              Day ${state.currentDay} of 28
+            </span>
+
+            <span>
+              ${percent}%
+            </span>
+          </div>
+
+          <div class="mana-v927-track">
+            <div
+              class="mana-v927-fill"
+              style="width:${percent}%"
+            ></div>
+          </div>
+        </div>
+
+        ${weeks}
+
+      </div>
+    `;
   }
 
   /* =========================================
@@ -1313,75 +1866,146 @@
 
     const proteinPct =
       targets.protein
-        ? Math.min(100, Math.round(fuel.protein / targets.protein * 100))
+        ? Math.min(
+            100,
+            Math.round(
+              fuel.protein /
+              targets.protein *
+              100
+            )
+          )
         : 0;
 
     const waterPct =
       targets.water
-        ? Math.min(100, Math.round(fuel.water / targets.water * 100))
+        ? Math.min(
+            100,
+            Math.round(
+              fuel.water /
+              targets.water *
+              100
+            )
+          )
         : 0;
 
     return `
       <div id="${ROOT_ID}">
         <div class="mana-v927-hero">
-          <div class="mana-v927-kicker">MANA 28 FUEL</div>
-          <h2>Fuel the work</h2>
-          <p>Keep nutrition simple: protein, quality food, useful carbohydrates and enough fluid.</p>
+          <div class="mana-v927-kicker">
+            MANA 28 FUEL
+          </div>
+
+          <h2>
+            Fuel the work
+          </h2>
+
+          <p>
+            Keep nutrition simple: protein, quality food,
+            useful carbohydrates and enough fluid.
+          </p>
         </div>
 
         <div class="mana-v927-card">
           <div class="mana-v927-card-head">
-            <h3>Today</h3>
-            <span class="mana-v927-pill">LIVE FUEL DATA</span>
+            <h3>
+              Today
+            </h3>
+
+            <span class="mana-v927-pill">
+              LIVE FUEL DATA
+            </span>
           </div>
 
           <div class="mana-v927-fuel-grid">
             <div class="mana-v927-fuel-box">
-              <span>CALORIES</span>
-              <strong>${Math.round(fuel.calories).toLocaleString()}</strong>
+              <span>
+                CALORIES
+              </span>
+
+              <strong>
+                ${Math.round(
+                  fuel.calories
+                ).toLocaleString()}
+              </strong>
             </div>
 
             <div class="mana-v927-fuel-box">
-              <span>PROTEIN</span>
-              <strong>${Math.round(fuel.protein)} g</strong>
+              <span>
+                PROTEIN
+              </span>
+
+              <strong>
+                ${Math.round(
+                  fuel.protein
+                )} g
+              </strong>
             </div>
 
             <div class="mana-v927-fuel-box">
-              <span>WATER</span>
-              <strong>${Math.round(fuel.water)} ml</strong>
+              <span>
+                WATER
+              </span>
+
+              <strong>
+                ${Math.round(
+                  fuel.water
+                )} ml
+              </strong>
             </div>
           </div>
         </div>
 
         <div class="mana-v927-card">
-          <div class="mana-v927-kicker">DAILY TARGETS</div>
+          <div class="mana-v927-kicker">
+            DAILY TARGETS
+          </div>
 
           <p>
             Protein:
             <strong style="color:#f3d875;">
-              ${targets.protein ? `${Math.round(targets.protein)} g` : "Set in Fuel"}
+              ${
+                targets.protein
+                  ? `${Math.round(targets.protein)} g`
+                  : "Set in Fuel"
+              }
             </strong>
           </p>
 
           <div class="mana-v927-track">
-            <div class="mana-v927-fill" style="width:${proteinPct}%"></div>
+            <div
+              class="mana-v927-fill"
+              style="width:${proteinPct}%"
+            ></div>
           </div>
 
           <p>
             Water:
             <strong style="color:#f3d875;">
-              ${targets.water ? `${Math.round(targets.water)} ml` : "Set in Fuel"}
+              ${
+                targets.water
+                  ? `${Math.round(targets.water)} ml`
+                  : "Set in Fuel"
+              }
             </strong>
           </p>
 
           <div class="mana-v927-track">
-            <div class="mana-v927-fill" style="width:${waterPct}%"></div>
+            <div
+              class="mana-v927-fill"
+              style="width:${waterPct}%"
+            ></div>
           </div>
         </div>
 
         <div class="mana-v927-card">
-          <div class="mana-v927-kicker">MANA 28 FUEL RULES</div>
-          <h3 style="margin-top:5px;">Keep it simple</h3>
+          <div class="mana-v927-kicker">
+            MANA 28 FUEL RULES
+          </div>
+
+          <h3 style="margin-top:5px;">
+            Keep it simple
+          </h3>
+
           <p>1. Build meals around protein.</p>
           <p>2. Eat fruit or vegetables every day.</p>
           <p>3. Use carbohydrates to support training and activity.</p>
@@ -1398,94 +2022,156 @@
 
   function progressHtml(state) {
     const complete =
-      completedCount(state);
+      completedCount(
+        state
+      );
 
     const percent =
-      completionPercent(state);
+      completionPercent(
+        state
+      );
 
     const actionDays =
-      Object.entries(state.actions)
-        .filter(([_, values]) =>
-          Array.isArray(values) &&
-          values.some(Boolean)
+      Object
+        .entries(
+          state.actions
+        )
+        .filter(
+          ([_, values]) =>
+            Array.isArray(values) &&
+            values.some(Boolean)
         )
         .length;
 
     const reflectionDays =
-      Object.values(state.reflections)
-        .filter(value =>
-          String(value || "").trim()
+      Object
+        .values(
+          state.reflections
+        )
+        .filter(
+          value =>
+            String(
+              value || ""
+            ).trim()
         )
         .length;
 
     return `
       <div id="${ROOT_ID}">
         <div class="mana-v927-hero">
-          <div class="mana-v927-kicker">MANA 28 PROGRESS</div>
-          <h2>${percent}% complete</h2>
-          <p>Progress comes from days completed, actions taken and lessons carried forward.</p>
+          <div class="mana-v927-kicker">
+            MANA 28 PROGRESS
+          </div>
+
+          <h2>
+            ${percent}% complete
+          </h2>
+
+          <p>
+            Progress comes from days completed,
+            actions taken and lessons carried forward.
+          </p>
 
           <div class="mana-v927-track">
-            <div class="mana-v927-fill" style="width:${percent}%"></div>
+            <div
+              class="mana-v927-fill"
+              style="width:${percent}%"
+            ></div>
           </div>
         </div>
 
         <div class="mana-v927-grid">
           <div class="mana-v927-stat">
-            <span>Days complete</span>
-            <strong>${complete}/28</strong>
+            <span>
+              Days complete
+            </span>
+
+            <strong>
+              ${complete}/28
+            </strong>
           </div>
 
           <div class="mana-v927-stat">
-            <span>Current day</span>
-            <strong>${state.currentDay}</strong>
+            <span>
+              Current day
+            </span>
+
+            <strong>
+              ${state.currentDay}
+            </strong>
           </div>
 
           <div class="mana-v927-stat">
-            <span>Action days</span>
-            <strong>${actionDays}</strong>
+            <span>
+              Action days
+            </span>
+
+            <strong>
+              ${actionDays}
+            </strong>
           </div>
 
           <div class="mana-v927-stat">
-            <span>Reflections</span>
-            <strong>${reflectionDays}</strong>
+            <span>
+              Reflections
+            </span>
+
+            <strong>
+              ${reflectionDays}
+            </strong>
           </div>
         </div>
 
         <div class="mana-v927-card">
-          <div class="mana-v927-kicker">28-DAY MAP</div>
+          <div class="mana-v927-kicker">
+            28-DAY MAP
+          </div>
 
           <div class="mana-v927-day-grid">
-            ${DAYS.map((_, index) => {
-              const day =
-                index + 1;
+            ${
+              DAYS
+                .map((_, index) => {
+                  const day =
+                    index + 1;
 
-              const done =
-                dayComplete(state, day);
+                  const done =
+                    dayComplete(
+                      state,
+                      day
+                    );
 
-              const unlocked =
-                dayUnlocked(state, day);
+                  const unlocked =
+                    dayUnlocked(
+                      state,
+                      day
+                    );
 
-              return `
-                <button
-                  type="button"
-                  class="
-                    mana-v927-day-btn
-                    ${done ? "done" : ""}
-                    ${day === state.currentDay ? "current" : ""}
-                    ${!unlocked ? "locked" : ""}
-                  "
-                  data-v927-progress-day="${day}"
-                  ${!unlocked ? "disabled" : ""}
-                >
-                  ${done ? "✓" : day}
-                </button>
-              `;
-            }).join("")}
+                  return `
+                    <button
+                      type="button"
+                      class="
+                        mana-v927-day-btn
+                        ${done ? "done" : ""}
+                        ${day === state.currentDay ? "current" : ""}
+                        ${!unlocked ? "locked" : ""}
+                      "
+                      data-v927-progress-day="${day}"
+                      ${!unlocked ? "disabled" : ""}
+                    >
+                      ${done ? "✓" : day}
+                    </button>
+                  `;
+                })
+                .join("")
+            }
           </div>
         </div>
 
-        ${complete === TOTAL_DAYS ? completionHtml() : ""}
+        ${
+          complete === TOTAL_DAYS
+            ? completionHtml()
+            : ""
+        }
       </div>
     `;
   }
@@ -1498,31 +2184,51 @@
     return `
       <div id="${ROOT_ID}">
         <div class="mana-v927-hero">
-          <div class="mana-v927-kicker">LEARN</div>
-          <h2>The principles behind MANA 28</h2>
-          <p>Understand the thinking behind the program so the habits can continue after Day 28.</p>
+          <div class="mana-v927-kicker">
+            LEARN
+          </div>
+
+          <h2>
+            The principles behind MANA 28
+          </h2>
+
+          <p>
+            Understand the thinking behind the program
+            so the habits can continue after Day 28.
+          </p>
         </div>
 
         <div class="mana-v927-card">
-          ${LEARN.map((item, index) => `
-            <div
-              class="mana-v927-learn-item"
-              data-v927-learn="${index}"
-            >
-              <button
-                type="button"
-                class="mana-v927-learn-open"
-                data-v927-learn-open="${index}"
-              >
-                <strong>${esc(item.title)}</strong>
-                <span class="mana-v927-arrow">⌄</span>
-              </button>
+          ${
+            LEARN
+              .map(
+                (item, index) => `
+                  <div
+                    class="mana-v927-learn-item"
+                    data-v927-learn="${index}"
+                  >
+                    <button
+                      type="button"
+                      class="mana-v927-learn-open"
+                      data-v927-learn-open="${index}"
+                    >
+                      <strong>
+                        ${esc(item.title)}
+                      </strong>
 
-              <div class="mana-v927-learn-body">
-                ${esc(item.body)}
-              </div>
-            </div>
-          `).join("")}
+                      <span class="mana-v927-arrow">
+                        ⌄
+                      </span>
+                    </button>
+
+                    <div class="mana-v927-learn-body">
+                      ${esc(item.body)}
+                    </div>
+                  </div>
+                `
+              )
+              .join("")
+          }
         </div>
       </div>
     `;
@@ -1532,190 +2238,291 @@
      EVENTS
      ========================================= */
 
+  function goToTab(
+    tabName
+  ) {
+    document
+      .querySelector(
+        `#manaV83Tabs [data-v83-tab="${tabName}"]`
+      )
+      ?.click();
+  }
+
   function wireOverview(state) {
     const {day} =
-      currentDayData(state);
+      currentDayData(
+        state
+      );
 
     document
-      .querySelectorAll("[data-v927-action]")
+      .querySelectorAll(
+        "[data-v927-action]"
+      )
       .forEach(button => {
-        button.addEventListener("click", () => {
-          const index =
-            Number(button.dataset.v927Action);
+        button.addEventListener(
+          "click",
+          () => {
+            const index =
+              Number(
+                button.dataset
+                  .v927Action
+              );
 
+            const next =
+              loadState();
+
+            const list =
+              actionsForDay(
+                next,
+                day
+              ).slice();
+
+            while (
+              list.length <
+              DAYS[day - 1]
+                .actions
+                .length
+            ) {
+              list.push(false);
+            }
+
+            list[index] =
+              !list[index];
+
+            next.actions[
+              String(day)
+            ] =
+              list;
+
+            saveState(
+              next
+            );
+
+            render();
+          }
+        );
+      });
+
+    document
+      .getElementById(
+        "manaV927ViewProgram"
+      )
+      ?.addEventListener(
+        "click",
+        () => {
+          goToTab(
+            "program"
+          );
+        }
+      );
+
+    document
+      .getElementById(
+        "manaV927SaveReflection"
+      )
+      ?.addEventListener(
+        "click",
+        () => {
           const next =
             loadState();
 
-          const list =
-            actionsForDay(next, day).slice();
+          next.reflections[
+            String(day)
+          ] =
+            document
+              .getElementById(
+                "manaV927Reflection"
+              )
+              ?.value
+              ?.trim() ||
+            "";
 
-          while (
-            list.length <
-            DAYS[day - 1].actions.length
-          ) {
-            list.push(false);
-          }
+          saveState(
+            next
+          );
 
-          list[index] =
-            !list[index];
-
-          next.actions[String(day)] =
-            list;
-
-          saveState(next);
-          render();
-        });
-      });
-
-    document
-      .getElementById("manaV927SaveReflection")
-      ?.addEventListener("click", () => {
-        const next =
-          loadState();
-
-        next.reflections[String(day)] =
-          document
-            .getElementById("manaV927Reflection")
-            ?.value
-            ?.trim() || "";
-
-        saveState(next);
-
-        alert("Reflection saved.");
-      });
-
-    document
-      .getElementById("manaV927CompleteDay")
-      ?.addEventListener("click", () => {
-        const next =
-          loadState();
-
-        if (
-          !next.completedDays.includes(day)
-        ) {
-          next.completedDays.push(day);
+          alert(
+            "Reflection saved."
+          );
         }
-
-        next.completedDays =
-          [...new Set(next.completedDays)]
-            .sort((a, b) => a - b);
-
-        if (
-          day === next.currentDay &&
-          day < TOTAL_DAYS
-        ) {
-          next.currentDay =
-            day + 1;
-        }
-
-        saveState(next);
-        render();
-      });
+      );
 
     document
-      .getElementById("manaV927NextDay")
-      ?.addEventListener("click", () => {
-        const next =
-          loadState();
-
-        next.selectedDay =
-          clamp(day + 1, 1, TOTAL_DAYS);
-
-        saveState(next);
-        render();
-      });
-  }
-
-  function wireProgram(state) {
-    document
-      .querySelectorAll("[data-v927-day]")
-      .forEach(button => {
-        button.addEventListener("click", () => {
-          const day =
-            Number(button.dataset.v927Day);
-
+      .getElementById(
+        "manaV927CompleteDay"
+      )
+      ?.addEventListener(
+        "click",
+        () => {
           const next =
             loadState();
 
           if (
-            !dayUnlocked(next, day)
+            !next.completedDays
+              .includes(day)
           ) {
-            return;
+            next.completedDays
+              .push(day);
           }
 
-          next.selectedDay =
-            day;
+          next.completedDays =
+            [
+              ...new Set(
+                next.completedDays
+              )
+            ]
+              .sort(
+                (a,b) =>
+                  a - b
+              );
 
-          saveState(next);
+          if (
+            day ===
+              next.currentDay &&
+            day <
+              TOTAL_DAYS
+          ) {
+            next.currentDay =
+              day + 1;
+          }
+
+          saveState(
+            next
+          );
+
           render();
-        });
-      });
+        }
+      );
 
     document
-      .getElementById("manaV927OpenDay")
-      ?.addEventListener("click", () => {
-        const next =
-          loadState();
+      .getElementById(
+        "manaV927NextDay"
+      )
+      ?.addEventListener(
+        "click",
+        () => {
+          const next =
+            loadState();
 
-        next.currentDay =
-          Math.max(
-            next.currentDay,
-            next.selectedDay
+          next.selectedDay =
+            clamp(
+              day + 1,
+              1,
+              TOTAL_DAYS
+            );
+
+          saveState(
+            next
           );
 
-        saveState(next);
+          render();
+        }
+      );
+  }
 
-        const overview =
-          document.querySelector(
-            '#manaV83Tabs [data-v83-tab="overview"]'
-          );
+  function wireProgram() {
+    document
+      .querySelectorAll(
+        "[data-v927-open-day]"
+      )
+      .forEach(button => {
+        button.addEventListener(
+          "click",
+          () => {
+            const day =
+              Number(
+                button.dataset
+                  .v927OpenDay
+              );
 
-        overview?.click();
+            const next =
+              loadState();
+
+            if (
+              !dayUnlocked(
+                next,
+                day
+              )
+            ) {
+              return;
+            }
+
+            next.selectedDay =
+              day;
+
+            saveState(
+              next
+            );
+
+            goToTab(
+              "overview"
+            );
+          }
+        );
       });
   }
 
   function wireProgress() {
     document
-      .querySelectorAll("[data-v927-progress-day]")
+      .querySelectorAll(
+        "[data-v927-progress-day]"
+      )
       .forEach(button => {
-        button.addEventListener("click", () => {
-          const day =
-            Number(button.dataset.v927ProgressDay);
+        button.addEventListener(
+          "click",
+          () => {
+            const day =
+              Number(
+                button.dataset
+                  .v927ProgressDay
+              );
 
-          const next =
-            loadState();
+            const next =
+              loadState();
 
-          if (
-            !dayUnlocked(next, day)
-          ) {
-            return;
-          }
+            if (
+              !dayUnlocked(
+                next,
+                day
+              )
+            ) {
+              return;
+            }
 
-          next.selectedDay =
-            day;
+            next.selectedDay =
+              day;
 
-          saveState(next);
-
-          const programTab =
-            document.querySelector(
-              '#manaV83Tabs [data-v83-tab="program"]'
+            saveState(
+              next
             );
 
-          programTab?.click();
-        });
+            goToTab(
+              "program"
+            );
+          }
+        );
       });
   }
 
   function wireLearn() {
     document
-      .querySelectorAll("[data-v927-learn-open]")
+      .querySelectorAll(
+        "[data-v927-learn-open]"
+      )
       .forEach(button => {
-        button.addEventListener("click", () => {
-          button
-            .closest(".mana-v927-learn-item")
-            ?.classList
-            .toggle("open");
-        });
+        button.addEventListener(
+          "click",
+          () => {
+            button
+              .closest(
+                ".mana-v927-learn-item"
+              )
+              ?.classList
+              .toggle(
+                "open"
+              );
+          }
+        );
       });
   }
 
@@ -1748,17 +2555,21 @@
       activeTab();
 
     if (
-      tab === "program"
+      tab ===
+      "program"
     ) {
       holder.innerHTML =
-        programHtml(state);
+        programHtml(
+          state
+        );
 
-      wireProgram(state);
+      wireProgram();
       return;
     }
 
     if (
-      tab === "fuel"
+      tab ===
+      "fuel"
     ) {
       holder.innerHTML =
         fuelHtml();
@@ -1767,17 +2578,21 @@
     }
 
     if (
-      tab === "progress"
+      tab ===
+      "progress"
     ) {
       holder.innerHTML =
-        progressHtml(state);
+        progressHtml(
+          state
+        );
 
       wireProgress();
       return;
     }
 
     if (
-      tab === "learn"
+      tab ===
+      "learn"
     ) {
       holder.innerHTML =
         learnHtml();
@@ -1787,15 +2602,21 @@
     }
 
     holder.innerHTML =
-      overviewHtml(state);
+      overviewHtml(
+        state
+      );
 
-    wireOverview(state);
+    wireOverview(
+      state
+    );
   }
 
   function scheduleRender(
-    delay = 100
+    delay = 50
   ) {
-    clearTimeout(renderTimer);
+    clearTimeout(
+      renderTimer
+    );
 
     renderTimer =
       setTimeout(
@@ -1808,15 +2629,18 @@
     window.addEventListener(
       "mana:program-tab-change",
       () => {
-        scheduleRender(40);
-        setTimeout(render, 160);
+        scheduleRender(
+          20
+        );
       }
     );
 
     window.addEventListener(
       "mana28:updated",
       () => {
-        scheduleRender(40);
+        scheduleRender(
+          30
+        );
       }
     );
 
@@ -1825,47 +2649,14 @@
       () => {
         if (
           mana28Open() &&
-          activeTab() === "fuel"
+          activeTab() ===
+            "fuel"
         ) {
-          scheduleRender(80);
+          scheduleRender(
+            40
+          );
         }
       }
-    );
-
-    window.addEventListener(
-      "focus",
-      () => {
-        if (
-          mana28Open()
-        ) {
-          scheduleRender(120);
-        }
-      }
-    );
-
-    document.addEventListener(
-      "visibilitychange",
-      () => {
-        if (
-          document.visibilityState === "visible" &&
-          mana28Open()
-        ) {
-          scheduleRender(120);
-        }
-      }
-    );
-
-    document.addEventListener(
-      "click",
-      event => {
-        if (
-          event.target.closest("#manaV80Mana28")
-        ) {
-          setTimeout(render, 120);
-          setTimeout(render, 300);
-        }
-      },
-      true
     );
   }
 
@@ -1873,36 +2664,39 @@
     injectStyles();
     watch();
 
-    [600, 1200, 2200]
-      .forEach(delay => {
-        setTimeout(render, delay);
-      });
+    if (
+      mana28Open()
+    ) {
+      render();
+    }
   }
 
   window.renderMana28 =
     render;
 
-  window.resetMana28 = () => {
-    if (
-      !confirm(
-        "Reset all MANA 28 progress and start again from Day 1?"
-      )
-    ) {
-      return;
-    }
+  window.resetMana28 =
+    () => {
+      if (
+        !confirm(
+          "Reset all MANA 28 progress and start again from Day 1?"
+        )
+      ) {
+        return;
+      }
 
-    localStorage.removeItem(
-      STATE_KEY
-    );
+      localStorage.removeItem(
+        STATE_KEY
+      );
 
-    render();
-  };
+      render();
+    };
 
   window.MANA28_BUILD =
     BUILD;
 
   if (
-    document.readyState === "loading"
+    document.readyState ===
+      "loading"
   ) {
     document.addEventListener(
       "DOMContentLoaded",
@@ -1911,4 +2705,5 @@
   } else {
     init();
   }
+
 })();
