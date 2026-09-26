@@ -1,10 +1,11 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.41.0
+   MANA MOVEMENT TRAINING v9.41.1
    APP TIDY — STRENGTH / FUEL / HOME / AUTH
 
    STRENGTH
    - Set 1 weight auto-copies to Sets 2 and 3
    - Manual changes to Set 2 / 3 are respected
+   - Targets the live v6.4 Strength logger
 
    FUEL
    - Adds custom meal entry
@@ -28,7 +29,7 @@
 (() => {
   "use strict";
 
-  const BUILD = "94100";
+  const BUILD = "94110";
 
   const STYLE_ID =
     "mana-v941-app-tidy-style";
@@ -63,31 +64,6 @@
     } catch (_) {
       return fallback;
     }
-  }
-
-
-  function esc(
-    value
-  ) {
-    return String(
-      value ?? ""
-    )
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-      .replaceAll(
-        '"',
-        "&quot;"
-      );
   }
 
 
@@ -237,12 +213,12 @@
          STRENGTH
          ===================================== */
 
-      .v55-strength-panel
+      .mana-v64-card
       .mana-v941-copy-note{
         margin:
-          -2px
+          10px
           0
-          9px;
+          4px;
 
         color:#777;
 
@@ -706,12 +682,60 @@
      STRENGTH — COPY SET 1 WEIGHT
      ========================================= */
 
-  function addStrengthHint(
-    panel
+  function strengthSetRows(
+    card
   ) {
     if (
-      !panel ||
-      panel.querySelector(
+      !card
+    ) {
+      return [];
+    }
+
+
+    return [
+      ...card.querySelectorAll(
+        "[data-v64-set]"
+      )
+    ];
+  }
+
+
+  function strengthSetNumber(
+    row
+  ) {
+    const card =
+      row?.closest(
+        ".mana-v64-card"
+      );
+
+
+    if (
+      !card
+    ) {
+      return 0;
+    }
+
+
+    const rows =
+      strengthSetRows(
+        card
+      );
+
+
+    return (
+      rows.indexOf(
+        row
+      ) + 1
+    );
+  }
+
+
+  function addStrengthHint(
+    card
+  ) {
+    if (
+      !card ||
+      card.querySelector(
         ".mana-v941-copy-note"
       )
     ) {
@@ -719,14 +743,14 @@
     }
 
 
-    const labels =
-      panel.querySelector(
-        ".v55-set-labels"
+    const tableHead =
+      card.querySelector(
+        ".mana-v64-table-head"
       );
 
 
     if (
-      !labels
+      !tableHead
     ) {
       return;
     }
@@ -746,7 +770,7 @@
       "Set 1 weight carries into Sets 2 and 3.";
 
 
-    labels.insertAdjacentElement(
+    tableHead.insertAdjacentElement(
       "beforebegin",
       note
     );
@@ -758,29 +782,39 @@
   ) {
     const row =
       input.closest(
-        ".v55-set-row"
+        "[data-v64-set]"
       );
 
 
-    const panel =
+    const card =
       input.closest(
-        ".v55-strength-panel"
+        ".mana-v64-card"
       );
 
 
     if (
       !row ||
-      !panel ||
-      row.dataset
-        .setNumber !==
-        "1"
+      !card
+    ) {
+      return;
+    }
+
+
+    const number =
+      strengthSetNumber(
+        row
+      );
+
+
+    if (
+      number !== 1
     ) {
       return;
     }
 
 
     addStrengthHint(
-      panel
+      card
     );
 
 
@@ -788,15 +822,28 @@
       input.value;
 
 
+    const rows =
+      strengthSetRows(
+        card
+      );
+
+
     [
-      "2",
-      "3"
+      rows[1],
+      rows[2]
     ].forEach(
-      number => {
+      targetRow => {
+
+        if (
+          !targetRow
+        ) {
+          return;
+        }
+
 
         const target =
-          panel.querySelector(
-            `.v55-set-row[data-set-number="${number}"] .v55-weight`
+          targetRow.querySelector(
+            "[data-v64-weight]"
           );
 
 
@@ -853,7 +900,7 @@
   function decorateStrengthPanels() {
     document
       .querySelectorAll(
-        ".v55-strength-panel"
+        "#manaV64Exercises .mana-v64-card"
       )
       .forEach(
         addStrengthHint
@@ -1450,12 +1497,15 @@
     if (
       auth
     ) {
+
       auth.classList.add(
         "hide"
       );
 
+
       auth.style.display =
         "none";
+
     }
   }
 
@@ -1465,9 +1515,13 @@
   ) {
     setTimeout(
       () => {
+
         decorateHome();
+
         decorateStrengthPanels();
+
         enforceAuthPlacement();
+
       },
       delay
     );
@@ -1485,7 +1539,7 @@
 
         const input =
           event.target.closest(
-            ".v55-weight"
+            "[data-v64-weight]"
           );
 
 
@@ -1754,7 +1808,9 @@
           () => {
 
             decorateHome();
+
             decorateStrengthPanels();
+
             enforceAuthPlacement();
 
           },
