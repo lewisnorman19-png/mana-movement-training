@@ -1,19 +1,16 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.52.0
+   MANA MOVEMENT TRAINING v9.52.1
    BODY WEIGHT TREND
 
    - 7 day / 30 day toggle
    - Simple body-weight trend chart
    - Window change
    - Check-in count
-   - Uses existing v9.47 body-weight data
-   - Mobile friendly
-
-   IMPORTANT
+   - Re-attaches after Progress rerenders
    - No auth changes
    - No Fuel calculation changes
    - No MutationObserver
-   - No polling
+   - No permanent polling
    ========================================= */
 
 (() => {
@@ -21,7 +18,7 @@
 
 
   const BUILD =
-    "95200";
+    "95210";
 
 
   const WEIGHT_KEY =
@@ -38,6 +35,10 @@
 
   const TREND_ID =
     "manaV952WeightTrend";
+
+
+  let retryTimers =
+    [];
 
 
   /* =========================================
@@ -288,7 +289,7 @@
 
 
   /* =========================================
-     SVG CHART
+     CHART
      ========================================= */
 
   function chartHtml(
@@ -384,55 +385,49 @@
 
 
     const points =
-      entries
-        .map(
-          (
-            item,
-            index
-          ) => {
+      entries.map(
+        (
+          item,
+          index
+        ) => {
 
-            const x =
-              entries.length === 1
-                ? width / 2
-                : padX +
-                  (
-                    index /
-                    (
-                      entries.length - 1
-                    )
-                  ) *
-                  innerWidth;
-
-
-            const ratio =
+          const x =
+            padX +
+            (
+              index /
               (
-                Number(
-                  item.weight
-                ) -
-                min
-              ) /
-              (
-                max -
-                min
-              );
+                entries.length - 1
+              )
+            ) *
+            innerWidth;
 
 
-            const y =
-              padTop +
-              innerHeight -
-              (
-                ratio *
-                innerHeight
-              );
+          const ratio =
+            (
+              item.weight -
+              min
+            ) /
+            (
+              max -
+              min
+            );
 
 
-            return {
-              x,
-              y,
-              item
-            };
-          }
-        );
+          const y =
+            padTop +
+            innerHeight -
+            (
+              ratio *
+              innerHeight
+            );
+
+
+          return {
+            x,
+            y
+          };
+        }
+      );
 
 
     const polyline =
@@ -459,16 +454,6 @@
           `
         )
         .join("");
-
-
-    const first =
-      entries[0];
-
-
-    const last =
-      entries[
-        entries.length - 1
-      ];
 
 
     return `
@@ -508,13 +493,15 @@
 
           <span>
             ${formatDate(
-              first.date
+              entries[0].date
             )}
           </span>
 
           <span>
             ${formatDate(
-              last.date
+              entries[
+                entries.length - 1
+              ].date
             )}
           </span>
 
@@ -773,8 +760,7 @@
       .mana-v952-empty{
         margin-top:12px;
 
-        padding:
-          14px;
+        padding:14px;
 
         border:
           1px dashed
@@ -789,27 +775,6 @@
         line-height:1.5;
 
         text-align:center;
-      }
-
-
-      @media(
-        max-width:600px
-      ){
-
-        #${TREND_ID}
-        .mana-v952-stat strong{
-          font-size:15px;
-        }
-
-
-        #${TREND_ID}
-        .mana-v952-chart-wrap{
-          padding:
-            8px
-            8px
-            6px;
-        }
-
       }
 
     `;
@@ -837,7 +802,7 @@
     if (
       !weightCard
     ) {
-      return;
+      return false;
     }
 
 
@@ -848,12 +813,6 @@
       ?.remove();
 
 
-    const summary =
-      weightCard.querySelector(
-        ".mana-v947-weight-summary"
-      );
-
-
     const form =
       weightCard.querySelector(
         ".mana-v947-weight-form"
@@ -861,10 +820,9 @@
 
 
     if (
-      !summary ||
       !form
     ) {
-      return;
+      return false;
     }
 
 
@@ -876,16 +834,6 @@
       windowEntries(
         days
       );
-
-
-    const current =
-      entries.length
-        ? Number(
-            entries[
-              entries.length - 1
-            ].weight
-          )
-        : 0;
 
 
     const block =
@@ -929,6 +877,7 @@
           >
             7D
           </button>
+
 
           <button
             type="button"
@@ -1027,23 +976,60 @@
 
         }
       );
+
+
+    return true;
   }
 
 
   /* =========================================
-     SAFE SCHEDULING
+     SAFE RETRIES
      ========================================= */
 
-  function scheduleTrend(
-    delay = 220
-  ) {
+  function clearRetries() {
 
-    setTimeout(
-      renderTrend,
-      delay
+    retryTimers
+      .forEach(
+        timer =>
+          clearTimeout(
+            timer
+          )
+      );
+
+
+    retryTimers =
+      [];
+  }
+
+
+  function retryRender() {
+
+    clearRetries();
+
+
+    [
+      100,
+      250,
+      500,
+      900
+    ].forEach(
+      delay => {
+
+        retryTimers.push(
+          setTimeout(
+            renderTrend,
+            delay
+          )
+        );
+
+      }
     );
   }
 
+
+  /* =========================================
+     EVENTS
+     ========================================= */
 
   function wireEvents() {
 
@@ -1057,9 +1043,7 @@
           )
         ) {
 
-          scheduleTrend(
-            260
-          );
+          retryRender();
 
         }
 
@@ -1069,50 +1053,32 @@
 
     window.addEventListener(
       "mana:program-tab-change",
-      () => {
-
-        scheduleTrend(
-          250
-        );
-
-      }
+      retryRender
     );
 
 
     window.addEventListener(
       "mana:body-weight-updated",
-      () => {
-
-        /*
-          v9.47 rebuilds the Weight card first.
-          Give it time, then restore trend.
-        */
-
-        scheduleTrend(
-          180
-        );
+      retryRender
+    );
 
 
-        scheduleTrend(
-          350
-        );
-
-      }
+    window.addEventListener(
+      "mana:strength-synced",
+      retryRender
     );
 
 
     window.addEventListener(
       "focus",
-      () => {
-
-        scheduleTrend(
-          180
-        );
-
-      }
+      retryRender
     );
   }
 
+
+  /* =========================================
+     INIT
+     ========================================= */
 
   function init() {
 
@@ -1121,13 +1087,9 @@
     wireEvents();
 
 
-    /*
-      One safe initial check.
-    */
-
     setTimeout(
-      renderTrend,
-      1200
+      retryRender,
+      1000
     );
   }
 
