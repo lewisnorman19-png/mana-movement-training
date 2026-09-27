@@ -1,11 +1,12 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.42.0
+   MANA MOVEMENT TRAINING v9.42.1
    HOME PROGRAM SPACING POLISH
 
-   - More breathing room between program cards
-   - Cleaner badge positioning
-   - Mana Strength active highlight lowered
-   - Mobile-first polish
+   - Clear separation between MANA 28,
+     MANA STRENGTH and MANA LIFE
+   - More breathing room around badges
+   - Strength active highlight moved lower
+   - Stronger mobile spacing
    ========================================= */
 
 (() => {
@@ -37,61 +38,78 @@
     style.textContent = `
 
       /* =====================================
-         PROGRAM CARD SPACING
+         ALL HOME PROGRAM CARDS
          ===================================== */
 
       #manaV80Home
       .mana-v8013-program{
         margin:
-          18px
-          0;
+          26px
+          0 !important;
+
+        padding-top:
+          34px !important;
 
         overflow:hidden;
       }
 
 
-      /*
-        Give the first program a little
-        separation from the heading above.
-      */
+      /* =====================================
+         INDIVIDUAL CARD SPACING
+         ===================================== */
 
       #manaV80Home
       #manaV80Mana28{
-        margin-top:20px;
+        margin-top:
+          24px !important;
+
+        margin-bottom:
+          30px !important;
       }
 
-
-      /*
-        Give Strength slightly more room
-        around the active treatment.
-      */
 
       #manaV80Home
       #manaV80Strength{
-        margin-top:22px;
-        margin-bottom:22px;
+        margin-top:
+          30px !important;
+
+        margin-bottom:
+          30px !important;
       }
 
 
-      /*
-        Mana Life now stands as a full
-        program so give it the same space.
-      */
-
       #manaV80Home
       #manaV80Life{
-        margin-top:22px;
+        margin-top:
+          30px !important;
+
+        margin-bottom:
+          24px !important;
       }
 
 
       /* =====================================
-         TOP-RIGHT BADGES
+         TOP-RIGHT PROGRAM BADGES
          ===================================== */
 
       #manaV80Home
       .mana-v8013-badge{
-        top:20px;
-        right:20px;
+        top:
+          22px !important;
+
+        right:
+          20px !important;
+      }
+
+
+      /* =====================================
+         PROGRAM LABEL
+         ===================================== */
+
+      #manaV80Home
+      .mana-v8013-program-label{
+        padding-top:
+          8px;
       }
 
 
@@ -101,35 +119,41 @@
 
       #manaV80Home
       .mana-v8013-current-badge{
-        margin-top:20px;
+        margin-top:
+          24px !important;
+
+        margin-bottom:
+          4px;
       }
 
 
       /* =====================================
-         MANA STRENGTH ACTIVE HIGHLIGHT
+         STRENGTH GOLD HIGHLIGHT
          ===================================== */
 
       #manaV80Home
       #manaV80Strength.current::before{
-        top:6px;
+        top:
+          10px !important;
 
-        left:18px;
-        right:18px;
+        left:
+          20px !important;
 
-        height:4px;
+        right:
+          20px !important;
 
-        border-radius:999px;
+        height:
+          4px !important;
+
+        border-radius:
+          999px !important;
       }
 
 
-      /*
-        Slightly more room above the
-        Strength content when it is active.
-      */
-
       #manaV80Home
       #manaV80Strength.current{
-        padding-top:30px;
+        padding-top:
+          42px !important;
       }
 
 
@@ -144,58 +168,85 @@
         #manaV80Home
         .mana-v8013-program{
           margin:
-            16px
-            0;
+            24px
+            0 !important;
+
+          padding-top:
+            32px !important;
         }
 
 
         #manaV80Home
         #manaV80Mana28{
-          margin-top:18px;
-          margin-bottom:20px;
+          margin-top:
+            22px !important;
+
+          margin-bottom:
+            32px !important;
         }
 
 
         #manaV80Home
         #manaV80Strength{
-          margin-top:20px;
-          margin-bottom:20px;
+          margin-top:
+            32px !important;
+
+          margin-bottom:
+            32px !important;
         }
 
 
         #manaV80Home
         #manaV80Life{
-          margin-top:20px;
+          margin-top:
+            32px !important;
         }
 
 
         #manaV80Home
         .mana-v8013-badge{
-          top:17px;
-          right:15px;
+          top:
+            20px !important;
+
+          right:
+            16px !important;
+        }
+
+
+        #manaV80Home
+        .mana-v8013-program-label{
+          padding-top:
+            10px;
         }
 
 
         #manaV80Home
         .mana-v8013-current-badge{
-          margin-top:18px;
+          margin-top:
+            24px !important;
         }
 
 
         #manaV80Home
         #manaV80Strength.current{
-          padding-top:28px;
+          padding-top:
+            42px !important;
         }
 
 
         #manaV80Home
         #manaV80Strength.current::before{
-          top:6px;
+          top:
+            11px !important;
 
-          left:15px;
-          right:15px;
+          left:
+            18px !important;
 
-          height:3px;
+          right:
+            18px !important;
+
+          height:
+            4px !important;
         }
 
       }
@@ -216,7 +267,7 @@
 
 
   window.MANA_HOME_SPACING_BUILD =
-    "94200";
+    "94210";
 
 
   if (
