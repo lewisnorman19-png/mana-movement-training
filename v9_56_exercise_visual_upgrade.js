@@ -2,13 +2,15 @@
    MANA MOVEMENT TRAINING v9.56.0
    EXERCISE VISUAL UPGRADE
 
-   - Bigger clearer muscle diagrams
-   - Upper body only when upper body targeted
-   - Lower body only when lower body targeted
-   - Better anatomical proportions
-   - Higher quality illustrated movement demo
+   - Bigger, clearer muscle diagrams
+   - Upper body only for upper-body exercises
+   - Lower body only for lower-body exercises
+   - Full body for compound movements
+   - More anatomical illustration style
+   - Better START → FINISH exercise graphics
    - Works on top of v9.55
-   - No workout logic changes
+   - No workout logging changes
+   - No auth / Fuel changes
    ========================================= */
 
 (() => {
@@ -24,7 +26,7 @@
 
 
   /* =========================================
-     CLASSIFY
+     EXERCISE CLASSIFICATION
      ========================================= */
 
   function exerciseInfo(
@@ -36,6 +38,8 @@
         rawName || ""
       ).toLowerCase();
 
+
+    /* CHEST */
 
     if (
       name.includes("bench") ||
@@ -57,6 +61,8 @@
       };
     }
 
+
+    /* SHOULDERS */
 
     if (
       name.includes("shoulder press") ||
@@ -93,6 +99,8 @@
       };
     }
 
+
+    /* BACK */
 
     if (
       name.includes("row")
@@ -133,6 +141,8 @@
     }
 
 
+    /* ARMS */
+
     if (
       name.includes("curl") &&
       !name.includes("leg")
@@ -167,6 +177,8 @@
       };
     }
 
+
+    /* QUADS / GLUTES */
 
     if (
       name.includes("squat") ||
@@ -206,6 +218,8 @@
       };
     }
 
+
+    /* POSTERIOR CHAIN */
 
     if (
       name.includes("deadlift") ||
@@ -294,12 +308,15 @@
     }
 
 
+    /* CORE */
+
     if (
       name.includes("plank") ||
       name.includes("crunch") ||
       name.includes("sit up") ||
       name.includes("sit-up") ||
-      name.includes("core")
+      name.includes("core") ||
+      name.includes("ab ")
     ) {
 
       return {
@@ -313,6 +330,8 @@
       };
     }
 
+
+    /* GENERIC */
 
     return {
       type:"generic",
@@ -338,7 +357,7 @@
 
 
   /* =========================================
-     ANATOMICAL MUSCLE FIGURE
+     ANATOMICAL BODY GRAPHIC
      ========================================= */
 
   function anatomySvg(
@@ -351,7 +370,7 @@
 
 
     let viewBox =
-      "0 0 160 220";
+      "0 0 180 250";
 
 
     if (
@@ -360,7 +379,7 @@
     ) {
 
       viewBox =
-        "0 0 160 145";
+        "0 0 180 155";
     }
 
 
@@ -370,7 +389,7 @@
     ) {
 
       viewBox =
-        "0 80 160 140";
+        "0 95 180 155";
     }
 
 
@@ -379,60 +398,17 @@
       <svg
         class="mana-v956-anatomy"
         viewBox="${viewBox}"
+        role="img"
         aria-label="${info.label}"
       >
-
-        <defs>
-
-          <linearGradient
-            id="manaV956Body"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="1"
-          >
-            <stop
-              offset="0%"
-              stop-color="#4b4b4b"
-            />
-
-            <stop
-              offset="100%"
-              stop-color="#202020"
-            />
-
-          </linearGradient>
-
-
-          <linearGradient
-            id="manaV956Gold"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="1"
-          >
-            <stop
-              offset="0%"
-              stop-color="#fff0a0"
-            />
-
-            <stop
-              offset="100%"
-              stop-color="#d4af37"
-            />
-
-          </linearGradient>
-
-        </defs>
-
 
         <!-- HEAD -->
 
         <ellipse
-          cx="80"
-          cy="22"
-          rx="17"
-          ry="19"
+          cx="90"
+          cy="24"
+          rx="18"
+          ry="21"
           class="mana-v956-body"
         />
 
@@ -441,10 +417,11 @@
 
         <path
           d="
-            M69 38
-            L68 52
-            Q80 59 92 52
-            L91 38
+            M78 41
+            L77 55
+            Q90 62 103 55
+            L102 41
+            Z
           "
           class="mana-v956-body"
         />
@@ -454,14 +431,14 @@
 
         <path
           d="
-            M55 52
-            Q80 43 105 52
-            Q116 60 120 83
-            L111 118
-            Q101 130 80 132
-            Q59 130 49 118
-            L40 83
-            Q44 60 55 52
+            M61 55
+            Q90 44 119 55
+            Q130 67 133 92
+            L122 127
+            Q109 140 90 141
+            Q71 140 58 127
+            L47 92
+            Q50 67 61 55
             Z
           "
           class="mana-v956-body"
@@ -472,13 +449,13 @@
 
         <path
           d="
-            M48 60
-            Q32 65 26 82
-            L15 118
-            Q14 127 22 130
-            Q30 132 34 123
-            L46 91
-            Q51 75 58 65
+            M58 64
+            Q40 69 34 87
+            L20 126
+            Q18 136 27 140
+            Q36 142 40 132
+            L53 98
+            Q58 81 66 70
             Z
           "
           class="mana-v956-body"
@@ -489,13 +466,13 @@
 
         <path
           d="
-            M112 60
-            Q128 65 134 82
-            L145 118
-            Q146 127 138 130
-            Q130 132 126 123
-            L114 91
-            Q109 75 102 65
+            M122 64
+            Q140 69 146 87
+            L160 126
+            Q162 136 153 140
+            Q144 142 140 132
+            L127 98
+            Q122 81 114 70
             Z
           "
           class="mana-v956-body"
@@ -506,48 +483,50 @@
 
         <path
           d="
-            M57 121
-            Q80 133 103 121
-            L108 144
-            Q96 153 80 153
-            Q64 153 52 144
+            M65 130
+            Q90 142 115 130
+            L119 158
+            Q106 168 90 169
+            Q74 168 61 158
             Z
           "
           class="mana-v956-body"
         />
 
 
-        <!-- LEFT THIGH -->
+        <!-- LEFT LEG -->
 
         <path
           d="
-            M57 143
-            Q47 162 50 186
-            L57 211
-            Q66 216 72 209
-            L76 177
-            L74 151
+            M65 155
+            Q55 177 57 204
+            L63 240
+            Q73 247 80 238
+            L84 199
+            L82 165
             Z
           "
           class="mana-v956-body"
         />
 
 
-        <!-- RIGHT THIGH -->
+        <!-- RIGHT LEG -->
 
         <path
           d="
-            M103 143
-            Q113 162 110 186
-            L103 211
-            Q94 216 88 209
-            L84 177
-            L86 151
+            M115 155
+            Q125 177 123 204
+            L117 240
+            Q107 247 100 238
+            L96 199
+            L98 165
             Z
           "
           class="mana-v956-body"
         />
 
+
+        <!-- CHEST -->
 
         ${
           !back &&
@@ -556,12 +535,13 @@
             "chest"
           )
             ? `
+
               <path
                 d="
-                  M57 63
-                  Q68 54 78 61
-                  L77 87
-                  Q64 89 54 81
+                  M64 68
+                  Q77 58 87 65
+                  L86 94
+                  Q72 96 61 86
                   Z
                 "
                 class="mana-v956-highlight"
@@ -569,18 +549,21 @@
 
               <path
                 d="
-                  M103 63
-                  Q92 54 82 61
-                  L83 87
-                  Q96 89 106 81
+                  M116 68
+                  Q103 58 93 65
+                  L94 94
+                  Q108 96 119 86
                   Z
                 "
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
 
+
+        <!-- SHOULDERS -->
 
         ${
           has(
@@ -588,25 +571,29 @@
             "shoulders"
           )
             ? `
+
               <ellipse
-                cx="49"
-                cy="64"
-                rx="13"
-                ry="12"
+                cx="57"
+                cy="68"
+                rx="14"
+                ry="13"
                 class="mana-v956-highlight"
               />
 
               <ellipse
-                cx="111"
-                cy="64"
-                rx="13"
-                ry="12"
+                cx="123"
+                cy="68"
+                rx="14"
+                ry="13"
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
 
+
+        <!-- BICEPS -->
 
         ${
           !back &&
@@ -615,25 +602,29 @@
             "biceps"
           )
             ? `
+
               <ellipse
-                cx="35"
-                cy="88"
+                cx="42"
+                cy="94"
                 rx="9"
-                ry="17"
+                ry="18"
                 class="mana-v956-highlight"
               />
 
               <ellipse
-                cx="125"
-                cy="88"
+                cx="138"
+                cy="94"
                 rx="9"
-                ry="17"
+                ry="18"
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
 
+
+        <!-- TRICEPS -->
 
         ${
           has(
@@ -641,25 +632,29 @@
             "triceps"
           )
             ? `
+
               <ellipse
-                cx="28"
-                cy="91"
+                cx="35"
+                cy="98"
                 rx="8"
-                ry="18"
+                ry="19"
                 class="mana-v956-highlight"
               />
 
               <ellipse
-                cx="132"
-                cy="91"
+                cx="145"
+                cy="98"
                 rx="8"
-                ry="18"
+                ry="19"
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
 
+
+        <!-- CORE -->
 
         ${
           !back &&
@@ -668,20 +663,24 @@
             "core"
           )
             ? `
+
               <path
                 d="
-                  M67 86
-                  L93 86
-                  L97 122
-                  Q80 130 63 122
+                  M75 95
+                  L105 95
+                  L108 130
+                  Q90 139 72 130
                   Z
                 "
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
 
+
+        <!-- BACK / LATS -->
 
         ${
           back &&
@@ -696,21 +695,25 @@
             )
           )
             ? `
+
               <path
                 d="
-                  M55 59
-                  Q80 48 105 59
-                  L110 96
-                  Q99 119 80 124
-                  Q61 119 50 96
+                  M63 65
+                  Q90 51 117 65
+                  L122 101
+                  Q108 128 90 134
+                  Q72 128 58 101
                   Z
                 "
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
 
+
+        <!-- GLUTES -->
 
         ${
           has(
@@ -718,25 +721,29 @@
             "glutes"
           )
             ? `
+
               <ellipse
-                cx="67"
-                cy="141"
-                rx="15"
-                ry="13"
+                cx="75"
+                cy="157"
+                rx="17"
+                ry="15"
                 class="mana-v956-highlight"
               />
 
               <ellipse
-                cx="93"
-                cy="141"
-                rx="15"
-                ry="13"
+                cx="105"
+                cy="157"
+                rx="17"
+                ry="15"
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
 
+
+        <!-- QUADS -->
 
         ${
           !back &&
@@ -745,12 +752,13 @@
             "quads"
           )
             ? `
+
               <path
                 d="
-                  M57 154
-                  Q50 175 57 203
-                  Q66 210 72 201
-                  L74 164
+                  M65 171
+                  Q58 195 64 228
+                  Q74 238 81 227
+                  L83 181
                   Z
                 "
                 class="mana-v956-highlight"
@@ -758,18 +766,21 @@
 
               <path
                 d="
-                  M103 154
-                  Q110 175 103 203
-                  Q94 210 88 201
-                  L86 164
+                  M115 171
+                  Q122 195 116 228
+                  Q106 238 99 227
+                  L97 181
                   Z
                 "
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
 
+
+        <!-- HAMSTRINGS -->
 
         ${
           back &&
@@ -778,12 +789,13 @@
             "hamstrings"
           )
             ? `
+
               <path
                 d="
-                  M57 155
-                  L74 154
-                  L72 203
-                  Q64 211 57 203
+                  M65 171
+                  L82 169
+                  L80 228
+                  Q72 238 64 228
                   Z
                 "
                 class="mana-v956-highlight"
@@ -791,18 +803,21 @@
 
               <path
                 d="
-                  M103 155
-                  L86 154
-                  L88 203
-                  Q96 211 103 203
+                  M115 171
+                  L98 169
+                  L100 228
+                  Q108 238 116 228
                   Z
                 "
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
 
+
+        <!-- CALVES -->
 
         ${
           has(
@@ -810,21 +825,23 @@
             "calves"
           )
             ? `
+
               <ellipse
-                cx="59"
-                cy="208"
-                rx="8"
-                ry="14"
+                cx="66"
+                cy="225"
+                rx="9"
+                ry="15"
                 class="mana-v956-highlight"
               />
 
               <ellipse
-                cx="101"
-                cy="208"
-                rx="8"
-                ry="14"
+                cx="114"
+                cy="225"
+                rx="9"
+                ry="15"
                 class="mana-v956-highlight"
               />
+
             `
             : ""
         }
@@ -836,7 +853,7 @@
 
 
   /* =========================================
-     HIGHER QUALITY DEMO FIGURE
+     SEMI-REALISTIC EXERCISE FIGURE
      ========================================= */
 
   function demoFigure(
@@ -844,272 +861,401 @@
     finish
   ) {
 
-    let torsoX =
-      80;
-
-    let torsoY =
-      72;
-
-    let rotate =
+    let torsoRotate =
       0;
 
+
+    let torsoX =
+      90;
+
+
+    let torsoY =
+      75;
+
+
     let leftArm =
-      "M61 79 Q44 93 37 112";
+      "M69 82 Q49 98 42 121";
+
 
     let rightArm =
-      "M99 79 Q116 93 123 112";
+      "M111 82 Q131 98 138 121";
+
 
     let leftLeg =
-      "M69 127 Q61 153 58 187";
+      "M78 136 Q67 165 64 211";
+
 
     let rightLeg =
-      "M91 127 Q99 153 102 187";
+      "M102 136 Q113 165 116 211";
 
+
+    /* SQUAT */
 
     if (
       type ===
       "squat"
     ) {
 
-      leftLeg =
+      if (
         finish
-          ? "M69 127 Q49 143 42 173"
-          : leftLeg;
+      ) {
 
-      rightLeg =
-        finish
-          ? "M91 127 Q111 143 118 173"
-          : rightLeg;
+        leftLeg =
+          "M78 136 Q56 153 46 187";
+
+        rightLeg =
+          "M102 136 Q124 153 134 187";
+      }
     }
 
 
-    if (
-      type ===
-      "hinge"
-    ) {
-
-      rotate =
-        finish
-          ? 28
-          : 0;
-
-      torsoX =
-        finish
-          ? 92
-          : 80;
-
-      torsoY =
-        finish
-          ? 78
-          : 72;
-    }
-
-
-    if (
-      type ===
-      "press"
-    ) {
-
-      leftArm =
-        finish
-          ? "M61 79 Q38 72 18 72"
-          : "M61 79 Q46 91 38 104";
-
-      rightArm =
-        finish
-          ? "M99 79 Q122 72 142 72"
-          : "M99 79 Q114 91 122 104";
-    }
-
-
-    if (
-      type ===
-      "overhead"
-    ) {
-
-      leftArm =
-        finish
-          ? "M61 79 Q53 51 55 22"
-          : "M61 79 Q47 78 39 91";
-
-      rightArm =
-        finish
-          ? "M99 79 Q107 51 105 22"
-          : "M99 79 Q113 78 121 91";
-    }
-
-
-    if (
-      type ===
-      "raise"
-    ) {
-
-      leftArm =
-        finish
-          ? "M61 79 Q35 72 12 76"
-          : "M61 79 Q46 100 41 118";
-
-      rightArm =
-        finish
-          ? "M99 79 Q125 72 148 76"
-          : "M99 79 Q114 100 119 118";
-    }
-
-
-    if (
-      type ===
-      "curl"
-    ) {
-
-      leftArm =
-        finish
-          ? "M61 79 Q46 88 49 67"
-          : "M61 79 Q45 101 40 119";
-
-      rightArm =
-        finish
-          ? "M99 79 Q114 88 111 67"
-          : "M99 79 Q115 101 120 119";
-    }
-
-
-    if (
-      type ===
-      "pull"
-    ) {
-
-      leftArm =
-        finish
-          ? "M61 79 Q46 66 39 86"
-          : "M61 79 Q53 46 50 20";
-
-      rightArm =
-        finish
-          ? "M99 79 Q114 66 121 86"
-          : "M99 79 Q107 46 110 20";
-    }
-
-
-    if (
-      type ===
-      "row"
-    ) {
-
-      rotate =
-        24;
-
-      torsoX =
-        90;
-
-      leftArm =
-        finish
-          ? "M72 82 Q54 86 44 80"
-          : "M72 82 Q48 104 39 124";
-
-      rightArm =
-        finish
-          ? "M108 82 Q90 86 80 80"
-          : "M108 82 Q132 104 141 124";
-    }
-
+    /* LUNGE */
 
     if (
       type ===
       "lunge"
     ) {
 
-      leftLeg =
+      if (
         finish
-          ? "M69 127 Q45 147 37 181"
-          : leftLeg;
+      ) {
 
-      rightLeg =
+        leftLeg =
+          "M78 136 Q51 158 41 203";
+
+        rightLeg =
+          "M102 136 Q123 170 151 192";
+      }
+    }
+
+
+    /* HINGE */
+
+    if (
+      type ===
+      "hinge"
+    ) {
+
+      if (
         finish
-          ? "M91 127 Q111 156 135 174"
-          : rightLeg;
+      ) {
+
+        torsoRotate =
+          30;
+
+        torsoX =
+          100;
+
+        torsoY =
+          83;
+
+        leftArm =
+          "M85 91 Q95 121 101 149";
+
+        rightArm =
+          "M112 88 Q121 118 127 146";
+      }
+    }
+
+
+    /* BENCH / CHEST PRESS */
+
+    if (
+      type ===
+      "press"
+    ) {
+
+      if (
+        finish
+      ) {
+
+        leftArm =
+          "M69 82 Q43 74 17 75";
+
+        rightArm =
+          "M111 82 Q137 74 163 75";
+
+      } else {
+
+        leftArm =
+          "M69 82 Q51 94 43 111";
+
+        rightArm =
+          "M111 82 Q129 94 137 111";
+      }
+    }
+
+
+    /* OVERHEAD PRESS */
+
+    if (
+      type ===
+      "overhead"
+    ) {
+
+      if (
+        finish
+      ) {
+
+        leftArm =
+          "M69 82 Q60 51 62 20";
+
+        rightArm =
+          "M111 82 Q120 51 118 20";
+
+      } else {
+
+        leftArm =
+          "M69 82 Q52 81 43 94";
+
+        rightArm =
+          "M111 82 Q128 81 137 94";
+      }
+    }
+
+
+    /* LATERAL RAISE */
+
+    if (
+      type ===
+      "raise"
+    ) {
+
+      if (
+        finish
+      ) {
+
+        leftArm =
+          "M69 82 Q39 75 10 80";
+
+        rightArm =
+          "M111 82 Q141 75 170 80";
+
+      } else {
+
+        leftArm =
+          "M69 82 Q51 104 46 126";
+
+        rightArm =
+          "M111 82 Q129 104 134 126";
+      }
+    }
+
+
+    /* ROW */
+
+    if (
+      type ===
+      "row"
+    ) {
+
+      torsoRotate =
+        24;
+
+
+      if (
+        finish
+      ) {
+
+        leftArm =
+          "M77 88 Q60 91 47 82";
+
+        rightArm =
+          "M111 86 Q96 92 82 83";
+
+      } else {
+
+        leftArm =
+          "M77 88 Q50 112 40 137";
+
+        rightArm =
+          "M111 86 Q139 108 150 132";
+      }
+    }
+
+
+    /* PULLDOWN */
+
+    if (
+      type ===
+      "pull"
+    ) {
+
+      if (
+        finish
+      ) {
+
+        leftArm =
+          "M69 82 Q50 65 42 90";
+
+        rightArm =
+          "M111 82 Q130 65 138 90";
+
+      } else {
+
+        leftArm =
+          "M69 82 Q58 47 56 15";
+
+        rightArm =
+          "M111 82 Q122 47 124 15";
+      }
+    }
+
+
+    /* CURL */
+
+    if (
+      type ===
+      "curl"
+    ) {
+
+      if (
+        finish
+      ) {
+
+        leftArm =
+          "M69 82 Q51 91 55 66";
+
+        rightArm =
+          "M111 82 Q129 91 125 66";
+
+      } else {
+
+        leftArm =
+          "M69 82 Q51 105 46 127";
+
+        rightArm =
+          "M111 82 Q129 105 134 127";
+      }
+    }
+
+
+    /* TRICEPS */
+
+    if (
+      type ===
+      "triceps"
+    ) {
+
+      if (
+        finish
+      ) {
+
+        leftArm =
+          "M69 82 Q57 100 56 128";
+
+        rightArm =
+          "M111 82 Q123 100 124 128";
+
+      } else {
+
+        leftArm =
+          "M69 82 Q54 92 49 107";
+
+        rightArm =
+          "M111 82 Q126 92 131 107";
+      }
     }
 
 
     return `
 
       <svg
-        viewBox="0 0 160 205"
         class="mana-v956-demo-figure"
+        viewBox="0 0 180 225"
+        role="img"
       >
 
-        <defs>
+        <!-- SOFT SHADOW -->
 
-          <linearGradient
-            id="manaV956Figure"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="1"
-          >
-            <stop
-              offset="0%"
-              stop-color="#dedede"
-            />
+        <ellipse
+          cx="90"
+          cy="215"
+          rx="51"
+          ry="7"
+          class="mana-v956-shadow"
+        />
 
-            <stop
-              offset="45%"
-              stop-color="#939393"
-            />
 
-            <stop
-              offset="100%"
-              stop-color="#414141"
-            />
+        <!-- HEAD -->
 
-          </linearGradient>
+        <ellipse
+          cx="${torsoX}"
+          cy="${torsoY - 47}"
+          rx="16"
+          ry="19"
+          class="mana-v956-demo-body"
+        />
 
-        </defs>
 
+        <!-- NECK -->
+
+        <path
+          d="
+            M${torsoX - 9} ${torsoY - 31}
+            L${torsoX - 8} ${torsoY - 22}
+            L${torsoX + 8} ${torsoY - 22}
+            L${torsoX + 9} ${torsoY - 31}
+            Z
+          "
+          class="mana-v956-demo-body"
+        />
+
+
+        <!-- TORSO -->
 
         <g
           transform="
             rotate(
-              ${rotate}
+              ${torsoRotate}
               ${torsoX}
               ${torsoY}
             )
           "
         >
 
-          <ellipse
-            cx="${torsoX}"
-            cy="${torsoY - 45}"
-            rx="15"
-            ry="17"
-            class="mana-v956-demo-body"
-          />
-
-
           <path
             d="
-              M${torsoX - 22} ${torsoY - 19}
-              Q${torsoX} ${torsoY - 30}
-              ${torsoX + 22} ${torsoY - 19}
-              L${torsoX + 18} ${torsoY + 48}
-              Q${torsoX} ${torsoY + 61}
-              ${torsoX - 18} ${torsoY + 48}
+              M${torsoX - 27} ${torsoY - 19}
+              Q${torsoX} ${torsoY - 32}
+              ${torsoX + 27} ${torsoY - 19}
+              L${torsoX + 21} ${torsoY + 50}
+              Q${torsoX} ${torsoY + 62}
+              ${torsoX - 21} ${torsoY + 50}
               Z
             "
             class="mana-v956-demo-body"
           />
 
+
+          <!-- CHEST / TORSO DETAIL -->
+
+          <path
+            d="
+              M${torsoX - 16} ${torsoY - 8}
+              Q${torsoX} ${torsoY - 15}
+              ${torsoX + 16} ${torsoY - 8}
+            "
+            class="mana-v956-detail"
+          />
+
         </g>
 
 
+        <!-- ARMS -->
+
         <path
           d="${leftArm}"
-          class="mana-v956-demo-limb"
+          class="mana-v956-demo-arm"
         />
 
         <path
           d="${rightArm}"
-          class="mana-v956-demo-limb"
+          class="mana-v956-demo-arm"
         />
+
+
+        <!-- LEGS -->
 
         <path
           d="${leftLeg}"
@@ -1122,10 +1268,19 @@
         />
 
 
+        <!-- SHOULDER JOINT DETAIL -->
+
         <circle
-          cx="80"
-          cy="126"
-          r="9"
+          cx="69"
+          cy="82"
+          r="7"
+          class="mana-v956-joint"
+        />
+
+        <circle
+          cx="111"
+          cy="82"
+          r="7"
           class="mana-v956-joint"
         />
 
@@ -1152,7 +1307,7 @@
           <div
             class="mana-v956-demo-label"
           >
-            START POSITION
+            START
           </div>
 
           ${demoFigure(
@@ -1167,13 +1322,13 @@
           class="mana-v956-motion"
         >
 
-          <span>
+          <div>
             →
-          </span>
+          </div>
 
-          <small>
+          <span>
             MOVE
-          </small>
+          </span>
 
         </div>
 
@@ -1185,7 +1340,7 @@
           <div
             class="mana-v956-demo-label"
           >
-            FINISH POSITION
+            FINISH
           </div>
 
           ${demoFigure(
@@ -1202,7 +1357,7 @@
 
 
   /* =========================================
-     CARD UPGRADE
+     UPGRADE EXERCISE CARDS
      ========================================= */
 
   function upgradeCards() {
@@ -1217,9 +1372,10 @@
           const name =
             card.dataset
               .exerciseName ||
-            card.querySelector(
-              ".mana-v64-name"
-            )
+            card
+              .querySelector(
+                ".mana-v64-name"
+              )
               ?.textContent
               ?.trim() ||
             "Exercise";
@@ -1238,28 +1394,29 @@
 
 
           if (
-            mini
+            !mini
           ) {
-
-            mini.innerHTML = `
-
-              <div
-                class="mana-v956-mini-graphic"
-              >
-
-                ${anatomySvg(
-                  info
-                )}
-
-              </div>
-
-              <span>
-                ${info.label}
-              </span>
-
-            `;
-
+            return;
           }
+
+
+          mini.innerHTML = `
+
+            <div
+              class="mana-v956-mini-graphic"
+            >
+
+              ${anatomySvg(
+                info
+              )}
+
+            </div>
+
+            <span>
+              ${info.label}
+            </span>
+
+          `;
 
         }
       );
@@ -1267,7 +1424,7 @@
 
 
   /* =========================================
-     MODAL UPGRADE
+     UPGRADE DEMO MODAL
      ========================================= */
 
   function upgradeModal(
@@ -1292,6 +1449,12 @@
       );
 
 
+    const label =
+      document.getElementById(
+        "manaV955MuscleLabel"
+      );
+
+
     if (
       demo
     ) {
@@ -1311,6 +1474,15 @@
         anatomySvg(
           info
         );
+    }
+
+
+    if (
+      label
+    ) {
+
+      label.textContent =
+        info.label;
     }
   }
 
@@ -1341,35 +1513,54 @@
     style.textContent = `
 
       /* =====================================
-         CARD MUSCLE VISUAL
+         MUSCLE IMAGE ON EXERCISE CARD
          ===================================== */
 
       .mana-v955-exercise-head{
-        margin-top:-36px !important;
+        margin-top:
+          -39px !important;
 
-        margin-bottom:5px !important;
+        margin-bottom:
+          6px !important;
+
+        min-height:
+          112px;
       }
 
 
       .mana-v955-muscle-mini{
-        width:112px !important;
+        width:
+          128px !important;
+
+        min-height:
+          108px;
+
+        display:flex !important;
+
+        flex-direction:column;
+
+        justify-content:center;
+
+        align-items:center;
       }
 
 
       .mana-v956-mini-graphic{
-        width:92px;
+        width:104px;
 
-        height:105px;
+        height:108px;
 
         display:flex;
 
-        align-items:center;
-
         justify-content:center;
+
+        align-items:center;
       }
 
 
       .mana-v956-anatomy{
+        display:block;
+
         width:100%;
 
         height:100%;
@@ -1379,33 +1570,31 @@
 
 
       .mana-v956-body{
-        fill:
-          url(
-            #manaV956Body
-          );
+        fill:#353535;
 
-        stroke:#5a5a5a;
+        stroke:#686868;
 
-        stroke-width:1;
+        stroke-width:1.2;
       }
 
 
       .mana-v956-highlight{
-        fill:
-          url(
-            #manaV956Gold
-          );
+        fill:#f3d875;
+
+        stroke:#fff0a3;
+
+        stroke-width:.7;
 
         filter:
           drop-shadow(
             0
             0
-            4px
+            5px
             rgba(
               243,
               216,
               117,
-              .35
+              .48
             )
           );
       }
@@ -1414,20 +1603,24 @@
       .mana-v955-muscle-mini span{
         width:100%;
 
-        margin-top:1px;
+        margin-top:3px;
 
-        color:#b1b1b1 !important;
+        color:#c2c2c2 !important;
 
         font-size:8px !important;
 
         font-weight:900 !important;
 
+        letter-spacing:.04em;
+
         line-height:1.25 !important;
+
+        text-align:center;
       }
 
 
       /* =====================================
-         MODAL DEMO
+         DEMO MODAL
          ===================================== */
 
       .mana-v956-demo-stage{
@@ -1438,26 +1631,26 @@
             0,
             1fr
           )
-          36px
+          42px
           minmax(
             0,
             1fr
           );
 
-        align-items:center;
-
         gap:10px;
+
+        align-items:center;
 
         margin-top:20px;
       }
 
 
       .mana-v956-demo-panel{
-        min-height:235px;
+        min-height:265px;
 
         padding:
           14px
-          10px;
+          8px;
 
         display:flex;
 
@@ -1469,74 +1662,95 @@
 
         border:
           1px solid
-          #383838;
+          #3d3d3d;
 
-        border-radius:18px;
+        border-radius:20px;
 
         background:
           radial-gradient(
-            circle at 50% 20%,
-            #242424,
-            #090909 65%
+            circle at 50% 22%,
+            #282828,
+            #111 48%,
+            #080808 80%
           );
 
         box-shadow:
           inset
           0
           0
-          0
-          1px
+          40px
           rgba(
             255,
             255,
             255,
-            .02
+            .025
+          ),
+          0
+          12px
+          30px
+          rgba(
+            0,
+            0,
+            0,
+            .35
           );
       }
 
 
       .mana-v956-demo-label{
-        margin-bottom:4px;
+        margin-bottom:2px;
 
-        color:#888;
+        color:#f3d875;
 
-        font-size:8px;
+        font-size:9px;
 
         font-weight:900;
 
-        letter-spacing:.07em;
+        letter-spacing:.11em;
       }
 
 
       .mana-v956-demo-figure{
+        display:block;
+
         width:100%;
 
-        max-width:150px;
+        max-width:175px;
 
-        height:200px;
+        height:215px;
 
         overflow:visible;
       }
 
 
       .mana-v956-demo-body{
-        fill:
-          url(
-            #manaV956Figure
+        fill:#9a9a9a;
+
+        stroke:#c1c1c1;
+
+        stroke-width:1.3;
+
+        filter:
+          drop-shadow(
+            0
+            6px
+            7px
+            rgba(
+              0,
+              0,
+              0,
+              .45
+            )
           );
-
-        stroke:#6b6b6b;
-
-        stroke-width:1.2;
       }
 
 
-      .mana-v956-demo-limb{
+      .mana-v956-demo-arm{
         fill:none;
 
-        stroke:#9d9d9d;
+        stroke:#9a9a9a;
 
-        stroke-width:14;
+        stroke-width:16;
 
         stroke-linecap:round;
 
@@ -1545,8 +1759,8 @@
         filter:
           drop-shadow(
             0
-            4px
-            4px
+            5px
+            5px
             rgba(
               0,
               0,
@@ -1560,9 +1774,9 @@
       .mana-v956-demo-leg{
         fill:none;
 
-        stroke:#808080;
+        stroke:#888;
 
-        stroke-width:17;
+        stroke-width:20;
 
         stroke-linecap:round;
 
@@ -1571,8 +1785,8 @@
         filter:
           drop-shadow(
             0
-            4px
-            4px
+            6px
+            6px
             rgba(
               0,
               0,
@@ -1584,9 +1798,31 @@
 
 
       .mana-v956-joint{
-        fill:#777;
+        fill:#adadad;
 
-        opacity:.65;
+        opacity:.9;
+      }
+
+
+      .mana-v956-detail{
+        fill:none;
+
+        stroke:#c4c4c4;
+
+        stroke-width:1.3;
+
+        opacity:.55;
+      }
+
+
+      .mana-v956-shadow{
+        fill:
+          rgba(
+            0,
+            0,
+            0,
+            .55
+          );
       }
 
 
@@ -1595,9 +1831,9 @@
 
         flex-direction:column;
 
-        align-items:center;
-
         justify-content:center;
+
+        align-items:center;
 
         gap:4px;
 
@@ -1605,14 +1841,18 @@
       }
 
 
-      .mana-v956-motion span{
-        font-size:29px;
+      .mana-v956-motion div{
+        font-size:30px;
 
         font-weight:900;
+
+        line-height:1;
       }
 
 
-      .mana-v956-motion small{
+      .mana-v956-motion span{
+        color:#8d8d8d;
+
         font-size:7px;
 
         font-weight:900;
@@ -1622,23 +1862,27 @@
 
 
       /* =====================================
-         MODAL MUSCLE IMAGE BIGGER
+         BIG TARGET MUSCLE CARD IN MODAL
          ===================================== */
 
       .mana-v955-modal-muscle{
         grid-template-columns:
-          115px
+          135px
           1fr !important;
 
-        padding:14px !important;
+        gap:18px !important;
+
+        padding:16px !important;
+
+        margin-top:16px !important;
       }
 
 
       .mana-v955-modal-muscle
       #manaV955Muscle{
-        width:105px;
+        width:125px;
 
-        min-height:120px;
+        height:145px;
 
         display:flex;
 
@@ -1650,9 +1894,16 @@
 
       .mana-v955-modal-muscle
       .mana-v956-anatomy{
-        width:100px;
+        width:120px;
 
-        height:125px;
+        height:140px;
+      }
+
+
+      .mana-v955-modal-muscle
+      strong{
+        font-size:
+          18px !important;
       }
 
 
@@ -1665,61 +1916,84 @@
       ){
 
         .mana-v955-exercise-head{
-          margin-top:-31px !important;
+          margin-top:
+            -33px !important;
+
+          min-height:
+            103px;
         }
 
 
         .mana-v955-muscle-mini{
-          width:96px !important;
+          width:
+            110px !important;
         }
 
 
         .mana-v956-mini-graphic{
-          width:80px;
+          width:90px;
 
-          height:94px;
+          height:98px;
         }
 
 
         .mana-v956-demo-stage{
           grid-template-columns:
-            1fr
-            25px
-            1fr;
+            minmax(
+              0,
+              1fr
+            )
+            28px
+            minmax(
+              0,
+              1fr
+            );
 
           gap:5px;
         }
 
 
         .mana-v956-demo-panel{
-          min-height:210px;
+          min-height:230px;
 
           padding:
             10px
-            5px;
+            4px;
         }
 
 
         .mana-v956-demo-figure{
-          height:175px;
+          height:190px;
         }
 
 
-        .mana-v956-motion span{
+        .mana-v956-motion div{
           font-size:23px;
         }
 
 
         .mana-v955-modal-muscle{
           grid-template-columns:
-            95px
+            105px
             1fr !important;
+
+          gap:12px !important;
         }
 
 
         .mana-v955-modal-muscle
         #manaV955Muscle{
-          width:88px;
+          width:98px;
+
+          height:125px;
+        }
+
+
+        .mana-v955-modal-muscle
+        .mana-v956-anatomy{
+          width:95px;
+
+          height:120px;
         }
 
       }
@@ -1727,14 +2001,15 @@
     `;
 
 
-    document.head.appendChild(
-      style
-    );
+    document.head
+      .appendChild(
+        style
+      );
   }
 
 
   /* =========================================
-     EVENTS
+     REFRESH WORKOUT VISUALS
      ========================================= */
 
   function refresh() {
@@ -1742,7 +2017,8 @@
     [
       80,
       220,
-      500
+      500,
+      850
     ].forEach(
       delay => {
 
@@ -1756,11 +2032,23 @@
   }
 
 
-  function wire() {
+  /* =========================================
+     EVENTS
+     ========================================= */
+
+  function wireEvents() {
 
     document.addEventListener(
       "click",
       event => {
+
+        /*
+          DEMO BUTTON
+
+          v9.55 opens the existing modal.
+          v9.56 replaces the old graphics
+          immediately afterwards.
+        */
 
         const demoButton =
           event.target.closest(
@@ -1781,24 +2069,31 @@
           const name =
             card?.dataset
               ?.exerciseName ||
+            card
+              ?.querySelector(
+                ".mana-v64-name"
+              )
+              ?.textContent
+              ?.trim() ||
             "Exercise";
 
 
-          /*
-            v9.55 opens its modal first.
-            Then v9.56 upgrades the graphics.
-          */
-
           setTimeout(
-            () =>
+            () => {
+
               upgradeModal(
                 name
-              ),
-            20
-          );
+              );
 
+            },
+            30
+          );
         }
 
+
+        /*
+          PROGRAM TAB
+        */
 
         if (
           event.target.closest(
@@ -1807,7 +2102,6 @@
         ) {
 
           refresh();
-
         }
 
       }
@@ -1833,11 +2127,15 @@
   }
 
 
+  /* =========================================
+     INIT
+     ========================================= */
+
   function init() {
 
     injectStyles();
 
-    wire();
+    wireEvents();
 
 
     setTimeout(
@@ -1849,6 +2147,10 @@
 
   window.MANA_EXERCISE_VISUAL_UPGRADE_BUILD =
     BUILD;
+
+
+  window.refreshManaExerciseVisualUpgrade =
+    refresh;
 
 
   if (
