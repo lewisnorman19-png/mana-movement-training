@@ -1,1031 +1,574 @@
+
 /* =========================================
-   MANA MOVEMENT TRAINING v9.57.0
+   MANA MOVEMENT TRAINING v9.57.1
    PREMIUM EXERCISE ASSETS
 
-   - Uses proper generated exercise artwork
-   - Bench Press first
-   - Premium muscle target graphic
-   - Premium START → FINISH demo
-   - Falls back to v9.56 for unmapped exercises
-   - No workout logging changes
-   - No auth / Fuel changes
+   - Premium Bench Press muscle diagram
+   - Premium Bench Press demo illustration
+   - Fixes demo click handler
+   - Original diagrams remain as fallback
+   - No workout logging or timer changes
+   - No auth or Fuel changes
    ========================================= */
 
 (() => {
   "use strict";
 
-
-  const BUILD =
-    "95700";
-
+  const BUILD = "95710";
 
   const STYLE_ID =
     "mana-v957-premium-assets-style";
 
-
-  const ASSET_ROOT =
-    "assets/exercises";
-
-
-  /* =========================================
-     EXERCISE ASSET MAP
-     ========================================= */
-
-  const EXERCISES = {
-
+  const ASSETS = {
     "bench press": {
-
       demo:
-        `${ASSET_ROOT}/bench-press-demo.png`,
-
+        "assets/exercises/bench-press-demo.png",
       muscle:
-        `${ASSET_ROOT}/bench-press-muscles.png`,
-
+        "assets/exercises/bench-press-muscles.png",
       target:
-        "Chest + Triceps",
-
-      region:
-        "upper"
-
+        "Chest + Triceps"
     }
-
   };
 
-
   /* =========================================
-     HELPERS
+     EXERCISE LOOKUP
      ========================================= */
 
-  function normalise(
-    value
-  ) {
-
-    return String(
-      value || ""
-    )
+  function getAsset(name) {
+    const key = String(name || "")
       .toLowerCase()
       .trim();
-  }
 
-
-  function assetForExercise(
-    exerciseName
-  ) {
-
-    const name =
-      normalise(
-        exerciseName
-      );
-
-
-    /*
-      Exact first.
-    */
-
-    if (
-      EXERCISES[name]
-    ) {
-
-      return EXERCISES[name];
+    if (key.includes("bench press")) {
+      return ASSETS["bench press"];
     }
-
-
-    /*
-      Alias support.
-    */
-
-    if (
-      name.includes(
-        "bench press"
-      )
-    ) {
-
-      return EXERCISES[
-        "bench press"
-      ];
-    }
-
 
     return null;
   }
 
-
-  function exerciseNameFromCard(
-    card
-  ) {
-
+  function getName(card) {
     return (
-      card?.dataset
-        ?.exerciseName ||
-      card
-        ?.querySelector(
-          ".mana-v64-name"
-        )
-        ?.textContent
-        ?.trim() ||
+      card?.dataset?.exerciseName ||
+      card?.querySelector(".mana-v64-name")
+        ?.textContent?.trim() ||
       ""
     );
   }
 
-
   /* =========================================
-     IMAGE FALLBACK
+     CSS
      ========================================= */
 
-  function imageExistsFallback(
-    image,
-    fallback
-  ) {
+  function injectStyles() {
+    let style = document.getElementById(
+      STYLE_ID
+    );
+
+    if (!style) {
+      style = document.createElement("style");
+      style.id = STYLE_ID;
+      document.head.appendChild(style);
+    }
+
+    style.textContent = `
+
+      /* WORKOUT CARD */
+
+      .mana-v957-target {
+        display: grid;
+        grid-template-columns:
+          160px minmax(0, 1fr);
+        align-items: center;
+        gap: 14px;
+        padding: 12px;
+        margin: 12px 0 15px;
+        background: #110f0a;
+        border: 1px solid #57471d;
+        border-radius: 16px;
+      }
+
+      .mana-v957-target img {
+        display: block;
+        width: 160px;
+        height: 135px;
+        object-fit: cover;
+        object-position: 25% center;
+        border-radius: 12px;
+        background: #050505;
+      }
+
+      .mana-v957-target-copy span {
+        display: block;
+        color: #aaa;
+        font-size: 9px;
+        font-weight: 800;
+        letter-spacing: .08em;
+      }
+
+      .mana-v957-target-copy strong {
+        display: block;
+        margin-top: 6px;
+        color: #f3d875;
+        font-size: 17px;
+        line-height: 1.25;
+      }
+
+      /* DEMO BUTTON */
+
+      .mana-v957-demo-button {
+        background: #1b1609 !important;
+        color: #f3d875 !important;
+        border:
+          1px solid #796528 !important;
+        min-height: 44px !important;
+        padding:
+          10px 15px !important;
+        border-radius: 12px !important;
+        font-size: 11px !important;
+        font-weight: 900 !important;
+      }
+
+      /* DEMO IMAGE */
+
+      .mana-v957-demo-wrap {
+        margin-top: 16px;
+        border: 1px solid #57471d;
+        background: #080808;
+        border-radius: 16px;
+        overflow: hidden;
+      }
+
+      .mana-v957-demo-image {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      /* MODAL SIZE */
+
+      #manaV955DemoModal
+      .mana-v955-modal-sheet {
+        width:
+          min(800px, 96vw) !important;
+      }
+
+      /* MUSCLE IMAGE IN MODAL */
+
+      #manaV955DemoModal
+      .mana-v955-modal-muscle {
+        display: grid;
+        grid-template-columns:
+          190px minmax(0, 1fr)
+          !important;
+        gap: 18px !important;
+        align-items: center;
+      }
+
+      #manaV955DemoModal
+      .mana-v955-modal-muscle
+      #manaV955Muscle {
+        width: 190px !important;
+        height: 150px !important;
+        overflow: hidden;
+        border-radius: 12px;
+        background: #050505;
+      }
+
+      .mana-v957-modal-muscle-image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 25% center;
+      }
+
+      /* PHONE */
+
+      @media (max-width: 600px) {
+
+        .mana-v957-target {
+          grid-template-columns:
+            115px minmax(0, 1fr);
+          gap: 10px;
+          padding: 10px;
+        }
+
+        .mana-v957-target img {
+          width: 115px;
+          height: 110px;
+        }
+
+        .mana-v957-target-copy strong {
+          font-size: 14px;
+        }
+
+        #manaV955DemoModal
+        .mana-v955-modal-sheet {
+          width: 100% !important;
+        }
+
+        #manaV955DemoModal
+        .mana-v955-modal-muscle {
+          grid-template-columns:
+            120px minmax(0, 1fr)
+            !important;
+          gap: 12px !important;
+        }
+
+        #manaV955DemoModal
+        .mana-v955-modal-muscle
+        #manaV955Muscle {
+          width: 120px !important;
+          height: 105px !important;
+        }
+      }
+    `;
+  }
+
+  /* =========================================
+     PREMIUM WORKOUT CARD
+     ========================================= */
+
+  function installCardImage(card, asset) {
+    if (
+      card.querySelector(
+        ".mana-v957-target"
+      )
+    ) {
+      return;
+    }
+
+    const title = card.querySelector(
+      ".mana-v64-name"
+    );
+
+    if (!title) {
+      return;
+    }
+
+    const block = document.createElement(
+      "div"
+    );
+
+    block.className =
+      "mana-v957-target";
+
+    const image = document.createElement(
+      "img"
+    );
+
+    image.src = asset.muscle;
+    image.alt =
+      asset.target + " muscle illustration";
+    image.loading = "lazy";
+
+    const copy = document.createElement(
+      "div"
+    );
+
+    copy.className =
+      "mana-v957-target-copy";
+
+    const label = document.createElement(
+      "span"
+    );
+
+    label.textContent =
+      "PRIMARY TARGET";
+
+    const value = document.createElement(
+      "strong"
+    );
+
+    value.textContent =
+      asset.target;
+
+    copy.append(
+      label,
+      value
+    );
+
+    block.append(
+      image,
+      copy
+    );
+
+    const oldDiagram = card.querySelector(
+      ".mana-v955-exercise-head"
+    );
+
+    if (oldDiagram) {
+      oldDiagram.style.display = "none";
+    }
 
     image.addEventListener(
       "error",
       () => {
+        block.remove();
 
-        if (
-          typeof fallback ===
-          "function"
-        ) {
-
-          fallback();
+        if (oldDiagram) {
+          oldDiagram.style.display = "";
         }
-
       },
       {
-        once:true
+        once: true
       }
     );
+
+    title.insertAdjacentElement(
+      "afterend",
+      block
+    );
   }
-
-
-  /* =========================================
-     WORKOUT CARD
-     ========================================= */
-
-  function upgradeCard(
-    card
-  ) {
-
-    const name =
-      exerciseNameFromCard(
-        card
-      );
-
-
-    const asset =
-      assetForExercise(
-        name
-      );
-
-
-    if (
-      !asset
-    ) {
-      return;
-    }
-
-
-    /*
-      We can rerun this after workout
-      rerenders without duplicating.
-    */
-
-    card
-      .querySelector(
-        ".mana-v957-premium-target"
-      )
-      ?.remove();
-
-
-    const oldGraphic =
-      card.querySelector(
-        ".mana-v955-exercise-head"
-      );
-
-
-    if (
-      oldGraphic
-    ) {
-
-      oldGraphic.style.display =
-        "none";
-    }
-
-
-    const nameElement =
-      card.querySelector(
-        ".mana-v64-name"
-      );
-
-
-    if (
-      !nameElement
-    ) {
-      return;
-    }
-
-
-    const block =
-      document.createElement(
-        "div"
-      );
-
-
-    block.className =
-      "mana-v957-premium-target";
-
-
-    block.innerHTML = `
-
-      <div
-        class="mana-v957-target-image-wrap"
-      >
-
-        <img
-          class="mana-v957-target-image"
-          src="${asset.muscle}"
-          alt="${asset.target} muscle target"
-          loading="lazy"
-        />
-
-      </div>
-
-
-      <div
-        class="mana-v957-target-copy"
-      >
-
-        <span>
-          PRIMARY TARGET
-        </span>
-
-        <strong>
-          ${asset.target}
-        </strong>
-
-      </div>
-
-    `;
-
-
-    nameElement
-      .insertAdjacentElement(
-        "afterend",
-        block
-      );
-
-
-    const image =
-      block.querySelector(
-        ".mana-v957-target-image"
-      );
-
-
-    if (
-      image
-    ) {
-
-      imageExistsFallback(
-        image,
-        () => {
-
-          block.remove();
-
-
-          if (
-            oldGraphic
-          ) {
-
-            oldGraphic.style.display =
-              "";
-          }
-
-        }
-      );
-    }
-
-
-    /*
-      Upgrade existing visual demo button.
-    */
-
-    const demoButton =
-      card.querySelector(
-        ".mana-v955-demo-button"
-      );
-
-
-    if (
-      demoButton
-    ) {
-
-      demoButton.classList.add(
-        "mana-v957-demo-button"
-      );
-
-
-      demoButton.innerHTML = `
-
-        <span
-          class="mana-v957-play"
-        >
-          ▶
-        </span>
-
-        VIEW EXERCISE DEMO
-
-      `;
-
-    }
-
-
-    card.dataset
-      .manaV957 =
-      "1";
-  }
-
-
-  function upgradeCards() {
-
-    document
-      .querySelectorAll(
-        "#manaV64Exercises .mana-v64-card"
-      )
-      .forEach(
-        upgradeCard
-      );
-  }
-
 
   /* =========================================
      PREMIUM DEMO MODAL
      ========================================= */
 
-  function upgradeDemoModal(
-    card
-  ) {
-
-    const name =
-      exerciseNameFromCard(
-        card
-      );
-
-
-    const asset =
-      assetForExercise(
-        name
-      );
-
-
-    if (
-      !asset
-    ) {
-      return;
-    }
-
-
-    const modal =
-      document.getElementById(
-        "manaV955DemoModal"
-      );
-
-
-    const demo =
-      document.getElementById(
-        "manaV955Demo"
-      );
-
-
-    const muscle =
-      document.getElementById(
-        "manaV955Muscle"
-      );
-
-
-    const muscleLabel =
-      document.getElementById(
-        "manaV955MuscleLabel"
-      );
-
+  function showPremiumDemo(name, asset) {
+    const modal = document.getElementById(
+      "manaV955DemoModal"
+    );
 
     if (
       !modal ||
-      !demo
+      !modal.classList.contains("open")
     ) {
       return;
     }
 
+    const demo = document.getElementById(
+      "manaV955Demo"
+    );
+
+    const muscle = document.getElementById(
+      "manaV955Muscle"
+    );
+
+    const target = document.getElementById(
+      "manaV955MuscleLabel"
+    );
+
+    if (!demo) {
+      return;
+    }
 
     /*
-      Demo artwork.
+      Load premium artwork first.
+      Only replace the existing diagram
+      once the image has loaded.
     */
 
-    demo.innerHTML = `
+    const demoImage = new Image();
 
-      <div
-        class="mana-v957-demo-image-wrap"
-      >
+    demoImage.alt =
+      name + " exercise demonstration";
 
-        <img
-          class="mana-v957-demo-image"
-          src="${asset.demo}"
-          alt="${name} start and finish demonstration"
-        />
+    demoImage.className =
+      "mana-v957-demo-image";
 
-      </div>
+    demoImage.onload = () => {
+      if (
+        !modal.classList.contains("open")
+      ) {
+        return;
+      }
 
-    `;
-
-
-    const demoImage =
-      demo.querySelector(
-        ".mana-v957-demo-image"
+      const wrap = document.createElement(
+        "div"
       );
 
+      wrap.className =
+        "mana-v957-demo-wrap";
 
-    if (
-      demoImage
-    ) {
-
-      imageExistsFallback(
-        demoImage,
-        () => {
-
-          /*
-            If premium image is unavailable,
-            rebuild the v9.56 graphic.
-          */
-
-          if (
-            typeof
-              window
-                .refreshManaExerciseVisualUpgrade ===
-            "function"
-          ) {
-
-            window
-              .refreshManaExerciseVisualUpgrade();
-          }
-
-        }
+      wrap.appendChild(
+        demoImage
       );
+
+      demo.replaceChildren(
+        wrap
+      );
+
+      if (muscle) {
+        const muscleImage =
+          document.createElement("img");
+
+        muscleImage.className =
+          "mana-v957-modal-muscle-image";
+
+        muscleImage.src =
+          asset.muscle;
+
+        muscleImage.alt =
+          asset.target + " muscle target";
+
+        muscle.replaceChildren(
+          muscleImage
+        );
+      }
+
+      if (target) {
+        target.textContent =
+          asset.target;
+      }
+    };
+
+    demoImage.onerror = () => {
+      console.warn(
+        "Mana premium demo image could not load:",
+        asset.demo
+      );
+    };
+
+    demoImage.src =
+      asset.demo;
+  }
+
+  /* =========================================
+     ENHANCE EXISTING EXERCISE CARD
+     ========================================= */
+
+  function enhanceCard(card) {
+    const name = getName(card);
+
+    const asset = getAsset(name);
+
+    if (!asset) {
+      return;
     }
 
+    installCardImage(
+      card,
+      asset
+    );
+
+    const button = card.querySelector(
+      ".mana-v955-demo-button"
+    );
+
+    if (
+      !button ||
+      button.dataset.manaV957Bound === "1"
+    ) {
+      return;
+    }
+
+    button.dataset.manaV957Bound =
+      "1";
+
+    button.classList.add(
+      "mana-v957-demo-button"
+    );
+
+    button.textContent =
+      "▶ VIEW EXERCISE DEMO";
 
     /*
-      Muscle target artwork.
+      FIX:
+      v9.55 stops event propagation.
+
+      Listen on the demo button itself,
+      rather than on the document.
     */
 
-    if (
-      muscle
-    ) {
-
-      muscle.innerHTML = `
-
-        <img
-          class="mana-v957-modal-muscle-image"
-          src="${asset.muscle}"
-          alt="${asset.target}"
-        />
-
-      `;
-    }
-
-
-    if (
-      muscleLabel
-    ) {
-
-      muscleLabel.textContent =
-        asset.target;
-    }
-
-
-    modal.classList.add(
-      "mana-v957-premium-modal"
+    button.addEventListener(
+      "click",
+      () => {
+        setTimeout(
+          () => {
+            showPremiumDemo(
+              name,
+              asset
+            );
+          },
+          0
+        );
+      }
     );
   }
 
-
-  /* =========================================
-     STYLES
-     ========================================= */
-
-  function injectStyles() {
-
-    document
-      .getElementById(
-        STYLE_ID
-      )
-      ?.remove();
-
-
-    const style =
-      document.createElement(
-        "style"
-      );
-
-
-    style.id =
-      STYLE_ID;
-
-
-    style.textContent = `
-
-      /* =====================================
-         WORKOUT CARD TARGET
-         ===================================== */
-
-      .mana-v957-premium-target{
-        margin:
-          12px
-          0
-          14px;
-
-        display:grid;
-
-        grid-template-columns:
-          140px
-          minmax(
-            0,
-            1fr
-          );
-
-        gap:14px;
-
-        align-items:center;
-
-        padding:12px;
-
-        border:
-          1px solid
-          #3f3518;
-
-        border-radius:16px;
-
-        background:
-          linear-gradient(
-            145deg,
-            #14120b,
-            #090909
-          );
-
-        overflow:hidden;
-      }
-
-
-      .mana-v957-target-image-wrap{
-        width:140px;
-
-        height:118px;
-
-        overflow:hidden;
-
-        border-radius:12px;
-
-        background:#080808;
-      }
-
-
-      .mana-v957-target-image{
-        width:100%;
-
-        height:100%;
-
-        display:block;
-
-        object-fit:cover;
-
-        /*
-          Crop toward upper torso.
-        */
-
-        object-position:
-          34%
-          48%;
-      }
-
-
-      .mana-v957-target-copy span{
-        display:block;
-
-        color:#777;
-
-        font-size:8px;
-
-        font-weight:900;
-
-        letter-spacing:.10em;
-      }
-
-
-      .mana-v957-target-copy strong{
-        display:block;
-
-        margin-top:5px;
-
-        color:#f3d875;
-
-        font-size:16px;
-
-        line-height:1.2;
-      }
-
-
-      /* =====================================
-         PREMIUM DEMO BUTTON
-         ===================================== */
-
-      .mana-v957-demo-button{
-        min-height:43px !important;
-
-        padding:
-          0
-          15px !important;
-
-        border:
-          1px solid
-          #6e5d22 !important;
-
-        border-radius:
-          12px !important;
-
-        background:
-          linear-gradient(
-            145deg,
-            #1a1609,
-            #0d0c08
-          ) !important;
-
-        color:
-          #f3d875 !important;
-
-        font-size:
-          9px !important;
-
-        font-weight:
-          900 !important;
-
-        letter-spacing:
-          .06em !important;
-      }
-
-
-      .mana-v957-play{
-        width:22px;
-
-        height:22px;
-
-        display:grid;
-
-        place-items:center;
-
-        border-radius:50%;
-
-        background:#f3d875;
-
-        color:#111;
-
-        font-size:8px;
-      }
-
-
-      /* =====================================
-         PREMIUM DEMO IMAGE
-         ===================================== */
-
-      .mana-v957-demo-image-wrap{
-        width:100%;
-
-        margin-top:14px;
-
-        overflow:hidden;
-
-        border:
-          1px solid
-          #443919;
-
-        border-radius:18px;
-
-        background:#050505;
-      }
-
-
-      .mana-v957-demo-image{
-        display:block;
-
-        width:100%;
-
-        height:auto;
-      }
-
-
-      /* =====================================
-         PREMIUM MODAL
-         ===================================== */
-
-      #manaV955DemoModal
-      .mana-v955-modal-sheet{
-        width:
-          min(
-            760px,
-            96vw
-          ) !important;
-      }
-
-
-      #manaV955DemoModal
-      #manaV955Demo{
-        width:100%;
-      }
-
-
-      #manaV955DemoModal
-      .mana-v955-modal-muscle{
-        grid-template-columns:
-          220px
-          1fr !important;
-
-        gap:
-          20px !important;
-
-        align-items:center;
-      }
-
-
-      #manaV955DemoModal
-      #manaV955Muscle{
-        width:
-          220px !important;
-
-        height:
-          155px !important;
-
-        overflow:hidden;
-
-        border-radius:14px;
-
-        background:#080808;
-      }
-
-
-      .mana-v957-modal-muscle-image{
-        display:block;
-
-        width:100%;
-
-        height:100%;
-
-        object-fit:cover;
-
-        object-position:
-          33%
-          48%;
-      }
-
-
-      #manaV955DemoModal
-      #manaV955MuscleLabel{
-        font-size:
-          20px !important;
-      }
-
-
-      /* =====================================
-         REMOVE OLD GENERATED DEMO GRAPHICS
-         WHEN PREMIUM MODE IS OPEN
-         ===================================== */
-
-      #manaV955DemoModal.mana-v957-premium-modal
-      .mana-v956-demo-stage,
-      #manaV955DemoModal.mana-v957-premium-modal
-      .mana-v955-demo-stage{
-        display:none !important;
-      }
-
-
-      /* =====================================
-         PHONE
-         ===================================== */
-
-      @media(
-        max-width:600px
-      ){
-
-        .mana-v957-premium-target{
-          grid-template-columns:
-            112px
-            1fr;
-
-          gap:10px;
-
-          padding:10px;
-        }
-
-
-        .mana-v957-target-image-wrap{
-          width:112px;
-
-          height:100px;
-        }
-
-
-        .mana-v957-target-copy strong{
-          font-size:14px;
-        }
-
-
-        #manaV955DemoModal
-        .mana-v955-modal-sheet{
-          width:
-            100% !important;
-        }
-
-
-        #manaV955DemoModal
-        .mana-v955-modal-muscle{
-          grid-template-columns:
-            130px
-            1fr !important;
-
-          gap:
-            12px !important;
-        }
-
-
-        #manaV955DemoModal
-        #manaV955Muscle{
-          width:
-            130px !important;
-
-          height:
-            110px !important;
-        }
-
-
-        #manaV955DemoModal
-        #manaV955MuscleLabel{
-          font-size:
-            16px !important;
-        }
-
-      }
-
-    `;
-
-
-    document.head
-      .appendChild(
-        style
-      );
+  function enhanceCards() {
+    document.querySelectorAll(
+      "#manaV64Exercises .mana-v64-card"
+    ).forEach(
+      enhanceCard
+    );
   }
 
-
   /* =========================================
-     EVENTS
+     REFRESH
      ========================================= */
 
-  function refresh() {
-
+  function scheduleRefresh() {
     [
-      80,
-      220,
-      500
+      100,
+      350,
+      750
     ].forEach(
       delay => {
-
         setTimeout(
-          upgradeCards,
+          enhanceCards,
           delay
         );
-
       }
     );
   }
-
-
-  function wireEvents() {
-
-    document.addEventListener(
-      "click",
-      event => {
-
-        /*
-          Existing v9.55 demo button
-          opens the modal.
-
-          We wait for that, then replace
-          its graphics with premium artwork.
-        */
-
-        const demoButton =
-          event.target.closest(
-            ".mana-v955-demo-button"
-          );
-
-
-        if (
-          demoButton
-        ) {
-
-          const card =
-            demoButton.closest(
-              ".mana-v64-card"
-            );
-
-
-          if (
-            card
-          ) {
-
-            setTimeout(
-              () => {
-
-                upgradeDemoModal(
-                  card
-                );
-
-              },
-              40
-            );
-          }
-        }
-
-
-        /*
-          Program tab.
-        */
-
-        if (
-          event.target.closest(
-            '#manaV83Tabs [data-v83-tab="program"]'
-          )
-        ) {
-
-          refresh();
-        }
-
-      }
-    );
-
-
-    window.addEventListener(
-      "mana:program-tab-change",
-      refresh
-    );
-
-
-    window.addEventListener(
-      "mana:strength-synced",
-      refresh
-    );
-
-
-    window.addEventListener(
-      "mana:workout-progress-change",
-      refresh
-    );
-  }
-
 
   /* =========================================
      INIT
      ========================================= */
 
   function init() {
-
     injectStyles();
 
-    wireEvents();
-
-
-    setTimeout(
-      refresh,
-      900
-    );
-  }
-
-
-  window.MANA_PREMIUM_EXERCISE_ASSETS_BUILD =
-    BUILD;
-
-
-  window.refreshManaPremiumExerciseAssets =
-    refresh;
-
-
-  if (
-    document.readyState ===
-      "loading"
-  ) {
+    scheduleRefresh();
 
     document.addEventListener(
-      "DOMContentLoaded",
-      init
+      "click",
+      event => {
+        if (
+          event.target.closest(
+            '[data-v83-tab="program"]'
+          )
+        ) {
+          scheduleRefresh();
+        }
+      }
     );
 
-  } else {
+    window.addEventListener(
+      "mana:program-tab-change",
+      scheduleRefresh
+    );
 
-    init();
+    window.addEventListener(
+      "mana:strength-synced",
+      scheduleRefresh
+    );
+
+    window.addEventListener(
+      "mana:workout-progress-change",
+      scheduleRefresh
+    );
+
+    window.refreshManaPremiumExerciseAssets =
+      enhanceCards;
+
+    window.MANA_PREMIUM_EXERCISE_ASSETS_BUILD =
+      BUILD;
   }
 
+  if (
+    document.readyState === "loading"
+  ) {
+    document.addEventListener(
+      "DOMContentLoaded",
+      init,
+      {
+        once: true
+      }
+    );
+  } else {
+    init();
+  }
 })();
