@@ -1,1370 +1,561 @@
-/* =========================================
-   MANA MOVEMENT TRAINING v9.62.1
-   UNIVERSAL DEMO PLAYER — VISUAL POLISH
 
-   - Bench Press visual crop fixed
-   - Shoulder Press visual crop fixed
-   - Removes unwanted anatomy panel
-   - Keeps Lateral Raise v9.60 untouched
+/* =========================================
+   MANA MOVEMENT TRAINING
+   v9.62.2 — PREMIUM DEMO PLAYER FIX
+
+   - Bench Press
+   - Shoulder Press
+   - Correct START and FINISH cropping
+   - Full athlete centred
    - Play / Pause / Replay
-   - No new images required
-   - No workout / Fuel / Supabase changes
+   - Works on laptop and mobile
+   - Lateral Raise remains on v9.60
+   - No changes to workout logging
+   - No changes to Fuel or Supabase
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "96210";
+  const BUILD = "96220";
   const STYLE_ID = "mana-v962-styles";
 
   const EXERCISES = [
-
     {
-      match:
-        /bench\s*press/i,
-
-      image:
-        "assets/exercises/bench-press-demo.png",
-
-      cue:
-        "Lower under control to the chest, then press upward.",
-
-      crop: {
-        start: {
-          x: 0,
-          y: 0.10,
-          w: 0.50,
-          h: 0.82
-        },
-
-        finish: {
-          x: 0.50,
-          y: 0.10,
-          w: 0.50,
-          h: 0.82
-        }
+      match: /bench\s*press/i,
+      image: "assets/exercises/bench-press-demo.png",
+      cue: "Lower the bar under control, then press upward.",
+      start: {
+        x: 0,
+        y: 0,
+        w: 0.5,
+        h: 1
+      },
+      finish: {
+        x: 0.5,
+        y: 0,
+        w: 0.5,
+        h: 1
       }
     },
-
     {
       match:
         /shoulder\s*press|overhead\s*press|military\s*press|arnold\s*press/i,
-
-      image:
-        "assets/exercises/shoulder-press-demo.png",
-
-      cue:
-        "Press overhead under control. Keep the ribs down and avoid leaning back.",
-
-      /*
-        Shoulder image contains:
-
-        ANATOMY | START | FINISH
-
-        So we use the middle third and
-        right third only.
-      */
-
-      crop: {
-
-        start: {
-          x: 0.3333,
-          y: 0,
-          w: 0.3334,
-          h: 1
-        },
-
-        finish: {
-          x: 0.6667,
-          y: 0,
-          w: 0.3333,
-          h: 1
-        }
-
+      image: "assets/exercises/shoulder-press-demo.png",
+      cue: "Press overhead with control. Keep your core engaged.",
+      start: {
+        x: 0,
+        y: 0,
+        w: 0.5,
+        h: 1
+      },
+      finish: {
+        x: 0.5,
+        y: 0,
+        w: 0.5,
+        h: 1
       }
     }
-
   ];
 
   /* =========================================
-     STYLES
+     DESIGN
      ========================================= */
 
   const CSS = `
 
     .mana-v962-player {
-
-      margin-top: 12px;
-
-      border:
-        1px solid #806723;
-
-      border-radius:
-        16px;
-
-      overflow:
-        hidden;
-
-      background:
-        #080808;
-
+      margin: 12px 0 0;
+      background: #080808;
+      border: 1px solid #806723;
+      border-radius: 16px;
+      overflow: hidden;
     }
-
 
     .mana-v962-stage {
-
-      position:
-        relative;
-
-      height:
-        470px;
-
-      overflow:
-        hidden;
-
-      background:
-        radial-gradient(
-          circle at 50% 45%,
-          #16130d 0%,
-          #090909 60%,
-          #050505 100%
-        );
-
+      height: 490px;
+      position: relative;
+      background: #080808;
+      overflow: hidden;
     }
-
 
     .mana-v962-stage img {
-
-      position:
-        absolute;
-
-      inset:
-        0;
-
-      width:
-        100%;
-
-      height:
-        100%;
-
-      object-fit:
-        contain;
-
-      object-position:
-        center;
-
-      opacity:
-        0;
-
-      transition:
-        opacity .42s ease;
-
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      opacity: 0;
+      transition: opacity .45s ease;
     }
-
 
     .mana-v962-player[data-pose="start"]
     .mana-v962-start {
-
-      opacity:
-        1;
-
+      opacity: 1;
     }
-
 
     .mana-v962-player[data-pose="finish"]
     .mana-v962-finish {
-
-      opacity:
-        1;
-
+      opacity: 1;
     }
-
 
     .mana-v962-badge {
-
-      position:
-        absolute;
-
-      z-index:
-        3;
-
-      top:
-        12px;
-
-      left:
-        12px;
-
-      padding:
-        8px 13px;
-
-      border-radius:
-        22px;
-
-      background:
-        rgba(19,17,9,.94);
-
-      color:
-        #f6ce54;
-
-      border:
-        1px solid #806723;
-
-      font-size:
-        12px;
-
-      font-weight:
-        900;
-
-      letter-spacing:
-        .05em;
-
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 3;
+      padding: 9px 15px;
+      background: #181408;
+      color: #f6ce54;
+      border: 1px solid #806723;
+      border-radius: 25px;
+      font-size: 12px;
+      font-weight: 900;
     }
-
 
     .mana-v962-progress {
-
-      position:
-        absolute;
-
-      z-index:
-        3;
-
-      left:
-        16px;
-
-      right:
-        16px;
-
-      bottom:
-        12px;
-
-      height:
-        4px;
-
-      border-radius:
-        999px;
-
-      overflow:
-        hidden;
-
-      background:
-        rgba(255,255,255,.12);
-
+      position: absolute;
+      bottom: 10px;
+      left: 15px;
+      right: 15px;
+      height: 4px;
+      z-index: 3;
+      background: #28231a;
+      border-radius: 10px;
+      overflow: hidden;
     }
-
 
     .mana-v962-progress span {
-
-      display:
-        block;
-
-      height:
-        100%;
-
-      width:
-        0%;
-
-      background:
-        #e5ba39;
-
-      border-radius:
-        inherit;
-
+      display: block;
+      width: 0%;
+      height: 100%;
+      background: #e5ba39;
     }
-
 
     .mana-v962-player.playing
     .mana-v962-progress span {
-
-      animation:
-        manaV962Progress
-        3.4s linear infinite;
-
+      animation: mana962Progress 3.4s linear infinite;
     }
 
-
-    @keyframes manaV962Progress {
-
-      from {
-        width: 0%;
-      }
-
-      to {
-        width: 100%;
-      }
-
+    @keyframes mana962Progress {
+      from { width: 0%; }
+      to { width: 100%; }
     }
-
 
     .mana-v962-controls {
-
-      display:
-        grid;
-
-      grid-template-columns:
-        1fr 1fr;
-
-      gap:
-        10px;
-
-      padding:
-        12px;
-
-      border-top:
-        1px solid #332a10;
-
-      background:
-        #0d0b07;
-
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px;
+      background: #0d0b07;
     }
-
 
     .mana-v962-controls button {
-
-      min-height:
-        48px;
-
-      border-radius:
-        12px;
-
-      border:
-        1px solid #806723;
-
-      background:
-        #1d180b;
-
-      color:
-        #f6ce54;
-
-      font-size:
-        12px;
-
-      font-weight:
-        900;
-
-      cursor:
-        pointer;
-
+      min-height: 48px;
+      background: #1d180b;
+      color: #f6ce54;
+      border: 1px solid #806723;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
     }
-
-
-    .mana-v962-controls button:active {
-
-      transform:
-        translateY(1px);
-
-    }
-
 
     .mana-v962-cue {
-
-      grid-column:
-        1 / -1;
-
-      text-align:
-        center;
-
-      color:
-        #c7c7c7;
-
-      font-size:
-        12px;
-
-      line-height:
-        1.5;
-
-      padding:
-        1px 6px 2px;
-
+      grid-column: 1 / -1;
+      text-align: center;
+      color: #ccc;
+      font-size: 12px;
+      line-height: 1.5;
+      padding: 4px;
     }
 
-
-    @media (max-width:600px) {
-
+    @media (max-width: 600px) {
       .mana-v962-stage {
-
-        height:
-          390px;
-
+        height: 390px;
       }
-
 
       .mana-v962-controls {
-
-        gap:
-          8px;
-
-        padding:
-          10px;
-
+        gap: 8px;
+        padding: 10px;
       }
-
 
       .mana-v962-controls button {
-
-        min-height:
-          46px;
-
-        font-size:
-          11px;
-
+        min-height: 46px;
       }
+    }
 
+    @media (prefers-reduced-motion: reduce) {
+      .mana-v962-stage img {
+        transition: none;
+      }
     }
 
   `;
-
 
   /* =========================================
      STATE
      ========================================= */
 
-  const cache =
-    new Map();
+  const cache = new Map();
 
-  let currentPlayer =
-    null;
-
-  let generation =
-    0;
-
-  let observer =
-    null;
-
-  let observedDemo =
-    null;
-
+  let currentPlayer = null;
+  let generation = 0;
+  let observedDemo = null;
+  let observer = null;
 
   /* =========================================
-     FIND EXERCISE
+     EXERCISE LOOKUP
      ========================================= */
 
   function findExercise(name) {
-
-    const text =
-      String(
-        name || ""
-      ).trim();
-
-    return (
-      EXERCISES.find(
-        exercise =>
-          exercise.match.test(text)
-      ) || null
-    );
-
+    return EXERCISES.find(exercise =>
+      exercise.match.test(name || "")
+    ) || null;
   }
 
-
   /* =========================================
-     CROP IMAGE
+     CROP THE EXISTING ARTWORK
      ========================================= */
 
-  function cropFrame(
-    source,
-    region
-  ) {
+  function cropImage(image, region) {
+    const width = image.naturalWidth;
+    const height = image.naturalHeight;
 
-    const width =
-      source.naturalWidth;
+    const sx = Math.round(width * region.x);
+    const sy = Math.round(height * region.y);
 
-    const height =
-      source.naturalHeight;
+    const sw = Math.round(width * region.w);
+    const sh = Math.round(height * region.h);
 
+    const canvas = document.createElement("canvas");
 
-    const sx =
-      Math.round(
-        width * region.x
-      );
+    canvas.width = sw;
+    canvas.height = sh;
 
-
-    const sy =
-      Math.round(
-        height * region.y
-      );
-
-
-    const cropWidth =
-      Math.round(
-        width * region.w
-      );
-
-
-    const cropHeight =
-      Math.round(
-        height * region.h
-      );
-
-
-    const canvas =
-      document.createElement(
-        "canvas"
-      );
-
-
-    canvas.width =
-      cropWidth;
-
-
-    canvas.height =
-      cropHeight;
-
-
-    const ctx =
-      canvas.getContext(
-        "2d"
-      );
-
+    const ctx = canvas.getContext("2d");
 
     if (!ctx) {
-
-      throw new Error(
-        "Canvas unavailable"
-      );
-
+      throw new Error("Canvas unavailable");
     }
-
 
     ctx.drawImage(
-
-      source,
-
+      image,
       sx,
       sy,
-
-      cropWidth,
-      cropHeight,
-
+      sw,
+      sh,
       0,
       0,
-
-      cropWidth,
-      cropHeight
-
+      sw,
+      sh
     );
 
-
-    return canvas.toDataURL(
-      "image/png"
-    );
-
+    return canvas.toDataURL("image/png");
   }
-
 
   /* =========================================
-     LOAD START + FINISH
+     LOAD START AND FINISH
      ========================================= */
 
-  function loadFrames(
-    exercise
-  ) {
-
-    if (
-      cache.has(
-        exercise.image
-      )
-    ) {
-
-      return cache.get(
-        exercise.image
-      );
-
+  function loadFrames(exercise) {
+    if (cache.has(exercise.image)) {
+      return cache.get(exercise.image);
     }
 
+    const promise = new Promise((resolve, reject) => {
+      const image = new Image();
 
-    const promise =
-      new Promise(
-        (resolve, reject) => {
-
-          const source =
-            new Image();
-
-
-          source.onload =
-            () => {
-
-              try {
-
-                resolve({
-
-                  start:
-                    cropFrame(
-                      source,
-                      exercise.crop.start
-                    ),
-
-                  finish:
-                    cropFrame(
-                      source,
-                      exercise.crop.finish
-                    )
-
-                });
-
-              } catch (error) {
-
-                reject(
-                  error
-                );
-
-              }
-
-            };
-
-
-          source.onerror =
-            () => {
-
-              reject(
-                new Error(
-                  "Exercise image could not load"
-                )
-              );
-
-            };
-
-
-          source.src =
-            exercise.image +
-            "?manaDemo=" +
-            BUILD;
-
+      image.onload = () => {
+        try {
+          resolve({
+            start: cropImage(image, exercise.start),
+            finish: cropImage(image, exercise.finish)
+          });
+        } catch (error) {
+          reject(error);
         }
-      );
+      };
 
+      image.onerror = () => {
+        reject(new Error("Exercise image unavailable"));
+      };
 
-    cache.set(
-      exercise.image,
-      promise
-    );
+      image.src =
+        exercise.image + "?v=" + BUILD;
+    }).catch(error => {
+      cache.delete(exercise.image);
+      throw error;
+    });
 
+    cache.set(exercise.image, promise);
 
     return promise;
-
   }
-
 
   /* =========================================
      BUILD PLAYER
      ========================================= */
 
-  function buildPlayer(
-    name,
-    exercise,
-    frames
-  ) {
+  function buildPlayer(name, exercise, frames) {
+    const player = document.createElement("div");
 
-    const player =
-      document.createElement(
-        "div"
-      );
+    player.className = "mana-v962-player";
+    player.dataset.exercise = name;
+    player.dataset.pose = "start";
 
+    const stage = document.createElement("div");
+    stage.className = "mana-v962-stage";
 
-    player.className =
-      "mana-v962-player";
+    const start = new Image();
+    start.className = "mana-v962-start";
+    start.src = frames.start;
+    start.alt = name + " starting position";
 
+    const finish = new Image();
+    finish.className = "mana-v962-finish";
+    finish.src = frames.finish;
+    finish.alt = name + " finishing position";
 
-    player.dataset.exercise =
-      name;
+    const badge = document.createElement("div");
+    badge.className = "mana-v962-badge";
+    badge.textContent = "START";
 
+    const progress = document.createElement("div");
+    progress.className = "mana-v962-progress";
 
-    player.dataset.pose =
-      "start";
+    const progressFill = document.createElement("span");
+    progress.appendChild(progressFill);
 
+    stage.append(start, finish, badge, progress);
 
-    /* STAGE */
+    /* PLAYER BUTTONS */
 
-    const stage =
-      document.createElement(
-        "div"
-      );
+    const controls = document.createElement("div");
+    controls.className = "mana-v962-controls";
 
+    const playBtn = document.createElement("button");
+    playBtn.type = "button";
+    playBtn.textContent = "▶ PLAY DEMO";
 
-    stage.className =
-      "mana-v962-stage";
+    const replayBtn = document.createElement("button");
+    replayBtn.type = "button";
+    replayBtn.textContent = "↻ REPLAY";
 
+    const cue = document.createElement("div");
+    cue.className = "mana-v962-cue";
+    cue.textContent = exercise.cue;
 
-    /* START */
-
-    const start =
-      new Image();
-
-
-    start.src =
-      frames.start;
-
-
-    start.alt =
-      name +
-      " starting position";
-
-
-    start.className =
-      "mana-v962-start";
-
-
-    /* FINISH */
-
-    const finish =
-      new Image();
-
-
-    finish.src =
-      frames.finish;
-
-
-    finish.alt =
-      name +
-      " finishing position";
-
-
-    finish.className =
-      "mana-v962-finish";
-
-
-    /* BADGE */
-
-    const badge =
-      document.createElement(
-        "div"
-      );
-
-
-    badge.className =
-      "mana-v962-badge";
-
-
-    badge.textContent =
-      "START";
-
-
-    /* PROGRESS */
-
-    const progress =
-      document.createElement(
-        "div"
-      );
-
-
-    progress.className =
-      "mana-v962-progress";
-
-
-    progress.innerHTML =
-      "<span></span>";
-
-
-    stage.append(
-
-      start,
-      finish,
-      badge,
-      progress
-
-    );
-
-
-    /* =========================================
-       CONTROLS
-       ========================================= */
-
-    const controls =
-      document.createElement(
-        "div"
-      );
-
-
-    controls.className =
-      "mana-v962-controls";
-
-
-    const playButton =
-      document.createElement(
-        "button"
-      );
-
-
-    playButton.type =
-      "button";
-
-
-    playButton.textContent =
-      "▶ PLAY DEMO";
-
-
-    const replayButton =
-      document.createElement(
-        "button"
-      );
-
-
-    replayButton.type =
-      "button";
-
-
-    replayButton.textContent =
-      "↻ REPLAY";
-
-
-    const cue =
-      document.createElement(
-        "div"
-      );
-
-
-    cue.className =
-      "mana-v962-cue";
-
-
-    cue.textContent =
-      exercise.cue;
-
-
-    controls.append(
-
-      playButton,
-      replayButton,
-      cue
-
-    );
-
-
-    player.append(
-
-      stage,
-      controls
-
-    );
-
+    controls.append(playBtn, replayBtn, cue);
+    player.append(stage, controls);
 
     /* =========================================
        PLAYBACK
        ========================================= */
 
-    let interval =
-      null;
+    let interval = null;
+    let timeout = null;
+    let replayTimeout = null;
+    let playing = false;
 
-
-    let timeout =
-      null;
-
-
-    let playing =
-      false;
-
-
-    function setPose(
-      value
-    ) {
-
-      player.dataset.pose =
-        value;
-
-
-      badge.textContent =
-        value.toUpperCase();
-
+    function setPose(value) {
+      player.dataset.pose = value;
+      badge.textContent = value.toUpperCase();
     }
-
 
     function clearTimers() {
+      clearInterval(interval);
+      clearTimeout(timeout);
+      clearTimeout(replayTimeout);
 
-      if (
-        interval !== null
-      ) {
-
-        clearInterval(
-          interval
-        );
-
-      }
-
-
-      if (
-        timeout !== null
-      ) {
-
-        clearTimeout(
-          timeout
-        );
-
-      }
-
-
-      interval =
-        null;
-
-
-      timeout =
-        null;
-
+      interval = null;
+      timeout = null;
+      replayTimeout = null;
     }
 
-
     function pause() {
-
-      playing =
-        false;
-
+      playing = false;
 
       clearTimers();
 
-
-      player.classList.remove(
-        "playing"
-      );
-
-
-      playButton.textContent =
-        "▶ PLAY DEMO";
-
+      player.classList.remove("playing");
+      playBtn.textContent = "▶ PLAY DEMO";
     }
-
 
     function cycle() {
+      setPose("start");
 
-      setPose(
-        "start"
-      );
-
-
-      timeout =
-        setTimeout(
-          () => {
-
-            if (
-              playing
-            ) {
-
-              setPose(
-                "finish"
-              );
-
-            }
-
-          },
-          1500
-        );
-
+      timeout = setTimeout(() => {
+        if (playing) {
+          setPose("finish");
+        }
+      }, 1500);
     }
 
-
     function play() {
-
-      if (
-        playing
-      ) {
-
+      if (playing) {
         pause();
-
         return;
-
       }
 
+      playing = true;
 
-      playing =
-        true;
-
-
-      player.classList.add(
-        "playing"
-      );
-
-
-      playButton.textContent =
-        "❚❚ PAUSE";
-
+      player.classList.add("playing");
+      playBtn.textContent = "❚❚ PAUSE";
 
       cycle();
 
-
-      interval =
-        setInterval(
-          cycle,
-          3400
-        );
-
+      interval = setInterval(cycle, 3400);
     }
-
 
     function replay() {
-
       pause();
+      setPose("start");
 
-
-      setPose(
-        "start"
-      );
-
-
-      setTimeout(
-        play,
-        60
-      );
-
+      replayTimeout = setTimeout(play, 60);
     }
 
+    playBtn.addEventListener("click", play);
+    replayBtn.addEventListener("click", replay);
 
-    playButton.addEventListener(
-      "click",
-      play
-    );
-
-
-    replayButton.addEventListener(
-      "click",
-      replay
-    );
-
-
-    player.pauseDemo =
-      pause;
-
+    player.pauseDemo = pause;
 
     return player;
-
   }
 
-
   /* =========================================
-     UPGRADE OPEN DEMO
+     CONNECT TO EXERCISE POPUP
      ========================================= */
 
   async function upgrade() {
+    const modal = document.getElementById(
+      "manaV955DemoModal"
+    );
 
-    const modal =
-      document.getElementById(
-        "manaV955DemoModal"
-      );
+    const demo = document.getElementById(
+      "manaV955Demo"
+    );
 
+    const title = document.getElementById(
+      "manaV955Title"
+    );
 
-    const demo =
-      document.getElementById(
-        "manaV955Demo"
-      );
+    if (!modal || !demo || !title) return;
+    if (!modal.classList.contains("open")) return;
 
+    const name = title.textContent.trim();
+    const exercise = findExercise(name);
 
-    const title =
-      document.getElementById(
-        "manaV955Title"
-      );
+    if (!exercise) return;
 
+    const existing = demo.querySelector(
+      ".mana-v962-player"
+    );
 
-    if (
-      !modal ||
-      !demo ||
-      !title
-    ) {
-
+    if (existing?.dataset.exercise === name) {
       return;
-
     }
 
-
-    if (
-      !modal.classList.contains(
-        "open"
-      )
-    ) {
-
-      return;
-
-    }
-
-
-    const name =
-      title.textContent.trim();
-
-
-    const exercise =
-      findExercise(
-        name
-      );
-
-
-    if (
-      !exercise
-    ) {
-
-      return;
-
-    }
-
-
-    const existing =
-      demo.querySelector(
-        ".mana-v962-player"
-      );
-
-
-    if (
-      existing &&
-      existing.dataset.exercise ===
-        name
-    ) {
-
-      return;
-
-    }
-
-
-    const token =
-      ++generation;
-
+    const token = ++generation;
 
     try {
+      const frames = await loadFrames(exercise);
 
-      const frames =
-        await loadFrames(
-          exercise
-        );
+      if (token !== generation) return;
+      if (!modal.classList.contains("open")) return;
+      if (title.textContent.trim() !== name) return;
 
+      currentPlayer?.pauseDemo?.();
 
-      if (
-        token !== generation
-      ) {
-
-        return;
-
-      }
-
-
-      if (
-        !modal.classList.contains(
-          "open"
-        )
-      ) {
-
-        return;
-
-      }
-
-
-      if (
-        title.textContent.trim() !==
-        name
-      ) {
-
-        return;
-
-      }
-
-
-      currentPlayer
-        ?.pauseDemo?.();
-
-
-      currentPlayer =
-        buildPlayer(
-          name,
-          exercise,
-          frames
-        );
-
-
-      demo.replaceChildren(
-        currentPlayer
+      currentPlayer = buildPlayer(
+        name,
+        exercise,
+        frames
       );
 
+      demo.replaceChildren(currentPlayer);
 
     } catch (error) {
-
-      console.warn(
-        "Mana Demo Player:",
-        error
-      );
-
+      console.warn("Mana Demo:", error);
     }
-
   }
 
-
   /* =========================================
-     WATCH MODAL
+     WATCH FOR DEMO OPENING
      ========================================= */
 
   function observeDemo() {
-
-    const demo =
-      document.getElementById(
-        "manaV955Demo"
-      );
-
-
-    if (
-      !demo ||
-      demo ===
-        observedDemo
-    ) {
-
-      return;
-
-    }
-
-
-    observedDemo =
-      demo;
-
-
-    if (
-      observer
-    ) {
-
-      observer.disconnect();
-
-    }
-
-
-    observer =
-      new MutationObserver(
-        () => {
-
-          if (
-            !demo.querySelector(
-              ".mana-v962-player"
-            )
-          ) {
-
-            setTimeout(
-              upgrade,
-              100
-            );
-
-          }
-
-        }
-      );
-
-
-    observer.observe(
-      demo,
-      {
-        childList:
-          true
-      }
+    const demo = document.getElementById(
+      "manaV955Demo"
     );
 
+    if (!demo || demo === observedDemo) return;
+
+    observedDemo = demo;
+
+    observer?.disconnect();
+
+    observer = new MutationObserver(() => {
+      if (!demo.querySelector(".mana-v962-player")) {
+        setTimeout(upgrade, 100);
+      }
+    });
+
+    observer.observe(demo, {
+      childList: true
+    });
   }
 
-
   /* =========================================
-     INIT
+     INITIALISE
      ========================================= */
 
   function init() {
+    document.getElementById(STYLE_ID)?.remove();
 
-    const previousStyle =
-      document.getElementById(
-        STYLE_ID
-      );
+    const style = document.createElement("style");
 
+    style.id = STYLE_ID;
+    style.textContent = CSS;
 
-    if (
-      previousStyle
-    ) {
-
-      previousStyle.remove();
-
-    }
-
-
-    const style =
-      document.createElement(
-        "style"
-      );
-
-
-    style.id =
-      STYLE_ID;
-
-
-    style.textContent =
-      CSS;
-
-
-    document.head.appendChild(
-      style
-    );
-
+    document.head.appendChild(style);
 
     observeDemo();
 
+    document.addEventListener("click", event => {
+      if (
+        event.target.closest(
+          ".mana-v955-demo-button,.mana-v957-demo-button"
+        )
+      ) {
+        observeDemo();
 
-    document.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target.closest(
-            ".mana-v955-demo-button,.mana-v957-demo-button"
-          )
-        ) {
-
-          observeDemo();
-
-
-          setTimeout(
-            upgrade,
-            150
-          );
-
-
-          setTimeout(
-            upgrade,
-            500
-          );
-
-        }
-
-
-        if (
-          event.target.closest(
-            "#manaV955Close"
-          ) ||
-          event.target.id ===
-            "manaV955DemoModal"
-        ) {
-
-          generation++;
-
-
-          currentPlayer
-            ?.pauseDemo?.();
-
-        }
-
+        setTimeout(upgrade, 150);
+        setTimeout(upgrade, 500);
       }
-    );
 
+      if (
+        event.target.closest("#manaV955Close") ||
+        event.target.id === "manaV955DemoModal"
+      ) {
+        generation++;
+        currentPlayer?.pauseDemo?.();
+      }
+    });
 
-    window.MANA_DEMO_EXTENSION_BUILD =
-      BUILD;
-
-
-    window.refreshManaUniversalDemo =
-      upgrade;
-
+    window.MANA_DEMO_EXTENSION_BUILD = BUILD;
+    window.refreshManaUniversalDemo = upgrade;
   }
 
-
-  if (
-    document.readyState ===
-    "loading"
-  ) {
-
+  if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {
-        once:
-          true
-      }
+      { once: true }
     );
-
   } else {
-
     init();
-
   }
 
 })();
