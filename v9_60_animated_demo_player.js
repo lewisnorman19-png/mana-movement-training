@@ -1,138 +1,82 @@
-/* =========================================
-   MANA MOVEMENT TRAINING v9.60.1
-   ANIMATED EXERCISE DEMO PLAYER
-   VISUAL FIX VERSION
 
-   - Uses existing lateral-raise-demo.png
-   - No new image files needed
-   - Play / Pause / Replay
-   - Preserves image proportions
-   - No workout logging changes
-   - No Fuel / Supabase / auth changes
-   ========================================= */
-
+/* MANA MOVEMENT TRAINING — v9.60.3
+   Lateral Raise Demo Player: self-contained replacement.
+   Reuses assets/exercises/lateral-raise-demo.png; no new PNGs required.
+   Does not alter workout logs, Fuel, or authentication.
+*/
 (() => {
-  "use strict";
+  'use strict';
 
-  const BUILD = "96010";
-  const STYLE_ID = "mana-v960-demo-player-style";
+  const BUILD = '96030';
+  const IMAGE = 'assets/exercises/lateral-raise-demo.png';
+  const STYLE_ID = 'mana-v960-demo-player-style';
+  const MODAL_ID = 'manaV955DemoModal';
+  const CONTENT_ID = 'manaV955Demo';
+  const TITLE_ID = 'manaV955Title';
 
-  const DEMOS = [
-    {
-      match: /lateral\s*raise|side\s*raise|side\s*lateral/i,
-      image: "assets/exercises/lateral-raise-demo.png",
-      startLabel: "START",
-      finishLabel: "FINISH",
-      cue: "Raise under control to shoulder height, then lower slowly."
-    }
-  ];
+  let framesPromise = null;
+  let activePlayer = null;
+  let observedContent = null;
+  let scheduled = null;
 
-  function getConfig(name) {
-    const text = String(name || "").trim();
-    return DEMOS.find(item => item.match.test(text)) || null;
+  function matchingName() {
+    const text = document.getElementById(TITLE_ID)?.textContent?.trim() || '';
+    return /lateral\s*raise|side\s*raise|side\s*lateral/i.test(text)
+      ? text
+      : null;
   }
 
-  function injectStyles() {
-    if (document.getElementById(STYLE_ID)) return;
+  function installStyle() {
+    document.getElementById(STYLE_ID)?.remove();
 
-    const style = document.createElement("style");
+    const style = document.createElement('style');
     style.id = STYLE_ID;
 
     style.textContent = `
       .mana-v960-player {
-        margin-top: 16px;
-        border: 1px solid #6f5b20;
-        border-radius: 18px;
+        margin: 12px 0 0;
+        background: #090909;
+        border: 1px solid #806723;
+        border-radius: 16px;
         overflow: hidden;
-        background: #080808;
       }
 
       .mana-v960-stage {
         position: relative;
-        width: 100%;
-        height: min(62vw, 520px);
-        min-height: 420px;
-        background: #070707;
+        height: 430px;
+        background: #080808;
         overflow: hidden;
       }
 
       .mana-v960-frame {
         position: absolute;
         inset: 0;
-        background-repeat: no-repeat;
-        background-size: auto 100%;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
         opacity: 0;
-        transition: opacity .38s ease;
+        transition: opacity .5s ease;
       }
 
-      .mana-v960-frame.start {
-        background-position: left center;
-        opacity: 1;
-      }
-
+      .mana-v960-player[data-pose="start"]
+      .mana-v960-frame.start,
+      .mana-v960-player[data-pose="finish"]
       .mana-v960-frame.finish {
-        background-position: right center;
-      }
-
-      .mana-v960-player[data-pose="finish"] .mana-v960-frame.start {
-        opacity: 0;
-      }
-
-      .mana-v960-player[data-pose="finish"] .mana-v960-frame.finish {
         opacity: 1;
-      }
-
-      .mana-v960-player[data-pose="start"] .mana-v960-frame.start {
-        opacity: 1;
-      }
-
-      .mana-v960-player[data-pose="start"] .mana-v960-frame.finish {
-        opacity: 0;
       }
 
       .mana-v960-pose-badge {
         position: absolute;
-        left: 14px;
-        top: 14px;
-        z-index: 3;
+        top: 12px;
+        left: 12px;
+        z-index: 2;
         padding: 8px 12px;
-        border-radius: 999px;
-        background: rgba(5,5,5,.9);
-        border: 1px solid #8c7228;
-        color: #f5d66e;
-        font-size: 11px;
+        border: 1px solid #806723;
+        border-radius: 20px;
+        background: #131109;
+        color: #f6ce54;
+        font-size: 12px;
         font-weight: 900;
-        letter-spacing: .08em;
-      }
-
-      .mana-v960-progress {
-        position: absolute;
-        left: 16px;
-        right: 16px;
-        bottom: 14px;
-        height: 5px;
-        z-index: 3;
-        overflow: hidden;
-        border-radius: 999px;
-        background: rgba(255,255,255,.12);
-      }
-
-      .mana-v960-progress > span {
-        display: block;
-        height: 100%;
-        width: 0%;
-        border-radius: inherit;
-        background: #e6b936;
-      }
-
-      .mana-v960-player.playing .mana-v960-progress > span {
-        animation: manaV960Progress 3.2s linear infinite;
-      }
-
-      @keyframes manaV960Progress {
-        0% { width: 0%; }
-        50% { width: 50%; }
-        100% { width: 100%; }
       }
 
       .mana-v960-controls {
@@ -140,260 +84,353 @@
         grid-template-columns: 1fr 1fr;
         gap: 10px;
         padding: 12px;
-        border-top: 1px solid #312810;
-        background: #0d0b07;
       }
 
       .mana-v960-btn {
         min-height: 48px;
-        border-radius: 13px;
-        border: 1px solid #7f6724;
-        background: #1c1608;
-        color: #f4d367;
+        border: 1px solid #806723;
+        border-radius: 12px;
+        background: #1d180b;
+        color: #f6ce54;
         font-size: 12px;
         font-weight: 900;
-        letter-spacing: .04em;
         cursor: pointer;
-      }
-
-      .mana-v960-btn:active {
-        transform: translateY(1px);
       }
 
       .mana-v960-cue {
         grid-column: 1 / -1;
-        padding: 2px 4px 3px;
-        color: #bbb;
-        font-size: 12px;
-        line-height: 1.45;
+        color: #ccc;
         text-align: center;
+        line-height: 1.5;
+        font-size: 12px;
       }
 
       @media (max-width: 600px) {
         .mana-v960-stage {
-          height: 430px;
-          min-height: 380px;
+          height: 380px;
         }
 
         .mana-v960-controls {
           gap: 8px;
           padding: 10px;
         }
+      }
 
-        .mana-v960-btn {
-          min-height: 46px;
-          font-size: 11px;
+      @media (prefers-reduced-motion: reduce) {
+        .mana-v960-frame {
+          transition: none;
         }
       }
     `;
 
-    document.head.appendChild(style);
+    document.head.append(style);
   }
 
-  function buildPlayer(name, config) {
-    const player = document.createElement("div");
-    player.className = "mana-v960-player";
-    player.dataset.pose = "start";
+  /* =========================================
+     LOAD AND SEPARATE THE EXISTING ARTWORK
+     ========================================= */
+
+  function loadFrames() {
+    if (framesPromise) return framesPromise;
+
+    framesPromise = new Promise((resolve, reject) => {
+      const source = new Image();
+
+      source.onload = () => {
+        try {
+          const w = source.naturalWidth;
+          const h = source.naturalHeight;
+
+          const regions = [
+            [w * .025, h * .125, w * .38, h * .565],
+            [w * .36, h * .125, w * .63, h * .565]
+          ];
+
+          const frames = regions.map(([x, y, cw, ch]) => {
+            const canvas = document.createElement('canvas');
+
+            canvas.width = Math.round(cw);
+            canvas.height = Math.round(ch);
+
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) {
+              throw new Error('Image processing unavailable');
+            }
+
+            ctx.drawImage(
+              source,
+              x,
+              y,
+              cw,
+              ch,
+              0,
+              0,
+              canvas.width,
+              canvas.height
+            );
+
+            return canvas.toDataURL('image/png');
+          });
+
+          resolve(frames);
+
+        } catch (err) {
+          reject(err);
+        }
+      };
+
+      source.onerror = () => {
+        reject(new Error('Demo illustration not found'));
+      };
+
+      source.src = IMAGE;
+    }).catch(err => {
+      framesPromise = null;
+      throw err;
+    });
+
+    return framesPromise;
+  }
+
+  /* =========================================
+     BUILD PLAYER
+     ========================================= */
+
+  function createPlayer(name, frames) {
+    const player = document.createElement('div');
+
+    player.className = 'mana-v960-player';
     player.dataset.exercise = name;
+    player.dataset.pose = 'start';
 
-    const stage = document.createElement("div");
-    stage.className = "mana-v960-stage";
+    const stage = document.createElement('div');
+    stage.className = 'mana-v960-stage';
 
-    const startFrame = document.createElement("div");
-    startFrame.className = "mana-v960-frame start";
-    startFrame.style.backgroundImage = `url("${config.image}")`;
+    const start = document.createElement('img');
+    start.className = 'mana-v960-frame start';
+    start.alt = 'Lateral raise: dumbbells lowered at sides';
+    start.src = frames[0];
 
-    const finishFrame = document.createElement("div");
-    finishFrame.className = "mana-v960-frame finish";
-    finishFrame.style.backgroundImage = `url("${config.image}")`;
+    const finish = document.createElement('img');
+    finish.className = 'mana-v960-frame finish';
+    finish.alt = 'Lateral raise: arms lifted to shoulder height';
+    finish.src = frames[1];
 
-    const badge = document.createElement("div");
-    badge.className = "mana-v960-pose-badge";
-    badge.textContent = config.startLabel;
+    const badge = document.createElement('div');
+    badge.className = 'mana-v960-pose-badge';
+    badge.textContent = 'START';
 
-    const progress = document.createElement("div");
-    progress.className = "mana-v960-progress";
-    progress.innerHTML = "<span></span>";
+    stage.append(start, finish, badge);
 
-    stage.append(startFrame, finishFrame, badge, progress);
+    /* =========================================
+       PLAY / PAUSE / REPLAY
+       ========================================= */
 
-    const controls = document.createElement("div");
-    controls.className = "mana-v960-controls";
+    const controls = document.createElement('div');
+    controls.className = 'mana-v960-controls';
 
-    const playBtn = document.createElement("button");
-    playBtn.type = "button";
-    playBtn.className = "mana-v960-btn";
-    playBtn.textContent = "▶ PLAY DEMO";
+    const playButton = document.createElement('button');
+    playButton.type = 'button';
+    playButton.className = 'mana-v960-btn';
+    playButton.textContent = '▶ PLAY DEMO';
 
-    const replayBtn = document.createElement("button");
-    replayBtn.type = "button";
-    replayBtn.className = "mana-v960-btn";
-    replayBtn.textContent = "↻ REPLAY";
+    const replayButton = document.createElement('button');
+    replayButton.type = 'button';
+    replayButton.className = 'mana-v960-btn';
+    replayButton.textContent = '↻ REPLAY';
 
-    const cue = document.createElement("div");
-    cue.className = "mana-v960-cue";
-    cue.textContent = config.cue;
+    const cue = document.createElement('div');
+    cue.className = 'mana-v960-cue';
+    cue.textContent =
+      'Lift under control to shoulder height; lower slowly. Avoid swinging.';
 
-    controls.append(playBtn, replayBtn, cue);
+    controls.append(playButton, replayButton, cue);
     player.append(stage, controls);
 
-    let loopTimer = null;
-    let flipTimer = null;
-    let playing = false;
+    let interval = null;
+    let timeout = null;
+    let running = false;
 
-    function renderPose(nextPose) {
-      player.dataset.pose = nextPose;
-      badge.textContent =
-        nextPose === "start"
-          ? config.startLabel
-          : config.finishLabel;
-    }
-
-    function clearTimers() {
-      if (loopTimer !== null) {
-        clearInterval(loopTimer);
-        loopTimer = null;
-      }
-
-      if (flipTimer !== null) {
-        clearTimeout(flipTimer);
-        flipTimer = null;
-      }
+    function setPose(pose) {
+      player.dataset.pose = pose;
+      badge.textContent = pose.toUpperCase();
     }
 
     function pause() {
-      playing = false;
-      clearTimers();
-      player.classList.remove("playing");
-      playBtn.textContent = "▶ PLAY DEMO";
+      running = false;
+
+      if (interval !== null) {
+        clearInterval(interval);
+      }
+
+      if (timeout !== null) {
+        clearTimeout(timeout);
+      }
+
+      interval = null;
+      timeout = null;
+
+      playButton.textContent = '▶ PLAY DEMO';
     }
 
-    function runCycle() {
-      renderPose("start");
+    function cycle() {
+      setPose('start');
 
-      flipTimer = setTimeout(() => {
-        if (playing) {
-          renderPose("finish");
+      timeout = setTimeout(() => {
+        if (running) {
+          setPose('finish');
         }
-      }, 1450);
+      }, 1550);
     }
 
     function play() {
-      if (playing) {
+      if (running) {
         pause();
         return;
       }
 
-      clearTimers();
-      playing = true;
-      player.classList.add("playing");
-      playBtn.textContent = "❚❚ PAUSE";
+      running = true;
+      playButton.textContent = '❚❚ PAUSE';
 
-      runCycle();
-      loopTimer = setInterval(runCycle, 3200);
+      cycle();
+      interval = setInterval(cycle, 3400);
     }
 
-    function replay() {
+    playButton.addEventListener('click', play);
+
+    replayButton.addEventListener('click', () => {
       pause();
-      renderPose("start");
-      setTimeout(play, 60);
-    }
+      setPose('start');
+      play();
+    });
 
-    playBtn.addEventListener("click", play);
-    replayBtn.addEventListener("click", replay);
-
-    player._manaV960Pause = pause;
+    player.pauseDemo = pause;
 
     return player;
   }
 
-  function upgradeOpenDemo() {
-    const modal = document.getElementById("manaV955DemoModal");
-    const demo = document.getElementById("manaV955Demo");
-    const title = document.getElementById("manaV955Title");
+  /* =========================================
+     UPGRADE EXISTING DEMO POPUP
+     ========================================= */
 
-    if (!modal || !demo || !title) return;
-    if (!modal.classList.contains("open")) return;
+  async function upgrade() {
+    const modal = document.getElementById(MODAL_ID);
+    const demo = document.getElementById(CONTENT_ID);
+    const name = matchingName();
 
-    const name = title.textContent.trim();
-    const config = getConfig(name);
-
-    if (!config) return;
-
-    const existingPlayer = demo.querySelector(".mana-v960-player");
-    if (existingPlayer && existingPlayer.dataset.exercise === name) {
+    if (
+      !modal?.classList.contains('open') ||
+      !demo ||
+      !name
+    ) {
       return;
     }
 
-    const existingImage = demo.querySelector("img");
-    if (!existingImage) return;
+    if (
+      demo.querySelector('.mana-v960-player')
+        ?.dataset.exercise === name
+    ) {
+      return;
+    }
 
-    existingPlayer?._manaV960Pause?.();
+    try {
+      const frames = await loadFrames();
 
-    const player = buildPlayer(name, config);
-    demo.replaceChildren(player);
+      if (
+        !modal.classList.contains('open') ||
+        matchingName() !== name
+      ) {
+        return;
+      }
+
+      if (
+        demo.querySelector('.mana-v960-player')
+          ?.dataset.exercise === name
+      ) {
+        return;
+      }
+
+      activePlayer?.pauseDemo?.();
+
+      const player = createPlayer(name, frames);
+
+      demo.replaceChildren(player);
+      activePlayer = player;
+
+    } catch (error) {
+      console.warn('Mana demo player:', error);
+    }
   }
 
-  function observeDemo() {
-    const demo = document.getElementById("manaV955Demo");
-    if (!demo) return;
-    if (demo.dataset.manaV960Observed === "1") return;
+  /* =========================================
+     WATCH FOR EXERCISE DEMO OPENING
+     ========================================= */
 
-    demo.dataset.manaV960Observed = "1";
+  function observeModal() {
+    const demo = document.getElementById(CONTENT_ID);
+
+    if (!demo || demo === observedContent) {
+      return;
+    }
+
+    observedContent = demo;
 
     const observer = new MutationObserver(() => {
-      const player = demo.querySelector(".mana-v960-player");
-      if (player) return;
-      setTimeout(upgradeOpenDemo, 50);
+      if (!demo.querySelector('.mana-v960-player')) {
+        if (scheduled) {
+          clearTimeout(scheduled);
+        }
+
+        scheduled = setTimeout(upgrade, 80);
+      }
     });
 
     observer.observe(demo, {
-      childList: true,
-      subtree: false
+      childList: true
     });
   }
 
-  function bindOpenButtons() {
-    document.addEventListener("click", event => {
-      if (
-        event.target.closest(".mana-v955-demo-button") ||
-        event.target.closest(".mana-v957-demo-button")
-      ) {
-        setTimeout(() => {
-          observeDemo();
-          upgradeOpenDemo();
-        }, 120);
-
-        setTimeout(upgradeOpenDemo, 350);
-      }
-    });
-
-    document.addEventListener("click", event => {
-      if (
-        event.target.closest("#manaV955Close") ||
-        event.target.id === "manaV955DemoModal"
-      ) {
-        document
-          .querySelector(".mana-v960-player")
-          ?._manaV960Pause?.();
-      }
-    });
-  }
+  /* =========================================
+     INITIALISE
+     ========================================= */
 
   function init() {
-    injectStyles();
-    observeDemo();
-    bindOpenButtons();
+    installStyle();
+    observeModal();
+
+    document.addEventListener('click', event => {
+      if (
+        event.target.closest(
+          '.mana-v955-demo-button,.mana-v957-demo-button'
+        )
+      ) {
+        observeModal();
+
+        setTimeout(upgrade, 150);
+        setTimeout(upgrade, 450);
+      }
+
+      if (
+        event.target.closest('#manaV955Close') ||
+        event.target.id === MODAL_ID
+      ) {
+        activePlayer?.pauseDemo?.();
+      }
+    });
 
     window.MANA_ANIMATED_DEMO_PLAYER_BUILD = BUILD;
-    window.refreshManaAnimatedDemoPlayer = upgradeOpenDemo;
+    window.refreshManaAnimatedDemoPlayer = upgrade;
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init, {
-      once: true
-    });
+  if (document.readyState === 'loading') {
+    document.addEventListener(
+      'DOMContentLoaded',
+      init,
+      { once: true }
+    );
   } else {
     init();
   }
+
 })();
