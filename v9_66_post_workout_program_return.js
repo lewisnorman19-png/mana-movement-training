@@ -1,41 +1,29 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.66.0
-   POST-WORKOUT RETURN FIX
+   MANA MOVEMENT TRAINING v9.66.1
+   UNIVERSAL POST-WORKOUT PROGRAM RETURN
 
-   PURPOSE
-   - COMPLETE SCREEN RETURNS TO PROGRAM
-   - NOT OVERVIEW
-   - DESKTOP + TABLET
-   - HIDES OVERVIEW DURING TRANSITION
-   - REDUCES VISIBLE FLASH / FLICKER
+   DESKTOP + PHONE + TABLET
+
+   - COMPLETE WORKOUT
+   - BACK TO PROGRAM
+   - NEVER RETURNS TO OVERVIEW
+   - HIDES INTERNAL OVERVIEW TRANSITION
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD =
-    "96600";
+  const BUILD = "96610";
+  const STYLE_ID = "mana-v966-return-style";
 
-  const STYLE_ID =
-    "mana-v966-return-style";
+  let returning = false;
 
-  let returning =
-    false;
-
-
-  /* =========================================
-     STYLE
-     ========================================= */
 
   function installStyle() {
 
-    if (
-      document.getElementById(
-        STYLE_ID
-      )
-    ) {
-      return;
-    }
+    document
+      .getElementById(STYLE_ID)
+      ?.remove();
 
 
     const style =
@@ -44,8 +32,7 @@
       );
 
 
-    style.id =
-      STYLE_ID;
+    style.id = STYLE_ID;
 
 
     style.textContent = `
@@ -53,23 +40,19 @@
       #manaV83ProgramShell.mana-v966-returning{
         visibility:hidden !important;
         opacity:0 !important;
+        pointer-events:none !important;
       }
 
     `;
 
 
-    document.head
-      .appendChild(
-        style
-      );
+    document.head.appendChild(
+      style
+    );
   }
 
 
-  /* =========================================
-     HELPERS
-     ========================================= */
-
-  function strengthShell() {
+  function shell() {
 
     return document
       .getElementById(
@@ -88,44 +71,67 @@
   }
 
 
-  function revealProgram() {
+  function programIsActive() {
 
-    const shell =
-      strengthShell();
+    return Boolean(
+      programButton()
+        ?.classList
+        .contains(
+          "active"
+        )
+    );
+  }
 
 
-    shell
+  function hideShell() {
+
+    shell()
+      ?.classList
+      .add(
+        "mana-v966-returning"
+      );
+  }
+
+
+  function revealShell() {
+
+    shell()
       ?.classList
       .remove(
         "mana-v966-returning"
       );
 
 
-    returning =
-      false;
+    returning = false;
   }
 
 
-  /* =========================================
-     RETURN
-     ========================================= */
+  function selectProgram() {
+
+    const button =
+      programButton();
+
+
+    if (!button) {
+      return false;
+    }
+
+
+    button.click();
+
+    return true;
+  }
+
 
   function returnToProgram() {
 
-    if (
-      returning
-    ) {
+    if (returning) {
       return;
     }
 
 
-    returning =
-      true;
+    returning = true;
 
-
-    /*
-      Close workout-complete screen.
-    */
 
     document
       .getElementById(
@@ -141,33 +147,11 @@
       "";
 
 
-    /*
-      Hide the Strength shell before opening it.
+    hideShell();
 
-      openManaProgram("strength") always begins
-      on Overview. Keeping the shell invisible
-      prevents that intermediate Overview screen
-      from flashing on screen.
-    */
-
-    const existingShell =
-      strengthShell();
-
-
-    existingShell
-      ?.classList
-      .add(
-        "mana-v966-returning"
-      );
-
-
-    /*
-      Open Mana Strength.
-    */
 
     if (
-      typeof
-        window.openManaProgram ===
+      typeof window.openManaProgram ===
       "function"
     ) {
 
@@ -178,32 +162,35 @@
     }
 
 
-    /*
-      openManaProgram creates/renders the tabs
-      synchronously, so immediately select
-      Program.
-    */
-
-    const shell =
-      strengthShell();
-
-
-    shell
-      ?.classList
-      .add(
-        "mana-v966-returning"
-      );
-
-
-    programButton()
-      ?.click();
+    hideShell();
 
 
     /*
-      Give the existing v8.5 Program renderer
-      its normal 100ms to build the workout
-      cards, then apply our card decoration.
+      Try immediately.
     */
+
+    selectProgram();
+
+
+    /*
+      Phone Safari / Home Screen can
+      need a moment before the tab
+      DOM settles.
+    */
+
+    setTimeout(
+      () => {
+
+        if (!programIsActive()) {
+
+          selectProgram();
+
+        }
+
+      },
+      60
+    );
+
 
     setTimeout(
       () => {
@@ -221,7 +208,7 @@
         }
 
       },
-      120
+      140
     );
 
 
@@ -241,44 +228,60 @@
         }
 
       },
-      170
+      190
     );
 
 
     /*
-      Reveal only once Program is ready.
-    */
-
-    setTimeout(
-      revealProgram,
-      220
-    );
-
-
-    /*
-      Safety fallback.
+      Force Program again before reveal.
     */
 
     setTimeout(
       () => {
 
-        if (
-          returning
-        ) {
+        selectProgram();
 
-          revealProgram();
+      },
+      240
+    );
+
+
+    /*
+      Reveal the shell once Program is ready.
+    */
+
+    setTimeout(
+      () => {
+
+        selectProgram();
+
+        revealShell();
+
+      },
+      320
+    );
+
+
+    /*
+      Safety fallback for slower phones.
+    */
+
+    setTimeout(
+      () => {
+
+        if (returning) {
+
+          selectProgram();
+
+          revealShell();
 
         }
 
       },
-      500
+      700
     );
   }
 
-
-  /* =========================================
-     BUTTON
-     ========================================= */
 
   function decorateButton() {
 
@@ -288,9 +291,7 @@
       );
 
 
-    if (
-      button
-    ) {
+    if (button) {
 
       button.textContent =
         "BACK TO PROGRAM →";
@@ -309,41 +310,15 @@
       );
 
 
-    if (
-      !button
-    ) {
+    if (!button) {
       return;
     }
 
 
     /*
-      Mobile v9.32 already owns its controlled
-      route.
-
-      This handler mainly replaces the old
-      desktop v9.15 onclick behaviour.
+      UNIVERSAL:
+      desktop + phone + tablet.
     */
-
-    const mobile =
-      Boolean(
-
-        window.matchMedia?.(
-          "(max-width: 700px)"
-        )?.matches ||
-
-        window.matchMedia?.(
-          "(pointer: coarse)"
-        )?.matches
-
-      );
-
-
-    if (
-      mobile
-    ) {
-      return;
-    }
-
 
     event.preventDefault();
 
@@ -355,10 +330,6 @@
     returnToProgram();
   }
 
-
-  /* =========================================
-     INIT
-     ========================================= */
 
   function init() {
 
@@ -373,9 +344,9 @@
 
 
     [
-      300,
-      900,
-      1600
+      250,
+      700,
+      1400
     ].forEach(
       delay => {
 
@@ -400,6 +371,11 @@
 
     window.returnManaWorkoutToProgram =
       returnToProgram;
+
+
+    console.log(
+      "[Mana v9.66.1] Universal post-workout return ready"
+    );
   }
 
 
