@@ -1,71 +1,70 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.32.0
-   MOBILE POST-WORKOUT OVERVIEW FIX
+   MANA MOVEMENT TRAINING v9.32.1
+   MOBILE POST-WORKOUT PROGRAM RETURN
 
-   FIXES:
-   - BACK TO OVERVIEW AFTER WORKOUT COMPLETE
-   - STOPS MULTIPLE OVERVIEW REFRESH EVENTS
-     FIRING AT THE SAME TIME ON PHONE
-   - BUILDS THE FINAL OVERVIEW ONCE
-   - RESTORES WORKOUT / CHAT / PROGRESS
-     IN ONE CONTROLLED PASS
-
-   MOBILE ONLY
-   NO MUTATION OBSERVER
+   NEW FLOW
+   - COMPLETE WORKOUT
+   - CLOSE COMPLETION SCREEN
+   - OPEN MANA STRENGTH ONCE
+   - MOVE DIRECTLY TO PROGRAM TAB
+   - REFRESH PROGRAM CARDS ONCE
+   - NO OVERVIEW REBUILD
+   - NO MULTIPLE REPAIR PASSES
+   - NO FLICKER LOOP
    ========================================= */
 
 (() => {
   "use strict";
 
   const BUILD =
-    "93200";
+    "93210";
 
   let handling =
     false;
 
+
   function mobileLike() {
+
     return Boolean(
+
       window.matchMedia?.(
         "(max-width: 700px)"
       )?.matches ||
+
       window.matchMedia?.(
         "(pointer: coarse)"
       )?.matches
+
     );
   }
 
-  function safeCall(
-    functionName
-  ) {
-    try {
-      const fn =
-        window[
-          functionName
-        ];
 
-      if (
-        typeof fn ===
-        "function"
-      ) {
-        fn();
-      }
-    } catch (_) {}
+  function openProgramTab() {
+
+    document
+      .querySelector(
+        '#manaV83Tabs ' +
+        '[data-v83-tab="program"]'
+      )
+      ?.click();
   }
 
-  function openStrengthOverviewOnce() {
+
+  function openStrengthProgramOnce() {
+
     if (
       handling
     ) {
       return;
     }
 
+
     handling =
       true;
 
+
     /*
-      Close the workout-complete screen ourselves.
-      This prevents v9.15 from calling the normal
-      multi-listener Overview path on mobile.
+      Close workout complete screen.
     */
 
     document
@@ -77,140 +76,112 @@
         "open"
       );
 
+
     document.body.style.overflow =
       "";
 
+
     /*
-      openManaProgram normally dispatches
-      mana:program-tab-change synchronously.
-
-      On this ONE mobile post-workout route,
-      temporarily suppress that single event.
-
-      Otherwise all of the Overview listeners
-      wake up together and visibly rebuild
-      the same screen several times.
+      Open Strength shell once.
     */
 
-    const originalDispatch =
-      window.dispatchEvent;
+    if (
+      typeof
+        window.openManaProgram ===
+      "function"
+    ) {
 
-    try {
-      window.dispatchEvent =
-        function(
-          event
-        ) {
-          if (
-            event?.type ===
-            "mana:program-tab-change"
-          ) {
-            return true;
-          }
+      window.openManaProgram(
+        "strength"
+      );
 
-          return originalDispatch.call(
-            window,
-            event
-          );
-        };
-
-      if (
-        typeof
-          window
-            .openManaProgram ===
-        "function"
-      ) {
-        window
-          .openManaProgram(
-            "strength"
-          );
-      }
-
-    } finally {
-      window.dispatchEvent =
-        originalDispatch;
     }
 
-    /*
-      The shell is now open on Overview.
-
-      Build the actual Overview immediately,
-      rather than showing the generic shell card
-      and then replacing it several times.
-    */
-
-    safeCall(
-      "renderManaStrengthOverview"
-    );
 
     /*
-      Apply the lightweight decorators once,
-      in a fixed order.
-    */
-
-    safeCall(
-      "refreshManaStrengthOverviewLayout"
-    );
-
-    safeCall(
-      "refreshManaWorkoutProgress"
-    );
-
-    safeCall(
-      "refreshManaStrengthChat"
-    );
-
-    safeCall(
-      "refreshManaTrainingPercentage"
-    );
-
-    /*
-      One final bounded verification after Safari
-      has completed layout.
-
-      These functions are safe to run again and
-      do not rebuild the entire base page.
+      Move directly to Program.
     */
 
     setTimeout(
       () => {
 
-        safeCall(
-          "refreshManaStrengthOverviewLayout"
-        );
+        openProgramTab();
 
-        safeCall(
-          "refreshManaWorkoutProgress"
-        );
+      },
+      60
+    );
 
-        safeCall(
-          "refreshManaStrengthChat"
-        );
 
-        safeCall(
-          "refreshManaTrainingPercentage"
-        );
+    /*
+      One controlled program refresh.
+    */
+
+    setTimeout(
+      () => {
+
+        if (
+          typeof
+            window
+              .refreshManaStrengthProgramCards ===
+          "function"
+        ) {
+
+          window
+            .refreshManaStrengthProgramCards();
+
+        }
+
+      },
+      160
+    );
+
+
+    /*
+      Final visual check only.
+      No Overview rebuild functions.
+    */
+
+    setTimeout(
+      () => {
+
+        if (
+          typeof
+            window
+              .refreshManaStrengthLaunchpad ===
+          "function"
+        ) {
+
+          window
+            .refreshManaStrengthLaunchpad();
+
+        }
+
 
         handling =
           false;
 
       },
-      180
+      320
     );
   }
+
 
   function handleClick(
     event
   ) {
+
     if (
       !mobileLike()
     ) {
       return;
     }
 
+
     const button =
       event.target.closest(
         "#manaV915Back"
       );
+
 
     if (
       !button
@@ -218,13 +189,6 @@
       return;
     }
 
-    /*
-      Stop the old v9.15 Back handler only
-      for this phone route.
-
-      We replace it with the single controlled
-      transition above.
-    */
 
     event.preventDefault();
 
@@ -232,15 +196,19 @@
 
     event.stopImmediatePropagation();
 
-    openStrengthOverviewOnce();
+
+    openStrengthProgramOnce();
   }
 
+
   function init() {
+
     if (
       !mobileLike()
     ) {
       return;
     }
+
 
     document.addEventListener(
       "click",
@@ -249,21 +217,31 @@
     );
   }
 
-  window.MANA_MOBILE_POST_WORKOUT_BUILD =
+
+  window
+    .MANA_MOBILE_POST_WORKOUT_BUILD =
     BUILD;
 
-  window.openManaPostWorkoutOverview =
-    openStrengthOverviewOnce;
+
+  window
+    .openManaPostWorkoutProgram =
+    openStrengthProgramOnce;
+
 
   if (
     document.readyState ===
     "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
+
   } else {
+
     init();
+
   }
+
 })();
