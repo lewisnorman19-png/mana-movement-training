@@ -1,36 +1,33 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.64.1
-   STRENGTH LAUNCHPAD + HOME STEPS
+   MANA MOVEMENT TRAINING v9.64.2
+   STRENGTH LAUNCHPAD POLISH
 
    HOME
-   - PROFILE BOTTOM TAB RETURNS TO DARK
-   - STEP 1 = PROFILE & GOALS
-   - STEP 2 = SELECT PROGRAM
+   - STEP 1 PROFILE IS SUBTLE GOLD
+   - NOT SOLID YELLOW
+   - STEP 2 PROGRAM SELECTION
 
-   MANA STRENGTH MEMBERSHIP
-   - STEP 3 = CHOOSE PLAN
+   MEMBERSHIP
+   - STEP 3 CHOOSE PLAN
 
-   STRENGTH OVERVIEW
-   - CLEANER PREMIUM LAUNCH CARDS
-   - PROFILE
-   - PROGRAM
-   - FUEL
-   - PROGRESS
+   OVERVIEW
+   - CLEAN PREMIUM LAUNCHPAD
+   - LARGER / CLEARER TEXT
 
    PROGRAM
    - NUMBERED WORKOUTS
-   - COLLAPSED UNTIL SELECTED
+   - OPEN BEFORE START
    - START BUTTON INSIDE WORKOUT
 
-   COMPLETION
-   - STABLE RETURN TO PROGRAM
-   - REMOVES DOM OBSERVER FLICKER
+   POST WORKOUT
+   - PROGRAM RETURN
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "96410";
+  const BUILD =
+    "96420";
 
   const STYLE_ID =
     "mana-v964-strength-launchpad-style";
@@ -41,12 +38,6 @@
   const PROGRAM_KEY =
     "mana-strength-v62-program";
 
-  let returnInProgress = false;
-
-
-  /* =========================================
-     HELPERS
-     ========================================= */
 
   function safeJson(
     raw,
@@ -127,6 +118,7 @@
         "manaV83Title"
       );
 
+
     return Boolean(
 
       shell
@@ -206,8 +198,8 @@
     style.textContent = `
 
       /* =====================================
-         HOME — BOTTOM PROFILE TAB
-         NO LONGER HIGHLIGHTED
+         BOTTOM PROFILE NAV
+         NORMAL / DARK
          ===================================== */
 
       #manaV80Home
@@ -227,20 +219,8 @@
       }
 
 
-      #manaV80Home
-      #manaV80ProfileBtn:active{
-
-        background:
-          #171717 !important;
-
-        color:
-          #f3d875 !important;
-      }
-
-
       /* =====================================
-         HOME — STEP 1
-         PROFILE / GOALS HERO
+         STEP 1 — SUBTLE PROFILE CARD
          ===================================== */
 
       #manaV80Home
@@ -251,50 +231,75 @@
         overflow:hidden;
 
         border:
-          0 !important;
+          1px solid
+          #786421 !important;
 
         background:
           linear-gradient(
-            135deg,
-            #f7df83,
-            #d9ae35
+            145deg,
+            #211d10,
+            #10100c 58%,
+            #090909
           ) !important;
 
         color:
-          #111 !important;
+          #fff !important;
 
         box-shadow:
           0
-          14px
-          36px
+          10px
+          28px
           rgba(
-            212,
-            175,
-            55,
+            0,
+            0,
+            0,
             .22
           ) !important;
       }
 
 
       #manaV80Home
+      #manaV80ProfileSetup::before{
+
+        content:"";
+
+        position:absolute;
+
+        top:0;
+        left:22px;
+        right:22px;
+
+        height:3px;
+
+        background:
+          linear-gradient(
+            90deg,
+            transparent,
+            #f3d875,
+            transparent
+          );
+      }
+
+
+      #manaV80Home
       #manaV80ProfileSetup::after{
 
-        content:"1";
+        content:"01";
 
         position:absolute;
 
         right:18px;
-        bottom:-18px;
+        bottom:-12px;
 
         color:
           rgba(
-            17,
-            17,
-            17,
-            .09
+            243,
+            216,
+            117,
+            .055
           );
 
-        font-size:108px;
+        font-size:92px;
 
         font-weight:950;
 
@@ -307,9 +312,7 @@
       .mana-v8013-profile-label{
 
         color:
-          #111 !important;
-
-        opacity:.72;
+          #f3d875 !important;
       }
 
 
@@ -321,7 +324,7 @@
         z-index:2;
 
         color:
-          #111 !important;
+          #fff !important;
       }
 
 
@@ -332,10 +335,10 @@
 
         z-index:2;
 
-        max-width:80%;
+        max-width:82%;
 
         color:
-          #2d291c !important;
+          #aaa !important;
       }
 
 
@@ -348,42 +351,27 @@
         z-index:2;
 
         color:
-          #111 !important;
+          #f3d875 !important;
       }
 
 
       /* =====================================
-         HOME — STEP 2
+         STEP 2
          ===================================== */
 
       #manaV80Home
       .mana-v8013-select{
 
-        position:relative;
-
         border:
           1px solid
-          #6e5a1c !important;
+          #50451f !important;
 
         background:
           linear-gradient(
             145deg,
-            #201a08,
-            #0b0b0b
+            #15130c,
+            #090909
           ) !important;
-
-        box-shadow:
-          inset
-          0
-          0
-          0
-          1px
-          rgba(
-            243,
-            216,
-            117,
-            .04
-          );
       }
 
 
@@ -392,6 +380,9 @@
 
         color:
           #f3d875 !important;
+
+        font-size:
+          18px !important;
       }
 
 
@@ -399,34 +390,10 @@
       .mana-v8013-select span{
 
         color:
-          #9d9d9d !important;
-      }
+          #aaa !important;
 
-
-      /* =====================================
-         STEP 3 — MEMBERSHIP
-         ===================================== */
-
-      #manaV98Membership
-      .mana-v981-kicker{
-
-        color:
-          #f3d875 !important;
-
-        letter-spacing:
-          .13em !important;
-      }
-
-
-      #manaV98Membership
-      .mana-v981-header{
-
-        border-bottom:
-          1px solid
-          #342d18;
-
-        padding-bottom:
-          22px;
+        font-size:
+          14px !important;
       }
 
 
@@ -439,65 +406,76 @@
         width:100%;
 
         max-width:
-          780px;
+          800px;
 
         margin:
           0 auto;
 
         padding:
-          4px
+          5px
           0
-          30px;
+          34px;
       }
 
 
       .mana-v964-intro{
 
         margin-bottom:
-          20px;
+          22px;
       }
 
 
       .mana-v964-kicker{
 
-        color:#f3d875;
+        color:
+          #f3d875;
 
-        font-size:10px;
+        font-size:
+          12px;
 
-        font-weight:950;
+        font-weight:
+          950;
 
-        letter-spacing:.15em;
+        letter-spacing:
+          .14em;
 
-        text-transform:uppercase;
+        text-transform:
+          uppercase;
       }
 
 
       .mana-v964-intro h2{
 
         margin:
-          7px
+          8px
           0
-          7px;
+          9px;
 
         color:#fff;
 
-        font-size:30px;
+        font-size:
+          34px;
 
-        line-height:1.05;
+        line-height:
+          1.05;
       }
 
 
       .mana-v964-intro p{
 
-        max-width:560px;
+        max-width:
+          620px;
 
         margin:0;
 
-        color:#838383;
+        color:
+          #aaa;
 
-        font-size:13px;
+        font-size:
+          16px;
 
-        line-height:1.55;
+        line-height:
+          1.55;
       }
 
 
@@ -514,7 +492,8 @@
             )
           );
 
-        gap:14px;
+        gap:
+          15px;
       }
 
 
@@ -524,7 +503,8 @@
 
         width:100%;
 
-        min-height:176px;
+        min-height:
+          188px;
 
         overflow:hidden;
 
@@ -533,16 +513,17 @@
         align-items:
           flex-start;
 
-        gap:15px;
+        gap:
+          17px;
 
         padding:
-          20px;
+          22px;
 
         text-align:left;
 
         border:
           1px solid
-          #343020;
+          #383426;
 
         border-radius:
           22px;
@@ -550,21 +531,13 @@
         background:
           linear-gradient(
             145deg,
-            #15140f,
+            #161510,
             #090909
           );
 
         color:#fff;
 
         cursor:pointer;
-
-        transition:
-          transform
-          .12s ease,
-          border-color
-          .18s ease,
-          box-shadow
-          .18s ease;
       }
 
 
@@ -575,8 +548,8 @@
         position:absolute;
 
         top:0;
-        left:18px;
-        right:18px;
+        left:20px;
+        right:20px;
 
         height:2px;
 
@@ -584,36 +557,11 @@
           linear-gradient(
             90deg,
             transparent,
-            #f3d875,
+            #d9ba55,
             transparent
           );
 
-        opacity:.75;
-      }
-
-
-      .mana-v964-launch:hover{
-
-        border-color:
-          #76601e;
-
-        box-shadow:
-          0
-          13px
-          35px
-          rgba(
-            0,
-            0,
-            0,
-            .28
-          );
-      }
-
-
-      .mana-v964-launch:active{
-
-        transform:
-          scale(.985);
+        opacity:.8;
       }
 
 
@@ -621,10 +569,13 @@
 
         flex:
           0 0
-          56px;
+          60px;
 
-        width:56px;
-        height:56px;
+        width:
+          60px;
+
+        height:
+          60px;
 
         display:grid;
 
@@ -636,26 +587,17 @@
         background:
           linear-gradient(
             145deg,
-            #f8e08a,
-            #d9ae35
+            #f5dc80,
+            #cda331
           );
 
         color:#111;
 
-        font-size:19px;
+        font-size:
+          20px;
 
-        font-weight:950;
-
-        box-shadow:
-          0
-          9px
-          25px
-          rgba(
-            243,
-            216,
-            117,
-            .12
-          );
+        font-weight:
+          950;
       }
 
 
@@ -669,72 +611,84 @@
 
       .mana-v964-label{
 
-        color:#a88e3a;
+        color:
+          #c2a84e;
 
-        font-size:9px;
+        font-size:
+          11px;
 
-        font-weight:950;
+        font-weight:
+          950;
 
-        letter-spacing:.13em;
+        letter-spacing:
+          .12em;
 
-        text-transform:uppercase;
+        text-transform:
+          uppercase;
       }
 
 
       .mana-v964-title{
 
-        margin-top:6px;
+        margin-top:
+          7px;
 
         color:#fff;
 
-        font-size:21px;
+        font-size:
+          24px;
 
-        font-weight:950;
+        font-weight:
+          950;
 
-        line-height:1.08;
+        line-height:
+          1.12;
       }
 
 
       .mana-v964-text{
 
-        margin-top:8px;
+        margin-top:
+          10px;
 
-        color:#8b8b8b;
+        color:
+          #b2b2b2;
 
-        font-size:12px;
+        font-size:
+          15px;
 
-        line-height:1.48;
+        line-height:
+          1.5;
       }
 
 
       .mana-v964-arrow{
 
-        margin-top:14px;
+        margin-top:
+          15px;
 
-        color:#f3d875;
+        color:
+          #f3d875;
 
-        font-size:11px;
+        font-size:
+          13px;
 
-        font-weight:950;
+        font-weight:
+          950;
 
-        letter-spacing:.04em;
+        letter-spacing:
+          .03em;
       }
 
 
       /* =====================================
-         PROGRAM
+         PROGRAM CARDS
          ===================================== */
 
       #manaV83Content
       .mana-v85-day{
 
         cursor:pointer;
-
-        transition:
-          border-color
-          .15s ease,
-          background
-          .15s ease;
       }
 
 
@@ -775,6 +729,9 @@
         color:
           #f3d875 !important;
 
+        font-size:
+          12px !important;
+
         font-weight:
           950 !important;
 
@@ -785,30 +742,38 @@
 
       .mana-v964-open-label{
 
-        margin-top:13px;
+        margin-top:
+          13px;
 
-        padding-top:11px;
+        padding-top:
+          11px;
 
         border-top:
           1px solid
           #292929;
 
-        color:#a88e3a;
+        color:
+          #aa9349;
 
-        font-size:10px;
+        font-size:
+          11px;
 
-        font-weight:950;
+        font-weight:
+          950;
 
-        letter-spacing:.07em;
+        letter-spacing:
+          .07em;
 
-        text-transform:uppercase;
+        text-transform:
+          uppercase;
       }
 
 
       .mana-v964-expanded
       .mana-v964-open-label{
 
-        color:#f3d875;
+        color:
+          #f3d875;
       }
 
 
@@ -816,10 +781,10 @@
       .mana-v85-start{
 
         min-height:
-          55px !important;
+          56px !important;
 
         margin-top:
-          15px !important;
+          16px !important;
 
         border:
           0 !important;
@@ -834,35 +799,12 @@
           #111 !important;
 
         font-size:
-          13px !important;
+          14px !important;
 
         font-weight:
           950 !important;
       }
 
-
-      /* =====================================
-         RETURN TRANSITION
-         ===================================== */
-
-      #manaV83ProgramShell
-      .mana-v83-content-returning{
-
-        opacity:0 !important;
-      }
-
-
-      #manaV83Content{
-
-        transition:
-          opacity
-          .12s ease;
-      }
-
-
-      /* =====================================
-         COMPLETE BUTTON
-         ===================================== */
 
       #manaV915Back{
 
@@ -875,19 +817,12 @@
 
 
       /* =====================================
-         PHONE
+         MOBILE
          ===================================== */
 
       @media(
         max-width:600px
       ){
-
-        #manaV80Home
-        #manaV80ProfileSetup p{
-
-          max-width:90%;
-        }
-
 
         .mana-v964-grid{
 
@@ -896,35 +831,61 @@
         }
 
 
+        .mana-v964-intro h2{
+
+          font-size:
+            30px;
+        }
+
+
+        .mana-v964-intro p{
+
+          font-size:
+            15px;
+        }
+
+
         .mana-v964-launch{
 
           min-height:
-            138px;
+            150px;
 
           padding:
-            17px;
+            19px;
         }
 
 
         .mana-v964-icon{
 
-          width:50px;
+          width:
+            54px;
 
-          height:50px;
+          height:
+            54px;
 
-          flex-basis:50px;
+          flex-basis:
+            54px;
         }
 
 
         .mana-v964-title{
 
-          font-size:19px;
+          font-size:
+            22px;
         }
 
 
-        .mana-v964-intro h2{
+        .mana-v964-text{
 
-          font-size:27px;
+          font-size:
+            14px;
+        }
+
+
+        .mana-v964-arrow{
+
+          font-size:
+            12px;
         }
 
       }
@@ -968,11 +929,6 @@
           "p"
         );
 
-      const open =
-        profile.querySelector(
-          ".mana-v8013-profile-open"
-        );
-
 
       if (label) {
 
@@ -993,15 +949,7 @@
       if (text) {
 
         text.textContent =
-          "Tell Mana your goals, training experience and setup so your experience can be personalised.";
-
-      }
-
-
-      if (open) {
-
-        open.textContent =
-          "OPEN PROFILE →";
+          "Tell Mana your goals, experience and training setup so your program can be personalised.";
 
       }
 
@@ -1049,7 +997,7 @@
 
 
   /* =========================================
-     MEMBERSHIP — STEP 3
+     MEMBERSHIP
      ========================================= */
 
   function decorateMembership() {
@@ -1076,11 +1024,6 @@
         ".mana-v981-header h1"
       );
 
-    const text =
-      screen.querySelector(
-        ".mana-v981-header p"
-      );
-
 
     if (kicker) {
 
@@ -1094,14 +1037,6 @@
 
       title.textContent =
         "Choose your plan";
-
-    }
-
-
-    if (text) {
-
-      text.textContent =
-        "Choose the level of coaching and support you want with your Mana Strength program.";
 
     }
 
@@ -1129,13 +1064,8 @@
       );
 
 
-    if (!holder) {
-
-      return;
-    }
-
-
     if (
+      !holder ||
       holder.querySelector(
         "#manaV964Launchpad"
       )
@@ -1202,9 +1132,8 @@
           </h2>
 
           <p>
-            Everything has its place.
-            Choose where you want to go
-            and keep the overview simple.
+            Your training tools in one place.
+            Choose where you want to go next.
           </p>
 
         </div>
@@ -1245,9 +1174,9 @@
               <div
                 class="mana-v964-text"
               >
-                Update your goal,
+                Update your training goal,
                 experience, equipment
-                and training setup.
+                and setup.
               </div>
 
               <div
@@ -1293,8 +1222,8 @@
                 class="mana-v964-text"
               >
                 ${esc(workoutText)}
-                Open one when you're
-                ready to train.
+                Open a workout, review
+                it and start when ready.
               </div>
 
               <div
@@ -1339,9 +1268,9 @@
               <div
                 class="mana-v964-text"
               >
-                Calories, protein,
-                meals, water and
-                personalised targets.
+                Manage your calories,
+                protein, meals, water
+                and daily targets.
               </div>
 
               <div
@@ -1386,7 +1315,7 @@
               <div
                 class="mana-v964-text"
               >
-                Review training history,
+                See completed sessions,
                 strength progress and
                 body-weight trends.
               </div>
@@ -1450,21 +1379,15 @@
             "1";
 
 
-          card.setAttribute(
-            "aria-expanded",
-            "false"
-          );
-
-
-          const dayLabel =
+          const label =
             card.querySelector(
               ".mana-v85-day-label"
             );
 
 
-          if (dayLabel) {
+          if (label) {
 
-            dayLabel.textContent =
+            label.textContent =
               `WORKOUT ${index + 1}`;
 
           }
@@ -1479,14 +1402,11 @@
           if (start) {
 
             start.textContent =
-              start
-                .classList
+              start.classList
                 .contains(
                   "resume"
                 )
-
                 ? "RESUME WORKOUT"
-
                 : "START WORKOUT";
 
           }
@@ -1505,22 +1425,22 @@
             )
           ) {
 
-            const label =
+            const open =
               document.createElement(
                 "div"
               );
 
 
-            label.className =
+            open.className =
               "mana-v964-open-label";
 
 
-            label.textContent =
+            open.textContent =
               "VIEW WORKOUT +";
 
 
             head.appendChild(
-              label
+              open
             );
 
           }
@@ -1540,23 +1460,15 @@
       );
 
 
-    card.setAttribute(
-      "aria-expanded",
-      expanded
-        ? "true"
-        : "false"
-    );
-
-
-    const label =
+    const open =
       card.querySelector(
         ".mana-v964-open-label"
       );
 
 
-    if (label) {
+    if (open) {
 
-      label.textContent =
+      open.textContent =
         expanded
           ? "HIDE WORKOUT −"
           : "VIEW WORKOUT +";
@@ -1567,10 +1479,10 @@
 
 
   /* =========================================
-     COMPLETE SCREEN
+     COMPLETE BUTTON
      ========================================= */
 
-  function decorateCompleteScreen() {
+  function decorateComplete() {
 
     const button =
       document.getElementById(
@@ -1587,131 +1499,17 @@
   }
 
 
-  function returnToProgram() {
-
-    if (
-      returnInProgress
-    ) {
-
-      return;
-    }
-
-
-    returnInProgress =
-      true;
-
-
-    document
-      .getElementById(
-        "manaV915Complete"
-      )
-      ?.classList
-      .remove(
-        "open"
-      );
-
-
-    document.body.style.overflow =
-      "";
-
-
-    const holder =
-      document.getElementById(
-        "manaV83Content"
-      );
-
-
-    if (holder) {
-
-      holder.classList.add(
-        "mana-v83-content-returning"
-      );
-
-    }
-
-
-    if (
-      typeof
-        window.openManaProgram ===
-      "function"
-    ) {
-
-      window.openManaProgram(
-        "strength"
-      );
-
-    }
-
-
-    setTimeout(
-      () => {
-
-        openStrengthTab(
-          "program"
-        );
-
-      },
-      70
-    );
-
-
-    setTimeout(
-      () => {
-
-        if (
-          typeof
-            window
-              .refreshManaStrengthProgramCards ===
-          "function"
-        ) {
-
-          window
-            .refreshManaStrengthProgramCards();
-
-        }
-
-      },
-      170
-    );
-
-
-    setTimeout(
-      () => {
-
-        decorateProgramCards();
-
-
-        document
-          .getElementById(
-            "manaV83Content"
-          )
-          ?.classList
-          .remove(
-            "mana-v83-content-returning"
-          );
-
-
-        returnInProgress =
-          false;
-
-      },
-      320
-    );
-  }
-
-
   /* =========================================
-     SCHEDULED REFRESH
-     NO CONTINUOUS OBSERVER
+     REFRESH
      ========================================= */
 
-  function refreshCurrentScreen() {
+  function refresh() {
 
     decorateHome();
 
     decorateMembership();
 
-    decorateCompleteScreen();
+    decorateComplete();
 
 
     const tab =
@@ -1740,15 +1538,14 @@
   function scheduleRefresh() {
 
     [
-      40,
-      140,
-      320
+      60,
+      180
     ]
       .forEach(
         delay => {
 
           setTimeout(
-            refreshCurrentScreen,
+            refresh,
             delay
           );
 
@@ -1758,7 +1555,7 @@
 
 
   /* =========================================
-     CLICKS
+     CLICK HANDLER
      ========================================= */
 
   function handleClick(
@@ -1799,13 +1596,11 @@
 
         if (
           typeof
-            window
-              .openManaProfile ===
+            window.openManaProfile ===
           "function"
         ) {
 
-          window
-            .openManaProfile();
+          window.openManaProfile();
 
         }
 
@@ -1838,14 +1633,7 @@
       if (
         event.target.closest(
           ".mana-v85-start"
-        )
-      ) {
-
-        return;
-      }
-
-
-      if (
+        ) ||
         event.target.closest(
           ".mana-v85-exercises"
         )
@@ -1858,27 +1646,6 @@
       toggleWorkoutCard(
         card
       );
-
-
-      return;
-    }
-
-
-    if (
-      event.target.closest(
-        "#manaV915Back"
-      )
-    ) {
-
-      event.preventDefault();
-
-      event.stopPropagation();
-
-      event
-        .stopImmediatePropagation();
-
-
-      returnToProgram();
 
 
       return;
@@ -1903,21 +1670,9 @@
       )
     ) {
 
-      /*
-        v9.8 opens the membership
-        screen in capture phase.
-
-        We only decorate it afterwards.
-      */
-
       setTimeout(
         decorateMembership,
-        60
-      );
-
-      setTimeout(
-        decorateMembership,
-        180
+        80
       );
 
     }
@@ -1925,11 +1680,10 @@
   }
 
 
-  /* =========================================
-     EVENTS
-     ========================================= */
+  function init() {
 
-  function installEvents() {
+    installStyles();
+
 
     document.addEventListener(
       "click",
@@ -1945,10 +1699,10 @@
       "mana:strength-membership-change"
     ]
       .forEach(
-        eventName => {
+        name => {
 
           window.addEventListener(
-            eventName,
+            name,
             scheduleRefresh
           );
 
@@ -1956,41 +1710,15 @@
       );
 
 
-    window.addEventListener(
-      "focus",
-      () => {
-
-        setTimeout(
-          refreshCurrentScreen,
-          100
-        );
-
-      }
-    );
-  }
-
-
-  /* =========================================
-     INIT
-     ========================================= */
-
-  function init() {
-
-    installStyles();
-
-    installEvents();
-
-
     [
-      150,
-      500,
-      1100
+      200,
+      700
     ]
       .forEach(
         delay => {
 
           setTimeout(
-            refreshCurrentScreen,
+            refresh,
             delay
           );
 
@@ -2005,13 +1733,7 @@
 
     window
       .refreshManaStrengthLaunchpad =
-      refreshCurrentScreen;
-
-
-    console.log(
-      "[Mana v9.64.1] " +
-      "Strength launchpad ready"
-    );
+      refresh;
   }
 
 
