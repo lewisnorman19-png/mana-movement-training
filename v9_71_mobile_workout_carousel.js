@@ -1,24 +1,25 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.71.0
-   MOBILE WORKOUT CAROUSEL
+   MANA MOVEMENT TRAINING v9.71.1
+   TRUE MOBILE HORIZONTAL WORKOUT CAROUSEL
 
    PHONE ONLY
 
+   - REAL HORIZONTAL SCROLLING
+   - NATIVE FINGER SWIPE
+   - CSS SCROLL SNAP
    - ONE EXERCISE PER PAGE
-   - SWIPE LEFT / RIGHT
    - PREVIOUS / NEXT BUTTONS
-   - EXERCISE COUNTER
-   - COMPACT POSITION INDICATOR
-   - INFO BUTTONS STAY SIDE BY SIDE
-   - COMPLETE WORKOUT ON FINAL EXERCISE
-   - DESKTOP REMAINS UNCHANGED
+   - POSITION INDICATOR
+   - DOT NAVIGATION
+   - INFO BUTTONS SIDE BY SIDE
+   - DESKTOP UNCHANGED
    ========================================= */
 
 (() => {
   "use strict";
 
   const BUILD =
-    "97100";
+    "97110";
 
   const STYLE_ID =
     "mana-v971-mobile-workout-style";
@@ -30,21 +31,15 @@
     "manaV971BottomNav";
 
   const PHONE_QUERY =
-    "(max-width: 700px)";
+    "(max-width:700px)";
 
   let activeIndex =
     0;
 
-  let currentSignature =
+  let lastSignature =
     "";
 
-  let touchStartX =
-    null;
-
-  let touchStartY =
-    null;
-
-  let touchStartTarget =
+  let scrollTimer =
     null;
 
 
@@ -62,20 +57,20 @@
   }
 
 
-  function workoutScreen() {
-
-    return document
-      .getElementById(
-        "manaStrengthV64Workout"
-      );
-  }
-
-
   function holder() {
 
     return document
       .getElementById(
         "manaV64Exercises"
+      );
+  }
+
+
+  function workoutScreen() {
+
+    return document
+      .getElementById(
+        "manaStrengthV64Workout"
       );
   }
 
@@ -92,58 +87,22 @@
   }
 
 
-  function workoutIsOpen() {
-
-    const screen =
-      workoutScreen();
-
-    if (!screen) {
-
-      return false;
-    }
-
-
-    return (
-      screen.classList
-        .contains(
-          "open"
-        ) ||
-      getComputedStyle(
-        screen
-      ).display !==
-        "none"
-    );
-  }
-
-
   function signature() {
 
-    const title =
-      document
-        .getElementById(
-          "manaV64Title"
-        )
-        ?.textContent
-        ?.trim() ||
-      "";
-
-
-    const names =
-      cards()
-        .map(
-          card =>
-            card.dataset
-              .exerciseName ||
-            ""
-        )
-        .join("|");
-
-
-    return (
-      title +
-      "::" +
-      names
-    );
+    return cards()
+      .map(
+        card =>
+          card.dataset
+            .exerciseName ||
+          card
+            .querySelector(
+              ".mana-v64-name"
+            )
+            ?.textContent
+            ?.trim() ||
+          ""
+      )
+      .join("|");
   }
 
 
@@ -167,6 +126,32 @@
       Math.min(
         Number(index) || 0,
         list.length - 1
+      )
+    );
+  }
+
+
+  function exerciseDone(
+    card
+  ) {
+
+    const checks =
+      [
+        ...card
+          .querySelectorAll(
+            ".mana-v64-check"
+          )
+      ];
+
+
+    return Boolean(
+      checks.length &&
+      checks.every(
+        check =>
+          check.classList
+            .contains(
+              "done"
+            )
       )
     );
   }
@@ -197,24 +182,17 @@
 
     style.textContent = `
 
-      /* =====================================
-         DESKTOP
-         ===================================== */
-
       #${TOP_NAV_ID},
       #${BOTTOM_NAV_ID}{
-
         display:none;
       }
 
 
-      /* =====================================
-         PHONE
-         ===================================== */
-
       @media(max-width:700px){
 
-        /* WORKOUT SHELL */
+        /* ===================================
+           COMPACT WORKOUT HEADER
+           =================================== */
 
         #manaStrengthV64Workout
         .mana-v64-shell{
@@ -223,11 +201,9 @@
             14px
             12px
             calc(
-              env(
-                safe-area-inset-bottom
-              )
+              env(safe-area-inset-bottom)
               +
-              24px
+              22px
             ) !important;
         }
 
@@ -236,16 +212,7 @@
         .mana-v64-head{
 
           margin-bottom:
-            8px !important;
-        }
-
-
-        #manaStrengthV64Workout
-        .mana-v64-head
-        .pill{
-
-          font-size:
-            9px !important;
+            7px !important;
         }
 
 
@@ -256,10 +223,10 @@
             4px !important;
 
           font-size:
-            26px !important;
+            25px !important;
 
           line-height:
-            1.02 !important;
+            1.05 !important;
         }
 
 
@@ -267,10 +234,10 @@
         #manaV64Subtitle{
 
           margin-top:
-            4px !important;
+            3px !important;
 
           font-size:
-            12px !important;
+            11px !important;
         }
 
 
@@ -278,33 +245,36 @@
         .mana-v64-close{
 
           width:
-            39px !important;
+            38px !important;
 
           height:
-            39px !important;
+            38px !important;
 
           flex:
-            0
-            0
-            39px !important;
+            0 0 38px !important;
 
           font-size:
-            21px !important;
+            20px !important;
         }
 
 
-        /* TOP STATS */
+        /* ===================================
+           TIME + SETS ONLY
+           =================================== */
 
         #manaStrengthV64Workout
         .mana-v64-summary{
+
+          grid-template-columns:
+            1fr 1fr !important;
 
           gap:
             7px !important;
 
           margin:
-            9px
+            8px
             0
-            8px !important;
+            7px !important;
         }
 
 
@@ -313,7 +283,7 @@
 
           padding:
             9px
-            11px !important;
+            10px !important;
 
           border-radius:
             12px !important;
@@ -324,7 +294,7 @@
         .mana-v64-stat span{
 
           margin-bottom:
-            3px !important;
+            2px !important;
 
           font-size:
             9px !important;
@@ -348,34 +318,33 @@
           margin:
             0
             0
-            10px !important;
+            9px !important;
         }
 
 
-        /* =====================================
-           CAROUSEL TOP
-           ===================================== */
+        /* ===================================
+           EXERCISE POSITION
+           =================================== */
 
         #${TOP_NAV_ID}{
 
-          display:
-            block;
+          display:block;
 
           margin:
-            3px
             0
-            9px;
+            0
+            8px;
 
           padding:
-            10px
-            12px;
+            9px
+            11px;
 
           border:
             1px solid
-            #292821;
+            #292820;
 
           border-radius:
-            13px;
+            12px;
 
           background:
             #0b0b0a;
@@ -393,7 +362,7 @@
             center;
 
           gap:
-            10px;
+            8px;
         }
 
 
@@ -403,7 +372,7 @@
             #f3d875;
 
           font-size:
-            11px;
+            10px;
 
           font-weight:
             950;
@@ -422,7 +391,7 @@
             #666;
 
           font-size:
-            10px;
+            9px;
 
           font-weight:
             800;
@@ -443,7 +412,7 @@
             5px;
 
           margin-top:
-            8px;
+            7px;
         }
 
 
@@ -455,24 +424,21 @@
           height:
             7px;
 
+          min-width:0;
+
           padding:0;
 
-          border:
-            0;
+          border:0;
 
           border-radius:
             999px;
 
           background:
-            #333;
+            #363636;
 
           transition:
-            width
-            .18s
-            ease,
-            background
-            .18s
-            ease;
+            width .18s ease,
+            background .18s ease;
         }
 
 
@@ -486,40 +452,93 @@
         }
 
 
-        .mana-v971-dot.done{
+        .mana-v971-dot.done:not(.active){
 
           background:
-            #7f6d2a;
+            #806d29;
         }
 
 
-        /* =====================================
-           ONE EXERCISE AT A TIME
-           ===================================== */
+        /* ===================================
+           REAL HORIZONTAL CAROUSEL
+           =================================== */
 
         #manaV64Exercises{
-
-          position:
-            relative;
 
           width:
             100%;
 
-          overflow:
+          display:
+            flex !important;
+
+          align-items:
+            flex-start;
+
+          gap:
+            10px;
+
+          overflow-x:
+            auto !important;
+
+          overflow-y:
             hidden;
 
+          scroll-snap-type:
+            x mandatory;
+
+          scroll-behavior:
+            smooth;
+
+          -webkit-overflow-scrolling:
+            touch;
+
+          overscroll-behavior-x:
+            contain;
+
+          scrollbar-width:
+            none;
+
           touch-action:
-            pan-y;
+            pan-x pan-y;
+
+          padding:
+            0 !important;
+        }
+
+
+        #manaV64Exercises::-webkit-scrollbar{
+
+          display:none;
         }
 
 
         #manaV64Exercises
         .mana-v64-card{
 
-          display:none !important;
+          display:
+            block !important;
+
+          flex:
+            0 0
+            calc(
+              100% - 1px
+            );
 
           width:
-            100%;
+            calc(
+              100% - 1px
+            );
+
+          max-width:
+            calc(
+              100% - 1px
+            );
+
+          scroll-snap-align:
+            start;
+
+          scroll-snap-stop:
+            always;
 
           margin:
             0 !important;
@@ -529,32 +548,9 @@
 
           border-radius:
             18px !important;
-        }
 
-
-        #manaV64Exercises
-        .mana-v64-card.mana-v971-active{
-
-          display:
-            block !important;
-
-          animation:
-            manaV971Fade
-            .18s
-            ease;
-        }
-
-
-        @keyframes manaV971Fade{
-
-          from{
-            opacity:.45;
-          }
-
-          to{
-            opacity:1;
-          }
-
+          box-sizing:
+            border-box;
         }
 
 
@@ -580,9 +576,9 @@
         }
 
 
-        /* =====================================
-           KEEP BOTH ACTIONS SIDE BY SIDE
-           ===================================== */
+        /* ===================================
+           TWO BUTTONS ALWAYS SIDE BY SIDE
+           =================================== */
 
         #manaV64Exercises
         .mana-v970-disclosure{
@@ -597,12 +593,15 @@
             6px !important;
 
           margin-top:
-            10px !important;
+            9px !important;
         }
 
 
         #manaV64Exercises
         .mana-v970-action{
+
+          width:
+            100% !important;
 
           min-width:
             0 !important;
@@ -612,18 +611,22 @@
 
           padding:
             7px
-            5px !important;
+            4px !important;
 
           font-size:
             9px !important;
 
           line-height:
-            1.2 !important;
+            1.15 !important;
 
           white-space:
             normal !important;
         }
 
+
+        /* ===================================
+           PREVIOUS & PROGRESSION PANEL
+           =================================== */
 
         #manaV64Exercises
         .mana-v970-history{
@@ -632,8 +635,7 @@
             7px !important;
 
           padding:
-            11px
-            12px !important;
+            11px !important;
         }
 
 
@@ -642,18 +644,21 @@
 
           font-size:
             12px !important;
+
+          line-height:
+            1.4 !important;
         }
 
 
-        /* =====================================
+        /* ===================================
            SET TABLE
-           ===================================== */
+           =================================== */
 
         #manaV64Exercises
         .mana-v64-table-head{
 
           grid-template-columns:
-            27px
+            25px
             minmax(0,1fr)
             minmax(0,1fr)
             38px !important;
@@ -662,7 +667,7 @@
             5px !important;
 
           margin-top:
-            13px !important;
+            12px !important;
 
           font-size:
             9px !important;
@@ -673,7 +678,7 @@
         .mana-v64-set{
 
           grid-template-columns:
-            27px
+            25px
             minmax(0,1fr)
             minmax(0,1fr)
             38px !important;
@@ -698,11 +703,11 @@
         .mana-v64-set input{
 
           min-height:
-            40px !important;
+            39px !important;
 
           padding:
-            8px
-            5px !important;
+            7px
+            4px !important;
 
           border-radius:
             10px !important;
@@ -730,38 +735,19 @@
         .mana-v970-adjust{
 
           margin-top:
-            7px !important;
+            6px !important;
+
+          padding:
+            3px 0 !important;
 
           font-size:
             10px !important;
         }
 
 
-        #manaV64Exercises
-        .mana-v64-controls{
-
-          margin-top:
-            7px !important;
-
-          gap:
-            6px !important;
-        }
-
-
-        #manaV64Exercises
-        .mana-v64-small{
-
-          min-height:
-            38px !important;
-
-          font-size:
-            11px !important;
-        }
-
-
-        /* =====================================
-           BOTTOM NAV
-           ===================================== */
+        /* ===================================
+           PREVIOUS / NEXT
+           =================================== */
 
         #${BOTTOM_NAV_ID}{
 
@@ -772,33 +758,33 @@
             1fr;
 
           gap:
-            8px;
+            7px;
 
           margin-top:
-            10px;
+            9px;
         }
 
 
         .mana-v971-nav-btn{
 
           min-height:
-            46px;
+            44px;
 
           border:
             1px solid
-            #37352a;
+            #37352b;
 
           border-radius:
-            13px;
+            12px;
 
           background:
             #10100e;
 
           color:
-            #ddd;
+            #d5d5d5;
 
           font-size:
-            11px;
+            10px;
 
           font-weight:
             950;
@@ -808,7 +794,7 @@
         .mana-v971-nav-btn.next{
 
           border-color:
-            #6c5920;
+            #6d5a20;
 
           background:
             #17140b;
@@ -821,26 +807,16 @@
         .mana-v971-nav-btn:disabled{
 
           opacity:
-            .28;
+            .25;
         }
 
 
-        /* =====================================
-           COMPLETE WORKOUT
-           ONLY ON FINAL PAGE
-           ===================================== */
+        /* ===================================
+           COMPLETE ONLY AT END
+           =================================== */
 
         #manaStrengthV64Workout
         #manaV64Complete{
-
-          display:
-            none !important;
-        }
-
-
-        #manaStrengthV64Workout
-        .mana-v971-last
-        ~ #manaV64Complete{
 
           display:
             none !important;
@@ -854,51 +830,33 @@
             block !important;
 
           min-height:
-            54px !important;
+            52px !important;
 
           margin-top:
-            12px !important;
+            10px !important;
 
           font-size:
             15px !important;
         }
 
 
-        #manaStrengthV64Workout
-        #manaV64Status{
-
-          min-height:
-            14px !important;
-
-          margin-top:
-            5px !important;
-
-          font-size:
-            11px !important;
-        }
-
-
-        /* =====================================
-           FORM GUIDE COMPRESSION
-           ===================================== */
+        /* ===================================
+           FORM GUIDE COMPACT
+           =================================== */
 
         #manaV970FormGuide{
 
           padding:
             calc(
-              env(
-                safe-area-inset-top
-              )
+              env(safe-area-inset-top)
               +
-              10px
+              9px
             )
-            10px
+            9px
             calc(
-              env(
-                safe-area-inset-bottom
-              )
+              env(safe-area-inset-bottom)
               +
-              16px
+              15px
             ) !important;
         }
 
@@ -907,11 +865,11 @@
         .mana-v970-guide{
 
           padding:
-            15px
-            12px !important;
+            14px
+            11px !important;
 
           border-radius:
-            19px !important;
+            18px !important;
         }
 
 
@@ -927,10 +885,10 @@
         .mana-v970-poses{
 
           gap:
-            7px !important;
+            6px !important;
 
           margin-top:
-            14px !important;
+            12px !important;
         }
 
 
@@ -938,13 +896,10 @@
         .mana-v970-pose{
 
           min-height:
-            174px !important;
+            165px !important;
 
           padding:
-            7px !important;
-
-          border-radius:
-            14px !important;
+            6px !important;
         }
 
 
@@ -952,7 +907,7 @@
         .mana-v970-figure{
 
           height:
-            150px !important;
+            143px !important;
         }
 
 
@@ -960,21 +915,10 @@
         .mana-v970-cues{
 
           margin-top:
-            11px !important;
+            10px !important;
 
           padding:
-            13px !important;
-        }
-
-
-        #manaV970FormGuide
-        .mana-v970-cues h3{
-
-          margin-bottom:
-            7px !important;
-
-          font-size:
-            15px !important;
+            12px !important;
         }
 
 
@@ -985,21 +929,7 @@
             12px !important;
 
           line-height:
-            1.5 !important;
-        }
-
-
-        #manaV970FormGuide
-        .mana-v970-avoid{
-
-          margin-top:
-            8px !important;
-
-          padding-top:
-            8px !important;
-
-          font-size:
-            12px !important;
+            1.45 !important;
         }
 
       }
@@ -1015,7 +945,7 @@
 
 
   /* =========================================
-     NAVIGATION UI
+     NAV ELEMENTS
      ========================================= */
 
   function ensureNavigation() {
@@ -1083,42 +1013,21 @@
   }
 
 
-  function exerciseDone(
-    card
-  ) {
+  /* =========================================
+     TOP NAV
+     ========================================= */
 
-    const checks =
-      [
-        ...card
-          .querySelectorAll(
-            ".mana-v64-check"
-          )
-      ];
-
-
-    return Boolean(
-      checks.length &&
-      checks.every(
-        check =>
-          check.classList
-            .contains(
-              "done"
-            )
-      )
-    );
-  }
-
-
-  function renderTopNavigation() {
+  function renderTop() {
 
     const list =
       cards();
 
 
     const nav =
-      document.getElementById(
-        TOP_NAV_ID
-      );
+      document
+        .getElementById(
+          TOP_NAV_ID
+        );
 
 
     if (
@@ -1149,7 +1058,7 @@
         <div
           class="mana-v971-swipe"
         >
-          Swipe to move
+          Swipe left / right
         </div>
 
       </div>
@@ -1185,10 +1094,7 @@
                   }
                 "
                 data-v971-index="${index}"
-                aria-label="
-                  Open exercise
-                  ${index + 1}
-                "
+                aria-label="Exercise ${index + 1}"
               ></button>
 
             `
@@ -1224,16 +1130,21 @@
   }
 
 
-  function renderBottomNavigation() {
+  /* =========================================
+     BOTTOM NAV
+     ========================================= */
+
+  function renderBottom() {
 
     const list =
       cards();
 
 
     const nav =
-      document.getElementById(
-        BOTTOM_NAV_ID
-      );
+      document
+        .getElementById(
+          BOTTOM_NAV_ID
+        );
 
 
     if (
@@ -1269,7 +1180,7 @@
         "
         id="manaV971Next"
         ${
-          activeIndex >=
+          activeIndex ===
           list.length - 1
             ? "disabled"
             : ""
@@ -1287,7 +1198,13 @@
       )
       ?.addEventListener(
         "click",
-        previous
+        () => {
+
+          goTo(
+            activeIndex - 1
+          );
+
+        }
       );
 
 
@@ -1297,32 +1214,28 @@
       )
       ?.addEventListener(
         "click",
-        next
+        () => {
+
+          goTo(
+            activeIndex + 1
+          );
+
+        }
       );
   }
 
 
   /* =========================================
-     ACTIVE EXERCISE
+     STATE UPDATE
      ========================================= */
 
-  function renderActiveExercise(
-    scroll = false
-  ) {
-
-    const screen =
-      workoutScreen();
-
+  function updateState() {
 
     const list =
       cards();
 
 
-    if (
-      !screen ||
-      !list.length ||
-      !isPhone()
-    ) {
+    if (!list.length) {
 
       return;
     }
@@ -1334,24 +1247,8 @@
       );
 
 
-    list.forEach(
-      (
-        card,
-        index
-      ) => {
-
-        card.classList
-          .toggle(
-            "mana-v971-active",
-            index ===
-            activeIndex
-          );
-
-      }
-    );
-
-
-    screen.classList
+    workoutScreen()
+      ?.classList
       .toggle(
         "mana-v971-on-last",
         activeIndex ===
@@ -1359,255 +1256,72 @@
       );
 
 
-    renderTopNavigation();
+    renderTop();
 
-    renderBottomNavigation();
+    renderBottom();
+  }
 
 
-    if (scroll) {
+  /* =========================================
+     TRUE HORIZONTAL NAVIGATION
+     ========================================= */
 
-      document
-        .getElementById(
-          TOP_NAV_ID
-        )
-        ?.scrollIntoView({
-          behavior:
-            "smooth",
+  function pageWidth() {
 
-          block:
-            "start"
-        });
+    const exerciseHolder =
+      holder();
 
+
+    const first =
+      cards()[0];
+
+
+    if (
+      !exerciseHolder ||
+      !first
+    ) {
+
+      return 0;
     }
+
+
+    const styles =
+      getComputedStyle(
+        exerciseHolder
+      );
+
+
+    const gap =
+      parseFloat(
+        styles.columnGap ||
+        styles.gap ||
+        0
+      ) || 0;
+
+
+    return (
+      first.getBoundingClientRect()
+        .width +
+      gap
+    );
   }
 
 
   function goTo(
-    index
-  ) {
-
-    const nextIndex =
-      clampIndex(
-        index
-      );
-
-
-    if (
-      nextIndex ===
-      activeIndex
-    ) {
-
-      renderActiveExercise();
-
-      return;
-    }
-
-
-    activeIndex =
-      nextIndex;
-
-
-    renderActiveExercise(
-      true
-    );
-  }
-
-
-  function next() {
-
-    goTo(
-      activeIndex + 1
-    );
-  }
-
-
-  function previous() {
-
-    goTo(
-      activeIndex - 1
-    );
-  }
-
-
-  /* =========================================
-     SWIPE
-     ========================================= */
-
-  function canSwipeFrom(
-    target
-  ) {
-
-    if (
-      !target ||
-      !(target instanceof Element)
-    ) {
-
-      return true;
-    }
-
-
-    return !target.closest(
-      [
-        "input",
-        "textarea",
-        "select",
-        "button",
-        "a",
-        ".mana-v970-history"
-      ].join(",")
-    );
-  }
-
-
-  function handleTouchStart(
-    event
-  ) {
-
-    if (
-      !isPhone() ||
-      !workoutIsOpen()
-    ) {
-
-      return;
-    }
-
-
-    const touch =
-      event.touches?.[0];
-
-
-    if (!touch) {
-
-      return;
-    }
-
-
-    touchStartX =
-      touch.clientX;
-
-    touchStartY =
-      touch.clientY;
-
-    touchStartTarget =
-      event.target;
-  }
-
-
-  function handleTouchEnd(
-    event
-  ) {
-
-    if (
-      !isPhone() ||
-      touchStartX === null ||
-      touchStartY === null
-    ) {
-
-      resetTouch();
-
-      return;
-    }
-
-
-    if (
-      !canSwipeFrom(
-        touchStartTarget
-      )
-    ) {
-
-      resetTouch();
-
-      return;
-    }
-
-
-    const touch =
-      event.changedTouches?.[0];
-
-
-    if (!touch) {
-
-      resetTouch();
-
-      return;
-    }
-
-
-    const deltaX =
-      touch.clientX -
-      touchStartX;
-
-
-    const deltaY =
-      touch.clientY -
-      touchStartY;
-
-
-    /*
-      Horizontal gesture must be
-      deliberate and stronger than
-      the vertical movement.
-    */
-
-    if (
-      Math.abs(
-        deltaX
-      ) >= 55 &&
-      Math.abs(
-        deltaX
-      ) >
-      Math.abs(
-        deltaY
-      ) * 1.2
-    ) {
-
-      if (
-        deltaX < 0
-      ) {
-
-        next();
-
-      } else {
-
-        previous();
-
-      }
-    }
-
-
-    resetTouch();
-  }
-
-
-  function resetTouch() {
-
-    touchStartX =
-      null;
-
-    touchStartY =
-      null;
-
-    touchStartTarget =
-      null;
-  }
-
-
-  /* =========================================
-     SETUP
-     ========================================= */
-
-  function setupCarousel(
-    forceReset = false
+    requestedIndex,
+    smooth = true
   ) {
 
     if (
       !isPhone()
     ) {
 
-      cleanupDesktop();
-
       return;
     }
+
+
+    const exerciseHolder =
+      holder();
 
 
     const list =
@@ -1615,6 +1329,183 @@
 
 
     if (
+      !exerciseHolder ||
+      !list.length
+    ) {
+
+      return;
+    }
+
+
+    const index =
+      clampIndex(
+        requestedIndex
+      );
+
+
+    const card =
+      list[index];
+
+
+    activeIndex =
+      index;
+
+
+    /*
+      scrollIntoView with inline:start
+      gives us genuine horizontal movement.
+    */
+
+    card.scrollIntoView({
+      behavior:
+        smooth
+          ? "smooth"
+          : "auto",
+
+      block:
+        "nearest",
+
+      inline:
+        "start"
+    });
+
+
+    updateState();
+  }
+
+
+  /* =========================================
+     DETECT NATIVE SWIPE POSITION
+     ========================================= */
+
+  function updateIndexFromScroll() {
+
+    const exerciseHolder =
+      holder();
+
+
+    const list =
+      cards();
+
+
+    if (
+      !exerciseHolder ||
+      !list.length ||
+      !isPhone()
+    ) {
+
+      return;
+    }
+
+
+    const holderRect =
+      exerciseHolder
+        .getBoundingClientRect();
+
+
+    let closestIndex =
+      0;
+
+    let closestDistance =
+      Infinity;
+
+
+    list.forEach(
+      (
+        card,
+        index
+      ) => {
+
+        const rect =
+          card
+            .getBoundingClientRect();
+
+
+        const distance =
+          Math.abs(
+            rect.left -
+            holderRect.left
+          );
+
+
+        if (
+          distance <
+          closestDistance
+        ) {
+
+          closestDistance =
+            distance;
+
+          closestIndex =
+            index;
+        }
+
+      }
+    );
+
+
+    if (
+      closestIndex !==
+      activeIndex
+    ) {
+
+      activeIndex =
+        closestIndex;
+
+      updateState();
+
+    } else {
+
+      /*
+        Still refresh completion dots.
+      */
+
+      renderTop();
+    }
+  }
+
+
+  function handleScroll() {
+
+    clearTimeout(
+      scrollTimer
+    );
+
+
+    scrollTimer =
+      setTimeout(
+        updateIndexFromScroll,
+        60
+      );
+  }
+
+
+  /* =========================================
+     SETUP
+     ========================================= */
+
+  function setup(
+    reset = false
+  ) {
+
+    if (
+      !isPhone()
+    ) {
+
+      return;
+    }
+
+
+    const exerciseHolder =
+      holder();
+
+
+    const list =
+      cards();
+
+
+    if (
+      !exerciseHolder ||
       !list.length
     ) {
 
@@ -1625,16 +1516,16 @@
     ensureNavigation();
 
 
-    const newSignature =
+    const sig =
       signature();
 
 
     if (
-      forceReset ||
+      reset ||
       (
-        currentSignature &&
-        currentSignature !==
-          newSignature
+        lastSignature &&
+        lastSignature !==
+        sig
       )
     ) {
 
@@ -1643,45 +1534,62 @@
     }
 
 
-    currentSignature =
-      newSignature;
+    lastSignature =
+      sig;
 
 
-    activeIndex =
-      clampIndex(
-        activeIndex
-      );
+    /*
+      Only install once per current holder.
+    */
+
+    if (
+      exerciseHolder.dataset
+        .v971ScrollReady !==
+      "1"
+    ) {
+
+      exerciseHolder
+        .addEventListener(
+          "scroll",
+          handleScroll,
+          {
+            passive:true
+          }
+        );
 
 
-    renderActiveExercise();
-  }
+      exerciseHolder.dataset
+        .v971ScrollReady =
+        "1";
+    }
 
 
-  function cleanupDesktop() {
+    updateState();
 
-    cards()
-      .forEach(
-        card => {
 
-          card.classList
-            .remove(
-              "mana-v971-active"
-            );
+    /*
+      On a fresh workout make sure
+      exercise 1 is aligned perfectly.
+    */
+
+    if (reset) {
+
+      requestAnimationFrame(
+        () => {
+
+          goTo(
+            0,
+            false
+          );
 
         }
       );
-
-
-    workoutScreen()
-      ?.classList
-      .remove(
-        "mana-v971-on-last"
-      );
+    }
   }
 
 
   function scheduleSetup(
-    forceReset = false
+    reset = false
   ) {
 
     [
@@ -1698,8 +1606,8 @@
         setTimeout(
           () => {
 
-            setupCarousel(
-              forceReset &&
+            setup(
+              reset &&
               index === 0
             );
 
@@ -1734,12 +1642,28 @@
     activeIndex =
       0;
 
-    currentSignature =
+    lastSignature =
       "";
 
 
     scheduleSetup(
       true
+    );
+  }
+
+
+  function handleWorkoutProgress() {
+
+    if (
+      !isPhone()
+    ) {
+
+      return;
+    }
+
+
+    scheduleSetup(
+      false
     );
   }
 
@@ -1750,28 +1674,10 @@
       isPhone()
     ) {
 
-      scheduleSetup();
-
-    } else {
-
-      cleanupDesktop();
-
+      scheduleSetup(
+        false
+      );
     }
-  }
-
-
-  function handleWorkoutChange() {
-
-    /*
-      Set completion and workout
-      updates can refresh the dots,
-      but should NOT kick the user
-      back to Exercise 1.
-    */
-
-    scheduleSetup(
-      false
-    );
   }
 
 
@@ -1791,58 +1697,9 @@
     );
 
 
-    const exerciseHolder =
-      holder();
-
-
-    /*
-      Holder might not exist yet,
-      so attach swipe listeners at
-      document level and filter.
-    */
-
-    document.addEventListener(
-      "touchstart",
-      event => {
-
-        if (
-          event.target.closest(
-            "#manaV64Exercises"
-          )
-        ) {
-
-          handleTouchStart(
-            event
-          );
-
-        }
-
-      },
-      {
-        passive:true
-      }
-    );
-
-
-    document.addEventListener(
-      "touchend",
-      event => {
-
-        if (
-          touchStartX !==
-          null
-        ) {
-
-          handleTouchEnd(
-            event
-          );
-
-        }
-
-      },
-      {
-        passive:true
-      }
+    window.addEventListener(
+      "mana:workout-progress-change",
+      handleWorkoutProgress
     );
 
 
@@ -1858,25 +1715,25 @@
     );
 
 
-    window.addEventListener(
-      "mana:workout-progress-change",
-      handleWorkoutChange
-    );
-
-
     /*
       Existing / resumed workout.
     */
 
     [
-      650,
+      600,
       1400,
       2300
     ].forEach(
       delay => {
 
         setTimeout(
-          setupCarousel,
+          () => {
+
+            setup(
+              false
+            );
+
+          },
           delay
         );
 
@@ -1895,17 +1752,12 @@
 
 
     window
-      .manaWorkoutNextExercise =
-      next;
-
-
-    window
-      .manaWorkoutPreviousExercise =
-      previous;
+      .manaWorkoutGoToExercise =
+      goTo;
 
 
     console.log(
-      "[Mana v9.71.0] mobile workout carousel ready"
+      "[Mana v9.71.1] true horizontal carousel ready"
     );
   }
 
