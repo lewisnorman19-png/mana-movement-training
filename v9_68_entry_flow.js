@@ -1,30 +1,26 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.68.0
+   MANA MOVEMENT TRAINING v9.68.1
    GUIDED ENTRY FLOW
 
    LOGIN
-     ↓
+      ↓
    INTRO
-     ↓
+      ↓
    STEP 1 — COMPLETE PROFILE
-     ↓
-   STEP 2 — CHOOSE YOUR PATH
-     ↓
-   STEP 3 — CHOOSE PLAN / ENTRY LEVEL
+      ↓
+   STEP 2 — CHOOSE PROGRAM
+      ↓
+   STEP 3 — CHOOSE COACHING LEVEL
 
-   - USES EXISTING MASTER PROFILE
-   - DOES NOT REBUILD PROFILE LOGIC
-   - CLEANER HOME
-   - MANA LYFE LABEL
+   Uses the existing Profile,
+   Home program cards and
+   Strength membership screen.
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "96800";
-
-  const SCREEN_ID =
-    "manaV968Onboarding";
+  const BUILD = "96810";
 
   const STYLE_ID =
     "mana-v968-entry-style";
@@ -33,7 +29,10 @@
     "mana-profile-v67";
 
   const COMPLETE_KEY =
-    "mana-onboarding-profile-complete-v968";
+    "mana-onboarding-complete-v968";
+
+  const ACTIVE_KEY =
+    "mana-onboarding-active-v968";
 
 
   function safeJson(raw, fallback) {
@@ -45,7 +44,8 @@
   }
 
 
-  function profile() {
+  function loadProfile() {
+
     return safeJson(
       localStorage.getItem(
         PROFILE_KEY
@@ -58,7 +58,7 @@
   function profileComplete() {
 
     const p =
-      profile();
+      loadProfile();
 
 
     return Boolean(
@@ -86,14 +86,45 @@
   }
 
 
-  function markComplete() {
+  function onboardingActive() {
+
+    return (
+      localStorage.getItem(
+        ACTIVE_KEY
+      ) === "1"
+    );
+  }
+
+
+  function startOnboarding() {
+
+    localStorage.setItem(
+      ACTIVE_KEY,
+      "1"
+    );
+  }
+
+
+  function finishOnboarding() {
 
     localStorage.setItem(
       COMPLETE_KEY,
       "1"
     );
+
+    localStorage.removeItem(
+      ACTIVE_KEY
+    );
+
+    document.body.classList.remove(
+      "mana-v968-step2-mode"
+    );
   }
 
+
+  /* =========================================
+     STYLES
+     ========================================= */
 
   function installStyles() {
 
@@ -117,155 +148,74 @@
     style.textContent = `
 
       /* =====================================
-         STEP 1 SCREEN
+         STEP 1 — ACTUAL PROFILE SCREEN
          ===================================== */
 
-      #${SCREEN_ID}{
-        position:fixed;
-        inset:0;
-        z-index:49500;
-
-        display:none;
-
-        overflow:auto;
-
-        padding:
-          calc(env(safe-area-inset-top) + 24px)
-          18px
-          calc(env(safe-area-inset-bottom) + 40px);
-
-        background:
-          radial-gradient(
-            circle at top right,
-            rgba(243,216,117,.07),
-            transparent 30%
-          ),
-          #050505;
-
-        color:#fff;
+      #manaProfileScreen.mana-v968-step1
+      .mana-profile-shell{
+        max-width:720px !important;
       }
 
-      #${SCREEN_ID}.open{
-        display:block;
+
+      #manaProfileScreen.mana-v968-step1
+      .mana-profile-head{
+        display:none !important;
       }
 
-      .mana-v968-wrap{
-        width:min(620px,100%);
-        margin:auto;
+
+      #manaProfileScreen.mana-v968-step1
+      #manaProfileClose{
+        display:none !important;
       }
 
-      .mana-v968-brand{
-        display:flex;
-        align-items:center;
-        gap:14px;
-        margin-bottom:34px;
-      }
 
-      .mana-v968-mark{
-        width:56px;
-        height:56px;
+      .mana-v968-step1-hero{
 
-        display:grid;
-        place-items:center;
-
-        flex:0 0 56px;
-
-        border:2px solid #d4af37;
-
-        color:#f3d875;
-
-        font:
-          700
-          36px
-          Georgia,
-          serif;
-      }
-
-      .mana-v968-brand-copy strong{
-        display:block;
-
-        font-size:16px;
-        letter-spacing:.18em;
-      }
-
-      .mana-v968-brand-copy span{
-        display:block;
-
-        margin-top:5px;
-
-        color:#c9ad50;
-
-        font-size:10px;
-        font-weight:900;
-        letter-spacing:.18em;
-      }
-
-      .mana-v968-step{
-        color:#f3d875;
-
-        font-size:12px;
-        font-weight:950;
-        letter-spacing:.17em;
-      }
-
-      .mana-v968-title{
-        margin:11px 0 12px;
-
-        font-size:
-          clamp(
-            38px,
-            8vw,
-            58px
-          );
-
-        line-height:.96;
-      }
-
-      .mana-v968-lead{
-        max-width:540px;
-
-        margin:0 0 28px;
-
-        color:#aaa;
-
-        font-size:16px;
-        line-height:1.6;
-      }
-
-      /* BIG PROFILE TAB */
-
-      .mana-v968-profile-card{
         position:relative;
-
-        width:100%;
 
         overflow:hidden;
 
-        padding:28px;
+        margin:
+          2px
+          0
+          22px;
 
-        border:1px solid #756326;
-        border-radius:28px;
+        padding:
+          28px
+          26px;
+
+        border:
+          1px solid
+          #7c6826;
+
+        border-radius:
+          28px;
 
         background:
           linear-gradient(
             145deg,
-            #201c0e,
-            #11100b 50%,
+            #251f0d,
+            #14120a 52%,
             #090909
           );
 
         box-shadow:
-          0 18px 50px rgba(0,0,0,.3);
+          0
+          18px
+          45px
+          rgba(0,0,0,.25);
       }
 
-      .mana-v968-profile-card::before{
+
+      .mana-v968-step1-hero::before{
+
         content:"";
 
         position:absolute;
 
         top:0;
-        left:26px;
-        right:26px;
+        left:25px;
+        right:25px;
 
         height:3px;
 
@@ -278,238 +228,275 @@
           );
       }
 
-      .mana-v968-profile-label{
-        color:#f3d875;
 
-        font-size:11px;
-        font-weight:950;
-        letter-spacing:.15em;
+      .mana-v968-step-number{
+
+        color:
+          #f3d875;
+
+        font-size:
+          12px;
+
+        font-weight:
+          950;
+
+        letter-spacing:
+          .16em;
+
+        text-transform:
+          uppercase;
       }
 
-      .mana-v968-profile-card h2{
-        margin:10px 0 10px;
 
-        font-size:30px;
-        line-height:1.05;
+      .mana-v968-step1-hero h1{
+
+        margin:
+          10px
+          0
+          10px;
+
+        color:#fff;
+
+        font-size:
+          clamp(
+            34px,
+            7vw,
+            50px
+          );
+
+        line-height:
+          .98;
       }
 
-      .mana-v968-profile-card p{
+
+      .mana-v968-step1-hero p{
+
+        max-width:
+          580px;
+
         margin:0;
 
-        color:#b5b5b5;
+        color:#aaa;
 
-        font-size:15px;
-        line-height:1.55;
+        font-size:
+          15px;
+
+        line-height:
+          1.6;
       }
 
-      .mana-v968-profile-btn{
-        width:100%;
 
-        min-height:62px;
+      .mana-v968-profile-anchor{
 
-        margin-top:24px;
+        width:
+          100%;
+
+        min-height:
+          60px;
+
+        margin-top:
+          22px;
 
         border:0;
-        border-radius:17px;
+
+        border-radius:
+          17px;
 
         background:
           linear-gradient(
             135deg,
             #f3d875,
-            #bd902b
+            #bc8e29
           );
 
-        color:#0b0b0b;
+        color:#090909;
 
-        font-size:15px;
-        font-weight:950;
+        font-size:
+          15px;
 
-        cursor:pointer;
-      }
+        font-weight:
+          950;
 
-      /* PROFILE SUMMARY BEHIND CARD */
-
-      .mana-v968-summary{
-        margin-top:17px;
-
-        display:grid;
-
-        grid-template-columns:
-          repeat(
-            2,
-            minmax(0,1fr)
-          );
-
-        gap:10px;
-      }
-
-      .mana-v968-summary-item{
-        padding:14px;
-
-        border:1px solid #2c2a21;
-        border-radius:16px;
-
-        background:#0c0c0b;
-      }
-
-      .mana-v968-summary-item span{
-        display:block;
-
-        color:#777;
-
-        font-size:10px;
-        font-weight:900;
-        letter-spacing:.1em;
-        text-transform:uppercase;
-      }
-
-      .mana-v968-summary-item strong{
-        display:block;
-
-        margin-top:6px;
-
-        color:#eee;
-
-        font-size:14px;
-      }
-
-      .mana-v968-complete{
-        display:none;
-
-        margin-top:18px;
-        padding:17px;
-
-        border:1px solid #60531f;
-        border-radius:18px;
-
-        background:#15130b;
-
-        color:#d9c26d;
-
-        font-size:14px;
-        line-height:1.5;
-      }
-
-      .mana-v968-complete.show{
-        display:block;
-      }
-
-      .mana-v968-continue{
-        display:none;
-
-        width:100%;
-
-        min-height:60px;
-
-        margin-top:18px;
-
-        border:1px solid #665724;
-        border-radius:18px;
-
-        background:#11100c;
-
-        color:#f3d875;
-
-        font-size:14px;
-        font-weight:950;
-
-        cursor:pointer;
-      }
-
-      .mana-v968-continue.show{
-        display:block;
+        letter-spacing:
+          .03em;
       }
 
 
-      /* =====================================
-         HOME — STEP 2
-         ===================================== */
+      #manaProfileScreen.mana-v968-step1
+      .mana-profile-card{
 
-      #manaV80Home
-      #manaV80ProfileSetup,
-
-      #manaV80Home
-      .mana-v8013-select{
-        display:none !important;
-      }
-
-      .mana-v968-step2{
-        margin:
-          26px
-          0
-          18px;
-
-        padding:
-          20px
-          21px;
-
-        border:
-          1px solid
-          #55481d;
-
-        border-radius:
-          22px;
+        border-color:
+          #363328 !important;
 
         background:
           linear-gradient(
             145deg,
-            #18150c,
+            #14130f,
             #0a0a09
-          );
+          ) !important;
       }
 
-      .mana-v968-step2-kicker{
-        color:#f3d875;
 
-        font-size:11px;
-        font-weight:950;
-        letter-spacing:.15em;
-      }
+      #manaProfileScreen.mana-v968-step1
+      #manaProfileSave{
 
-      .mana-v968-step2 h2{
-        margin:
-          7px
-          0
-          7px;
+        min-height:
+          62px !important;
 
-        color:#fff;
+        border-radius:
+          17px !important;
 
-        font-size:26px;
-      }
+        background:
+          linear-gradient(
+            135deg,
+            #f3d875,
+            #bc8e29
+          ) !important;
 
-      .mana-v968-step2 p{
-        margin:0;
+        color:#090909 !important;
 
-        color:#999;
-
-        font-size:14px;
-        line-height:1.5;
+        font-weight:
+          950 !important;
       }
 
 
       /* =====================================
-         STEP 3 — STRENGTH PLAN
+         STEP 2 — CLEAN PROGRAM SELECTION
+         ===================================== */
+
+      body.mana-v968-step2-mode
+      #manaV80Home
+      .mana-v8013-brand,
+
+      body.mana-v968-step2-mode
+      #manaV80Home
+      #manaV80ProfileSetup,
+
+      body.mana-v968-step2-mode
+      #manaV80Home
+      .mana-v8013-select,
+
+      body.mana-v968-step2-mode
+      #manaV80Home
+      .mana-v8013-bottom{
+
+        display:none !important;
+      }
+
+
+      .mana-v968-step2-head{
+
+        margin:
+          12px
+          0
+          25px;
+
+        padding:
+          26px
+          24px;
+
+        border:
+          1px solid
+          #665522;
+
+        border-radius:
+          26px;
+
+        background:
+          linear-gradient(
+            145deg,
+            #1c180c,
+            #0b0b09
+          );
+      }
+
+
+      .mana-v968-step2-head
+      .mana-v968-step-number{
+
+        margin-bottom:
+          9px;
+      }
+
+
+      .mana-v968-step2-head h1{
+
+        margin:
+          0
+          0
+          9px;
+
+        color:#fff;
+
+        font-size:
+          36px;
+
+        line-height:
+          1;
+      }
+
+
+      .mana-v968-step2-head p{
+
+        margin:0;
+
+        color:#999;
+
+        font-size:
+          15px;
+
+        line-height:
+          1.55;
+      }
+
+
+      body.mana-v968-step2-mode
+      #manaV80Home
+      .mana-v8013-program{
+
+        margin:
+          15px
+          0 !important;
+      }
+
+
+      /* =====================================
+         STEP 3 — STRENGTH COACHING LEVEL
          ===================================== */
 
       #manaV98Membership
       .mana-v981-kicker{
-        font-size:11px !important;
-        letter-spacing:.15em !important;
+
+        color:
+          #f3d875 !important;
+
+        font-size:
+          11px !important;
+
+        letter-spacing:
+          .15em !important;
       }
 
 
       @media(max-width:600px){
 
-        .mana-v968-profile-card{
-          padding:23px 20px;
+        .mana-v968-step1-hero{
+          padding:
+            23px
+            20px;
         }
 
-        .mana-v968-summary{
-          grid-template-columns:1fr;
+
+        .mana-v968-step2-head{
+          padding:
+            22px
+            19px;
         }
 
-        .mana-v968-title{
-          font-size:40px;
+
+        .mana-v968-step2-head h1{
+          font-size:
+            31px;
         }
 
       }
@@ -524,351 +511,173 @@
   }
 
 
-  function ensureScreen() {
+  /* =========================================
+     STEP 1
+     ========================================= */
+
+  function decorateProfileStep() {
+
+    const screen =
+      document.getElementById(
+        "manaProfileScreen"
+      );
+
+
+    const shell =
+      screen?.querySelector(
+        ".mana-profile-shell"
+      );
+
 
     if (
-      document.getElementById(
-        SCREEN_ID
-      )
+      !screen ||
+      !shell
     ) {
       return;
     }
 
 
-    const screen =
-      document.createElement(
-        "div"
+    screen.classList.add(
+      "mana-v968-step1"
+    );
+
+
+    let hero =
+      document.getElementById(
+        "manaV968Step1Hero"
       );
 
 
-    screen.id =
-      SCREEN_ID;
+    if (!hero) {
+
+      hero =
+        document.createElement(
+          "div"
+        );
 
 
-    screen.innerHTML = `
+      hero.id =
+        "manaV968Step1Hero";
 
-      <div
-        class="mana-v968-wrap"
-      >
 
-        <div
-          class="mana-v968-brand"
-        >
+      hero.className =
+        "mana-v968-step1-hero";
 
-          <div
-            class="mana-v968-mark"
-          >
-            M
-          </div>
 
-          <div
-            class="mana-v968-brand-copy"
-          >
-            <strong>
-              MANA MOVEMENT
-            </strong>
-
-            <span>
-              MOVE WITH PURPOSE
-            </span>
-          </div>
-
-        </div>
-
+      hero.innerHTML = `
 
         <div
-          class="mana-v968-step"
+          class="mana-v968-step-number"
         >
           STEP 1 • PROFILE & GOALS
         </div>
 
 
-        <h1
-          class="mana-v968-title"
-        >
-          Tell Mana
-          about you.
+        <h1>
+          Complete your profile
         </h1>
 
 
-        <p
-          class="mana-v968-lead"
-        >
-          Your goals, experience and training
-          setup shape the experience that comes
-          next.
+        <p>
+          Tell Mana about your goals,
+          training experience, weekly setup
+          and Fuel needs. This information
+          shapes what comes next.
         </p>
-
-
-        <div
-          class="mana-v968-profile-card"
-        >
-
-          <div
-            class="mana-v968-profile-label"
-          >
-            YOUR FOUNDATION
-          </div>
-
-
-          <h2>
-            Complete your profile
-          </h2>
-
-
-          <p>
-            Set your training goal, experience,
-            equipment, weekly schedule and Fuel
-            information.
-          </p>
-
-
-          <button
-            type="button"
-            class="mana-v968-profile-btn"
-            id="manaV968Profile"
-          >
-            COMPLETE PROFILE →
-          </button>
-
-
-          <div
-            class="mana-v968-summary"
-            id="manaV968Summary"
-          ></div>
-
-        </div>
-
-
-        <div
-          class="mana-v968-complete"
-          id="manaV968Complete"
-        >
-          Profile complete ✓
-          <br>
-          Mana now has the information it needs
-          to personalise your experience.
-        </div>
 
 
         <button
           type="button"
-          class="mana-v968-continue"
-          id="manaV968Continue"
+          class="mana-v968-profile-anchor"
+          id="manaV968ProfileAnchor"
         >
-          CONTINUE TO STEP 2 →
+          STEP 1 • COMPLETE PROFILE
         </button>
-
-      </div>
-
-    `;
-
-
-    document.body
-      .appendChild(
-        screen
-      );
-
-
-    document
-      .getElementById(
-        "manaV968Profile"
-      )
-      .onclick =
-        () => {
-
-          if (
-            typeof
-              window
-                .openManaProfile ===
-            "function"
-          ) {
-
-            window
-              .openManaProfile();
-
-          }
-
-        };
-
-
-    document
-      .getElementById(
-        "manaV968Continue"
-      )
-      .onclick =
-        () => {
-
-          markComplete();
-
-          closeOnboarding();
-
-          decorateHome();
-
-        };
-  }
-
-
-  function updateScreen() {
-
-    ensureScreen();
-
-
-    const p =
-      profile();
-
-
-    const ready =
-      profileComplete();
-
-
-    const summary =
-      document.getElementById(
-        "manaV968Summary"
-      );
-
-
-    if (summary) {
-
-      summary.innerHTML = `
-
-        <div
-          class="mana-v968-summary-item"
-        >
-          <span>GOAL</span>
-          <strong>
-            ${p.goal || "Not set"}
-          </strong>
-        </div>
-
-
-        <div
-          class="mana-v968-summary-item"
-        >
-          <span>EXPERIENCE</span>
-          <strong>
-            ${p.experience || "Not set"}
-          </strong>
-        </div>
-
-
-        <div
-          class="mana-v968-summary-item"
-        >
-          <span>TRAINING</span>
-          <strong>
-            ${
-              p.days
-                ? `${p.days} days / week`
-                : "Not set"
-            }
-          </strong>
-        </div>
-
-
-        <div
-          class="mana-v968-summary-item"
-        >
-          <span>SETUP</span>
-          <strong>
-            ${p.equipment || "Not set"}
-          </strong>
-        </div>
 
       `;
 
+
+      shell.prepend(
+        hero
+      );
+
+
+      document
+        .getElementById(
+          "manaV968ProfileAnchor"
+        )
+        .onclick =
+          () => {
+
+            screen
+              .querySelector(
+                ".mana-profile-card"
+              )
+              ?.scrollIntoView({
+                behavior:"smooth",
+                block:"start"
+              });
+
+          };
     }
 
 
-    const profileBtn =
+    const save =
       document.getElementById(
-        "manaV968Profile"
+        "manaProfileSave"
       );
 
 
-    if (profileBtn) {
+    if (save) {
 
-      profileBtn.textContent =
-        ready
-          ? "REVIEW PROFILE →"
-          : "COMPLETE PROFILE →";
+      save.textContent =
+        "SAVE PROFILE & CONTINUE →";
 
     }
 
-
-    document
-      .getElementById(
-        "manaV968Complete"
-      )
-      ?.classList
-      .toggle(
-        "show",
-        ready
-      );
-
-
-    document
-      .getElementById(
-        "manaV968Continue"
-      )
-      ?.classList
-      .toggle(
-        "show",
-        ready
-      );
   }
 
 
-  function openOnboarding() {
+  function openStep1() {
+
+    startOnboarding();
+
 
     if (
-      onboardingComplete()
+      typeof
+        window
+          .openManaProfile ===
+      "function"
     ) {
 
-      decorateHome();
+      window
+        .openManaProfile();
 
-      return;
     }
 
 
-    ensureScreen();
+    [
+      20,
+      100,
+      250
+    ].forEach(
+      delay => {
 
-    updateScreen();
+        setTimeout(
+          decorateProfileStep,
+          delay
+        );
 
-
-    document
-      .getElementById(
-        SCREEN_ID
-      )
-      ?.classList
-      .add(
-        "open"
-      );
-
-
-    document.body.style.overflow =
-      "hidden";
+      }
+    );
   }
 
 
-  function closeOnboarding() {
+  /* =========================================
+     STEP 2
+     ========================================= */
 
-    document
-      .getElementById(
-        SCREEN_ID
-      )
-      ?.classList
-      .remove(
-        "open"
-      );
-
-
-    document.body.style.overflow =
-      "";
-  }
-
-
-  function decorateHome() {
+  function decorateStep2() {
 
     const home =
       document.getElementById(
@@ -876,7 +685,7 @@
       );
 
 
-    const firstProgram =
+    const first =
       document.getElementById(
         "manaV80Mana28"
       );
@@ -884,15 +693,20 @@
 
     if (
       !home ||
-      !firstProgram
+      !first
     ) {
       return;
     }
 
 
+    document.body.classList.add(
+      "mana-v968-step2-mode"
+    );
+
+
     let header =
       document.getElementById(
-        "manaV968Step2"
+        "manaV968Step2Head"
       );
 
 
@@ -905,34 +719,36 @@
 
 
       header.id =
-        "manaV968Step2";
+        "manaV968Step2Head";
 
 
       header.className =
-        "mana-v968-step2";
+        "mana-v968-step2-head";
 
 
       header.innerHTML = `
 
         <div
-          class="mana-v968-step2-kicker"
+          class="mana-v968-step-number"
         >
-          STEP 2 • CHOOSE YOUR PATH
+          STEP 2 • PROGRAM SELECTION
         </div>
 
-        <h2>
-          What do you want to work on?
-        </h2>
+
+        <h1>
+          Choose your path
+        </h1>
+
 
         <p>
-          Choose the Mana experience that
-          matches where you are right now.
+          Pick the Mana program that matches
+          what you want to work on right now.
         </p>
 
       `;
 
 
-      firstProgram
+      first
         .insertAdjacentElement(
           "beforebegin",
           header
@@ -940,42 +756,69 @@
     }
 
 
-    const lyfe =
+    const life =
       document.getElementById(
         "manaV80Life"
       );
 
 
-    if (lyfe) {
+    if (life) {
 
       const label =
-        lyfe.querySelector(
+        life.querySelector(
           ".mana-v8013-program-label"
         );
 
+
       const open =
-        lyfe.querySelector(
+        life.querySelector(
           ".mana-v8013-open"
         );
 
 
       if (label) {
+
         label.textContent =
           "MANA LYFE";
+
       }
 
 
       if (open) {
+
         open.textContent =
           "Open MANA LYFE →";
+
       }
 
     }
 
-
-    decorateStep3();
   }
 
+
+  function showStep2() {
+
+    document
+      .getElementById(
+        "manaProfileScreen"
+      )
+      ?.classList
+      .remove(
+        "open"
+      );
+
+
+    document.body.style.overflow =
+      "";
+
+
+    decorateStep2();
+  }
+
+
+  /* =========================================
+     STEP 3
+     ========================================= */
 
   function decorateStep3() {
 
@@ -1011,7 +854,7 @@
     if (kicker) {
 
       kicker.textContent =
-        "STEP 3 • MANA STRENGTH";
+        "STEP 3 • COACHING LEVEL";
 
     }
 
@@ -1019,7 +862,7 @@
     if (title) {
 
       title.textContent =
-        "Choose your plan";
+        "Choose your Mana Strength plan";
 
     }
 
@@ -1027,63 +870,18 @@
     if (text) {
 
       text.textContent =
-        "Choose the level of structure, coaching and support that fits you.";
-
-    }
-  }
-
-
-  function handleProfileSaved() {
-
-    const onboarding =
-      document.getElementById(
-        SCREEN_ID
-      );
-
-
-    if (
-      !onboarding
-        ?.classList
-        .contains(
-          "open"
-        )
-    ) {
-
-      decorateHome();
-
-      return;
-    }
-
-
-    if (
-      profileComplete()
-    ) {
-
-      /*
-        Close the underlying Profile screen
-        and return to Step 1 confirmation.
-      */
-
-      document
-        .getElementById(
-          "manaProfileScreen"
-        )
-        ?.classList
-        .remove(
-          "open"
-        );
-
-
-      updateScreen();
+        "Choose how much structure, coaching and support you want.";
 
     }
 
   }
 
 
-  function handleIntroEnter(
-    event
-  ) {
+  /* =========================================
+     EVENTS
+     ========================================= */
+
+  function handleIntroEnter(event) {
 
     if (
       !event.target.closest(
@@ -1094,69 +892,127 @@
     }
 
 
+    if (
+      onboardingComplete()
+    ) {
+      return;
+    }
+
+
     setTimeout(
-      openOnboarding,
-      80
+      openStep1,
+      120
     );
   }
 
 
-  function maybeShowExistingSession() {
+  function handleProfileSaved() {
 
     if (
-      onboardingComplete()
+      !onboardingActive()
+    ) {
+      return;
+    }
+
+
+    if (
+      !profileComplete()
+    ) {
+      return;
+    }
+
+
+    setTimeout(
+      showStep2,
+      180
+    );
+  }
+
+
+  function handleProgramChoice(event) {
+
+    if (
+      !onboardingActive()
+    ) {
+      return;
+    }
+
+
+    if (
+      event.target.closest(
+        "#manaV80Mana28"
+      ) ||
+      event.target.closest(
+        "#manaV80Life"
+      )
     ) {
 
-      decorateHome();
+      finishOnboarding();
 
       return;
     }
 
 
-    const auth =
-      document.getElementById(
-        "authView"
+    if (
+      event.target.closest(
+        "#manaV80Strength"
+      )
+    ) {
+
+      setTimeout(
+        decorateStep3,
+        80
       );
 
 
-    const client =
-      document.getElementById(
-        "clientView"
+      setTimeout(
+        decorateStep3,
+        250
       );
 
+    }
 
-    const loggedIn =
-      Boolean(
-        client &&
-        !client.classList.contains(
-          "hide"
-        ) &&
-        (
-          !auth ||
-          auth.classList.contains(
-            "hide"
-          )
-        )
-      );
+  }
 
 
-    const introOpen =
-      document
-        .getElementById(
-          "manaV81Intro"
-        )
-        ?.classList
-        .contains(
-          "open"
-        );
+  function handleStrengthPlan() {
+
+    if (
+      onboardingActive()
+    ) {
+
+      finishOnboarding();
+
+    }
+
+  }
+
+
+  function resumeUnfinishedOnboarding() {
+
+    if (
+      onboardingComplete()
+    ) {
+      return;
+    }
 
 
     if (
-      loggedIn &&
-      !introOpen
+      !onboardingActive()
+    ) {
+      return;
+    }
+
+
+    if (
+      profileComplete()
     ) {
 
-      openOnboarding();
+      decorateStep2();
+
+    } else {
+
+      openStep1();
 
     }
 
@@ -1167,12 +1023,17 @@
 
     installStyles();
 
-    ensureScreen();
-
 
     document.addEventListener(
       "click",
       handleIntroEnter,
+      true
+    );
+
+
+    document.addEventListener(
+      "click",
+      handleProgramChoice,
       true
     );
 
@@ -1183,9 +1044,15 @@
     );
 
 
+    window.addEventListener(
+      "mana:strength-membership-change",
+      handleStrengthPlan
+    );
+
+
     [
-      500,
-      1200,
+      600,
+      1300,
       2200
     ].forEach(
       delay => {
@@ -1193,7 +1060,14 @@
         setTimeout(
           () => {
 
-            decorateHome();
+            if (
+              onboardingActive() &&
+              profileComplete()
+            ) {
+
+              decorateStep2();
+
+            }
 
             decorateStep3();
 
@@ -1206,7 +1080,7 @@
 
 
     setTimeout(
-      maybeShowExistingSession,
+      resumeUnfinishedOnboarding,
       1800
     );
 
@@ -1217,21 +1091,13 @@
 
 
     window
-      .openManaProfileOnboarding =
-      openOnboarding;
+      .openManaOnboardingStep1 =
+      openStep1;
 
 
     window
-      .refreshManaEntryFlow =
-      () => {
-
-        updateScreen();
-
-        decorateHome();
-
-        decorateStep3();
-
-      };
+      .openManaOnboardingStep2 =
+      showStep2;
   }
 
 
