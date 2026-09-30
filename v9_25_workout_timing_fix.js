@@ -1,30 +1,20 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.25.0
+   MANA MOVEMENT TRAINING v9.25.1
    WORKOUT TIMING PERSISTENCE FIX
 
-   PURPOSE
-   - DOES NOT REPLACE EXISTING WORKOUT LOGIC
-   - READS THE EXISTING v9.20 TIMER STATE
-   - CAPTURES TIMER WHEN COMPLETE WORKOUT IS PRESSED
-   - WAITS FOR THE NEW WORKOUT LOG TO APPEAR
-   - SAVES:
-       startedAt
-       finishedAt
-       completedAt
-       durationSeconds
-       durationMinutes
-       completionPercent
-       completedSets
-       totalSets
-   - RE-APPLIES DATA FOR 8 SECONDS
-     SO OTHER SAVE SCRIPTS CANNOT WIPE IT
+   FIXES
+   - PRESERVES WORKOUT TIMING DATA
+   - STILL RETRIES SAVE IN BACKGROUND
+   - RETRIES ARE SILENT
+   - DOES NOT FIRE REPEATED STRENGTH SYNC EVENTS
+   - REMOVES POST-WORKOUT PROGRAM FLICKER
    ========================================= */
 
 (() => {
   "use strict";
 
   const BUILD =
-    "92500";
+    "92510";
 
   const STATE_KEY =
     "mana-strength-v920-in-progress";
@@ -41,20 +31,32 @@
   let retryTimers =
     [];
 
+
+  /* =========================================
+     HELPERS
+     ========================================= */
+
   function safeJson(
     raw,
     fallback
   ) {
+
     try {
+
       return JSON.parse(
         raw
       );
+
     } catch (_) {
+
       return fallback;
+
     }
   }
 
+
   function loadState() {
+
     return safeJson(
       localStorage.getItem(
         STATE_KEY
@@ -63,7 +65,9 @@
     );
   }
 
+
   function loadLogs() {
+
     const logs =
       safeJson(
         localStorage.getItem(
@@ -72,6 +76,7 @@
         []
       );
 
+
     return Array.isArray(
       logs
     )
@@ -79,20 +84,27 @@
       : [];
   }
 
+
   function saveLogs(
     logs
   ) {
+
     try {
+
       localStorage.setItem(
         LOG_KEY,
         JSON.stringify(
           logs
         )
       );
+
     } catch (_) {}
+
   }
 
+
   function loadPending() {
+
     return safeJson(
       localStorage.getItem(
         PENDING_KEY
@@ -101,31 +113,48 @@
     );
   }
 
+
   function savePending(
     value
   ) {
+
     try {
-      if (value) {
+
+      if (
+        value
+      ) {
+
         localStorage.setItem(
           PENDING_KEY,
           JSON.stringify(
             value
           )
         );
+
       } else {
+
         localStorage.removeItem(
           PENDING_KEY
         );
+
       }
+
     } catch (_) {}
+
   }
+
 
   function elapsedMs(
     state
   ) {
-    if (!state) {
+
+    if (
+      !state
+    ) {
+
       return 0;
     }
+
 
     let total =
       Number(
@@ -133,10 +162,12 @@
         0
       );
 
+
     if (
       state.running &&
       state.segmentStartedAt
     ) {
+
       total +=
         Math.max(
           0,
@@ -145,21 +176,31 @@
             state.segmentStartedAt
           )
         );
+
     }
+
 
     return total;
   }
 
+
+  /* =========================================
+     SET COMPLETION
+     ========================================= */
+
   function collectSets() {
+
     let totalSets =
       0;
 
     let completedSets =
       0;
 
+
     document
       .querySelectorAll(
-        "#manaV64Exercises [data-v64-check]"
+        "#manaV64Exercises " +
+        "[data-v64-check]"
       )
       .forEach(
         check => {
@@ -167,49 +208,70 @@
           totalSets +=
             1;
 
+
           if (
-            check.classList
+            check
+              .classList
               .contains(
                 "done"
               )
           ) {
+
             completedSets +=
               1;
+
           }
 
         }
       );
 
+
     return {
+
       totalSets,
 
       completedSets,
 
       completionPercent:
-        totalSets >
-        0
+        totalSets > 0
+
           ? Math.round(
               completedSets /
               totalSets *
               100
             )
+
           : 0
+
     };
   }
 
+
+  /* =========================================
+     SNAPSHOT
+     ========================================= */
+
   function captureSnapshot() {
+
     const state =
       loadState();
 
-    if (!state) {
+
+    if (
+      !state
+    ) {
+
       return null;
     }
+
 
     const now =
       Date.now();
 
+
     const sets =
       collectSets();
+
 
     const durationSeconds =
       Math.max(
@@ -222,7 +284,9 @@
         )
       );
 
+
     return {
+
       dayIndex:
         Number(
           state.dayIndex
@@ -234,6 +298,7 @@
 
       startedAtISO:
         state.startedAtISO ||
+
         new Date(
           Number(
             state.startedAt ||
@@ -268,49 +333,63 @@
 
       capturedAt:
         now
+
     };
   }
+
+
+  /* =========================================
+     FIND LOG
+     ========================================= */
 
   function findTargetLog(
     logs,
     snapshot
   ) {
+
     if (
       !logs.length ||
       !snapshot
     ) {
+
       return -1;
     }
+
 
     const before =
       Math.max(
         0,
         Number(
-          snapshot.logCountBeforeComplete ||
+          snapshot
+            .logCountBeforeComplete ||
           0
         )
       );
 
+
     /*
       Best case:
-      a brand-new workout was appended.
+      a brand-new workout
+      was appended.
     */
+
     if (
       logs.length >
       before
     ) {
+
       for (
         let i =
-          logs.length -
-          1;
-        i >=
-        before;
+          logs.length - 1;
+
+        i >= before;
+
         i--
       ) {
+
         const log =
-          logs[
-            i
-          ];
+          logs[i];
+
 
         if (
           Number.isFinite(
@@ -318,6 +397,7 @@
               log?.dayIndex
             )
           ) &&
+
           Number(
             log.dayIndex
           ) ===
@@ -325,42 +405,51 @@
             snapshot.dayIndex
           )
         ) {
+
           return i;
+
         }
+
       }
 
+
       /*
-        Some versions do not save dayIndex.
-        The newest newly-created log is
-        therefore the safest fallback.
+        Some versions do not save
+        dayIndex.
+
+        Use newest new log.
       */
+
       return (
-        logs.length -
-        1
+        logs.length - 1
       );
     }
 
+
     /*
-      Backup:
-      native code may update the latest
-      record instead of appending.
+      Backup if native code updates
+      the latest log instead.
     */
+
     const lastIndex =
-      logs.length -
-      1;
+      logs.length - 1;
+
 
     const last =
       logs[
         lastIndex
       ];
 
+
     if (
       last &&
+
       Number.isFinite(
         Number(
           last?.dayIndex
         )
       ) &&
+
       Number(
         last.dayIndex
       ) ===
@@ -368,26 +457,49 @@
         snapshot.dayIndex
       )
     ) {
+
       return lastIndex;
+
     }
+
 
     return -1;
   }
 
+
+  /* =========================================
+     APPLY TIMING
+
+     IMPORTANT:
+     Background retries DO NOT dispatch
+     mana:strength-synced anymore.
+
+     That repeated event was rebuilding
+     the Program page after completion.
+     ========================================= */
+
   function stampTiming() {
+
     const snapshot =
       pending ||
       loadPending();
 
-    if (!snapshot) {
+
+    if (
+      !snapshot
+    ) {
+
       return false;
     }
+
 
     pending =
       snapshot;
 
+
     const logs =
       loadLogs();
+
 
     const index =
       findTargetLog(
@@ -395,17 +507,20 @@
         snapshot
       );
 
+
     if (
-      index <
-      0
+      index < 0
     ) {
+
       return false;
     }
+
 
     const log =
       logs[
         index
       ];
+
 
     /*
       Timing
@@ -432,6 +547,7 @@
     log.durationMinutes =
       snapshot.durationMinutes;
 
+
     /*
       Completion
     */
@@ -448,6 +564,7 @@
         )
       );
 
+
     log.totalSets =
       Math.max(
         Number(
@@ -460,6 +577,7 @@
         )
       );
 
+
     log.completionPercent =
       Math.max(
         Number(
@@ -467,26 +585,43 @@
           0
         ),
         Number(
-          snapshot.completionPercent ||
+          snapshot
+            .completionPercent ||
           0
         )
       );
 
+
     log.completed =
       true;
 
+
     log.workoutTimingVersion =
-      "9.25.0";
+      "9.25.1";
+
 
     saveLogs(
       logs
     );
+
+
+    /*
+      Dedicated timing event only.
+
+      Do NOT dispatch
+      mana:strength-synced here.
+
+      Program cards do not need
+      rebuilding every time timing
+      protection retries.
+    */
 
     window.dispatchEvent(
       new CustomEvent(
         "mana:workout-timing-saved",
         {
           detail: {
+
             index,
 
             durationSeconds:
@@ -497,48 +632,71 @@
 
             completionPercent:
               log.completionPercent
+
           }
         }
       )
     );
 
-    window.dispatchEvent(
-      new CustomEvent(
-        "mana:strength-synced"
-      )
-    );
 
     return true;
   }
 
+
+  /* =========================================
+     RETRIES
+     ========================================= */
+
   function clearRetries() {
+
     retryTimers
       .forEach(
-        timer =>
+        timer => {
+
           clearTimeout(
             timer
-          )
+          );
+
+        }
       );
+
 
     retryTimers =
       [];
   }
 
+
   function finish() {
+
     pending =
       null;
+
 
     savePending(
       null
     );
 
+
     clearRetries();
   }
 
+
   function scheduleRetries() {
+
     clearRetries();
 
+
+    /*
+      Keep these retries because
+      multiple workout scripts can
+      save the log at slightly
+      different times.
+
+      They are now SILENT retries.
+    */
+
     const delays = [
+
       20,
       80,
       160,
@@ -552,7 +710,9 @@
       5000,
       6500,
       8000
+
     ];
+
 
     delays.forEach(
       (
@@ -566,25 +726,28 @@
 
               stampTiming();
 
+
               if (
                 index ===
-                delays.length -
-                1
+                delays.length - 1
               ) {
+
                 /*
-                  Final stamp after every
-                  other workout script has
-                  had time to finish.
+                  One final protective
+                  stamp.
                 */
 
                 stampTiming();
 
+
                 finish();
+
               }
 
             },
             delay
           );
+
 
         retryTimers.push(
           timer
@@ -594,7 +757,13 @@
     );
   }
 
+
+  /* =========================================
+     COMPLETE
+     ========================================= */
+
   function captureComplete() {
+
     document.addEventListener(
       "click",
       event => {
@@ -604,27 +773,35 @@
             "#manaV64Complete"
           )
         ) {
+
           return;
         }
+
 
         const snapshot =
           captureSnapshot();
 
-        if (!snapshot) {
+
+        if (
+          !snapshot
+        ) {
+
           return;
         }
 
+
         pending =
           snapshot;
+
 
         savePending(
           snapshot
         );
 
+
         /*
-          Start watching immediately.
-          Native workout save happens
-          after this capture-phase click.
+          Start silent persistence
+          protection.
         */
 
         scheduleRetries();
@@ -634,60 +811,87 @@
     );
   }
 
+
+  /* =========================================
+     FEEDBACK SAVE
+
+     IMPORTANT:
+     We no longer listen for
+     mana:strength-synced.
+
+     The old version listened for that
+     event while also generating that
+     event itself, creating unnecessary
+     refresh chains.
+     ========================================= */
+
   function watchSaveEvents() {
-    [
-      "mana:strength-synced",
-      "mana:workout-feedback-saved"
-    ].forEach(
-      eventName => {
 
-        window.addEventListener(
-          eventName,
-          () => {
+    window.addEventListener(
+      "mana:workout-feedback-saved",
+      () => {
 
-            if (
-              pending ||
-              loadPending()
-            ) {
-              setTimeout(
-                stampTiming,
-                30
-              );
-            }
+        if (
+          pending ||
+          loadPending()
+        ) {
 
-          }
-        );
+          setTimeout(
+            stampTiming,
+            30
+          );
+
+        }
 
       }
     );
   }
 
+
+  /* =========================================
+     RECOVERY
+     ========================================= */
+
   function recoverPendingSave() {
+
     const recovered =
       loadPending();
 
-    if (!recovered) {
+
+    if (
+      !recovered
+    ) {
+
       return;
     }
+
 
     pending =
       recovered;
 
+
     /*
-      If the page refreshed during the
-      completion process, finish attaching
-      the timing data.
+      If app refreshed during
+      completion, finish silently.
     */
 
     setTimeout(
       () => {
+
         scheduleRetries();
+
       },
       300
     );
   }
 
+
+  /* =========================================
+     INIT
+     ========================================= */
+
   function init() {
+
     captureComplete();
 
     watchSaveEvents();
@@ -695,22 +899,31 @@
     recoverPendingSave();
   }
 
-  window.MANA_WORKOUT_TIMING_FIX_BUILD =
+
+  window
+    .MANA_WORKOUT_TIMING_FIX_BUILD =
     BUILD;
 
-  window.retryManaWorkoutTiming =
+
+  window
+    .retryManaWorkoutTiming =
     stampTiming;
+
 
   if (
     document.readyState ===
     "loading"
   ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init
     );
+
   } else {
+
     init();
+
   }
 
 })();
