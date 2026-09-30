@@ -1,468 +1,1573 @@
+/* =========================================
+   MANA MOVEMENT TRAINING v9.63.1
+   BATCH 1 PREMIUM EXERCISE DEMOS
 
-/* MANA MOVEMENT TRAINING — v9.63.0
-   Batch 1 premium exercise demo handler.
-   Works alongside v9.60 and v9.62.
-   Leaves existing guides untouched if artwork is missing.
-*/
+   FIX:
+   - Detects demo button BEFORE v9.55
+     stops click propagation
+   - Adds MutationObserver backup
+   - Back Squat supported immediately
+   - Other Batch 1 exercises activate
+     automatically as artwork is added
+   - Existing Bench / Shoulder / Lateral
+     Raise systems remain untouched
+   ========================================= */
+
 (() => {
   "use strict";
 
-  const BUILD = "96300";
+  const BUILD = "96310";
   const ROOT = "assets/exercises/";
+  const STYLE_ID = "mana-v963-style";
+
+  /* =========================================
+     BATCH 1 EXERCISES
+     ========================================= */
 
   const SETTINGS = [
-    ["Back Squat", /^back squat$/i, "back-squat", "Quadriceps + Glutes", "Brace your trunk. Sit between your hips and stand tall."],
-    ["Front Squat", /^front squat$/i, "front-squat", "Quadriceps + Glutes", "Keep elbows up, torso upright and knees tracking over toes."],
-    ["Romanian Deadlift", /^romanian deadlift$/i, "romanian-deadlift", "Hamstrings + Glutes", "Hinge at your hips with a neutral back; stand tall."],
-    ["Deadlift", /^deadlift$/i, "deadlift", "Glutes + Hamstrings + Back", "Brace first. Keep the load close and push the floor away."],
-    ["Seated Cable Row", /^seated cable row$/i, "seated-cable-row", "Back + Lats", "Stay tall and draw your elbows back without swinging."],
-    ["Chest Supported Row", /^chest supported row$/i, "chest-supported-row", "Upper Back + Lats", "Keep your chest against the pad; pull elbows toward your sides."],
-    ["Lat Pulldown", /^lat pulldown$/i, "lat-pulldown", "Latissimus Dorsi + Upper Back", "Pull elbows down while keeping your chest lifted."],
-    ["Leg Press", /^leg press$/i, "leg-press", "Quadriceps + Glutes", "Keep your hips on the pad and avoid locking your knees."],
-    ["Hip Thrust", /^hip thrust$/i, "hip-thrust", "Glutes", "Drive through your feet and finish with your ribs down."],
-    ["Walking Lunge", /^walking lunge$/i, "walking-lunge", "Quadriceps + Glutes", "Take controlled steps and keep your front knee aligned."]
-  ];
 
-  const entries = SETTINGS.map(([name, match, slug, target, cue]) => ({
-    name, match, slug, target, cue,
-    muscle: ROOT + slug + "-muscles.png",
-    demo: ROOT + slug + "-demo.png"
+    {
+      name: "Back Squat",
+      match: /^back squat$/i,
+      slug: "back-squat",
+      target: "Quadriceps + Glutes",
+      cue:
+        "Brace your core, keep your chest up and drive through your feet."
+    },
+
+    {
+      name: "Front Squat",
+      match: /^front squat$/i,
+      slug: "front-squat",
+      target: "Quadriceps + Glutes",
+      cue:
+        "Keep your elbows high and torso upright throughout the movement."
+    },
+
+    {
+      name: "Romanian Deadlift",
+      match: /^romanian deadlift$/i,
+      slug: "romanian-deadlift",
+      target: "Hamstrings + Glutes",
+      cue:
+        "Push your hips back while maintaining a strong neutral spine."
+    },
+
+    {
+      name: "Deadlift",
+      match: /^deadlift$/i,
+      slug: "deadlift",
+      target: "Glutes + Hamstrings + Back",
+      cue:
+        "Brace hard, keep the weight close and push the floor away."
+    },
+
+    {
+      name: "Seated Cable Row",
+      match: /^seated cable row$/i,
+      slug: "seated-cable-row",
+      target: "Back + Lats",
+      cue:
+        "Stay tall and pull your elbows back without swinging."
+    },
+
+    {
+      name: "Chest Supported Row",
+      match: /^chest supported row$/i,
+      slug: "chest-supported-row",
+      target: "Upper Back + Lats",
+      cue:
+        "Keep your chest supported and drive your elbows behind you."
+    },
+
+    {
+      name: "Lat Pulldown",
+      match: /^lat pulldown$/i,
+      slug: "lat-pulldown",
+      target: "Lats + Upper Back",
+      cue:
+        "Keep your chest lifted and pull your elbows toward your sides."
+    },
+
+    {
+      name: "Leg Press",
+      match: /^leg press$/i,
+      slug: "leg-press",
+      target: "Quadriceps + Glutes",
+      cue:
+        "Control the descent and drive through your whole foot."
+    },
+
+    {
+      name: "Hip Thrust",
+      match: /^hip thrust$/i,
+      slug: "hip-thrust",
+      target: "Glutes",
+      cue:
+        "Drive through your heels and finish with your glutes fully contracted."
+    },
+
+    {
+      name: "Walking Lunge",
+      match: /^walking lunge$/i,
+      slug: "walking-lunge",
+      target: "Quadriceps + Glutes",
+      cue:
+        "Take controlled steps and keep your knee tracking over your foot."
+    }
+
+  ].map(exercise => ({
+    ...exercise,
+
+    demo:
+      ROOT +
+      exercise.slug +
+      "-demo.png?v=" +
+      BUILD,
+
+    muscle:
+      ROOT +
+      exercise.slug +
+      "-muscles.png?v=" +
+      BUILD
   }));
 
-  const imageCache = new Map();
-  let current = null;
-  let requestId = 0;
 
-  function lookup(name) {
-    return entries.find(
-      e => e.match.test(String(name || "").trim())
-    ) || null;
+  /* =========================================
+     STATE
+     ========================================= */
+
+  const imageCache =
+    new Map();
+
+  let currentPlayer =
+    null;
+
+  let requestToken =
+    0;
+
+  let modalObserver =
+    null;
+
+
+  /* =========================================
+     LOOKUP
+     ========================================= */
+
+  function lookup(rawName) {
+
+    const name =
+      String(rawName || "")
+        .trim();
+
+    return (
+      SETTINGS.find(
+        exercise =>
+          exercise.match.test(name)
+      ) ||
+      null
+    );
   }
 
+
+  /* =========================================
+     IMAGE LOADING
+     ========================================= */
+
   function preload(url) {
-    if (imageCache.has(url)) return imageCache.get(url);
 
-    const promise = new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error("Missing artwork: " + url));
-      img.src = url;
-    }).catch(err => {
-      imageCache.delete(url);
-      throw err;
-    });
+    if (
+      imageCache.has(url)
+    ) {
+      return imageCache.get(url);
+    }
 
-    imageCache.set(url, promise);
+    const promise =
+      new Promise(
+        (resolve, reject) => {
+
+          const img =
+            new Image();
+
+          img.onload =
+            () => resolve(img);
+
+          img.onerror =
+            () =>
+              reject(
+                new Error(
+                  "Artwork not found: " +
+                  url
+                )
+              );
+
+          img.src =
+            url;
+        }
+      )
+      .catch(error => {
+
+        imageCache.delete(url);
+
+        throw error;
+      });
+
+    imageCache.set(
+      url,
+      promise
+    );
+
     return promise;
   }
 
-  function splitDemo(source, side) {
-    const w = source.naturalWidth;
-    const h = source.naturalHeight;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.floor(w / 2);
-    canvas.height = h;
+  /* =========================================
+     SPLIT START / FINISH IMAGE
+     ========================================= */
 
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas unavailable");
+  function splitDemo(
+    source,
+    side
+  ) {
+
+    const sourceWidth =
+      source.naturalWidth;
+
+    const sourceHeight =
+      source.naturalHeight;
+
+    const halfWidth =
+      Math.floor(
+        sourceWidth / 2
+      );
+
+    const canvas =
+      document.createElement(
+        "canvas"
+      );
+
+    canvas.width =
+      halfWidth;
+
+    canvas.height =
+      sourceHeight;
+
+    const ctx =
+      canvas.getContext("2d");
+
+    if (!ctx) {
+      throw new Error(
+        "Canvas unavailable"
+      );
+    }
+
+    const sx =
+      side === 0
+        ? 0
+        : sourceWidth -
+          halfWidth;
 
     ctx.drawImage(
+
       source,
-      side * canvas.width, 0,
-      canvas.width, h,
-      0, 0,
-      canvas.width, h
+
+      sx,
+      0,
+      halfWidth,
+      sourceHeight,
+
+      0,
+      0,
+      halfWidth,
+      sourceHeight
+
     );
 
-    return canvas.toDataURL("image/png");
+    return canvas.toDataURL(
+      "image/png"
+    );
   }
 
-  function installStyle() {
-    if (document.getElementById("mana-v963-style")) return;
 
-    const style = document.createElement("style");
-    style.id = "mana-v963-style";
+  /* =========================================
+     STYLES
+     ========================================= */
+
+  function installStyles() {
+
+    document
+      .getElementById(
+        STYLE_ID
+      )
+      ?.remove();
+
+
+    const style =
+      document.createElement(
+        "style"
+      );
+
+    style.id =
+      STYLE_ID;
 
     style.textContent = `
-      .mana-v963-muscle {
-        display: grid;
-        grid-template-columns: minmax(95px, 35%) 1fr;
-        gap: 12px;
-        align-items: center;
-        background: #110f0a;
-        border: 1px solid #57471d;
-        border-radius: 14px;
-        padding: 10px;
-        margin: 12px 0;
+
+      .mana-v963-muscle-card {
+
+        display:grid;
+
+        grid-template-columns:
+          minmax(95px,35%)
+          1fr;
+
+        align-items:center;
+
+        gap:12px;
+
+        margin:
+          12px
+          0;
+
+        padding:10px;
+
+        background:#0b0a08;
+
+        border:
+          1px solid
+          #66531c;
+
+        border-radius:
+          14px;
+
       }
 
-      .mana-v963-muscle img {
-        display: block;
-        width: 100%;
-        height: 130px;
-        object-fit: contain;
-        background: #090909;
-        border-radius: 10px;
+
+      .mana-v963-muscle-card img {
+
+        display:block;
+
+        width:100%;
+
+        height:145px;
+
+        object-fit:contain;
+
+        background:#050505;
+
+        border-radius:10px;
+
       }
 
-      .mana-v963-muscle span {
-        display: block;
-        font-size: 10px;
-        letter-spacing: .08em;
-        color: #aaa;
-        font-weight: 800;
+
+      .mana-v963-target-small {
+
+        color:#999;
+
+        font-size:10px;
+
+        font-weight:900;
+
+        letter-spacing:.1em;
+
       }
 
-      .mana-v963-muscle strong {
-        display: block;
-        color: #f3d875;
-        font-size: 16px;
-        margin-top: 6px;
+
+      .mana-v963-target-name {
+
+        color:#f5cf57;
+
+        font-size:16px;
+
+        font-weight:900;
+
+        line-height:1.25;
+
+        margin-top:6px;
+
       }
+
 
       .mana-v963-player {
-        border: 1px solid #806723;
-        border-radius: 16px;
-        overflow: hidden;
-        background: #090909;
-        margin-top: 12px;
+
+        margin-top:12px;
+
+        overflow:hidden;
+
+        background:#080808;
+
+        border:
+          1px solid
+          #806723;
+
+        border-radius:16px;
+
       }
+
 
       .mana-v963-stage {
-        height: min(80vw, 460px);
-        min-height: 300px;
-        position: relative;
-        background: #080808;
+
+        position:relative;
+
+        height:
+          min(
+            78vw,
+            480px
+          );
+
+        min-height:320px;
+
+        overflow:hidden;
+
+        background:#060606;
+
       }
+
 
       .mana-v963-stage img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        opacity: 0;
-        transition: opacity .4s ease;
+
+        position:absolute;
+
+        inset:0;
+
+        display:block;
+
+        width:100%;
+
+        height:100%;
+
+        object-fit:contain;
+
+        object-position:center;
+
+        opacity:0;
+
+        transition:
+          opacity
+          .45s ease;
+
       }
 
-      .mana-v963-player[data-pose="start"] .mana-v963-start,
-      .mana-v963-player[data-pose="finish"] .mana-v963-finish {
-        opacity: 1;
+
+      .mana-v963-player[data-pose="start"]
+      .mana-v963-start {
+
+        opacity:1;
+
       }
+
+
+      .mana-v963-player[data-pose="finish"]
+      .mana-v963-finish {
+
+        opacity:1;
+
+      }
+
 
       .mana-v963-badge {
-        position: absolute;
-        left: 12px;
-        top: 12px;
-        color: #f6ce54;
-        background: #181408;
-        border: 1px solid #806723;
-        border-radius: 30px;
-        padding: 8px 13px;
-        font-weight: 900;
-        font-size: 12px;
+
+        position:absolute;
+
+        z-index:5;
+
+        top:12px;
+
+        left:12px;
+
+        padding:
+          9px
+          15px;
+
+        background:#181408;
+
+        color:#f6ce54;
+
+        border:
+          1px solid
+          #806723;
+
+        border-radius:24px;
+
+        font-size:12px;
+
+        font-weight:900;
+
       }
+
+
+      .mana-v963-progress {
+
+        position:absolute;
+
+        z-index:5;
+
+        left:15px;
+
+        right:15px;
+
+        bottom:10px;
+
+        height:4px;
+
+        overflow:hidden;
+
+        background:#292317;
+
+        border-radius:20px;
+
+      }
+
+
+      .mana-v963-progress span {
+
+        display:block;
+
+        width:0%;
+
+        height:100%;
+
+        background:#e4b934;
+
+      }
+
+
+      .mana-v963-player.playing
+      .mana-v963-progress span {
+
+        animation:
+          mana963Progress
+          3.4s
+          linear
+          infinite;
+
+      }
+
+
+      @keyframes mana963Progress {
+
+        from {
+          width:0%;
+        }
+
+        to {
+          width:100%;
+        }
+
+      }
+
 
       .mana-v963-controls {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        padding: 12px;
+
+        display:grid;
+
+        grid-template-columns:
+          1fr
+          1fr;
+
+        gap:10px;
+
+        padding:12px;
+
+        background:#0d0b07;
+
       }
+
 
       .mana-v963-controls button {
-        min-height: 48px;
-        color: #f6ce54;
-        background: #1d180b;
-        border: 1px solid #806723;
-        border-radius: 12px;
-        font-weight: 900;
-        cursor: pointer;
+
+        min-height:48px;
+
+        background:#1b170b;
+
+        color:#f6ce54;
+
+        border:
+          1px solid
+          #806723;
+
+        border-radius:12px;
+
+        font-size:12px;
+
+        font-weight:900;
+
+        cursor:pointer;
+
       }
+
 
       .mana-v963-cue {
-        grid-column: 1 / -1;
-        color: #bbb;
-        text-align: center;
-        font-size: 12px;
-        line-height: 1.5;
+
+        grid-column:
+          1 / -1;
+
+        padding:
+          4px
+          8px
+          5px;
+
+        text-align:center;
+
+        color:#c7c7c7;
+
+        font-size:12px;
+
+        line-height:1.5;
+
       }
 
-      @media (prefers-reduced-motion: reduce) {
-        .mana-v963-stage img {
-          transition: none;
+
+      @media (
+        max-width:600px
+      ) {
+
+        .mana-v963-stage {
+
+          height:390px;
+
+          min-height:300px;
+
         }
+
       }
+
+
+      @media (
+        prefers-reduced-motion:
+        reduce
+      ) {
+
+        .mana-v963-stage img {
+
+          transition:none;
+
+        }
+
+      }
+
     `;
 
-    document.head.append(style);
+    document.head
+      .appendChild(style);
   }
 
-  function makePlayer(name, entry, source) {
-    const player = document.createElement("div");
-    player.className = "mana-v963-player";
-    player.dataset.exercise = name;
-    player.dataset.pose = "start";
 
-    const stage = document.createElement("div");
-    stage.className = "mana-v963-stage";
+  /* =========================================
+     DEMO PLAYER
+     ========================================= */
 
-    const start = new Image();
-    start.src = splitDemo(source, 0);
-    start.alt = name + " start";
-    start.className = "mana-v963-start";
+  function createPlayer(
+    name,
+    exercise,
+    source
+  ) {
 
-    const finish = new Image();
-    finish.src = splitDemo(source, 1);
-    finish.alt = name + " finish";
-    finish.className = "mana-v963-finish";
+    const player =
+      document.createElement(
+        "div"
+      );
 
-    const badge = document.createElement("div");
-    badge.className = "mana-v963-badge";
-    badge.textContent = "START";
+    player.className =
+      "mana-v963-player";
 
-    stage.append(start, finish, badge);
+    player.dataset.exercise =
+      name;
 
-    const controls = document.createElement("div");
-    controls.className = "mana-v963-controls";
+    player.dataset.pose =
+      "start";
 
-    const play = document.createElement("button");
-    play.type = "button";
-    play.textContent = "▶ PLAY DEMO";
 
-    const replay = document.createElement("button");
-    replay.type = "button";
-    replay.textContent = "↻ REPLAY";
+    const stage =
+      document.createElement(
+        "div"
+      );
 
-    const cue = document.createElement("div");
-    cue.className = "mana-v963-cue";
-    cue.textContent = entry.cue;
+    stage.className =
+      "mana-v963-stage";
 
-    controls.append(play, replay, cue);
-    player.append(stage, controls);
 
-    let loop = null;
-    let flip = null;
-    let running = false;
+    const start =
+      new Image();
 
-    function pose(value) {
-      player.dataset.pose = value;
-      badge.textContent = value.toUpperCase();
+    start.className =
+      "mana-v963-start";
+
+    start.src =
+      splitDemo(
+        source,
+        0
+      );
+
+    start.alt =
+      name +
+      " starting position";
+
+
+    const finish =
+      new Image();
+
+    finish.className =
+      "mana-v963-finish";
+
+    finish.src =
+      splitDemo(
+        source,
+        1
+      );
+
+    finish.alt =
+      name +
+      " finishing position";
+
+
+    const badge =
+      document.createElement(
+        "div"
+      );
+
+    badge.className =
+      "mana-v963-badge";
+
+    badge.textContent =
+      "START";
+
+
+    const progress =
+      document.createElement(
+        "div"
+      );
+
+    progress.className =
+      "mana-v963-progress";
+
+
+    const progressFill =
+      document.createElement(
+        "span"
+      );
+
+    progress.appendChild(
+      progressFill
+    );
+
+
+    stage.append(
+      start,
+      finish,
+      badge,
+      progress
+    );
+
+
+    const controls =
+      document.createElement(
+        "div"
+      );
+
+    controls.className =
+      "mana-v963-controls";
+
+
+    const playButton =
+      document.createElement(
+        "button"
+      );
+
+    playButton.type =
+      "button";
+
+    playButton.textContent =
+      "▶ PLAY DEMO";
+
+
+    const replayButton =
+      document.createElement(
+        "button"
+      );
+
+    replayButton.type =
+      "button";
+
+    replayButton.textContent =
+      "↻ REPLAY";
+
+
+    const cue =
+      document.createElement(
+        "div"
+      );
+
+    cue.className =
+      "mana-v963-cue";
+
+    cue.textContent =
+      exercise.cue;
+
+
+    controls.append(
+      playButton,
+      replayButton,
+      cue
+    );
+
+
+    player.append(
+      stage,
+      controls
+    );
+
+
+    let playing =
+      false;
+
+    let loopTimer =
+      null;
+
+    let flipTimer =
+      null;
+
+
+    function clearTimers() {
+
+      clearInterval(
+        loopTimer
+      );
+
+      clearTimeout(
+        flipTimer
+      );
+
+      loopTimer =
+        null;
+
+      flipTimer =
+        null;
     }
+
+
+    function setPose(pose) {
+
+      player.dataset.pose =
+        pose;
+
+      badge.textContent =
+        pose.toUpperCase();
+    }
+
 
     function pause() {
-      running = false;
-      clearInterval(loop);
-      clearTimeout(flip);
-      loop = flip = null;
-      play.textContent = "▶ PLAY DEMO";
+
+      playing =
+        false;
+
+      clearTimers();
+
+      player.classList
+        .remove(
+          "playing"
+        );
+
+      playButton.textContent =
+        "▶ PLAY DEMO";
     }
+
 
     function cycle() {
-      pose("start");
 
-      flip = setTimeout(() => {
-        if (running) pose("finish");
-      }, 1550);
+      setPose(
+        "start"
+      );
+
+      flipTimer =
+        setTimeout(
+          () => {
+
+            if (
+              playing
+            ) {
+
+              setPose(
+                "finish"
+              );
+
+            }
+
+          },
+          1550
+        );
     }
 
-    function toggle() {
-      if (running) return pause();
 
-      running = true;
-      play.textContent = "❚❚ PAUSE";
+    function play() {
+
+      if (
+        playing
+      ) {
+
+        pause();
+
+        return;
+      }
+
+      playing =
+        true;
+
+      player.classList
+        .add(
+          "playing"
+        );
+
+      playButton.textContent =
+        "❚❚ PAUSE";
 
       cycle();
-      loop = setInterval(cycle, 3400);
+
+      loopTimer =
+        setInterval(
+          cycle,
+          3400
+        );
     }
 
-    play.addEventListener("click", toggle);
 
-    replay.addEventListener("click", () => {
+    function replay() {
+
       pause();
-      pose("start");
-      toggle();
-    });
 
-    player.pauseDemo = pause;
+      setPose(
+        "start"
+      );
+
+      setTimeout(
+        play,
+        70
+      );
+    }
+
+
+    playButton
+      .addEventListener(
+        "click",
+        play
+      );
+
+
+    replayButton
+      .addEventListener(
+        "click",
+        replay
+      );
+
+
+    player.pauseDemo =
+      pause;
+
+
     return player;
   }
 
-  async function enhanceCard(card) {
-    const name =
-      card.dataset.exerciseName ||
-      card.querySelector(".mana-v64-name")?.textContent?.trim();
 
-    const entry = lookup(name);
-
-    if (!entry || card.querySelector(".mana-v963-muscle")) {
-      return;
-    }
-
-    try {
-      const [muscle] = await Promise.all([
-        preload(entry.muscle),
-        preload(entry.demo)
-      ]);
-
-      if (!card.isConnected ||
-          card.querySelector(".mana-v963-muscle")) {
-        return;
-      }
-
-      const title = card.querySelector(".mana-v64-name");
-      if (!title) return;
-
-      const block = document.createElement("div");
-      block.className = "mana-v963-muscle";
-
-      const picture = new Image();
-      picture.src = muscle.src;
-      picture.alt = entry.target + " muscle illustration";
-
-      const copy = document.createElement("div");
-
-      const label = document.createElement("span");
-      label.textContent = "PRIMARY TARGET";
-
-      const value = document.createElement("strong");
-      value.textContent = entry.target;
-
-      copy.append(label, value);
-      block.append(picture, copy);
-
-      title.insertAdjacentElement("afterend", block);
-
-      const old = card.querySelector(".mana-v955-exercise-head");
-      if (old) old.style.display = "none";
-
-    } catch (_) {
-      // Keep the original guide if assets are missing.
-    }
-  }
+  /* =========================================
+     MODAL UPGRADE
+     ========================================= */
 
   async function upgradeModal() {
-    const modal = document.getElementById(
-      "manaV955DemoModal"
-    );
 
-    const target = document.getElementById(
-      "manaV955Demo"
-    );
+    const modal =
+      document.getElementById(
+        "manaV955DemoModal"
+      );
 
-    const heading = document.getElementById(
-      "manaV955Title"
-    );
 
-    if (!modal?.classList.contains("open") ||
-        !target || !heading) {
+    const demo =
+      document.getElementById(
+        "manaV955Demo"
+      );
+
+
+    const title =
+      document.getElementById(
+        "manaV955Title"
+      );
+
+
+    if (
+      !modal ||
+      !demo ||
+      !title
+    ) {
       return;
     }
 
-    const name = heading.textContent.trim();
-    const entry = lookup(name);
 
-    if (!entry ||
-        target.querySelector(".mana-v963-player")
-          ?.dataset.exercise === name) {
+    if (
+      !modal.classList
+        .contains(
+          "open"
+        )
+    ) {
       return;
     }
 
-    const token = ++requestId;
+
+    const name =
+      title.textContent
+        .trim();
+
+
+    const exercise =
+      lookup(name);
+
+
+    if (
+      !exercise
+    ) {
+      return;
+    }
+
+
+    const existing =
+      demo.querySelector(
+        ".mana-v963-player"
+      );
+
+
+    if (
+      existing &&
+      existing.dataset
+        .exercise === name
+    ) {
+      return;
+    }
+
+
+    const token =
+      ++requestToken;
+
 
     try {
-      const image = await preload(entry.demo);
 
-      if (token !== requestId ||
-          !modal.classList.contains("open") ||
-          heading.textContent.trim() !== name) {
+      const [
+        demoImage,
+        muscleImage
+      ] =
+        await Promise.all([
+
+          preload(
+            exercise.demo
+          ),
+
+          preload(
+            exercise.muscle
+          )
+
+        ]);
+
+
+      if (
+        token !==
+        requestToken
+      ) {
         return;
       }
 
-      current?.pauseDemo?.();
 
-      current = makePlayer(name, entry, image);
-      target.replaceChildren(current);
-
-      const muscle = document.getElementById(
-        "manaV955Muscle"
-      );
-
-      const label = document.getElementById(
-        "manaV955MuscleLabel"
-      );
-
-      if (muscle) {
-        const art = new Image();
-        art.src = entry.muscle;
-        art.alt = entry.target;
-        art.className = "mana-v957-modal-muscle-image";
-
-        art.onerror = () => {
-          if (art.isConnected) art.remove();
-        };
-
-        muscle.replaceChildren(art);
+      if (
+        !modal.classList
+          .contains(
+            "open"
+          )
+      ) {
+        return;
       }
 
-      if (label) label.textContent = entry.target;
 
-    } catch (_) {
-      // Keep the existing popup if artwork is missing.
+      if (
+        title.textContent
+          .trim() !== name
+      ) {
+        return;
+      }
+
+
+      currentPlayer
+        ?.pauseDemo?.();
+
+
+      currentPlayer =
+        createPlayer(
+          name,
+          exercise,
+          demoImage
+        );
+
+
+      demo.replaceChildren(
+        currentPlayer
+      );
+
+
+      const muscleTarget =
+        document.getElementById(
+          "manaV955Muscle"
+        );
+
+
+      const muscleLabel =
+        document.getElementById(
+          "manaV955MuscleLabel"
+        );
+
+
+      if (
+        muscleTarget
+      ) {
+
+        const art =
+          new Image();
+
+        art.src =
+          muscleImage.src;
+
+        art.alt =
+          exercise.target +
+          " muscle illustration";
+
+        art.className =
+          "mana-v957-modal-muscle-image";
+
+        muscleTarget
+          .replaceChildren(
+            art
+          );
+      }
+
+
+      if (
+        muscleLabel
+      ) {
+
+        muscleLabel
+          .textContent =
+          exercise.target;
+
+      }
+
+
+      console.log(
+        "[Mana v9.63.1]",
+        name,
+        "premium demo loaded"
+      );
+
+    } catch(error) {
+
+      console.warn(
+        "[Mana v9.63.1]",
+        error
+      );
+
     }
   }
 
-  function refresh() {
-    document.querySelectorAll(
-      "#manaV64Exercises .mana-v64-card"
-    ).forEach(enhanceCard);
+
+  /* =========================================
+     WORKOUT CARD MUSCLE ART
+     ========================================= */
+
+  async function enhanceCard(
+    card
+  ) {
+
+    const name =
+      card.dataset
+        .exerciseName ||
+      card.querySelector(
+        ".mana-v64-name"
+      )
+      ?.textContent
+      ?.trim();
+
+
+    const exercise =
+      lookup(name);
+
+
+    if (
+      !exercise
+    ) {
+      return;
+    }
+
+
+    if (
+      card.querySelector(
+        ".mana-v963-muscle-card"
+      )
+    ) {
+      return;
+    }
+
+
+    try {
+
+      const muscleImage =
+        await preload(
+          exercise.muscle
+        );
+
+
+      if (
+        !card.isConnected
+      ) {
+        return;
+      }
+
+
+      if (
+        card.querySelector(
+          ".mana-v963-muscle-card"
+        )
+      ) {
+        return;
+      }
+
+
+      const exerciseName =
+        card.querySelector(
+          ".mana-v64-name"
+        );
+
+
+      if (
+        !exerciseName
+      ) {
+        return;
+      }
+
+
+      const block =
+        document.createElement(
+          "div"
+        );
+
+      block.className =
+        "mana-v963-muscle-card";
+
+
+      const picture =
+        new Image();
+
+      picture.src =
+        muscleImage.src;
+
+      picture.alt =
+        exercise.target;
+
+
+      const copy =
+        document.createElement(
+          "div"
+        );
+
+
+      const small =
+        document.createElement(
+          "div"
+        );
+
+      small.className =
+        "mana-v963-target-small";
+
+      small.textContent =
+        "PRIMARY TARGET";
+
+
+      const value =
+        document.createElement(
+          "div"
+        );
+
+      value.className =
+        "mana-v963-target-name";
+
+      value.textContent =
+        exercise.target;
+
+
+      copy.append(
+        small,
+        value
+      );
+
+
+      block.append(
+        picture,
+        copy
+      );
+
+
+      exerciseName
+        .insertAdjacentElement(
+          "afterend",
+          block
+        );
+
+
+      const oldMini =
+        card.querySelector(
+          ".mana-v955-exercise-head"
+        );
+
+
+      if (
+        oldMini
+      ) {
+
+        oldMini.style.display =
+          "none";
+
+      }
+
+    } catch(error) {
+
+      /*
+        Missing image:
+        leave existing Mana guide alone.
+      */
+
+    }
   }
 
-  function init() {
-    installStyle();
-    refresh();
 
-    document.addEventListener("click", event => {
-      if (event.target.closest(
-        ".mana-v955-demo-button,.mana-v957-demo-button"
-      )) {
-        setTimeout(upgradeModal, 170);
-        setTimeout(upgradeModal, 550);
+  function refreshCards() {
+
+    document
+      .querySelectorAll(
+        "#manaV64Exercises .mana-v64-card"
+      )
+      .forEach(
+        enhanceCard
+      );
+  }
+
+
+  /* =========================================
+     MODAL OBSERVER
+     ========================================= */
+
+  function observeModal() {
+
+    if (
+      modalObserver
+    ) {
+
+      modalObserver
+        .disconnect();
+
+    }
+
+
+    modalObserver =
+      new MutationObserver(
+        () => {
+
+          setTimeout(
+            upgradeModal,
+            80
+          );
+
+        }
+      );
+
+
+    modalObserver.observe(
+      document.body,
+      {
+        subtree:true,
+        childList:true,
+        attributes:true,
+        attributeFilter:[
+          "class"
+        ]
       }
+    );
+  }
 
-      if (event.target.closest("#manaV955Close") ||
-          event.target.id === "manaV955DemoModal") {
-        requestId++;
-        current?.pauseDemo?.();
-      }
 
-      if (event.target.closest(
+  /* =========================================
+     CLICK HANDLER
+
+     IMPORTANT:
+     Capture phase = TRUE.
+
+     v9.55 calls stopPropagation(),
+     so normal document click listeners
+     never receive the Visual Demo click.
+     ========================================= */
+
+  function clickHandler(
+    event
+  ) {
+
+    const demoButton =
+      event.target.closest(
+        ".mana-v955-demo-button, .mana-v957-demo-button"
+      );
+
+
+    if (
+      demoButton
+    ) {
+
+      /*
+        Run AFTER v9.55 has opened
+        and populated its modal.
+      */
+
+      setTimeout(
+        upgradeModal,
+        100
+      );
+
+      setTimeout(
+        upgradeModal,
+        300
+      );
+
+      setTimeout(
+        upgradeModal,
+        650
+      );
+
+    }
+
+
+    if (
+      event.target.closest(
+        "#manaV955Close"
+      ) ||
+      event.target.id ===
+        "manaV955DemoModal"
+    ) {
+
+      requestToken++;
+
+      currentPlayer
+        ?.pauseDemo?.();
+
+    }
+
+
+    if (
+      event.target.closest(
         '[data-v83-tab="program"]'
-      )) {
-        setTimeout(refresh, 200);
-      }
-    });
+      )
+    ) {
+
+      setTimeout(
+        refreshCards,
+        200
+      );
+
+      setTimeout(
+        refreshCards,
+        600
+      );
+
+    }
+  }
+
+
+  /* =========================================
+     INIT
+     ========================================= */
+
+  function init() {
+
+    installStyles();
+
+    refreshCards();
+
+    observeModal();
+
+
+    /*
+      TRUE = capture phase.
+
+      This is the critical v9.63.1 fix.
+    */
+
+    document.addEventListener(
+      "click",
+      clickHandler,
+      true
+    );
+
 
     [
       "mana:program-tab-change",
       "mana:strength-synced",
       "mana:workout-progress-change"
-    ].forEach(eventName => {
-      window.addEventListener(eventName, refresh);
-    });
+    ]
+    .forEach(
+      eventName => {
 
-    window.MANA_BATCH1_BUILD = BUILD;
-    window.refreshManaBatch1 = refresh;
+        window.addEventListener(
+          eventName,
+          () => {
+
+            setTimeout(
+              refreshCards,
+              100
+            );
+
+          }
+        );
+
+      }
+    );
+
+
+    window
+      .MANA_BATCH1_BUILD =
+      BUILD;
+
+
+    window
+      .refreshManaBatch1 =
+      () => {
+
+        refreshCards();
+
+        upgradeModal();
+
+      };
+
+
+    console.log(
+      "[Mana v9.63.1] ready"
+    );
   }
 
-  if (document.readyState === "loading") {
+
+  if (
+    document.readyState ===
+    "loading"
+  ) {
+
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      { once: true }
+      {
+        once:true
+      }
     );
+
   } else {
+
     init();
+
   }
+
 })();
