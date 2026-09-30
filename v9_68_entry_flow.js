@@ -1,31 +1,38 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.68.2
-   GUIDED ENTRY FLOW
+   MANA MOVEMENT TRAINING v9.68.3
+   CLEAN GUIDED ENTRY FLOW
 
+   FIRST SETUP
    LOGIN
       ↓
    INTRO
       ↓
    STEP 1 — PROFILE & GOALS
       ↓
-   STEP 2 — PROGRAM SELECTION
+   STEP 2 — HOME / PROGRAM SELECTION
       ↓
-   STEP 3 — COACHING LEVEL
+   STEP 3 — STRENGTH COACHING LEVEL
 
-   FIXES
-   - CLEAN STEP 1 PROFILE SCREEN
-   - VALIDATES MISSING FIELDS
-   - NEVER SILENTLY TRAPS USER
-   - KEEPS MANA MOVEMENT BRAND ON STEP 2
-   - SAME FLOW ON PHONE + LAPTOP
-   - RETURNS PROFILE TO NORMAL AFTER SETUP
+   NORMAL APP
+   HOME
+   - MANA MOVEMENT HEADER
+   - MANA 28
+   - MANA STRENGTH
+   - MANA LYFE
+   - BOTTOM NAV
+
+   PROFILE
+   - OWN SCREEN VIA BOTTOM NAV
+
+   NO PROFILE CARD ON HOME
+   NO STEP 2 BANNER ON HOME
    ========================================= */
 
 (() => {
   "use strict";
 
   const BUILD =
-    "96820";
+    "96830";
 
   const STYLE_ID =
     "mana-v968-entry-style";
@@ -34,17 +41,14 @@
     "mana-profile-v67";
 
   /*
-    New onboarding keys for this version.
-
-    This intentionally gives laptop + phone
-    the new guided setup once each.
+    New key for the cleaned onboarding flow.
   */
 
   const COMPLETE_KEY =
-    "mana-onboarding-complete-v9682";
+    "mana-onboarding-complete-v9683";
 
   const ACTIVE_KEY =
-    "mana-onboarding-active-v9682";
+    "mana-onboarding-active-v9683";
 
 
   /* =========================================
@@ -126,6 +130,7 @@
         "authView"
       );
 
+
     const client =
       document.getElementById(
         "clientView"
@@ -139,24 +144,21 @@
     }
 
 
-    const authHidden =
-      !auth ||
-      auth.classList
-        .contains(
-          "hide"
-        );
+    return Boolean(
 
+      (
+        !auth ||
+        auth.classList
+          .contains(
+            "hide"
+          )
+      ) &&
 
-    const clientVisible =
       !client.classList
         .contains(
           "hide"
-        );
+        )
 
-
-    return (
-      authHidden &&
-      clientVisible
     );
   }
 
@@ -177,7 +179,7 @@
 
 
   /* =========================================
-     PROFILE FIELD MAP
+     REQUIRED PROFILE FIELDS
      ========================================= */
 
   const REQUIRED_FIELDS = [
@@ -297,23 +299,23 @@
   }
 
 
-  function profileComplete() {
+  function savedProfileComplete() {
 
-    const profile =
+    const p =
       loadProfile();
 
 
     return Boolean(
-      profile.name &&
-      profile.age &&
-      profile.gender &&
-      profile.height &&
-      profile.weight &&
-      profile.goal &&
-      profile.days &&
-      profile.experience &&
-      profile.equipment &&
-      profile.fuelGoal
+      p.name &&
+      p.age &&
+      p.gender &&
+      p.height &&
+      p.weight &&
+      p.goal &&
+      p.days &&
+      p.experience &&
+      p.equipment &&
+      p.fuelGoal
     );
   }
 
@@ -344,7 +346,111 @@
     style.textContent = `
 
       /* =====================================
-         STEP 1
+         HOME IS NOW ALWAYS CLEAN
+         ===================================== */
+
+      #manaV80Home
+      #manaV80ProfileSetup,
+
+      #manaV80Home
+      .mana-v8013-select,
+
+      #manaV968Step2Head{
+
+        display:
+          none !important;
+      }
+
+
+      /*
+        Override old v9.64 / v9.65
+        Home onboarding decorations.
+
+        The elements remain in the DOM
+        for compatibility but are never
+        shown on Home.
+      */
+
+      #manaV80Home
+      #manaV80ProfileSetup{
+
+        visibility:
+          hidden !important;
+
+        height:
+          0 !important;
+
+        min-height:
+          0 !important;
+
+        margin:
+          0 !important;
+
+        padding:
+          0 !important;
+
+        border:
+          0 !important;
+
+        overflow:
+          hidden !important;
+      }
+
+
+      #manaV80Home
+      .mana-v8013-select{
+
+        visibility:
+          hidden !important;
+
+        height:
+          0 !important;
+
+        min-height:
+          0 !important;
+
+        margin:
+          0 !important;
+
+        padding:
+          0 !important;
+
+        border:
+          0 !important;
+
+        overflow:
+          hidden !important;
+      }
+
+
+      /*
+        Keep the real Mana Movement
+        header visible at all times.
+      */
+
+      #manaV80Home
+      .mana-v8013-brand{
+
+        display:
+          block !important;
+      }
+
+
+      /*
+        Home program cards move directly
+        under the brand.
+      */
+
+      #manaV80Home
+      #manaV80Mana28{
+
+        margin-top:
+          8px !important;
+      }
+
+
+      /* =====================================
+         STEP 1 — PROFILE ONBOARDING
          ===================================== */
 
       #manaProfileScreen.mana-v968-step1
@@ -406,7 +512,12 @@
           0
           18px
           42px
-          rgba(0,0,0,.24);
+          rgba(
+            0,
+            0,
+            0,
+            .24
+          );
       }
 
 
@@ -418,12 +529,8 @@
           absolute;
 
         top:0;
-
-        left:
-          24px;
-
-        right:
-          24px;
+        left:24px;
+        right:24px;
 
         height:
           3px;
@@ -450,7 +557,7 @@
           14px;
 
         margin-bottom:
-          25px;
+          24px;
       }
 
 
@@ -599,16 +706,6 @@
 
 
       #manaProfileScreen.mana-v968-step1
-      .mana-profile-card h3{
-
-        color:#fff !important;
-
-        font-size:
-          20px !important;
-      }
-
-
-      #manaProfileScreen.mana-v968-step1
       #manaProfileSave{
 
         width:
@@ -647,7 +744,9 @@
       }
 
 
-      /* MISSING FIELD */
+      /* =====================================
+         MISSING PROFILE FIELDS
+         ===================================== */
 
       #manaProfileScreen
       .mana-profile-field.mana-v968-missing
@@ -658,7 +757,7 @@
       select{
 
         border-color:
-          #d8b545 !important;
+          #d9b646 !important;
 
         box-shadow:
           0
@@ -719,143 +818,22 @@
 
 
       /* =====================================
-         STEP 2
-         KEEP MANA MOVEMENT HEADER
+         NORMAL PROFILE
          ===================================== */
 
-      body.mana-v968-step2-mode
-      #manaV80Home
-      #manaV80ProfileSetup,
-
-      body.mana-v968-step2-mode
-      #manaV80Home
-      .mana-v8013-select,
-
-      body.mana-v968-step2-mode
-      #manaV80Home
-      .mana-v8013-bottom{
+      #manaProfileScreen:not(.mana-v968-step1)
+      .mana-profile-head{
 
         display:
-          none !important;
+          flex !important;
       }
 
 
-      /*
-        IMPORTANT:
-        We intentionally DO NOT hide
-        .mana-v8013-brand anymore.
-      */
-
-
-      .mana-v968-step2-head{
-
-        margin:
-          8px
-          0
-          23px;
-
-        padding:
-          23px
-          22px;
-
-        border:
-          1px solid
-          #5e4f1f;
-
-        border-radius:
-          23px;
-
-        background:
-          linear-gradient(
-            145deg,
-            #19160c,
-            #0a0a09
-          );
-      }
-
-
-      .mana-v968-step2-head h2{
-
-        margin:
-          8px
-          0
-          7px;
-
-        color:#fff;
-
-        font-size:
-          29px;
-
-        line-height:
-          1.02;
-      }
-
-
-      .mana-v968-step2-head p{
-
-        margin:0;
-
-        color:
-          #999;
-
-        font-size:
-          14px;
-
-        line-height:
-          1.55;
-      }
-
-
-      body.mana-v968-step2-mode
-      #manaV80Home
-      .mana-v8013-program{
-
-        margin:
-          15px
-          0 !important;
-      }
-
-
-      /*
-        During onboarding there isn't
-        an "active program" yet visually.
-      */
-
-      body.mana-v968-step2-mode
-      #manaV80Home
-      .mana-v8013-current-badge{
+      #manaProfileScreen:not(.mana-v968-step1)
+      #manaProfileClose{
 
         display:
-          none !important;
-      }
-
-
-      body.mana-v968-step2-mode
-      #manaV80Home
-      .mana-v8013-program.current{
-
-        border:
-          1px solid
-          #302915 !important;
-
-        box-shadow:
-          none !important;
-
-        background:
-          linear-gradient(
-            145deg,
-            #151515,
-            #0b0b0b
-          ) !important;
-      }
-
-
-      body.mana-v968-step2-mode
-      #manaV80Home
-      .mana-v8013-program.current::before{
-
-        display:
-          none !important;
+          block !important;
       }
 
 
@@ -880,7 +858,9 @@
       }
 
 
-      @media(max-width:600px){
+      @media(
+        max-width:600px
+      ){
 
         .mana-v968-step1-hero{
 
@@ -896,21 +876,6 @@
             37px;
         }
 
-
-        .mana-v968-step2-head{
-
-          padding:
-            20px
-            18px;
-        }
-
-
-        .mana-v968-step2-head h2{
-
-          font-size:
-            26px;
-        }
-
       }
 
     `;
@@ -924,7 +889,119 @@
 
 
   /* =========================================
-     NORMAL PROFILE RESTORE
+     REMOVE OLD HOME STEP CONTENT
+     ========================================= */
+
+  function cleanHome() {
+
+    document
+      .getElementById(
+        "manaV968Step2Head"
+      )
+      ?.remove();
+
+
+    const profile =
+      document.getElementById(
+        "manaV80ProfileSetup"
+      );
+
+
+    if (profile) {
+
+      profile.style
+        .setProperty(
+          "display",
+          "none",
+          "important"
+        );
+
+    }
+
+
+    const selector =
+      document.querySelector(
+        "#manaV80Home " +
+        ".mana-v8013-select"
+      );
+
+
+    if (selector) {
+
+      selector.style
+        .setProperty(
+          "display",
+          "none",
+          "important"
+        );
+
+    }
+
+
+    const brand =
+      document.querySelector(
+        "#manaV80Home " +
+        ".mana-v8013-brand"
+      );
+
+
+    if (brand) {
+
+      brand.style
+        .setProperty(
+          "display",
+          "block",
+          "important"
+        );
+
+    }
+
+
+    /*
+      Rename LIFE → LYFE.
+    */
+
+    const lyfe =
+      document.getElementById(
+        "manaV80Life"
+      );
+
+
+    if (lyfe) {
+
+      const label =
+        lyfe.querySelector(
+          ".mana-v8013-program-label"
+        );
+
+
+      const open =
+        lyfe.querySelector(
+          ".mana-v8013-open"
+        );
+
+
+      if (label) {
+
+        label.textContent =
+          "MANA LYFE";
+
+      }
+
+
+      if (open) {
+
+        open.textContent =
+          "Open MANA LYFE →";
+
+      }
+
+    }
+  }
+
+
+  /* =========================================
+     NORMAL PROFILE
      ========================================= */
 
   function restoreNormalProfile() {
@@ -983,12 +1060,11 @@
         "SAVE PROFILE";
 
     }
-
   }
 
 
   /* =========================================
-     STEP 1 DECORATION
+     STEP 1
      ========================================= */
 
   function decorateStep1() {
@@ -1062,6 +1138,7 @@
               MANA MOVEMENT
             </div>
 
+
             <div
               class="mana-v968-brand-kicker"
             >
@@ -1088,8 +1165,8 @@
         <p>
           Tell Mana about your goals,
           experience, training setup and
-          Fuel needs. This becomes the
-          foundation for your program.
+          Fuel needs. This information
+          shapes your experience inside Mana.
         </p>
 
       `;
@@ -1123,13 +1200,10 @@
         "mana-v968-validation";
 
 
-      const save =
-        document.getElementById(
+      document
+        .getElementById(
           "manaProfileSave"
-        );
-
-
-      save
+        )
         ?.insertAdjacentElement(
           "beforebegin",
           validation
@@ -1151,10 +1225,6 @@
     }
 
 
-    /*
-      Always enter Step 1 from the top.
-    */
-
     screen.scrollTop =
       0;
   }
@@ -1163,11 +1233,6 @@
   function openStep1() {
 
     startOnboarding();
-
-
-    document.body.classList.remove(
-      "mana-v968-step2-mode"
-    );
 
 
     if (
@@ -1201,7 +1266,7 @@
 
 
   /* =========================================
-     STEP 1 VALIDATION
+     VALIDATION
      ========================================= */
 
   function clearValidation() {
@@ -1223,13 +1288,10 @@
       );
 
 
-    const box =
-      document.getElementById(
+    document
+      .getElementById(
         "manaV968Validation"
-      );
-
-
-    box
+      )
       ?.classList
       .remove(
         "show"
@@ -1248,13 +1310,10 @@
       .forEach(
         item => {
 
-          const input =
-            document.getElementById(
+          document
+            .getElementById(
               item.id
-            );
-
-
-          input
+            )
             ?.closest(
               ".mana-profile-field"
             )
@@ -1316,7 +1375,7 @@
           first.focus();
 
         },
-        450
+        400
       );
     }
   }
@@ -1326,14 +1385,10 @@
     event
   ) {
 
-    const save =
-      event.target.closest(
-        "#manaProfileSave"
-      );
-
-
     if (
-      !save ||
+      !event.target.closest(
+        "#manaProfileSave"
+      ) ||
       !onboardingActive() ||
       !profileScreen()
         ?.classList
@@ -1352,171 +1407,32 @@
 
 
     if (
-      missing.length
+      !missing.length
     ) {
 
-      /*
-        Stop the existing Profile save
-        until required onboarding fields
-        have actually been completed.
-      */
-
-      event.preventDefault();
-
-      event.stopPropagation();
-
-      event.stopImmediatePropagation();
-
-
-      showMissing(
-        missing
-      );
-
+      clearValidation();
 
       return;
+
     }
 
 
-    clearValidation();
+    event.preventDefault();
+
+    event.stopPropagation();
+
+    event.stopImmediatePropagation();
 
 
-    /*
-      Everything is complete.
-      Do NOT block the original profile
-      handler. It will save normally and
-      emit mana:profile-synced.
-    */
+    showMissing(
+      missing
+    );
   }
 
 
   /* =========================================
-     STEP 2
+     STEP 2 — CLEAN HOME
      ========================================= */
-
-  function decorateStep2() {
-
-    const home =
-      document.getElementById(
-        "manaV80Home"
-      );
-
-
-    const first =
-      document.getElementById(
-        "manaV80Mana28"
-      );
-
-
-    if (
-      !home ||
-      !first
-    ) {
-
-      return;
-
-    }
-
-
-    document.body.classList.add(
-      "mana-v968-step2-mode"
-    );
-
-
-    let header =
-      document.getElementById(
-        "manaV968Step2Head"
-      );
-
-
-    if (!header) {
-
-      header =
-        document.createElement(
-          "div"
-        );
-
-
-      header.id =
-        "manaV968Step2Head";
-
-
-      header.className =
-        "mana-v968-step2-head";
-
-
-      header.innerHTML = `
-
-        <div
-          class="mana-v968-step-number"
-        >
-          STEP 2 • PROGRAM SELECTION
-        </div>
-
-
-        <h2>
-          Choose your path
-        </h2>
-
-
-        <p>
-          Select the Mana program that
-          matches what you want to work on.
-        </p>
-
-      `;
-
-
-      first
-        .insertAdjacentElement(
-          "beforebegin",
-          header
-        );
-    }
-
-
-    const lyfe =
-      document.getElementById(
-        "manaV80Life"
-      );
-
-
-    if (lyfe) {
-
-      const label =
-        lyfe.querySelector(
-          ".mana-v8013-program-label"
-        );
-
-
-      const open =
-        lyfe.querySelector(
-          ".mana-v8013-open"
-        );
-
-
-      if (label) {
-
-        label.textContent =
-          "MANA LYFE";
-
-      }
-
-
-      if (open) {
-
-        open.textContent =
-          "Open MANA LYFE →";
-
-      }
-    }
-
-
-    window.scrollTo({
-      top:0,
-      behavior:"instant"
-    });
-  }
-
 
   function showStep2() {
 
@@ -1531,7 +1447,13 @@
       "";
 
 
-    decorateStep2();
+    cleanHome();
+
+
+    window.scrollTo({
+      top:0,
+      behavior:"instant"
+    });
   }
 
 
@@ -1591,15 +1513,14 @@
     if (text) {
 
       text.textContent =
-        "Choose how much coaching, structure and support you want with Mana Strength.";
+        "Choose how much coaching, structure and support you want.";
 
     }
-
   }
 
 
   /* =========================================
-     FINISH ONBOARDING
+     FINISH SETUP
      ========================================= */
 
   function finishOnboarding() {
@@ -1615,17 +1536,67 @@
     );
 
 
-    document.body.classList.remove(
-      "mana-v968-step2-mode"
-    );
-
-
     restoreNormalProfile();
+
+    cleanHome();
   }
 
 
   /* =========================================
-     EVENT HANDLERS
+     PROFILE BOTTOM TAB
+     ========================================= */
+
+  function handleProfileNav(
+    event
+  ) {
+
+    if (
+      !event.target.closest(
+        "#manaV80ProfileBtn"
+      )
+    ) {
+
+      return;
+
+    }
+
+
+    /*
+      During first setup, Profile means
+      go back to Step 1.
+
+      After onboarding, the existing
+      Profile handler remains normal.
+    */
+
+    if (
+      onboardingActive()
+    ) {
+
+      setTimeout(
+        decorateStep1,
+        20
+      );
+
+
+      setTimeout(
+        decorateStep1,
+        120
+      );
+
+    } else {
+
+      setTimeout(
+        restoreNormalProfile,
+        20
+      );
+
+    }
+  }
+
+
+  /* =========================================
+     INTRO
      ========================================= */
 
   function handleIntroEnter(
@@ -1659,6 +1630,10 @@
   }
 
 
+  /* =========================================
+     PROFILE SAVED
+     ========================================= */
+
   function handleProfileSaved() {
 
     if (
@@ -1671,7 +1646,7 @@
 
 
     if (
-      !profileComplete()
+      !savedProfileComplete()
     ) {
 
       return;
@@ -1686,6 +1661,10 @@
   }
 
 
+  /* =========================================
+     PROGRAM SELECTION
+     ========================================= */
+
   function handleProgramChoice(
     event
   ) {
@@ -1697,13 +1676,6 @@
       return;
 
     }
-
-
-    /*
-      Strength is intercepted by the
-      existing v9.8 membership gate.
-      It will open Step 3 automatically.
-    */
 
 
     if (
@@ -1718,6 +1690,11 @@
       finishOnboarding();
 
     }
+
+    /*
+      Mana Strength continues to v9.8
+      Step 3 automatically.
+    */
   }
 
 
@@ -1734,21 +1711,21 @@
 
 
   /* =========================================
-     PHONE / EXISTING SESSION RECOVERY
+     STARTUP / PHONE RECOVERY
      ========================================= */
 
-  function maybeStartGuidedFlow() {
+  function startup() {
+
+    cleanHome();
+
+    decorateStep3();
+
 
     if (
       onboardingComplete()
     ) {
 
       restoreNormalProfile();
-
-      document.body.classList.remove(
-        "mana-v968-step2-mode"
-      );
-
 
       return;
 
@@ -1764,11 +1741,6 @@
     }
 
 
-    /*
-      If Intro is currently showing,
-      wait for ENTER MANA MOVEMENT.
-    */
-
     if (
       introOpen()
     ) {
@@ -1779,27 +1751,36 @@
 
 
     /*
-      This fixes the phone falling back
-      to the old Home screen.
+      New user/device:
+      show Step 1 first.
 
-      The new onboarding completion state
-      is device-local, so each device gets
-      this setup once.
+      Even if old profile data exists,
+      this version of the onboarding
+      should be seen once.
     */
 
     if (
-      onboardingActive() &&
-      profileComplete()
+      !onboardingActive()
     ) {
 
-      decorateStep2();
+      openStep1();
 
       return;
 
     }
 
 
-    openStep1();
+    if (
+      savedProfileComplete()
+    ) {
+
+      showStep2();
+
+    } else {
+
+      openStep1();
+
+    }
   }
 
 
@@ -1811,13 +1792,8 @@
 
     installStyles();
 
+    cleanHome();
 
-    /*
-      Capture phase is deliberate.
-
-      We validate Step 1 BEFORE the
-      original Profile save handler.
-    */
 
     document.addEventListener(
       "click",
@@ -1829,6 +1805,13 @@
     document.addEventListener(
       "click",
       handleIntroEnter,
+      true
+    );
+
+
+    document.addEventListener(
+      "click",
+      handleProfileNav,
       true
     );
 
@@ -1852,21 +1835,21 @@
     );
 
 
-    /*
-      The v9.8 membership screen already
-      exists in the DOM, so decorate it
-      regardless of whether it is open.
-    */
-
     [
-      400,
-      900,
-      1600
+      350,
+      800,
+      1500
     ].forEach(
       delay => {
 
         setTimeout(
-          decorateStep3,
+          () => {
+
+            cleanHome();
+
+            decorateStep3();
+
+          },
           delay
         );
 
@@ -1874,13 +1857,8 @@
     );
 
 
-    /*
-      Check logged-in / phone state after
-      the older startup scripts settle.
-    */
-
     setTimeout(
-      maybeStartGuidedFlow,
+      startup,
       1900
     );
 
@@ -1898,6 +1876,11 @@
     window
       .openManaOnboardingStep2 =
       showStep2;
+
+
+    console.log(
+      "[Mana v9.68.3] clean entry flow ready"
+    );
   }
 
 
