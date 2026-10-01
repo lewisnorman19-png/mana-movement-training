@@ -1,17 +1,26 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.71.1
-   TRUE MOBILE HORIZONTAL WORKOUT CAROUSEL
+   MANA MOVEMENT TRAINING v9.71.2
+   MOBILE GUIDED WORKOUT FLOW
 
-   PHONE ONLY
+   PHONE FLOW
 
-   - REAL HORIZONTAL SCROLLING
-   - NATIVE FINGER SWIPE
-   - CSS SCROLL SNAP
+   EXERCISE 1
+      →
+   EXERCISE 2
+      →
+   ...
+      →
+   SESSION FEEDBACK
+      →
+   NATIVE WORKOUT COMPLETE SCREEN
+
+   MOBILE
+   - TRUE HORIZONTAL SCROLL
    - ONE EXERCISE PER PAGE
-   - PREVIOUS / NEXT BUTTONS
-   - POSITION INDICATOR
-   - DOT NAVIGATION
-   - INFO BUTTONS SIDE BY SIDE
+   - FEEDBACK IS FINAL CAROUSEL PAGE
+   - NO FEEDBACK ON EXERCISE PAGES
+   - NO TIME / SUMMARY CLUTTER
+   - TIME + STATS SHOWN AT COMPLETION
    - DESKTOP UNCHANGED
    ========================================= */
 
@@ -19,7 +28,7 @@
   "use strict";
 
   const BUILD =
-    "97110";
+    "97120";
 
   const STYLE_ID =
     "mana-v971-mobile-workout-style";
@@ -75,7 +84,7 @@
   }
 
 
-  function cards() {
+  function exerciseCards() {
 
     return [
       ...document
@@ -87,19 +96,48 @@
   }
 
 
+  function feedbackPage() {
+
+    return document
+      .getElementById(
+        "manaV922Feedback"
+      );
+  }
+
+
+  function pages() {
+
+    const exercises =
+      exerciseCards();
+
+
+    const feedback =
+      feedbackPage();
+
+
+    return feedback
+      ? [
+          ...exercises,
+          feedback
+        ]
+      : exercises;
+  }
+
+
+  function exerciseCount() {
+
+    return exerciseCards()
+      .length;
+  }
+
+
   function signature() {
 
-    return cards()
+    return exerciseCards()
       .map(
         card =>
           card.dataset
             .exerciseName ||
-          card
-            .querySelector(
-              ".mana-v64-name"
-            )
-            ?.textContent
-            ?.trim() ||
           ""
       )
       .join("|");
@@ -111,7 +149,7 @@
   ) {
 
     const list =
-      cards();
+      pages();
 
 
     if (!list.length) {
@@ -157,6 +195,20 @@
   }
 
 
+  function isFeedbackIndex(
+    index
+  ) {
+
+    return (
+      Boolean(
+        feedbackPage()
+      ) &&
+      index ===
+        exerciseCount()
+    );
+  }
+
+
   /* =========================================
      STYLES
      ========================================= */
@@ -184,6 +236,7 @@
 
       #${TOP_NAV_ID},
       #${BOTTOM_NAV_ID}{
+
         display:none;
       }
 
@@ -191,53 +244,94 @@
       @media(max-width:700px){
 
         /* ===================================
-           COMPACT WORKOUT HEADER
+           WORKOUT SCREEN
            =================================== */
 
-        #manaStrengthV64Workout
-        .mana-v64-shell{
+        #manaStrengthV64Workout{
+
+          overflow-x:
+            hidden !important;
 
           padding:
-            14px
-            12px
             calc(
-              env(safe-area-inset-bottom)
+              env(
+                safe-area-inset-top
+              )
               +
-              22px
+              8px
+            )
+            10px
+            calc(
+              env(
+                safe-area-inset-bottom
+              )
+              +
+              14px
             ) !important;
         }
 
 
         #manaStrengthV64Workout
+        .mana-v64-shell{
+
+          width:
+            100% !important;
+
+          max-width:
+            none !important;
+
+          padding:
+            0 !important;
+        }
+
+
+        /* ===================================
+           VERY COMPACT HEADER
+           =================================== */
+
+        #manaStrengthV64Workout
         .mana-v64-head{
 
           margin-bottom:
-            7px !important;
+            6px !important;
+
+          align-items:
+            center !important;
+        }
+
+
+        #manaStrengthV64Workout
+        .mana-v64-head
+        .pill{
+
+          font-size:
+            8px !important;
         }
 
 
         #manaStrengthV64Workout
         #manaV64Title{
 
-          margin-top:
-            4px !important;
+          margin:
+            3px
+            0
+            1px !important;
 
           font-size:
-            25px !important;
+            22px !important;
 
           line-height:
-            1.05 !important;
+            1 !important;
         }
 
 
         #manaStrengthV64Workout
         #manaV64Subtitle{
 
-          margin-top:
-            3px !important;
+          margin:0 !important;
 
           font-size:
-            11px !important;
+            10px !important;
         }
 
 
@@ -245,85 +339,68 @@
         .mana-v64-close{
 
           width:
-            38px !important;
+            36px !important;
 
           height:
-            38px !important;
+            36px !important;
 
           flex:
-            0 0 38px !important;
+            0
+            0
+            36px !important;
 
           font-size:
-            20px !important;
+            19px !important;
         }
 
 
         /* ===================================
-           TIME + SETS ONLY
+           REMOVE WORKOUT STAT CLUTTER
+
+           Time, sets, volume and completion
+           belong on Workout Complete.
            =================================== */
 
         #manaStrengthV64Workout
         .mana-v64-summary{
 
-          grid-template-columns:
-            1fr 1fr !important;
-
-          gap:
-            7px !important;
-
-          margin:
-            8px
-            0
-            7px !important;
-        }
-
-
-        #manaStrengthV64Workout
-        .mana-v64-stat{
-
-          padding:
-            9px
-            10px !important;
-
-          border-radius:
-            12px !important;
-        }
-
-
-        #manaStrengthV64Workout
-        .mana-v64-stat span{
-
-          margin-bottom:
-            2px !important;
-
-          font-size:
-            9px !important;
-        }
-
-
-        #manaStrengthV64Workout
-        .mana-v64-stat strong{
-
-          font-size:
-            18px !important;
+          display:
+            none !important;
         }
 
 
         #manaStrengthV64Workout
         .mana-v64-progress{
 
-          height:
-            4px !important;
+          display:
+            none !important;
+        }
 
-          margin:
-            0
-            0
-            9px !important;
+
+        /*
+          v9.20 helper buttons aren't needed
+          in the normal guided exercise flow.
+        */
+
+        #manaStrengthV64Workout
+        #manaV920TickWorkout,
+
+        #manaStrengthV64Workout
+        .mana-v920-workout-all,
+
+        #manaStrengthV64Workout
+        #manaV920Pause,
+
+        #manaStrengthV64Workout
+        .mana-v920-pause{
+
+          display:
+            none !important;
         }
 
 
         /* ===================================
-           EXERCISE POSITION
+           PAGE POSITION
            =================================== */
 
         #${TOP_NAV_ID}{
@@ -333,18 +410,18 @@
           margin:
             0
             0
-            8px;
+            6px;
 
           padding:
-            9px
-            11px;
+            7px
+            10px;
 
           border:
             1px solid
             #292820;
 
           border-radius:
-            12px;
+            11px;
 
           background:
             #0b0b0a;
@@ -372,7 +449,7 @@
             #f3d875;
 
           font-size:
-            10px;
+            9px;
 
           font-weight:
             950;
@@ -388,10 +465,10 @@
         .mana-v971-swipe{
 
           color:
-            #666;
+            #606060;
 
           font-size:
-            9px;
+            8px;
 
           font-weight:
             800;
@@ -409,20 +486,20 @@
             center;
 
           gap:
-            5px;
+            4px;
 
           margin-top:
-            7px;
+            5px;
         }
 
 
         .mana-v971-dot{
 
           width:
-            7px;
+            6px;
 
           height:
-            7px;
+            6px;
 
           min-width:0;
 
@@ -434,18 +511,22 @@
             999px;
 
           background:
-            #363636;
+            #353535;
 
           transition:
-            width .18s ease,
-            background .18s ease;
+            width
+            .18s
+            ease,
+            background
+            .18s
+            ease;
         }
 
 
         .mana-v971-dot.active{
 
           width:
-            20px;
+            17px;
 
           background:
             #f3d875;
@@ -459,8 +540,29 @@
         }
 
 
+        .mana-v971-dot.feedback{
+
+          border:
+            1px solid
+            #7d6825;
+
+          background:
+            transparent;
+        }
+
+
+        .mana-v971-dot.feedback.active{
+
+          width:
+            17px;
+
+          background:
+            #f3d875;
+        }
+
+
         /* ===================================
-           REAL HORIZONTAL CAROUSEL
+           TRUE HORIZONTAL PAGES
            =================================== */
 
         #manaV64Exercises{
@@ -472,16 +574,16 @@
             flex !important;
 
           align-items:
-            flex-start;
+            stretch;
 
           gap:
-            10px;
+            8px;
 
           overflow-x:
             auto !important;
 
           overflow-y:
-            hidden;
+            hidden !important;
 
           scroll-snap-type:
             x mandatory;
@@ -512,6 +614,10 @@
         }
 
 
+        /* ===================================
+           EXERCISE PAGE
+           =================================== */
+
         #manaV64Exercises
         .mana-v64-card{
 
@@ -519,7 +625,8 @@
             block !important;
 
           flex:
-            0 0
+            0
+            0
             calc(
               100% - 1px
             );
@@ -544,10 +651,10 @@
             0 !important;
 
           padding:
-            14px !important;
+            12px !important;
 
           border-radius:
-            18px !important;
+            16px !important;
 
           box-sizing:
             border-box;
@@ -558,10 +665,10 @@
         .mana-v64-name{
 
           font-size:
-            20px !important;
+            19px !important;
 
           line-height:
-            1.08 !important;
+            1.05 !important;
         }
 
 
@@ -569,15 +676,15 @@
         .mana-v64-target{
 
           margin-top:
-            4px !important;
+            3px !important;
 
           font-size:
-            12px !important;
+            11px !important;
         }
 
 
         /* ===================================
-           TWO BUTTONS ALWAYS SIDE BY SIDE
+           INFO BUTTONS
            =================================== */
 
         #manaV64Exercises
@@ -590,10 +697,10 @@
             minmax(0,1fr) !important;
 
           gap:
-            6px !important;
+            5px !important;
 
           margin-top:
-            9px !important;
+            7px !important;
         }
 
 
@@ -607,14 +714,14 @@
             0 !important;
 
           min-height:
-            40px !important;
+            36px !important;
 
           padding:
-            7px
+            5px
             4px !important;
 
           font-size:
-            9px !important;
+            8px !important;
 
           line-height:
             1.15 !important;
@@ -624,53 +731,60 @@
         }
 
 
-        /* ===================================
-           PREVIOUS & PROGRESSION PANEL
-           =================================== */
-
         #manaV64Exercises
         .mana-v970-history{
 
           margin-top:
-            7px !important;
+            6px !important;
 
           padding:
-            11px !important;
+            9px !important;
+        }
+
+
+        #manaV64Exercises
+        .mana-v970-history-label{
+
+          font-size:
+            8px !important;
         }
 
 
         #manaV64Exercises
         .mana-v970-history-copy{
 
+          margin-top:
+            3px !important;
+
           font-size:
-            12px !important;
+            11px !important;
 
           line-height:
-            1.4 !important;
+            1.35 !important;
         }
 
 
         /* ===================================
-           SET TABLE
+           SETS
            =================================== */
 
         #manaV64Exercises
         .mana-v64-table-head{
 
           grid-template-columns:
-            25px
+            23px
             minmax(0,1fr)
             minmax(0,1fr)
-            38px !important;
+            36px !important;
 
           gap:
-            5px !important;
+            4px !important;
 
           margin-top:
-            12px !important;
+            9px !important;
 
           font-size:
-            9px !important;
+            8px !important;
         }
 
 
@@ -678,10 +792,210 @@
         .mana-v64-set{
 
           grid-template-columns:
-            25px
+            23px
             minmax(0,1fr)
             minmax(0,1fr)
-            38px !important;
+            36px !important;
+
+          gap:
+            4px !important;
+
+          margin-top:
+            5px !important;
+        }
+
+
+        #manaV64Exercises
+        .mana-v64-set-number{
+
+          font-size:
+            10px !important;
+        }
+
+
+        #manaV64Exercises
+        .mana-v64-set input{
+
+          min-height:
+            36px !important;
+
+          padding:
+            6px
+            4px !important;
+
+          border-radius:
+            9px !important;
+
+          font-size:
+            14px !important;
+        }
+
+
+        #manaV64Exercises
+        .mana-v64-check{
+
+          width:
+            36px !important;
+
+          height:
+            36px !important;
+
+          border-radius:
+            9px !important;
+        }
+
+
+        #manaV64Exercises
+        .mana-v970-adjust{
+
+          margin-top:
+            4px !important;
+
+          padding:
+            2px
+            0 !important;
+
+          font-size:
+            9px !important;
+        }
+
+
+        #manaV64Exercises
+        .mana-v64-controls{
+
+          margin-top:
+            5px !important;
+
+          gap:
+            5px !important;
+        }
+
+
+        #manaV64Exercises
+        .mana-v64-small{
+
+          min-height:
+            35px !important;
+
+          font-size:
+            10px !important;
+        }
+
+
+        /* ===================================
+           SESSION FEEDBACK PAGE
+
+           This is moved into the horizontal
+           workout carousel as the final page.
+           =================================== */
+
+        #manaV64Exercises
+        #manaV922Feedback{
+
+          display:
+            block !important;
+
+          flex:
+            0
+            0
+            calc(
+              100% - 1px
+            );
+
+          width:
+            calc(
+              100% - 1px
+            );
+
+          max-width:
+            calc(
+              100% - 1px
+            );
+
+          min-height:
+            0;
+
+          scroll-snap-align:
+            start;
+
+          scroll-snap-stop:
+            always;
+
+          margin:
+            0 !important;
+
+          padding:
+            17px
+            14px !important;
+
+          border:
+            1px solid
+            #50451f !important;
+
+          border-radius:
+            17px !important;
+
+          background:
+            linear-gradient(
+              145deg,
+              #15130c,
+              #090909
+            ) !important;
+
+          box-sizing:
+            border-box;
+        }
+
+
+        #manaV922Feedback
+        .mana-v922-kicker{
+
+          font-size:
+            9px !important;
+        }
+
+
+        #manaV922Feedback
+        .mana-v922-title{
+
+          margin-top:
+            5px !important;
+
+          font-size:
+            21px !important;
+        }
+
+
+        #manaV922Feedback
+        .mana-v922-copy{
+
+          margin-top:
+            4px !important;
+
+          font-size:
+            10px !important;
+        }
+
+
+        #manaV922Feedback
+        .mana-v922-label{
+
+          margin-top:
+            13px !important;
+
+          font-size:
+            9px !important;
+        }
+
+
+        #manaV922Feedback
+        .mana-v922-effort{
+
+          grid-template-columns:
+            repeat(
+              4,
+              minmax(0,1fr)
+            ) !important;
 
           gap:
             5px !important;
@@ -691,62 +1005,84 @@
         }
 
 
-        #manaV64Exercises
-        .mana-v64-set-number{
-
-          font-size:
-            11px !important;
-        }
-
-
-        #manaV64Exercises
-        .mana-v64-set input{
+        #manaV922Feedback
+        .mana-v922-effort
+        button{
 
           min-height:
             39px !important;
 
           padding:
-            7px
-            4px !important;
-
-          border-radius:
-            10px !important;
+            6px
+            3px !important;
 
           font-size:
-            15px !important;
+            9px !important;
         }
 
 
-        #manaV64Exercises
-        .mana-v64-check{
+        #manaV922Feedback
+        .mana-v922-note{
 
-          width:
-            38px !important;
-
-          height:
-            38px !important;
-
-          border-radius:
-            10px !important;
-        }
-
-
-        #manaV64Exercises
-        .mana-v970-adjust{
+          min-height:
+            92px !important;
 
           margin-top:
             6px !important;
 
           padding:
-            3px 0 !important;
+            10px !important;
 
           font-size:
-            10px !important;
+            13px !important;
+        }
+
+
+        /*
+          Custom finish button added to the
+          feedback page.
+        */
+
+        .mana-v971-finish{
+
+          width:
+            100%;
+
+          min-height:
+            48px;
+
+          margin-top:
+            12px;
+
+          border:
+            0;
+
+          border-radius:
+            13px;
+
+          background:
+            linear-gradient(
+              135deg,
+              #f3d875,
+              #c99d36
+            );
+
+          color:
+            #090909;
+
+          font-size:
+            12px;
+
+          font-weight:
+            950;
+
+          letter-spacing:
+            .03em;
         }
 
 
         /* ===================================
-           PREVIOUS / NEXT
+           BOTTOM PREVIOUS / NEXT
            =================================== */
 
         #${BOTTOM_NAV_ID}{
@@ -758,24 +1094,24 @@
             1fr;
 
           gap:
-            7px;
+            6px;
 
           margin-top:
-            9px;
+            7px;
         }
 
 
         .mana-v971-nav-btn{
 
           min-height:
-            44px;
+            41px;
 
           border:
             1px solid
             #37352b;
 
           border-radius:
-            12px;
+            11px;
 
           background:
             #10100e;
@@ -784,7 +1120,7 @@
             #d5d5d5;
 
           font-size:
-            10px;
+            9px;
 
           font-weight:
             950;
@@ -812,51 +1148,78 @@
 
 
         /* ===================================
-           COMPLETE ONLY AT END
+           NATIVE COMPLETE BUTTON
+
+           Hidden. Feedback finish button
+           triggers it programmatically.
            =================================== */
 
         #manaStrengthV64Workout
         #manaV64Complete{
 
-          display:
+          position:
+            absolute !important;
+
+          left:
+            -9999px !important;
+
+          width:
+            1px !important;
+
+          height:
+            1px !important;
+
+          min-height:
+            0 !important;
+
+          margin:
+            0 !important;
+
+          padding:
+            0 !important;
+
+          opacity:
+            0 !important;
+
+          pointer-events:
             none !important;
         }
 
 
-        #manaStrengthV64Workout.mana-v971-on-last
-        #manaV64Complete{
-
-          display:
-            block !important;
+        #manaStrengthV64Workout
+        #manaV64Status{
 
           min-height:
-            52px !important;
+            0 !important;
 
-          margin-top:
-            10px !important;
+          margin:0 !important;
 
           font-size:
-            15px !important;
+            10px !important;
         }
 
 
         /* ===================================
-           FORM GUIDE COMPACT
+           FORM GUIDE
            =================================== */
 
         #manaV970FormGuide{
 
           padding:
             calc(
-              env(safe-area-inset-top)
+              env(
+                safe-area-inset-top
+              )
               +
-              9px
+              8px
             )
-            9px
+            8px
             calc(
-              env(safe-area-inset-bottom)
+              env(
+                safe-area-inset-bottom
+              )
               +
-              15px
+              12px
             ) !important;
         }
 
@@ -865,11 +1228,11 @@
         .mana-v970-guide{
 
           padding:
-            14px
-            11px !important;
+            13px
+            10px !important;
 
           border-radius:
-            18px !important;
+            17px !important;
         }
 
 
@@ -877,7 +1240,7 @@
         .mana-v970-guide-title{
 
           font-size:
-            22px !important;
+            21px !important;
         }
 
 
@@ -885,10 +1248,10 @@
         .mana-v970-poses{
 
           gap:
-            6px !important;
+            5px !important;
 
           margin-top:
-            12px !important;
+            10px !important;
         }
 
 
@@ -896,10 +1259,10 @@
         .mana-v970-pose{
 
           min-height:
-            165px !important;
+            155px !important;
 
           padding:
-            6px !important;
+            5px !important;
         }
 
 
@@ -907,7 +1270,7 @@
         .mana-v970-figure{
 
           height:
-            143px !important;
+            135px !important;
         }
 
 
@@ -915,10 +1278,21 @@
         .mana-v970-cues{
 
           margin-top:
-            10px !important;
+            9px !important;
 
           padding:
-            12px !important;
+            10px !important;
+        }
+
+
+        #manaV970FormGuide
+        .mana-v970-cues h3{
+
+          margin-bottom:
+            5px !important;
+
+          font-size:
+            14px !important;
         }
 
 
@@ -926,10 +1300,10 @@
         .mana-v970-cues ul{
 
           font-size:
-            12px !important;
+            11px !important;
 
           line-height:
-            1.45 !important;
+            1.4 !important;
         }
 
       }
@@ -945,6 +1319,172 @@
 
 
   /* =========================================
+     ENSURE EXISTING FEEDBACK EXISTS
+     ========================================= */
+
+  function ensureFeedback() {
+
+    if (
+      feedbackPage()
+    ) {
+
+      return true;
+    }
+
+
+    if (
+      typeof
+        window
+          .refreshManaWorkoutFeedback ===
+      "function"
+    ) {
+
+      window
+        .refreshManaWorkoutFeedback();
+    }
+
+
+    return Boolean(
+      feedbackPage()
+    );
+  }
+
+
+  /* =========================================
+     MOVE FEEDBACK INTO CAROUSEL
+     ========================================= */
+
+  function mountFeedbackPage() {
+
+    const exerciseHolder =
+      holder();
+
+
+    if (
+      !exerciseHolder
+    ) {
+
+      return;
+    }
+
+
+    ensureFeedback();
+
+
+    const feedback =
+      feedbackPage();
+
+
+    if (
+      !feedback
+    ) {
+
+      return;
+    }
+
+
+    /*
+      v9.22 normally places this above
+      Complete Workout.
+
+      On phone we move the SAME element
+      into the carousel. No duplicate form,
+      no duplicate feedback data.
+    */
+
+    if (
+      feedback.parentElement !==
+      exerciseHolder
+    ) {
+
+      exerciseHolder
+        .appendChild(
+          feedback
+        );
+    }
+
+
+    /*
+      Add our Finish button only once.
+    */
+
+    let finish =
+      feedback
+        .querySelector(
+          ".mana-v971-finish"
+        );
+
+
+    if (!finish) {
+
+      finish =
+        document.createElement(
+          "button"
+        );
+
+
+      finish.type =
+        "button";
+
+
+      finish.className =
+        "mana-v971-finish";
+
+
+      finish.textContent =
+        "COMPLETE WORKOUT →";
+
+
+      finish.addEventListener(
+        "click",
+        () => {
+
+          const nativeComplete =
+            document
+              .getElementById(
+                "manaV64Complete"
+              );
+
+
+          if (
+            !nativeComplete
+          ) {
+
+            return;
+          }
+
+
+          /*
+            Important:
+            v9.22 listens to this native
+            completion click and captures
+            the feedback before the workout
+            is saved.
+
+            v9.20 also captures workout
+            timing here.
+
+            v6.4 completes the workout.
+
+            v9.15 then opens the real
+            Workout Complete screen.
+          */
+
+          nativeComplete.click();
+
+        }
+      );
+
+
+      feedback
+        .appendChild(
+          finish
+        );
+    }
+  }
+
+
+  /* =========================================
      NAV ELEMENTS
      ========================================= */
 
@@ -954,16 +1494,19 @@
       holder();
 
 
-    if (!exerciseHolder) {
+    if (
+      !exerciseHolder
+    ) {
 
       return;
     }
 
 
     let top =
-      document.getElementById(
-        TOP_NAV_ID
-      );
+      document
+        .getElementById(
+          TOP_NAV_ID
+        );
 
 
     if (!top) {
@@ -987,9 +1530,10 @@
 
 
     let bottom =
-      document.getElementById(
-        BOTTOM_NAV_ID
-      );
+      document
+        .getElementById(
+          BOTTOM_NAV_ID
+        );
 
 
     if (!bottom) {
@@ -1020,7 +1564,11 @@
   function renderTop() {
 
     const list =
-      cards();
+      pages();
+
+
+    const exercises =
+      exerciseCards();
 
 
     const nav =
@@ -1039,6 +1587,12 @@
     }
 
 
+    const onFeedback =
+      isFeedbackIndex(
+        activeIndex
+      );
+
+
     nav.innerHTML = `
 
       <div
@@ -1048,10 +1602,18 @@
         <div
           class="mana-v971-position"
         >
-          Exercise
-          ${activeIndex + 1}
-          of
-          ${list.length}
+
+          ${
+            onFeedback
+              ? "Session Feedback"
+              :
+                `Exercise ${
+                  activeIndex + 1
+                } of ${
+                  exercises.length
+                }`
+          }
+
         </div>
 
 
@@ -1068,7 +1630,7 @@
         class="mana-v971-dots"
       >
 
-        ${list
+        ${exercises
           .map(
             (
               card,
@@ -1079,12 +1641,14 @@
                 type="button"
                 class="
                   mana-v971-dot
+
                   ${
                     index ===
                     activeIndex
                       ? "active"
                       : ""
                   }
+
                   ${
                     exerciseDone(
                       card
@@ -1094,12 +1658,44 @@
                   }
                 "
                 data-v971-index="${index}"
-                aria-label="Exercise ${index + 1}"
+                aria-label="
+                  Exercise
+                  ${index + 1}
+                "
               ></button>
 
             `
           )
           .join("")}
+
+
+        ${
+          feedbackPage()
+            ? `
+
+              <button
+                type="button"
+                class="
+                  mana-v971-dot
+                  feedback
+
+                  ${
+                    onFeedback
+                      ? "active"
+                      : ""
+                  }
+                "
+                data-v971-index="${
+                  exercises.length
+                }"
+                aria-label="
+                  Session feedback
+                "
+              ></button>
+
+            `
+            : ""
+        }
 
       </div>
 
@@ -1137,7 +1733,7 @@
   function renderBottom() {
 
     const list =
-      cards();
+      pages();
 
 
     const nav =
@@ -1154,6 +1750,19 @@
 
       return;
     }
+
+
+    const onFeedback =
+      isFeedbackIndex(
+        activeIndex
+      );
+
+
+    const nextLabel =
+      activeIndex ===
+      exerciseCount() - 1
+        ? "SESSION FEEDBACK ›"
+        : "NEXT ›";
 
 
     nav.innerHTML = `
@@ -1180,13 +1789,16 @@
         "
         id="manaV971Next"
         ${
-          activeIndex ===
-          list.length - 1
+          onFeedback
             ? "disabled"
             : ""
         }
       >
-        NEXT ›
+        ${
+          onFeedback
+            ? "FINISH BELOW"
+            : nextLabel
+        }
       </button>
 
     `;
@@ -1226,16 +1838,18 @@
 
 
   /* =========================================
-     STATE UPDATE
+     STATE
      ========================================= */
 
   function updateState() {
 
     const list =
-      cards();
+      pages();
 
 
-    if (!list.length) {
+    if (
+      !list.length
+    ) {
 
       return;
     }
@@ -1247,15 +1861,6 @@
       );
 
 
-    workoutScreen()
-      ?.classList
-      .toggle(
-        "mana-v971-on-last",
-        activeIndex ===
-          list.length - 1
-      );
-
-
     renderTop();
 
     renderBottom();
@@ -1263,49 +1868,8 @@
 
 
   /* =========================================
-     TRUE HORIZONTAL NAVIGATION
+     HORIZONTAL NAVIGATION
      ========================================= */
-
-  function pageWidth() {
-
-    const exerciseHolder =
-      holder();
-
-
-    const first =
-      cards()[0];
-
-
-    if (
-      !exerciseHolder ||
-      !first
-    ) {
-
-      return 0;
-    }
-
-
-    const styles =
-      getComputedStyle(
-        exerciseHolder
-      );
-
-
-    const gap =
-      parseFloat(
-        styles.columnGap ||
-        styles.gap ||
-        0
-      ) || 0;
-
-
-    return (
-      first.getBoundingClientRect()
-        .width +
-      gap
-    );
-  }
-
 
   function goTo(
     requestedIndex,
@@ -1320,16 +1884,11 @@
     }
 
 
-    const exerciseHolder =
-      holder();
-
-
     const list =
-      cards();
+      pages();
 
 
     if (
-      !exerciseHolder ||
       !list.length
     ) {
 
@@ -1343,7 +1902,7 @@
       );
 
 
-    const card =
+    const page =
       list[index];
 
 
@@ -1351,12 +1910,8 @@
       index;
 
 
-    /*
-      scrollIntoView with inline:start
-      gives us genuine horizontal movement.
-    */
+    page.scrollIntoView({
 
-    card.scrollIntoView({
       behavior:
         smooth
           ? "smooth"
@@ -1367,6 +1922,7 @@
 
       inline:
         "start"
+
     });
 
 
@@ -1375,7 +1931,7 @@
 
 
   /* =========================================
-     DETECT NATIVE SWIPE POSITION
+     NATIVE SWIPE DETECTION
      ========================================= */
 
   function updateIndexFromScroll() {
@@ -1385,7 +1941,7 @@
 
 
     const list =
-      cards();
+      pages();
 
 
     if (
@@ -1412,12 +1968,12 @@
 
     list.forEach(
       (
-        card,
+        page,
         index
       ) => {
 
         const rect =
-          card
+          page
             .getBoundingClientRect();
 
 
@@ -1455,10 +2011,6 @@
       updateState();
 
     } else {
-
-      /*
-        Still refresh completion dots.
-      */
 
       renderTop();
     }
@@ -1500,18 +2052,23 @@
       holder();
 
 
-    const list =
-      cards();
-
-
     if (
       !exerciseHolder ||
-      !list.length
+      !exerciseCards()
+        .length
     ) {
 
       return;
     }
 
+
+    /*
+      Let v9.22 build its normal feedback
+      form, then move the real form into
+      our carousel.
+    */
+
+    mountFeedbackPage();
 
     ensureNavigation();
 
@@ -1538,10 +2095,6 @@
       sig;
 
 
-    /*
-      Only install once per current holder.
-    */
-
     if (
       exerciseHolder.dataset
         .v971ScrollReady !==
@@ -1567,11 +2120,6 @@
     updateState();
 
 
-    /*
-      On a fresh workout make sure
-      exercise 1 is aligned perfectly.
-    */
-
     if (reset) {
 
       requestAnimationFrame(
@@ -1596,7 +2144,8 @@
       80,
       220,
       500,
-      900
+      900,
+      1400
     ].forEach(
       (
         delay,
@@ -1704,6 +2253,18 @@
 
 
     window.addEventListener(
+      "mana:workout-feedback-saved",
+      () => {
+
+        scheduleSetup(
+          false
+        );
+
+      }
+    );
+
+
+    window.addEventListener(
       "resize",
       handleResize
     );
@@ -1720,7 +2281,7 @@
     */
 
     [
-      600,
+      650,
       1400,
       2300
     ].forEach(
@@ -1757,7 +2318,7 @@
 
 
     console.log(
-      "[Mana v9.71.1] true horizontal carousel ready"
+      "[Mana v9.71.2] guided mobile workout ready"
     );
   }
 
