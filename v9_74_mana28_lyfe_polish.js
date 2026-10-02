@@ -1,44 +1,53 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.74.0
+   MANA MOVEMENT TRAINING v9.74.1
    MANA 28 + MANA LYFE PREMIUM POLISH
 
-   - MATCHES MANA STRENGTH OVERVIEW LANGUAGE
-   - OPEN / CLEAN INTRO
-   - PREMIUM LAUNCH CARDS
-   - 2 COLUMN DESKTOP
-   - 1 COLUMN MOBILE
-   - FULL-SCREEN GUIDED DAY EXPERIENCE
-   - EDGE-TO-EDGE MOBILE WORKOUT
-   - KEEPS v9.73 PROGRAM LOGIC UNTOUCHED
+   FIXES
+   - MATCHES MANA STRENGTH OVERVIEW
+   - SELF-HEALS AFTER v9.73 RE-RENDERS
+   - MUTATION OBSERVER FOR PHONE
+   - FULL SCREEN WORKOUT
+   - MOBILE ONE-COLUMN OVERVIEW
+   - EDGE-TO-EDGE WORKOUT EXPERIENCE
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "97400";
+  const BUILD = "97410";
 
   const STYLE_ID =
     "mana-v974-m28-lyfe-polish-style";
 
+  let observer = null;
+  let modalObserver = null;
+  let refreshTimer = null;
+
 
   /* =========================================
-     PROGRAM HELPERS
+     HELPERS
      ========================================= */
+
+  function shell() {
+
+    return document
+      .getElementById(
+        "manaV83ProgramShell"
+      );
+  }
+
 
   function shellOpen() {
 
     return Boolean(
-      document
-        .getElementById(
-          "manaV83ProgramShell"
-        )
+      shell()
         ?.classList
         .contains("open")
     );
   }
 
 
-  function title() {
+  function programTitle() {
 
     return (
       document
@@ -53,7 +62,7 @@
   }
 
 
-  function tab() {
+  function activeTab() {
 
     return (
       document
@@ -68,27 +77,47 @@
   }
 
 
-  function isMana28Overview() {
+  function isMana28() {
 
     return (
       shellOpen() &&
-      title() === "MANA 28" &&
-      tab() === "overview"
+      programTitle() ===
+        "MANA 28"
     );
   }
 
 
-  function isLyfeOverview() {
+  function isLyfe() {
 
-    const t = title();
+    const title =
+      programTitle();
+
 
     return (
       shellOpen() &&
       (
-        t === "MANA LYFE" ||
-        t === "MANA LIFE"
-      ) &&
-      tab() === "overview"
+        title === "MANA LYFE" ||
+        title === "MANA LIFE"
+      )
+    );
+  }
+
+
+  function relevantProgram() {
+
+    return (
+      isMana28() ||
+      isLyfe()
+    );
+  }
+
+
+  function isOverview() {
+
+    return (
+      relevantProgram() &&
+      activeTab() ===
+        "overview"
     );
   }
 
@@ -140,8 +169,7 @@
     style.textContent = `
 
       /* =====================================
-         OVERVIEW INTRO
-         MATCH STRENGTH STYLE
+         OVERVIEW
          ===================================== */
 
       #manaV83Content
@@ -222,6 +250,9 @@
         max-width:
           680px !important;
 
+        margin:
+          0 !important;
+
         color:
           #b8b8b8 !important;
 
@@ -233,12 +264,14 @@
       }
 
 
-      /* =====================================
-         OVERVIEW GRID
-         ===================================== */
-
       #manaV83Content
       .mana-v973-grid{
+
+        width:
+          100% !important;
+
+        max-width:
+          860px !important;
 
         display:
           grid !important;
@@ -251,15 +284,8 @@
 
         gap:
           16px !important;
-
-        max-width:
-          860px !important;
       }
 
-
-      /* =====================================
-         PREMIUM HUB CARDS
-         ===================================== */
 
       #manaV83Content
       .mana-v973-hub-card{
@@ -285,12 +311,6 @@
         column-gap:
           18px !important;
 
-        row-gap:
-          0 !important;
-
-        align-items:
-          start !important;
-
         padding:
           24px !important;
 
@@ -313,39 +333,18 @@
           0
           14px
           32px
-          rgba(
-            0,
-            0,
-            0,
-            .22
-          ),
+          rgba(0,0,0,.22),
           inset
           0
           1px
           0
-          rgba(
-            255,
-            255,
-            255,
-            .02
-          ) !important;
-
-        transition:
-          transform
-          .14s
-          ease,
-          border-color
-          .18s
-          ease,
-          box-shadow
-          .18s
-          ease !important;
+          rgba(255,255,255,.02) !important;
 
         overflow:
           hidden !important;
 
-        cursor:
-          pointer !important;
+        box-sizing:
+          border-box !important;
       }
 
 
@@ -361,8 +360,7 @@
         left:22px;
         right:22px;
 
-        height:
-          2px;
+        height:2px;
 
         background:
           linear-gradient(
@@ -371,58 +369,8 @@
             #d9ba55,
             transparent
           );
-
-        opacity:
-          .9;
       }
 
-
-      #manaV83Content
-      .mana-v973-hub-card:hover{
-
-        transform:
-          translateY(
-            -2px
-          ) !important;
-
-        border-color:
-          #7d6726 !important;
-
-        box-shadow:
-          0
-          18px
-          36px
-          rgba(
-            0,
-            0,
-            0,
-            .28
-          ),
-          0
-          0
-          0
-          1px
-          rgba(
-            217,
-            186,
-            85,
-            .05
-          )
-          inset !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-hub-card:active{
-
-        transform:
-          scale(
-            .988
-          ) !important;
-      }
-
-
-      /* icon inserted by JS */
 
       .mana-v974-icon{
 
@@ -454,25 +402,13 @@
             #c89f2f
           );
 
-        color:
-          #111;
+        color:#111;
 
         font-size:
           20px;
 
         font-weight:
           950;
-
-        box-shadow:
-          0
-          10px
-          24px
-          rgba(
-            217,
-            186,
-            85,
-            .16
-          );
       }
 
 
@@ -481,12 +417,7 @@
       strong{
 
         grid-column:
-          2;
-
-        display:
-          block !important;
-
-        margin:0 !important;
+          2 !important;
 
         color:
           #fff !important;
@@ -507,10 +438,7 @@
       span{
 
         grid-column:
-          2;
-
-        display:
-          block !important;
+          2 !important;
 
         margin-top:
           11px !important;
@@ -531,13 +459,10 @@
       b{
 
         grid-column:
-          2;
+          2 !important;
 
         align-self:
-          end;
-
-        display:
-          block !important;
+          end !important;
 
         margin-top:
           16px !important;
@@ -550,25 +475,20 @@
 
         font-weight:
           950 !important;
-
-        letter-spacing:
-          .05em !important;
       }
 
 
       /* =====================================
-         PROGRAM SCREEN POLISH
+         PROGRAM CARDS
          ===================================== */
 
       #manaV83Content
       .mana-v973-program-head{
 
         max-width:
-          860px;
+          860px !important;
 
-        margin:
-          0
-          0
+        margin-bottom:
           20px !important;
       }
 
@@ -578,8 +498,7 @@
 
         margin:
           8px
-          0
-          8px !important;
+          0 !important;
 
         color:#fff;
 
@@ -588,31 +507,14 @@
 
         font-weight:
           950 !important;
-
-        line-height:
-          1.05 !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-program-head p{
-
-        max-width:
-          650px;
-
-        color:
-          #aaa !important;
-
-        font-size:
-          14px !important;
-
-        line-height:
-          1.55 !important;
       }
 
 
       #manaV83Content
       .mana-v973-days{
+
+        width:
+          100% !important;
 
         max-width:
           860px !important;
@@ -655,77 +557,24 @@
             #0a0a09
           ) !important;
 
-        box-shadow:
-          0
-          14px
-          30px
-          rgba(
-            0,
-            0,
-            0,
-            .18
-          ) !important;
+        box-sizing:
+          border-box !important;
       }
 
 
       #manaV83Content
       .mana-v973-day h3{
 
-        margin:
-          9px
-          0
-          6px !important;
-
         font-size:
           27px !important;
 
         font-weight:
           950 !important;
-
-        line-height:
-          1.06 !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-preview{
-
-        margin-top:
-          17px !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-preview-row{
-
-        padding:
-          10px
-          0 !important;
-
-        font-size:
-          13px !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-start{
-
-        min-height:
-          52px !important;
-
-        margin-top:
-          18px !important;
-
-        border-radius:
-          15px !important;
-
-        font-size:
-          13px !important;
       }
 
 
       /* =====================================
-         FULL-SCREEN GUIDED WORKOUT
+         FULL SCREEN WORKOUT
          ===================================== */
 
       #manaV973Workout{
@@ -740,6 +589,9 @@
           60000 !important;
 
         padding:
+          0 !important;
+
+        margin:
           0 !important;
 
         overflow:
@@ -761,7 +613,7 @@
       .mana-v973-work-shell{
 
         width:
-          100% !important;
+          100vw !important;
 
         max-width:
           none !important;
@@ -775,35 +627,28 @@
         margin:
           0 !important;
 
+        padding:
+          calc(
+            env(
+              safe-area-inset-top
+            ) + 12px
+          )
+          18px
+          calc(
+            env(
+              safe-area-inset-bottom
+            ) + 12px
+          ) !important;
+
         display:
           grid !important;
 
         grid-template-rows:
           auto
           auto
-          minmax(
-            0,
-            1fr
-          )
+          minmax(0,1fr)
           auto
           auto !important;
-
-        padding:
-          calc(
-            env(
-              safe-area-inset-top
-            )
-            +
-            14px
-          )
-          18px
-          calc(
-            env(
-              safe-area-inset-bottom
-            )
-            +
-            14px
-          ) !important;
 
         box-sizing:
           border-box !important;
@@ -811,8 +656,7 @@
         background:
           radial-gradient(
             circle
-            at
-            top,
+            at top,
             rgba(
               211,
               176,
@@ -826,10 +670,6 @@
       }
 
 
-      /* =====================================
-         FULL PAGE HEADER
-         ===================================== */
-
       #manaV973Workout
       .mana-v973-work-head{
 
@@ -837,32 +677,17 @@
           min(
             920px,
             100%
-          );
+          ) !important;
 
         margin:
-          0
-          auto;
+          0 auto !important;
 
-        padding:
-          0
-          0
-          12px !important;
-
-        display:
-          flex !important;
-
-        justify-content:
-          space-between !important;
-
-        align-items:
-          flex-start !important;
-
-        gap:
-          16px !important;
+        padding-bottom:
+          10px !important;
 
         border-bottom:
           1px solid
-          #24231e;
+          #26241d !important;
       }
 
 
@@ -874,39 +699,11 @@
           0
           0 !important;
 
-        color:#fff;
-
         font-size:
           30px !important;
 
         font-weight:
           950 !important;
-
-        line-height:
-          1.04 !important;
-      }
-
-
-      #manaV973Workout
-      .mana-v973-close{
-
-        width:
-          44px !important;
-
-        height:
-          44px !important;
-
-        flex:
-          0
-          0
-          44px !important;
-
-        border:
-          1px solid
-          #393939 !important;
-
-        background:
-          #111 !important;
       }
 
 
@@ -917,10 +714,10 @@
           min(
             920px,
             100%
-          );
+          ) !important;
 
         margin:
-          10px
+          9px
           auto
           0 !important;
 
@@ -928,7 +725,7 @@
           #d6b958 !important;
 
         font-size:
-          11px !important;
+          10px !important;
 
         font-weight:
           950 !important;
@@ -937,10 +734,6 @@
           .12em !important;
       }
 
-
-      /* =====================================
-         FULL PAGE SWIPE AREA
-         ===================================== */
 
       #manaV973Workout
       .mana-v973-pages{
@@ -955,15 +748,9 @@
           0 !important;
 
         margin:
-          10px
+          6px
           auto
           0 !important;
-
-        display:
-          flex !important;
-
-        align-items:
-          stretch !important;
 
         gap:
           0 !important;
@@ -978,10 +765,10 @@
           x mandatory !important;
 
         -webkit-overflow-scrolling:
-          touch;
+          touch !important;
 
         scrollbar-width:
-          none;
+          none !important;
       }
 
 
@@ -1003,6 +790,9 @@
         width:
           100% !important;
 
+        min-width:
+          100% !important;
+
         max-width:
           100% !important;
 
@@ -1013,11 +803,7 @@
           0 !important;
 
         padding:
-          clamp(
-            28px,
-            5vw,
-            52px
-          ) !important;
+          32px !important;
 
         display:
           flex !important;
@@ -1042,26 +828,6 @@
 
         scroll-snap-align:
           start !important;
-
-        scroll-snap-stop:
-          always !important;
-      }
-
-
-      #manaV973Workout
-      .mana-v973-task-label{
-
-        color:
-          #d7ba59 !important;
-
-        font-size:
-          11px !important;
-
-        font-weight:
-          950 !important;
-
-        letter-spacing:
-          .14em !important;
       }
 
 
@@ -1075,8 +841,6 @@
           14px
           0
           8px !important;
-
-        color:#fff;
 
         font-size:
           clamp(
@@ -1100,11 +864,7 @@
           #f3d875 !important;
 
         font-size:
-          clamp(
-            20px,
-            3vw,
-            26px
-          ) !important;
+          24px !important;
 
         font-weight:
           950 !important;
@@ -1120,8 +880,7 @@
         margin-top:
           22px !important;
 
-        color:
-          #aaa !important;
+        color:#aaa !important;
 
         font-size:
           15px !important;
@@ -1145,18 +904,8 @@
 
         margin-top:
           30px !important;
-
-        border-radius:
-          15px !important;
-
-        font-size:
-          13px !important;
       }
 
-
-      /* =====================================
-         BOTTOM CONTROLS
-         ===================================== */
 
       #manaV973Workout
       .mana-v973-navigation{
@@ -1165,36 +914,12 @@
           min(
             920px,
             100%
-          );
-
-        display:
-          grid !important;
-
-        grid-template-columns:
-          1fr
-          1fr !important;
-
-        gap:
-          10px !important;
+          ) !important;
 
         margin:
-          10px
+          8px
           auto
           0 !important;
-      }
-
-
-      #manaV973Workout
-      .mana-v973-nav{
-
-        min-height:
-          48px !important;
-
-        border-radius:
-          14px !important;
-
-        font-size:
-          11px !important;
       }
 
 
@@ -1207,30 +932,26 @@
             100%
           ) !important;
 
-        min-height:
-          52px !important;
-
         margin:
-          8px
+          7px
           auto
           0 !important;
-
-        border-radius:
-          14px !important;
-
-        font-size:
-          13px !important;
       }
 
 
       /* =====================================
-         MOBILE
+         PHONE FORCE OVERRIDES
          ===================================== */
 
       @media(max-width:700px){
 
         #manaV83Content
         .mana-v973-hero{
+
+          padding:
+            4px
+            0
+            0 !important;
 
           margin-bottom:
             22px !important;
@@ -1256,8 +977,14 @@
         #manaV83Content
         .mana-v973-grid{
 
+          display:
+            grid !important;
+
           grid-template-columns:
-            1fr !important;
+            minmax(
+              0,
+              1fr
+            ) !important;
 
           gap:
             14px !important;
@@ -1266,6 +993,12 @@
 
         #manaV83Content
         .mana-v973-hub-card{
+
+          width:
+            100% !important;
+
+          min-width:
+            0 !important;
 
           min-height:
             164px !important;
@@ -1277,27 +1010,27 @@
               1fr
             ) !important;
 
-          column-gap:
-            15px !important;
-
           padding:
             20px !important;
+
+          column-gap:
+            15px !important;
         }
 
 
         .mana-v974-icon{
 
           width:
-            56px;
+            56px !important;
 
           height:
-            56px;
-
-          font-size:
-            18px;
+            56px !important;
 
           border-radius:
-            17px;
+            17px !important;
+
+          font-size:
+            18px !important;
         }
 
 
@@ -1320,25 +1053,6 @@
 
 
         #manaV83Content
-        .mana-v973-hub-card
-        b{
-
-          font-size:
-            12px !important;
-        }
-
-
-        /* program */
-
-        #manaV83Content
-        .mana-v973-program-head h2{
-
-          font-size:
-            29px !important;
-        }
-
-
-        #manaV83Content
         .mana-v973-day{
 
           flex:
@@ -1346,41 +1060,39 @@
             0
             94% !important;
 
+          width:
+            94% !important;
+
+          max-width:
+            94% !important;
+
           padding:
             19px !important;
         }
 
 
-        #manaV83Content
-        .mana-v973-day h3{
-
-          font-size:
-            24px !important;
-        }
-
-
-        /* ===================================
-           MOBILE FULL SCREEN SESSION
-           =================================== */
+        /* PHONE WORKOUT */
 
         #manaV973Workout
         .mana-v973-work-shell{
+
+          width:
+            100vw !important;
+
+          height:
+            100dvh !important;
 
           padding:
             calc(
               env(
                 safe-area-inset-top
-              )
-              +
-              8px
+              ) + 8px
             )
-            12px
+            10px
             calc(
               env(
                 safe-area-inset-bottom
-              )
-              +
-              10px
+              ) + 9px
             ) !important;
         }
 
@@ -1388,8 +1100,11 @@
         #manaV973Workout
         .mana-v973-work-head{
 
+          width:
+            100% !important;
+
           padding-bottom:
-            8px !important;
+            7px !important;
         }
 
 
@@ -1402,24 +1117,13 @@
 
 
         #manaV973Workout
-        .mana-v973-close{
-
-          width:
-            38px !important;
-
-          height:
-            38px !important;
-
-          flex-basis:
-            38px !important;
-        }
-
-
-        #manaV973Workout
         .mana-v973-page-counter{
 
+          width:
+            100% !important;
+
           margin-top:
-            7px !important;
+            6px !important;
 
           font-size:
             9px !important;
@@ -1429,31 +1133,40 @@
         #manaV973Workout
         .mana-v973-pages{
 
+          width:
+            100% !important;
+
+          max-width:
+            100% !important;
+
           margin-top:
-            5px !important;
+            4px !important;
         }
 
 
         #manaV973Workout
         .mana-v973-task{
 
-          min-height:
+          flex:
+            0
+            0
+            100% !important;
+
+          width:
+            100% !important;
+
+          min-width:
+            100% !important;
+
+          max-width:
             100% !important;
 
           padding:
-            18px
-            8px !important;
+            16px
+            6px !important;
 
           justify-content:
             center !important;
-        }
-
-
-        #manaV973Workout
-        .mana-v973-task-label{
-
-          font-size:
-            9px !important;
         }
 
 
@@ -1486,7 +1199,7 @@
         .mana-v973-simple-copy{
 
           margin-top:
-            16px !important;
+            15px !important;
 
           font-size:
             13px !important;
@@ -1506,21 +1219,21 @@
             48px !important;
 
           margin-top:
-            20px !important;
-
-          font-size:
-            11px !important;
+            19px !important;
         }
 
 
         #manaV973Workout
         .mana-v973-navigation{
 
+          width:
+            100% !important;
+
           gap:
             7px !important;
 
           margin-top:
-            6px !important;
+            5px !important;
         }
 
 
@@ -1538,11 +1251,14 @@
         #manaV973Workout
         .mana-v973-finish{
 
+          width:
+            100% !important;
+
           min-height:
             46px !important;
 
           margin-top:
-            6px !important;
+            5px !important;
 
           font-size:
             11px !important;
@@ -1559,14 +1275,13 @@
 
 
   /* =========================================
-     OVERVIEW DECORATION
+     DECORATE OVERVIEW
      ========================================= */
 
   function decorateOverview() {
 
     if (
-      !isMana28Overview() &&
-      !isLyfeOverview()
+      !isOverview()
     ) {
 
       return;
@@ -1585,10 +1300,6 @@
     }
 
 
-    /*
-      Match Strength overview copy.
-    */
-
     const hero =
       holder.querySelector(
         ".mana-v973-hero"
@@ -1596,19 +1307,15 @@
 
 
     const heading =
-      hero?.querySelector(
-        "h2"
-      );
+      hero?.querySelector("h2");
 
 
     const copy =
-      hero?.querySelector(
-        "p"
-      );
+      hero?.querySelector("p");
 
 
     if (
-      isMana28Overview()
+      isMana28()
     ) {
 
       if (heading) {
@@ -1622,7 +1329,7 @@
       if (copy) {
 
         copy.textContent =
-          "Everything you need for the next 28 days. Choose where you want to go next.";
+          "Everything important for your 28-day reset in one place. Choose where you want to go next.";
 
       }
 
@@ -1630,7 +1337,7 @@
 
 
     if (
-      isLyfeOverview()
+      isLyfe()
     ) {
 
       if (heading) {
@@ -1651,10 +1358,6 @@
     }
 
 
-    /*
-      Add Strength-style icon block.
-    */
-
     holder
       .querySelectorAll(
         ".mana-v973-hub-card"
@@ -1672,12 +1375,6 @@
           }
 
 
-          const type =
-            card.dataset
-              .v973Tab ||
-            "";
-
-
           const icon =
             document.createElement(
               "div"
@@ -1689,8 +1386,10 @@
 
 
           icon.textContent =
-            ICONS[type] ||
-            "M";
+            ICONS[
+              card.dataset
+                .v973Tab
+            ] || "M";
 
 
           card.prepend(icon);
@@ -1701,7 +1400,82 @@
 
 
   /* =========================================
-     FULLSCREEN WORKOUT STABILITY
+     FORCE MOBILE LAYOUT INLINE
+
+     Extra protection against old rules
+     winning after a dynamic redraw.
+     ========================================= */
+
+  function forceMobileOverview() {
+
+    if (
+      !isOverview() ||
+      window.innerWidth > 700
+    ) {
+
+      return;
+    }
+
+
+    const grid =
+      document.querySelector(
+        "#manaV83Content " +
+        ".mana-v973-grid"
+      );
+
+
+    if (grid) {
+
+      grid.style.setProperty(
+        "display",
+        "grid",
+        "important"
+      );
+
+
+      grid.style.setProperty(
+        "grid-template-columns",
+        "minmax(0,1fr)",
+        "important"
+      );
+
+
+      grid.style.setProperty(
+        "width",
+        "100%",
+        "important"
+      );
+    }
+
+
+    document
+      .querySelectorAll(
+        "#manaV83Content " +
+        ".mana-v973-hub-card"
+      )
+      .forEach(
+        card => {
+
+          card.style.setProperty(
+            "width",
+            "100%",
+            "important"
+          );
+
+
+          card.style.setProperty(
+            "min-width",
+            "0",
+            "important"
+          );
+
+        }
+      );
+  }
+
+
+  /* =========================================
+     WORKOUT POLISH
      ========================================= */
 
   function polishWorkout() {
@@ -1722,46 +1496,117 @@
     }
 
 
-    /*
-      Always reset modal scroll position.
-      Individual exercise paging remains
-      horizontal only.
-    */
+    modal.style.setProperty(
+      "position",
+      "fixed",
+      "important"
+    );
 
-    modal.scrollTop =
-      0;
+
+    modal.style.setProperty(
+      "inset",
+      "0",
+      "important"
+    );
+
+
+    modal.style.setProperty(
+      "width",
+      "100vw",
+      "important"
+    );
+
+
+    modal.style.setProperty(
+      "height",
+      "100dvh",
+      "important"
+    );
+
+
+    modal.style.setProperty(
+      "padding",
+      "0",
+      "important"
+    );
 
 
     document.body.style
       .overflow =
       "hidden";
+
+
+    const shell =
+      modal.querySelector(
+        ".mana-v973-work-shell"
+      );
+
+
+    if (shell) {
+
+      shell.style.setProperty(
+        "width",
+        "100vw",
+        "important"
+      );
+
+
+      shell.style.setProperty(
+        "height",
+        "100dvh",
+        "important"
+      );
+
+
+      shell.style.setProperty(
+        "max-width",
+        "none",
+        "important"
+      );
+    }
   }
 
 
   /* =========================================
-     REFRESH
+     CORE APPLY
      ========================================= */
 
-  function refresh() {
+  function apply() {
 
     installStyles();
 
+    decorateOverview();
+
+    forceMobileOverview();
+
+    polishWorkout();
+  }
+
+
+  function scheduleApply() {
+
+    clearTimeout(
+      refreshTimer
+    );
+
+
+    refreshTimer =
+      setTimeout(
+        apply,
+        20
+      );
+
 
     [
-      30,
-      120,
-      280
+      80,
+      180,
+      350,
+      700
     ].forEach(
       delay => {
 
         setTimeout(
-          () => {
-
-            decorateOverview();
-
-            polishWorkout();
-
-          },
+          apply,
           delay
         );
 
@@ -1771,23 +1616,114 @@
 
 
   /* =========================================
+     OBSERVERS
+     ========================================= */
+
+  function installObservers() {
+
+    const holder =
+      document.getElementById(
+        "manaV83Content"
+      );
+
+
+    if (
+      holder &&
+      !observer
+    ) {
+
+      observer =
+        new MutationObserver(
+          () => {
+
+            if (
+              relevantProgram()
+            ) {
+
+              scheduleApply();
+
+            }
+
+          }
+        );
+
+
+      observer.observe(
+        holder,
+        {
+          childList:true,
+          subtree:true
+        }
+      );
+    }
+
+
+    const modal =
+      document.getElementById(
+        "manaV973Workout"
+      );
+
+
+    if (
+      modal &&
+      !modalObserver
+    ) {
+
+      modalObserver =
+        new MutationObserver(
+          scheduleApply
+        );
+
+
+      modalObserver.observe(
+        modal,
+        {
+          childList:true,
+          subtree:true,
+          attributes:true,
+          attributeFilter:[
+            "class"
+          ]
+        }
+      );
+    }
+  }
+
+
+  /* =========================================
      INIT
      ========================================= */
 
   function init() {
 
-    refresh();
+    installStyles();
+
+    installObservers();
+
+    scheduleApply();
 
 
     window.addEventListener(
       "mana:program-tab-change",
-      refresh
+      scheduleApply
     );
 
 
     window.addEventListener(
       "mana:v973-updated",
-      refresh
+      scheduleApply
+    );
+
+
+    window.addEventListener(
+      "resize",
+      scheduleApply
+    );
+
+
+    window.addEventListener(
+      "orientationchange",
+      scheduleApply
     );
 
 
@@ -1808,12 +1744,43 @@
           )
         ) {
 
-          refresh();
+          setTimeout(
+            installObservers,
+            30
+          );
+
+
+          scheduleApply();
 
         }
 
       },
       true
+    );
+
+
+    setInterval(
+      () => {
+
+        installObservers();
+
+
+        if (
+          relevantProgram() ||
+          document
+            .getElementById(
+              "manaV973Workout"
+            )
+            ?.classList
+            .contains("open")
+        ) {
+
+          apply();
+
+        }
+
+      },
+      1000
     );
 
 
@@ -1824,11 +1791,11 @@
 
     window
       .refreshMana28LyfePolish =
-      refresh;
+      scheduleApply;
 
 
     console.log(
-      "[Mana v9.74.0] Mana 28 + Lyfe polish ready"
+      "[Mana v9.74.1] persistent polish ready"
     );
   }
 
