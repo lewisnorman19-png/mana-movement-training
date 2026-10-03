@@ -1,21 +1,22 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.74.2
-   MANA 28 + MANA LYFE FINAL PROGRAM FLOW
+   MANA MOVEMENT TRAINING v9.74.3
+   MANA 28 + MANA LYFE FULL PAGE EXPERIENCE
 
-   - OVERVIEW CARDS TAPPABLE ON PHONE
-   - PROGRAM DAY IS THE WORKOUT
-   - NO START WORKOUT SCREEN
-   - NO SECOND WORKOUT MODAL
-   - EACH DAY = ONE FULL PAGE
-   - ZERO DAY-TO-DAY OVERLAP
-   - COMPLETE DAY BUTTON AT BOTTOM
-   - ALL 28 DAYS UNLOCKED
+   FIXES
+   - OVERVIEW CARDS DIRECTLY TAPPABLE
+   - POINTER + TOUCH + CLICK SUPPORT
+   - REMOVES INVISIBLE TAP BLOCKING
+   - PROGRAM CARD FILLS AVAILABLE WIDTH
+   - PROGRAM CARD FILLS AVAILABLE HEIGHT
+   - EXERCISES DISTRIBUTE DOWN THE PAGE
+   - COMPLETE DAY STAYS AT BOTTOM
+   - ZERO PAGE OVERLAP
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "97420";
+  const BUILD = "97430";
 
   const STYLE_ID =
     "mana-v974-m28-lyfe-polish-style";
@@ -30,8 +31,7 @@
 
   let refreshTimer = null;
 
-  let lastProgram = "";
-  let lastDay = 1;
+  let lastTapAt = 0;
 
 
   /* =========================================
@@ -286,18 +286,6 @@
   }
 
 
-  function shellOpen() {
-
-    return Boolean(
-      shell()
-        ?.classList
-        .contains(
-          "open"
-        )
-    );
-  }
-
-
   function title() {
 
     return (
@@ -330,12 +318,13 @@
 
   function currentProgram() {
 
-    const t =
+    const value =
       title();
 
 
     if (
-      t === "MANA 28"
+      value ===
+      "MANA 28"
     ) {
 
       return "mana28";
@@ -344,8 +333,10 @@
 
 
     if (
-      t === "MANA LYFE" ||
-      t === "MANA LIFE"
+      value ===
+        "MANA LIFE" ||
+      value ===
+        "MANA LYFE"
     ) {
 
       return "lyfe";
@@ -362,10 +353,33 @@
   ) {
 
     return (
-      program === "mana28"
+      program ===
+        "mana28"
         ? M28_KEY
         : LYFE_KEY
     );
+  }
+
+
+  function esc(
+    value
+  ) {
+
+    return String(
+      value ?? ""
+    )
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      );
   }
 
 
@@ -381,7 +395,8 @@
 
 
     if (
-      program === "mana28"
+      program ===
+      "mana28"
     ) {
 
       const base =
@@ -433,28 +448,6 @@
   }
 
 
-  function esc(
-    value
-  ) {
-
-    return String(
-      value ?? ""
-    )
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      );
-  }
-
-
   /* =========================================
      STYLES
      ========================================= */
@@ -481,7 +474,70 @@
     style.textContent = `
 
       /* =====================================
-         OVERVIEW
+         OVERVIEW TAP LAYER
+         ===================================== */
+
+      #manaV83Content{
+
+        position:
+          relative !important;
+
+        z-index:
+          10 !important;
+
+        pointer-events:
+          auto !important;
+      }
+
+
+      #manaV83Content
+      .mana-v973-grid{
+
+        position:
+          relative !important;
+
+        z-index:
+          20 !important;
+
+        pointer-events:
+          auto !important;
+      }
+
+
+      #manaV83Content
+      .mana-v973-hub-card{
+
+        position:
+          relative !important;
+
+        z-index:
+          30 !important;
+
+        pointer-events:
+          auto !important;
+
+        touch-action:
+          manipulation !important;
+
+        cursor:
+          pointer !important;
+
+        -webkit-tap-highlight-color:
+          transparent !important;
+      }
+
+
+      #manaV83Content
+      .mana-v973-hub-card
+      *{
+
+        pointer-events:
+          none !important;
+      }
+
+
+      /* =====================================
+         OVERVIEW VISUALS
          ===================================== */
 
       #manaV83Content
@@ -490,10 +546,10 @@
         margin:
           0
           0
-          26px !important;
+          25px !important;
 
         padding:
-          8px
+          6px
           0
           0 !important;
 
@@ -502,9 +558,6 @@
 
         background:
           transparent !important;
-
-        box-shadow:
-          none !important;
       }
 
 
@@ -555,7 +608,10 @@
         grid-template-columns:
           repeat(
             2,
-            minmax(0,1fr)
+            minmax(
+              0,
+              1fr
+            )
           ) !important;
 
         gap:
@@ -565,9 +621,6 @@
 
       #manaV83Content
       .mana-v973-hub-card{
-
-        position:
-          relative !important;
 
         min-height:
           190px !important;
@@ -589,103 +642,101 @@
             #10100d 48%,
             #090909
           ) !important;
-
-        cursor:
-          pointer !important;
-
-        pointer-events:
-          auto !important;
-
-        touch-action:
-          manipulation !important;
-
-        -webkit-tap-highlight-color:
-          transparent !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-hub-card::after{
-
-        content:"";
-
-        position:
-          absolute;
-
-        top:0;
-
-        left:
-          22px;
-
-        right:
-          22px;
-
-        height:
-          2px;
-
-        background:
-          linear-gradient(
-            90deg,
-            transparent,
-            #d9ba55,
-            transparent
-          );
-
-        pointer-events:
-          none;
-      }
-
-
-      #manaV83Content
-      .mana-v973-hub-card
-      *{
-
-        pointer-events:
-          none !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-hub-card
-      strong{
-
-        color:#fff !important;
-
-        font-size:
-          25px !important;
-
-        font-weight:
-          950 !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-hub-card
-      span{
-
-        color:
-          #b8b8b8 !important;
-
-        font-size:
-          15px !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-hub-card
-      b{
-
-        color:
-          #f3d875 !important;
-
-        font-size:
-          13px !important;
       }
 
 
       /* =====================================
-         PROGRAM MODE
+         PROGRAM FULL HEIGHT MODE
          ===================================== */
+
+      #manaV83ProgramShell.mana-v974-program-mode{
+
+        overflow:
+          hidden !important;
+      }
+
+
+      #manaV83ProgramShell.mana-v974-program-mode
+      .mana-v83-shell{
+
+        height:
+          calc(
+            100dvh
+            -
+            env(
+              safe-area-inset-top
+            )
+            -
+            env(
+              safe-area-inset-bottom
+            )
+            -
+            28px
+          ) !important;
+
+        max-height:
+          calc(
+            100dvh
+            -
+            env(
+              safe-area-inset-top
+            )
+            -
+            env(
+              safe-area-inset-bottom
+            )
+            -
+            28px
+          ) !important;
+
+        display:
+          flex !important;
+
+        flex-direction:
+          column !important;
+
+        overflow:
+          hidden !important;
+      }
+
+
+      #manaV83ProgramShell.mana-v974-program-mode
+      .mana-v83-head{
+
+        flex:
+          0
+          0
+          auto !important;
+
+        margin-bottom:
+          8px !important;
+      }
+
+
+      #manaV83ProgramShell.mana-v974-program-mode
+      #manaV83Content{
+
+        flex:
+          1
+          1
+          auto !important;
+
+        min-height:
+          0 !important;
+
+        height:
+          100% !important;
+
+        display:
+          flex !important;
+
+        flex-direction:
+          column !important;
+
+        overflow:
+          hidden !important;
+      }
+
 
       #manaV83ProgramShell
       .mana-v973-program-head{
@@ -698,7 +749,7 @@
         margin:
           0
           0
-          10px !important;
+          8px !important;
       }
 
 
@@ -706,11 +757,11 @@
       .mana-v973-program-head h2{
 
         margin:
-          5px
+          4px
           0 !important;
 
         font-size:
-          28px !important;
+          26px !important;
 
         font-weight:
           950 !important;
@@ -733,6 +784,17 @@
 
       #manaV83ProgramShell
       .mana-v973-days{
+
+        flex:
+          1
+          1
+          auto !important;
+
+        min-height:
+          0 !important;
+
+        height:
+          100% !important;
 
         width:
           100% !important;
@@ -767,7 +829,9 @@
       }
 
 
-      /* EXACTLY ONE DAY PER PAGE */
+      /* =====================================
+         EACH DAY FILLS THE WHOLE SPACE
+         ===================================== */
 
       #manaV83ProgramShell
       .mana-v973-day{
@@ -790,7 +854,10 @@
           100% !important;
 
         min-height:
-          0 !important;
+          100% !important;
+
+        max-height:
+          100% !important;
 
         margin:
           0 !important;
@@ -804,12 +871,15 @@
         flex-direction:
           column !important;
 
+        box-sizing:
+          border-box !important;
+
         border:
           1px solid
           #3b3522 !important;
 
         border-radius:
-          24px !important;
+          22px !important;
 
         background:
           linear-gradient(
@@ -818,19 +888,13 @@
             #0b0b09
           ) !important;
 
-        box-sizing:
-          border-box !important;
-
         scroll-snap-align:
           start !important;
 
         scroll-snap-stop:
           always !important;
 
-        overflow-y:
-          auto !important;
-
-        overflow-x:
+        overflow:
           hidden !important;
       }
 
@@ -841,7 +905,7 @@
         flex:
           0
           0
-          auto;
+          auto !important;
 
         color:
           #e2c25a !important;
@@ -863,7 +927,7 @@
         flex:
           0
           0
-          auto;
+          auto !important;
 
         margin:
           9px
@@ -889,7 +953,7 @@
         flex:
           0
           0
-          auto;
+          auto !important;
 
         color:
           #999 !important;
@@ -902,39 +966,78 @@
       }
 
 
+      /* =====================================
+         EXERCISES SPREAD DOWN THE PAGE
+         ===================================== */
+
       #manaV83ProgramShell
       .mana-v973-preview{
 
         flex:
-          0
           1
-          auto;
+          1
+          auto !important;
 
-        margin-top:
-          15px !important;
+        min-height:
+          0 !important;
+
+        margin:
+          16px
+          0
+          14px !important;
+
+        display:
+          flex !important;
+
+        flex-direction:
+          column !important;
+
+        justify-content:
+          space-evenly !important;
 
         border-top:
           1px solid
           #29271f !important;
+
+        border-bottom:
+          1px solid
+          #29271f !important;
+
+        overflow:
+          hidden !important;
       }
 
 
       #manaV83ProgramShell
       .mana-v973-preview-row{
 
+        flex:
+          1
+          1
+          0 !important;
+
+        min-height:
+          42px !important;
+
         display:
           grid !important;
 
         grid-template-columns:
-          minmax(0,1fr)
+          minmax(
+            0,
+            1fr
+          )
           auto !important;
 
+        align-items:
+          center !important;
+
         gap:
-          12px !important;
+          14px !important;
 
         padding:
-          10px
-          0 !important;
+          8px
+          2px !important;
 
         border-bottom:
           1px solid
@@ -944,7 +1047,27 @@
           #ddd !important;
 
         font-size:
-          13px !important;
+          14px !important;
+
+        box-sizing:
+          border-box !important;
+      }
+
+
+      #manaV83ProgramShell
+      .mana-v973-preview-row:last-child{
+
+        border-bottom:
+          0 !important;
+      }
+
+
+      #manaV83ProgramShell
+      .mana-v973-preview-row
+      span:first-child{
+
+        font-weight:
+          850 !important;
       }
 
 
@@ -956,7 +1079,10 @@
           #d9bf67 !important;
 
         font-weight:
-          900 !important;
+          950 !important;
+
+        white-space:
+          nowrap !important;
 
         text-align:
           right !important;
@@ -965,25 +1091,19 @@
 
       .mana-v974-complete-day{
 
-        width:
-          100%;
-
-        min-height:
-          52px;
-
         flex:
           0
           0
-          auto;
+          52px !important;
+
+        width:
+          100% !important;
+
+        min-height:
+          52px !important;
 
         margin:
-          auto
-          0
-          0;
-
-        padding:
-          0
-          16px;
+          0 !important;
 
         border:
           0;
@@ -994,8 +1114,7 @@
         background:
           #f3d875;
 
-        color:
-          #111;
+        color:#111;
 
         font-size:
           13px;
@@ -1015,7 +1134,7 @@
 
         border:
           1px solid
-          #6b5b22;
+          #675820;
 
         background:
           #171408;
@@ -1025,8 +1144,6 @@
       }
 
 
-      /* old Start Workout completely gone */
-
       #manaV83ProgramShell
       .mana-v973-start{
 
@@ -1034,8 +1151,6 @@
           none !important;
       }
 
-
-      /* old modal no longer used */
 
       #manaV973Workout{
 
@@ -1049,14 +1164,6 @@
          ===================================== */
 
       @media(max-width:700px){
-
-        #manaV83Content
-        .mana-v973-hero{
-
-          margin-bottom:
-            20px !important;
-        }
-
 
         #manaV83Content
         .mana-v973-hero h2{
@@ -1102,17 +1209,17 @@
 
           padding:
             20px !important;
+
+          z-index:
+            100 !important;
         }
 
 
-        /* PROGRAM USES AVAILABLE SCREEN */
-
-        #manaV83ProgramShell.mana-v974-program-mode{
-
-          overflow:
-            hidden !important;
-        }
-
+        /*
+          Program shell already has bottom
+          tabs outside the content area.
+          Use ALL remaining height.
+        */
 
         #manaV83ProgramShell.mana-v974-program-mode
         .mana-v83-shell{
@@ -1125,52 +1232,27 @@
                 safe-area-inset-top
               )
               -
-              121px
-          ) !important;
+              102px
+            ) !important;
 
-          display:
-            flex !important;
-
-          flex-direction:
-            column !important;
-
-          overflow:
-            hidden !important;
+          max-height:
+            calc(
+              100dvh
+              -
+              env(
+                safe-area-inset-top
+              )
+              -
+              102px
+            ) !important;
         }
 
 
         #manaV83ProgramShell.mana-v974-program-mode
         .mana-v83-head{
 
-          flex:
-            0
-            0
-            auto !important;
-
           margin-bottom:
-            10px !important;
-        }
-
-
-        #manaV83ProgramShell.mana-v974-program-mode
-        #manaV83Content{
-
-          flex:
-            1
-            1
-            auto !important;
-
-          min-height:
-            0 !important;
-
-          display:
-            flex !important;
-
-          flex-direction:
-            column !important;
-
-          overflow:
-            hidden !important;
+            5px !important;
         }
 
 
@@ -1178,7 +1260,7 @@
         .mana-v973-program-head{
 
           margin-bottom:
-            7px !important;
+            5px !important;
         }
 
 
@@ -1186,10 +1268,7 @@
         .mana-v973-program-head h2{
 
           font-size:
-            22px !important;
-
-          line-height:
-            1.05 !important;
+            20px !important;
         }
 
 
@@ -1202,77 +1281,76 @@
 
 
         #manaV83ProgramShell
-        .mana-v973-days{
-
-          flex:
-            1
-            1
-            auto !important;
-
-          min-height:
-            0 !important;
-
-          width:
-            100% !important;
-
-          max-width:
-            100% !important;
-
-          gap:
-            0 !important;
-        }
-
-
-        #manaV83ProgramShell
         .mana-v973-day{
 
-          flex:
-            0
-            0
-            100% !important;
-
-          width:
-            100% !important;
-
-          min-width:
-            100% !important;
-
-          max-width:
-            100% !important;
-
           height:
+            100% !important;
+
+          min-height:
+            100% !important;
+
+          max-height:
             100% !important;
 
           padding:
             17px !important;
 
           border-radius:
-            20px !important;
+            19px !important;
         }
 
 
         #manaV83ProgramShell
         .mana-v973-day h3{
 
+          margin:
+            7px
+            0
+            3px !important;
+
           font-size:
-            24px !important;
+            23px !important;
+        }
+
+
+        #manaV83ProgramShell
+        .mana-v973-day-number{
+
+          font-size:
+            9px !important;
+        }
+
+
+        #manaV83ProgramShell
+        .mana-v973-type{
+
+          font-size:
+            10px !important;
         }
 
 
         #manaV83ProgramShell
         .mana-v973-preview{
 
-          margin-top:
-            11px !important;
+          margin:
+            11px
+            0
+            10px !important;
+
+          justify-content:
+            space-evenly !important;
         }
 
 
         #manaV83ProgramShell
         .mana-v973-preview-row{
 
-          padding:
-            8px
+          min-height:
             0 !important;
+
+          padding:
+            5px
+            1px !important;
 
           font-size:
             12px !important;
@@ -1281,14 +1359,14 @@
 
         .mana-v974-complete-day{
 
-          min-height:
-            48px;
+          flex-basis:
+            48px !important;
 
-          margin-top:
-            12px;
+          min-height:
+            48px !important;
 
           font-size:
-            11px;
+            11px !important;
         }
 
       }
@@ -1304,58 +1382,140 @@
 
 
   /* =========================================
-     OVERVIEW TAP REPAIR
+     OVERVIEW TAP HANDLERS
      ========================================= */
 
-  function bindOverviewTapRepair() {
+  function activateOverviewCard(
+    card
+  ) {
 
-    document.addEventListener(
-      "click",
-      event => {
+    if (!card) {
 
-        const card =
-          event.target.closest(
-            ".mana-v973-hub-card" +
-            "[data-v973-tab]"
+      return;
+    }
+
+
+    const target =
+      card.dataset
+        .v973Tab;
+
+
+    if (!target) {
+
+      return;
+    }
+
+
+    const button =
+      document.querySelector(
+        "#manaV83Tabs " +
+        `[data-v83-tab="${target}"]`
+      );
+
+
+    if (!button) {
+
+      return;
+    }
+
+
+    button.click();
+  }
+
+
+  function bindOverviewCards() {
+
+    if (
+      tab() !==
+      "overview"
+    ) {
+
+      return;
+    }
+
+
+    document
+      .querySelectorAll(
+        "#manaV83Content " +
+        ".mana-v973-hub-card" +
+        "[data-v973-tab]"
+      )
+      .forEach(
+        card => {
+
+          if (
+            card.dataset
+              .v974Bound ===
+            "1"
+          ) {
+
+            return;
+          }
+
+
+          card.dataset
+            .v974Bound =
+            "1";
+
+
+          const activate =
+            event => {
+
+              const now =
+                Date.now();
+
+
+              if (
+                now -
+                lastTapAt <
+                350
+              ) {
+
+                return;
+              }
+
+
+              lastTapAt =
+                now;
+
+
+              event.preventDefault();
+
+              event.stopPropagation();
+
+
+              activateOverviewCard(
+                card
+              );
+
+            };
+
+
+          card.addEventListener(
+            "pointerup",
+            activate,
+            true
           );
 
 
-        if (!card) {
+          card.addEventListener(
+            "touchend",
+            activate,
+            {
+              capture:true,
+              passive:false
+            }
+          );
 
-          return;
+
+          card.addEventListener(
+            "click",
+            activate,
+            true
+          );
+
         }
-
-
-        const program =
-          currentProgram();
-
-
-        if (!program) {
-
-          return;
-        }
-
-
-        event.preventDefault();
-
-        event.stopImmediatePropagation();
-
-
-        const targetTab =
-          card.dataset
-            .v973Tab;
-
-
-        document
-          .querySelector(
-            "#manaV83Tabs " +
-            `[data-v83-tab="${targetTab}"]`
-          )
-          ?.click();
-
-      },
-      true
-    );
+      );
   }
 
 
@@ -1372,25 +1532,18 @@
     if (
       !program ||
       tab() !==
-        "overview"
+      "overview"
     ) {
 
       return;
     }
 
 
-    const holder =
-      document
-        .getElementById(
-          "manaV83Content"
-        );
-
-
     const hero =
-      holder
-        ?.querySelector(
-          ".mana-v973-hero"
-        );
+      document.querySelector(
+        "#manaV83Content " +
+        ".mana-v973-hero"
+      );
 
 
     const heading =
@@ -1423,7 +1576,7 @@
       if (copy) {
 
         copy.textContent =
-          "Everything important for your 28-day reset in one place. Choose where you want to go next.";
+          "Everything important for your 28-day reset in one place.";
 
       }
 
@@ -1440,19 +1593,22 @@
       if (copy) {
 
         copy.textContent =
-          "Movement, mindset and daily action in one place. Choose what you need next.";
+          "Movement, mindset and daily action in one place.";
 
       }
 
     }
+
+
+    bindOverviewCards();
   }
 
 
   /* =========================================
-     TURN PROGRAM CARDS INTO WORKOUTS
+     PROGRAM
      ========================================= */
 
-  function upgradeProgramCards() {
+  function upgradeProgram() {
 
     const program =
       currentProgram();
@@ -1462,43 +1618,46 @@
       tab();
 
 
-    const isProgramTab =
+    const programMode =
       (
-        program === "mana28" &&
-        currentTab === "program"
+        program ===
+          "mana28" &&
+        currentTab ===
+          "program"
       ) ||
       (
-        program === "lyfe" &&
-        currentTab === "routine"
+        program ===
+          "lyfe" &&
+        currentTab ===
+          "routine"
       );
 
 
-    const programShell =
-      shell();
-
-
-    programShell
+    shell()
       ?.classList
       .toggle(
         "mana-v974-program-mode",
-        isProgramTab
+        programMode
       );
 
 
     if (
-      !program ||
-      !isProgramTab
+      !programMode
     ) {
 
       return;
     }
 
 
+    const key =
+      stateKey(
+        program
+      );
+
+
     const state =
       loadState(
-        stateKey(
-          program
-        )
+        key
       );
 
 
@@ -1529,28 +1688,15 @@
           );
 
 
-        card.dataset
-          .v974Day =
-          String(day);
-
-
-        card.dataset
-          .v974Program =
-          program;
-
-
-        /*
-          Ensure full workout is displayed,
-          not v9.73's four-item preview.
-        */
-
         const preview =
           card.querySelector(
             ".mana-v973-preview"
           );
 
 
-        if (preview) {
+        if (
+          preview
+        ) {
 
           preview.innerHTML =
             data.tasks
@@ -1578,10 +1724,6 @@
         }
 
 
-        /*
-          Remove the old Start Day button.
-        */
-
         card
           .querySelector(
             ".mana-v973-start"
@@ -1589,61 +1731,62 @@
           ?.remove();
 
 
-        /*
-          Completion button.
-        */
-
-        let button =
+        let completeButton =
           card.querySelector(
             ".mana-v974-complete-day"
           );
 
 
-        if (!button) {
+        if (
+          !completeButton
+        ) {
 
-          button =
+          completeButton =
             document.createElement(
               "button"
             );
 
 
-          button.type =
+          completeButton.type =
             "button";
 
 
-          button.className =
+          completeButton.className =
             "mana-v974-complete-day";
 
 
           card.appendChild(
-            button
+            completeButton
           );
         }
 
 
-        const complete =
+        const completed =
           state.completed
-            .includes(day);
+            .includes(
+              day
+            );
 
 
-        button.classList
+        completeButton
+          .classList
           .toggle(
             "complete",
-            complete
+            completed
           );
 
 
-        button.textContent =
-          complete
+        completeButton.textContent =
+          completed
             ? "DAY COMPLETE ✓"
             : "COMPLETE DAY →";
 
 
-        button.disabled =
-          complete;
+        completeButton.disabled =
+          completed;
 
 
-        button.onclick =
+        completeButton.onclick =
           event => {
 
             event.preventDefault();
@@ -1652,21 +1795,11 @@
 
 
             if (
-              button.classList
-                .contains(
-                  "complete"
-                )
+              completed
             ) {
 
               return;
             }
-
-
-            lastProgram =
-              program;
-
-            lastDay =
-              day;
 
 
             completeDay(
@@ -1677,14 +1810,48 @@
 
           };
 
+
+        /*
+          Force every page geometry inline.
+        */
+
+        card.style.setProperty(
+          "flex",
+          "0 0 100%",
+          "important"
+        );
+
+
+        card.style.setProperty(
+          "width",
+          "100%",
+          "important"
+        );
+
+
+        card.style.setProperty(
+          "min-width",
+          "100%",
+          "important"
+        );
+
+
+        card.style.setProperty(
+          "max-width",
+          "100%",
+          "important"
+        );
+
+
+        card.style.setProperty(
+          "height",
+          "100%",
+          "important"
+        );
+
       }
     );
 
-
-    /*
-      Exact sizing also applied inline to
-      beat older mobile style layers.
-    */
 
     const days =
       document.getElementById(
@@ -1692,78 +1859,28 @@
       );
 
 
-    if (days) {
-
-      days.style
-        .setProperty(
-          "gap",
-          "0",
-          "important"
-        );
-
-
-      cards.forEach(
-        card => {
-
-          card.style
-            .setProperty(
-              "flex",
-              "0 0 100%",
-              "important"
-            );
-
-
-          card.style
-            .setProperty(
-              "width",
-              "100%",
-              "important"
-            );
-
-
-          card.style
-            .setProperty(
-              "min-width",
-              "100%",
-              "important"
-            );
-
-
-          card.style
-            .setProperty(
-              "max-width",
-              "100%",
-              "important"
-            );
-
-        }
-      );
-    }
-
-
-    /*
-      Return to current card after v9.73
-      redraws following completion.
-    */
-
     if (
-      program === lastProgram &&
-      lastDay > 1
+      days
     ) {
 
-      setTimeout(
-        () => {
+      days.style.setProperty(
+        "gap",
+        "0",
+        "important"
+      );
 
-          cards[
-            lastDay - 1
-          ]
-            ?.scrollIntoView({
-              block:"nearest",
-              inline:"start"
-            });
 
-        },
-        80
+      days.style.setProperty(
+        "height",
+        "100%",
+        "important"
+      );
+
+
+      days.style.setProperty(
+        "min-height",
+        "0",
+        "important"
       );
 
     }
@@ -1790,11 +1907,15 @@
 
     if (
       !state.completed
-        .includes(day)
+        .includes(
+          day
+        )
     ) {
 
       state.completed
-        .push(day);
+        .push(
+          day
+        );
 
 
       state.completed
@@ -1802,13 +1923,9 @@
           (a,b) =>
             a - b
         );
+
     }
 
-
-    /*
-      Keep compatibility with the original
-      v9.73 day detail state.
-    */
 
     state[
       `day${day}`
@@ -1817,7 +1934,9 @@
       checks:
         Array(
           taskCount
-        ).fill(true),
+        ).fill(
+          true
+        ),
 
       completedAt:
         new Date()
@@ -1837,36 +1956,6 @@
 
 
   /* =========================================
-     REMOVE OLD WORKOUT MODAL
-     ========================================= */
-
-  function closeOldModal() {
-
-    const modal =
-      document.getElementById(
-        "manaV973Workout"
-      );
-
-
-    if (!modal) {
-
-      return;
-    }
-
-
-    modal.classList
-      .remove(
-        "open"
-      );
-
-
-    document.body.style
-      .overflow =
-      "";
-  }
-
-
-  /* =========================================
      APPLY
      ========================================= */
 
@@ -1874,11 +1963,10 @@
 
     installStyles();
 
-    closeOldModal();
-
     polishOverview();
 
-    upgradeProgramCards();
+    upgradeProgram();
+
   }
 
 
@@ -1899,7 +1987,7 @@
     [
       80,
       180,
-      400
+      350
     ].forEach(
       delay => {
 
@@ -1968,8 +2056,6 @@
 
     installStyles();
 
-    bindOverviewTapRepair();
-
     installObserver();
 
     scheduleApply();
@@ -2022,25 +2108,6 @@
     );
 
 
-    setInterval(
-      () => {
-
-        installObserver();
-
-
-        if (
-          currentProgram()
-        ) {
-
-          apply();
-
-        }
-
-      },
-      1200
-    );
-
-
     window
       .MANA_28_LYFE_POLISH_BUILD =
       BUILD;
@@ -2052,7 +2119,7 @@
 
 
     console.log(
-      "[Mana v9.74.2] simplified day flow ready"
+      "[Mana v9.74.3] full page experience ready"
     );
   }
 
