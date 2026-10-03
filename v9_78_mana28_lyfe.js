@@ -1,16 +1,17 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.78.1
+   MANA MOVEMENT TRAINING v9.78.2
    CONSOLIDATED MANA 28 + MANA LYFE
 
    - ONE OWNER FOR MANA 28 + LYFE UI
    - CLEAN / NO FLICKERING
-   - FAST PHONE SWIPE
+   - PHONE SWIPE
    - LAPTOP PREVIOUS / NEXT
-   - LARGER WORKOUT TYPE
-   - TIGHTER PHONE SPACING
-   - FULL PHONE VIEWPORT FIT
+   - CONSISTENT WORKOUT SPACING
+   - LARGE READABLE WORKOUT TEXT
+   - EXERCISE AREA SCROLLS ONLY IF NEEDED
+   - COMPLETE DAY ALWAYS REACHABLE
    - ESTIMATED WORKOUT TIME
-   - NO "UNLOCKED" LABEL
+   - NO "UNLOCKED"
    - OVERVIEW -> HOME
    - PROGRAM -> OVERVIEW
    ========================================= */
@@ -18,7 +19,7 @@
 (() => {
   "use strict";
 
-  const BUILD = "97810";
+  const BUILD = "97820";
 
   const STYLE_ID =
     "mana-v978-style";
@@ -35,7 +36,7 @@
 
 
   /* =========================================
-     FALLBACK MANA 28 PROGRAM
+     MANA 28 FALLBACK PROGRAM
      ========================================= */
 
   const M28_WEEK = [
@@ -48,26 +49,11 @@
         "Strength",
 
       tasks:[
-        [
-          "Goblet Squat",
-          "3 × 10"
-        ],
-        [
-          "Chest Press",
-          "3 × 10"
-        ],
-        [
-          "Seated Row",
-          "3 × 10"
-        ],
-        [
-          "Romanian Deadlift",
-          "3 × 10"
-        ],
-        [
-          "Plank",
-          "3 × 30–45 sec"
-        ]
+        ["Goblet Squat","3 × 10"],
+        ["Chest Press","3 × 10"],
+        ["Seated Row","3 × 10"],
+        ["Romanian Deadlift","3 × 10"],
+        ["Plank","3 × 30–45 sec"]
       ]
     },
 
@@ -80,22 +66,10 @@
         "Recovery",
 
       tasks:[
-        [
-          "Purposeful Walk",
-          "25–35 min"
-        ],
-        [
-          "Hip Mobility",
-          "2 × 45 sec each"
-        ],
-        [
-          "Thoracic Rotation",
-          "2 × 8 each"
-        ],
-        [
-          "Breathing Reset",
-          "3 min"
-        ]
+        ["Purposeful Walk","25–35 min"],
+        ["Hip Mobility","2 × 45 sec each"],
+        ["Thoracic Rotation","2 × 8 each"],
+        ["Breathing Reset","3 min"]
       ]
     },
 
@@ -108,26 +82,11 @@
         "Strength",
 
       tasks:[
-        [
-          "Squat Pattern",
-          "4 × 8"
-        ],
-        [
-          "Romanian Deadlift",
-          "3 × 10"
-        ],
-        [
-          "Split Squat / Step-up",
-          "3 × 8 each"
-        ],
-        [
-          "Calf Raise",
-          "3 × 15"
-        ],
-        [
-          "Dead Bug",
-          "3 × 10 each"
-        ]
+        ["Squat Pattern","4 × 8"],
+        ["Romanian Deadlift","3 × 10"],
+        ["Split Squat / Step-up","3 × 8 each"],
+        ["Calf Raise","3 × 15"],
+        ["Dead Bug","3 × 10 each"]
       ]
     },
 
@@ -140,26 +99,11 @@
         "Strength",
 
       tasks:[
-        [
-          "Press",
-          "4 × 8–10"
-        ],
-        [
-          "Row",
-          "4 × 8–10"
-        ],
-        [
-          "Shoulder Press",
-          "3 × 10"
-        ],
-        [
-          "Lat Pulldown",
-          "3 × 10–12"
-        ],
-        [
-          "Carry",
-          "3 × 30–45 sec"
-        ]
+        ["Press","4 × 8–10"],
+        ["Row","4 × 8–10"],
+        ["Shoulder Press","3 × 10"],
+        ["Lat Pulldown","3 × 10–12"],
+        ["Carry","3 × 30–45 sec"]
       ]
     },
 
@@ -172,26 +116,11 @@
         "Cardio",
 
       tasks:[
-        [
-          "Warm-up",
-          "5 min"
-        ],
-        [
-          "Intervals",
-          "8 rounds"
-        ],
-        [
-          "Work",
-          "30 sec"
-        ],
-        [
-          "Recovery",
-          "60 sec"
-        ],
-        [
-          "Cool-down",
-          "5 min"
-        ]
+        ["Warm-up","5 min"],
+        ["Intervals","8 rounds"],
+        ["Work","30 sec"],
+        ["Recovery","60 sec"],
+        ["Cool-down","5 min"]
       ]
     },
 
@@ -204,22 +133,10 @@
         "Recovery",
 
       tasks:[
-        [
-          "Mobility Flow",
-          "12–15 min"
-        ],
-        [
-          "Bird Dog",
-          "3 × 8 each"
-        ],
-        [
-          "Side Plank",
-          "3 × 20–30 sec"
-        ],
-        [
-          "Easy Walk",
-          "15–20 min"
-        ]
+        ["Mobility Flow","12–15 min"],
+        ["Bird Dog","3 × 8 each"],
+        ["Side Plank","3 × 20–30 sec"],
+        ["Easy Walk","15–20 min"]
       ]
     },
 
@@ -232,18 +149,9 @@
         "Recovery",
 
       tasks:[
-        [
-          "Recovery",
-          "Rest or light walk"
-        ],
-        [
-          "Hydration",
-          "Hit water target"
-        ],
-        [
-          "Reset",
-          "Prepare for next week"
-        ]
+        ["Recovery","Rest or light walk"],
+        ["Hydration","Hit water target"],
+        ["Reset","Prepare for next week"]
       ]
     }
 
@@ -264,26 +172,11 @@
         "Movement",
 
       tasks:[
-        [
-          "Bodyweight Squat",
-          "3 × 12"
-        ],
-        [
-          "Push-up / Wall Push-up",
-          "3 × 10"
-        ],
-        [
-          "Row",
-          "3 × 12"
-        ],
-        [
-          "Walk",
-          "20 min"
-        ],
-        [
-          "Journal",
-          "Today's reflection"
-        ]
+        ["Bodyweight Squat","3 × 12"],
+        ["Push-up / Wall Push-up","3 × 10"],
+        ["Row","3 × 12"],
+        ["Walk","20 min"],
+        ["Journal","Today's reflection"]
       ]
     },
 
@@ -296,18 +189,9 @@
         "Mindset",
 
       tasks:[
-        [
-          "Purposeful Walk",
-          "30 min"
-        ],
-        [
-          "Breathing Reset",
-          "5 min"
-        ],
-        [
-          "Journal",
-          "What do I need to let go of?"
-        ]
+        ["Purposeful Walk","30 min"],
+        ["Breathing Reset","5 min"],
+        ["Journal","What do I need to let go of?"]
       ]
     },
 
@@ -320,22 +204,10 @@
         "Cardio",
 
       tasks:[
-        [
-          "Warm-up",
-          "5 min easy"
-        ],
-        [
-          "Cardio",
-          "20 min moderate"
-        ],
-        [
-          "Cool-down",
-          "5 min"
-        ],
-        [
-          "Journal",
-          "What gives me energy?"
-        ]
+        ["Warm-up","5 min easy"],
+        ["Cardio","20 min moderate"],
+        ["Cool-down","5 min"],
+        ["Journal","What gives me energy?"]
       ]
     },
 
@@ -348,22 +220,10 @@
         "Recovery",
 
       tasks:[
-        [
-          "Mobility Flow",
-          "12 min"
-        ],
-        [
-          "Easy Walk",
-          "15 min"
-        ],
-        [
-          "Breathing",
-          "5 min"
-        ],
-        [
-          "Journal",
-          "What needs attention?"
-        ]
+        ["Mobility Flow","12 min"],
+        ["Easy Walk","15 min"],
+        ["Breathing","5 min"],
+        ["Journal","What needs attention?"]
       ]
     },
 
@@ -376,26 +236,11 @@
         "Movement",
 
       tasks:[
-        [
-          "Reverse Lunge",
-          "3 × 10 each"
-        ],
-        [
-          "Chest Press / Push-up",
-          "3 × 12"
-        ],
-        [
-          "Row",
-          "3 × 12"
-        ],
-        [
-          "Plank",
-          "3 × 30 sec"
-        ],
-        [
-          "Journal",
-          "What am I rebuilding?"
-        ]
+        ["Reverse Lunge","3 × 10 each"],
+        ["Chest Press / Push-up","3 × 12"],
+        ["Row","3 × 12"],
+        ["Plank","3 × 30 sec"],
+        ["Journal","What am I rebuilding?"]
       ]
     },
 
@@ -408,22 +253,10 @@
         "Cardio",
 
       tasks:[
-        [
-          "Bike / Rower",
-          "20 min"
-        ],
-        [
-          "Walk",
-          "10 min"
-        ],
-        [
-          "Stretch",
-          "5 min"
-        ],
-        [
-          "Journal",
-          "What went well this week?"
-        ]
+        ["Bike / Rower","20 min"],
+        ["Walk","10 min"],
+        ["Stretch","5 min"],
+        ["Journal","What went well this week?"]
       ]
     },
 
@@ -436,22 +269,10 @@
         "Reset",
 
       tasks:[
-        [
-          "Easy Walk",
-          "20 min"
-        ],
-        [
-          "Mobility",
-          "10 min"
-        ],
-        [
-          "Breathing Reset",
-          "5 min"
-        ],
-        [
-          "Journal",
-          "Review and reset"
-        ]
+        ["Easy Walk","20 min"],
+        ["Mobility","10 min"],
+        ["Breathing Reset","5 min"],
+        ["Journal","Review and reset"]
       ]
     }
 
@@ -577,8 +398,7 @@
     return (
       document
         .querySelector(
-          "#manaV83Tabs " +
-          ".mana-v83-tab.active"
+          "#manaV83Tabs .mana-v83-tab.active"
         )
         ?.dataset
         ?.v83Tab ||
@@ -1017,23 +837,19 @@
         text-align:left;
 
         border:
-          1px solid #3b3522;
+          1px solid
+          #3b3522;
 
         border-radius:24px;
 
         background:
           linear-gradient(
             145deg,
-            #171611 0%,
-            #10100d 45%,
-            #090909 100%
+            #171611,
+            #090909
           );
 
         color:#fff;
-
-        box-shadow:
-          0 14px 32px
-          rgba(0,0,0,.22);
 
         cursor:pointer;
 
@@ -1158,15 +974,8 @@
 
 
       /* =====================================
-         PROGRAM FULL HEIGHT
+         PROGRAM SHELL
          ===================================== */
-
-      #manaV83ProgramShell
-      .mana-v83-shell{
-
-        min-height:0;
-      }
-
 
       #manaV83ProgramShell.mana-v978-program{
 
@@ -1185,16 +994,13 @@
             )
           ) !important;
 
-        min-height:
-          0 !important;
+        min-height:0 !important;
 
         display:flex !important;
 
-        flex-direction:
-          column !important;
+        flex-direction:column !important;
 
-        overflow:
-          hidden !important;
+        overflow:hidden !important;
       }
 
 
@@ -1215,18 +1021,20 @@
         flex:
           1 1 auto !important;
 
-        min-height:
-          0 !important;
+        min-height:0 !important;
 
         display:flex !important;
 
         flex-direction:
           column !important;
 
-        overflow:
-          hidden !important;
+        overflow:hidden !important;
       }
 
+
+      /* =====================================
+         PROGRAM INTRO
+         ===================================== */
 
       .mana-v978-program-head{
 
@@ -1257,9 +1065,9 @@
 
         color:#aaa;
 
-        font-size:16px;
+        font-size:15px;
 
-        line-height:1.5;
+        line-height:1.45;
       }
 
 
@@ -1277,6 +1085,8 @@
         width:100%;
 
         display:flex;
+
+        align-items:stretch;
 
         gap:0;
 
@@ -1300,6 +1110,14 @@
       }
 
 
+      /* =====================================
+         DAY CARD
+
+         IMPORTANT:
+         no height:100%
+         no min-height:100%
+         ===================================== */
+
       .mana-v978-day{
 
         flex:
@@ -1311,13 +1129,12 @@
 
         max-width:100%;
 
-        height:100%;
-
-        min-height:100%;
+        min-height:0;
 
         margin:0;
 
-        padding:24px;
+        padding:
+          20px 22px;
 
         display:flex;
 
@@ -1327,9 +1144,11 @@
           border-box;
 
         border:
-          1px solid #3b3522;
+          1px solid
+          #3b3522;
 
-        border-radius:24px;
+        border-radius:
+          22px;
 
         background:
           linear-gradient(
@@ -1340,7 +1159,8 @@
 
         scroll-snap-align:start;
 
-        scroll-snap-stop:always;
+        scroll-snap-stop:
+          always;
 
         overflow:hidden;
       }
@@ -1348,24 +1168,32 @@
 
       .mana-v978-day-number{
 
+        flex:
+          0 0 auto;
+
         color:#e2c25a;
 
-        font-size:14px;
+        font-size:13px;
 
         font-weight:950;
 
-        letter-spacing:.12em;
+        letter-spacing:.11em;
+
+        line-height:1.25;
       }
 
 
       .mana-v978-day h3{
 
+        flex:
+          0 0 auto;
+
         margin:
-          9px 0 5px;
+          7px 0 3px;
 
         color:#fff;
 
-        font-size:34px;
+        font-size:32px;
 
         font-weight:950;
 
@@ -1375,13 +1203,25 @@
 
       .mana-v978-type{
 
+        flex:
+          0 0 auto;
+
         color:#aaa;
 
-        font-size:15px;
+        font-size:14px;
 
         font-weight:850;
+
+        line-height:1.3;
       }
 
+
+      /* =====================================
+         EXERCISE LIST
+
+         consistent spacing
+         vertical scroll only if needed
+         ===================================== */
 
       .mana-v978-preview{
 
@@ -1391,53 +1231,55 @@
         min-height:0;
 
         margin:
-          16px 0 14px;
+          12px 0;
 
-        display:flex;
+        overflow-y:auto;
 
-        flex-direction:column;
+        overscroll-behavior:
+          contain;
 
-        justify-content:
-          space-evenly;
+        scrollbar-width:
+          thin;
 
         border-top:
-          1px solid #29271f;
+          1px solid
+          #29271f;
 
         border-bottom:
-          1px solid #29271f;
-
-        overflow:hidden;
+          1px solid
+          #29271f;
       }
 
 
       .mana-v978-row{
 
-        flex:
-          1 1 0;
-
-        min-height:0;
+        min-height:58px;
 
         display:grid;
 
         grid-template-columns:
           minmax(0,1fr)
-          auto;
+          minmax(
+            110px,
+            auto
+          );
 
         align-items:center;
 
         gap:16px;
 
         padding:
-          8px 2px;
+          10px 2px;
 
         border-bottom:
-          1px solid #24231e;
+          1px solid
+          #24231e;
 
         color:#eee;
 
         font-size:18px;
 
-        line-height:1.35;
+        line-height:1.3;
       }
 
 
@@ -1449,6 +1291,8 @@
 
       .mana-v978-row
       span:first-child{
+
+        min-width:0;
 
         font-weight:850;
       }
@@ -1464,17 +1308,25 @@
         font-weight:950;
 
         text-align:right;
+
+        line-height:1.25;
       }
 
+
+      /* =====================================
+         COMPLETE BUTTON
+         ===================================== */
 
       .mana-v978-complete{
 
         flex:
-          0 0 54px;
+          0 0 52px;
 
         width:100%;
 
-        min-height:54px;
+        min-height:52px;
+
+        margin-top:auto;
 
         border:0;
 
@@ -1495,7 +1347,8 @@
       .mana-v978-complete.done{
 
         border:
-          1px solid #66571f;
+          1px solid
+          #66571f;
 
         background:#171408;
 
@@ -1504,7 +1357,7 @@
 
 
       /* =====================================
-         LAPTOP DAY NAVIGATION
+         LAPTOP NAVIGATION
          ===================================== */
 
       .mana-v978-daynav{
@@ -1523,7 +1376,7 @@
 
         gap:10px;
 
-        margin-top:9px;
+        margin-top:8px;
       }
 
 
@@ -1532,7 +1385,8 @@
         min-height:44px;
 
         border:
-          1px solid #353535;
+          1px solid
+          #353535;
 
         border-radius:13px;
 
@@ -1557,9 +1411,18 @@
       }
 
 
+      .mana-v978-daynav
+      button:disabled{
+
+        opacity:.35;
+
+        cursor:default;
+      }
+
+
       .mana-v978-count{
 
-        min-width:96px;
+        min-width:100px;
 
         text-align:center;
 
@@ -1633,10 +1496,7 @@
 
 
         /* =================================
-           PHONE PROGRAM HEIGHT
-
-           Leave room for the fixed
-           bottom navigation.
+           PHONE AVAILABLE HEIGHT
            ================================= */
 
         #manaV83ProgramShell.mana-v978-program
@@ -1646,7 +1506,7 @@
             calc(
               100dvh
               -
-              82px
+              76px
               -
               env(
                 safe-area-inset-bottom
@@ -1657,7 +1517,7 @@
             calc(
               100dvh
               -
-              82px
+              76px
               -
               env(
                 safe-area-inset-bottom
@@ -1670,7 +1530,7 @@
         .mana-v83-head{
 
           margin-bottom:
-            2px !important;
+            1px !important;
         }
 
 
@@ -1684,9 +1544,11 @@
         .mana-v978-program-head h2{
 
           margin:
-            2px 0;
+            1px 0;
 
-          font-size:22px;
+          font-size:20px;
+
+          line-height:1.05;
         }
 
 
@@ -1697,13 +1559,13 @@
 
 
         /* =================================
-           DAY CARD
+           PHONE DAY CARD
            ================================= */
 
         .mana-v978-day{
 
           padding:
-            13px 15px 12px;
+            11px 14px 10px;
 
           border-radius:18px;
         }
@@ -1711,18 +1573,20 @@
 
         .mana-v978-day-number{
 
-          font-size:12px;
+          font-size:11px;
 
           line-height:1.15;
+
+          letter-spacing:.08em;
         }
 
 
         .mana-v978-day h3{
 
           margin:
-            4px 0 2px;
+            4px 0 1px;
 
-          font-size:28px;
+          font-size:27px;
 
           line-height:1.02;
         }
@@ -1730,37 +1594,42 @@
 
         .mana-v978-type{
 
-          font-size:13px;
+          font-size:12px;
 
           line-height:1.15;
         }
 
 
         /* =================================
-           KEEP FONT LARGE,
-           REDUCE EMPTY SPACING
+           PHONE EXERCISE LIST
            ================================= */
 
         .mana-v978-preview{
 
           margin:
             6px 0 7px;
-
-          justify-content:
-            space-evenly;
         }
 
 
         .mana-v978-row{
 
-          font-size:16px;
+          min-height:48px;
 
-          line-height:1.15;
+          grid-template-columns:
+            minmax(0,1fr)
+            minmax(
+              96px,
+              auto
+            );
+
+          gap:8px;
 
           padding:
-            2px 1px;
+            6px 1px;
 
-          gap:10px;
+          font-size:16px;
+
+          line-height:1.18;
         }
 
 
@@ -1789,6 +1658,54 @@
         .mana-v978-daynav{
 
           display:none !important;
+        }
+
+      }
+
+
+      /* =====================================
+         VERY SHORT PHONE
+         ===================================== */
+
+      @media(
+        max-width:700px
+      )
+      and
+      (max-height:700px){
+
+        .mana-v978-program-head{
+
+          display:none;
+        }
+
+
+        .mana-v978-day{
+
+          padding:
+            9px 12px 9px;
+        }
+
+
+        .mana-v978-day h3{
+
+          font-size:25px;
+        }
+
+
+        .mana-v978-row{
+
+          min-height:44px;
+
+          padding:
+            4px 1px;
+        }
+
+
+        .mana-v978-complete{
+
+          flex-basis:44px;
+
+          min-height:44px;
         }
 
       }
@@ -1898,7 +1815,9 @@
 
     const state =
       loadState(
-        stateKey(kind)
+        stateKey(
+          kind
+        )
       );
 
 
@@ -2113,7 +2032,9 @@
 
     const state =
       loadState(
-        stateKey(kind)
+        stateKey(
+          kind
+        )
       );
 
 
@@ -2128,13 +2049,19 @@
 
       const data =
         kind === "mana28"
-          ? mana28Day(day)
-          : lyfeDay(day);
+          ? mana28Day(
+              day
+            )
+          : lyfeDay(
+              day
+            );
 
 
       const done =
         state.completed
-          .includes(day);
+          .includes(
+            day
+          );
 
 
       const minutes =
@@ -2193,6 +2120,7 @@
                           task[0]
                         )}
                       </span>
+
 
                       <span>
                         ${esc(
@@ -2330,6 +2258,7 @@
               () => {
 
                 completeDay(
+
                   kind,
 
                   Number(
@@ -2339,6 +2268,7 @@
                   ),
 
                   button
+
                 );
 
               }
@@ -2472,16 +2402,23 @@
 
     if (
       !state.completed
-        .includes(day)
+        .includes(
+          day
+        )
     ) {
 
       state.completed
-        .push(day);
+        .push(
+          day
+        );
 
 
       state.completed
         .sort(
-          (a,b) =>
+          (
+            a,
+            b
+          ) =>
             a - b
         );
 
@@ -2742,7 +2679,8 @@
 
 
     if (
-      tab === "overview"
+      tab ===
+      "overview"
     ) {
 
       renderOverview(
@@ -2756,7 +2694,9 @@
 
     if (
       tab ===
-      programTab(kind)
+      programTab(
+        kind
+      )
     ) {
 
       renderProgram(
@@ -2777,7 +2717,7 @@
 
     /*
       Reclaim / Progress / Learn
-      remain handled by the existing
+      still handled by existing
       Mana Life modules for now.
     */
 
@@ -2867,7 +2807,7 @@
 
 
     console.log(
-      "[Mana v9.78.1] consolidated Mana 28 + Lyfe ready"
+      "[Mana v9.78.2] workout layout rebuilt"
     );
   }
 
