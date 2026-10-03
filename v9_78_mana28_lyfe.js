@@ -1,26 +1,27 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.78.0
+   MANA MOVEMENT TRAINING v9.78.1
    CONSOLIDATED MANA 28 + MANA LYFE
 
-   ONE OWNER FOR:
-   - MANA 28 OVERVIEW
-   - MANA 28 PROGRAM
-   - MANA LYFE OVERVIEW
-   - MANA LYFE 28-DAY PROGRAM
-   - PHONE SWIPE
+   - ONE OWNER FOR MANA 28 + LYFE UI
+   - CLEAN / NO FLICKERING
+   - FAST PHONE SWIPE
    - LAPTOP PREVIOUS / NEXT
-   - COMPLETE DAY
-   - OVERVIEW NAVIGATION
-
-   NO OBSERVERS
-   NO CONSTANT REPAINT LOOP
+   - LARGER WORKOUT TYPE
+   - TIGHTER PHONE SPACING
+   - FULL PHONE VIEWPORT FIT
+   - ESTIMATED WORKOUT TIME
+   - NO "UNLOCKED" LABEL
+   - OVERVIEW -> HOME
+   - PROGRAM -> OVERVIEW
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "97800";
-  const STYLE_ID = "mana-v978-style";
+  const BUILD = "97810";
+
+  const STYLE_ID =
+    "mana-v978-style";
 
   const M28_KEY =
     "mana-v973-mana28-state";
@@ -29,175 +30,428 @@
     "mana-v973-lyfe-state";
 
   let dayIndex = 0;
+
   let scrollTimer = null;
 
 
   /* =========================================
-     FALLBACK PROGRAM DATA
+     FALLBACK MANA 28 PROGRAM
      ========================================= */
 
   const M28_WEEK = [
 
     {
-      title:"Full Body Strength",
-      type:"Strength",
+      title:
+        "Full Body Strength",
+
+      type:
+        "Strength",
+
       tasks:[
-        ["Goblet Squat","3 × 10"],
-        ["Chest Press","3 × 10"],
-        ["Seated Row","3 × 10"],
-        ["Romanian Deadlift","3 × 10"],
-        ["Plank","3 × 30–45 sec"]
+        [
+          "Goblet Squat",
+          "3 × 10"
+        ],
+        [
+          "Chest Press",
+          "3 × 10"
+        ],
+        [
+          "Seated Row",
+          "3 × 10"
+        ],
+        [
+          "Romanian Deadlift",
+          "3 × 10"
+        ],
+        [
+          "Plank",
+          "3 × 30–45 sec"
+        ]
       ]
     },
 
+
     {
-      title:"Walk + Mobility",
-      type:"Recovery",
+      title:
+        "Walk + Mobility",
+
+      type:
+        "Recovery",
+
       tasks:[
-        ["Purposeful Walk","25–35 min"],
-        ["Hip Mobility","2 × 45 sec each"],
-        ["Thoracic Rotation","2 × 8 each"],
-        ["Breathing Reset","3 min"]
+        [
+          "Purposeful Walk",
+          "25–35 min"
+        ],
+        [
+          "Hip Mobility",
+          "2 × 45 sec each"
+        ],
+        [
+          "Thoracic Rotation",
+          "2 × 8 each"
+        ],
+        [
+          "Breathing Reset",
+          "3 min"
+        ]
       ]
     },
 
+
     {
-      title:"Lower Body Strength",
-      type:"Strength",
+      title:
+        "Lower Body Strength",
+
+      type:
+        "Strength",
+
       tasks:[
-        ["Squat Pattern","4 × 8"],
-        ["Romanian Deadlift","3 × 10"],
-        ["Split Squat / Step-up","3 × 8 each"],
-        ["Calf Raise","3 × 15"],
-        ["Dead Bug","3 × 10 each"]
+        [
+          "Squat Pattern",
+          "4 × 8"
+        ],
+        [
+          "Romanian Deadlift",
+          "3 × 10"
+        ],
+        [
+          "Split Squat / Step-up",
+          "3 × 8 each"
+        ],
+        [
+          "Calf Raise",
+          "3 × 15"
+        ],
+        [
+          "Dead Bug",
+          "3 × 10 each"
+        ]
       ]
     },
 
+
     {
-      title:"Upper Body Strength",
-      type:"Strength",
+      title:
+        "Upper Body Strength",
+
+      type:
+        "Strength",
+
       tasks:[
-        ["Press","4 × 8–10"],
-        ["Row","4 × 8–10"],
-        ["Shoulder Press","3 × 10"],
-        ["Lat Pulldown","3 × 10–12"],
-        ["Carry","3 × 30–45 sec"]
+        [
+          "Press",
+          "4 × 8–10"
+        ],
+        [
+          "Row",
+          "4 × 8–10"
+        ],
+        [
+          "Shoulder Press",
+          "3 × 10"
+        ],
+        [
+          "Lat Pulldown",
+          "3 × 10–12"
+        ],
+        [
+          "Carry",
+          "3 × 30–45 sec"
+        ]
       ]
     },
 
+
     {
-      title:"Conditioning",
-      type:"Cardio",
+      title:
+        "Conditioning",
+
+      type:
+        "Cardio",
+
       tasks:[
-        ["Warm-up","5 min"],
-        ["Intervals","8 rounds"],
-        ["Work","30 sec"],
-        ["Recovery","60 sec"],
-        ["Cool-down","5 min"]
+        [
+          "Warm-up",
+          "5 min"
+        ],
+        [
+          "Intervals",
+          "8 rounds"
+        ],
+        [
+          "Work",
+          "30 sec"
+        ],
+        [
+          "Recovery",
+          "60 sec"
+        ],
+        [
+          "Cool-down",
+          "5 min"
+        ]
       ]
     },
 
+
     {
-      title:"Mobility + Core",
-      type:"Recovery",
+      title:
+        "Mobility + Core",
+
+      type:
+        "Recovery",
+
       tasks:[
-        ["Mobility Flow","12–15 min"],
-        ["Bird Dog","3 × 8 each"],
-        ["Side Plank","3 × 20–30 sec"],
-        ["Easy Walk","15–20 min"]
+        [
+          "Mobility Flow",
+          "12–15 min"
+        ],
+        [
+          "Bird Dog",
+          "3 × 8 each"
+        ],
+        [
+          "Side Plank",
+          "3 × 20–30 sec"
+        ],
+        [
+          "Easy Walk",
+          "15–20 min"
+        ]
       ]
     },
 
+
     {
-      title:"Rest / Reset",
-      type:"Recovery",
+      title:
+        "Rest / Reset",
+
+      type:
+        "Recovery",
+
       tasks:[
-        ["Recovery","Rest or light walk"],
-        ["Hydration","Hit water target"],
-        ["Reset","Prepare for next week"]
+        [
+          "Recovery",
+          "Rest or light walk"
+        ],
+        [
+          "Hydration",
+          "Hit water target"
+        ],
+        [
+          "Reset",
+          "Prepare for next week"
+        ]
       ]
     }
 
   ];
 
 
+  /* =========================================
+     MANA LYFE PROGRAM
+     ========================================= */
+
   const LYFE_WEEK = [
 
     {
-      title:"Reset & Move",
-      type:"Movement",
+      title:
+        "Reset & Move",
+
+      type:
+        "Movement",
+
       tasks:[
-        ["Bodyweight Squat","3 × 12"],
-        ["Push-up / Wall Push-up","3 × 10"],
-        ["Row","3 × 12"],
-        ["Walk","20 min"],
-        ["Journal","Today's reflection"]
+        [
+          "Bodyweight Squat",
+          "3 × 12"
+        ],
+        [
+          "Push-up / Wall Push-up",
+          "3 × 10"
+        ],
+        [
+          "Row",
+          "3 × 12"
+        ],
+        [
+          "Walk",
+          "20 min"
+        ],
+        [
+          "Journal",
+          "Today's reflection"
+        ]
       ]
     },
 
+
     {
-      title:"Walk & Reflect",
-      type:"Mindset",
+      title:
+        "Walk & Reflect",
+
+      type:
+        "Mindset",
+
       tasks:[
-        ["Purposeful Walk","30 min"],
-        ["Breathing Reset","5 min"],
-        ["Journal","What do I need to let go of?"]
+        [
+          "Purposeful Walk",
+          "30 min"
+        ],
+        [
+          "Breathing Reset",
+          "5 min"
+        ],
+        [
+          "Journal",
+          "What do I need to let go of?"
+        ]
       ]
     },
 
+
     {
-      title:"Cardio Energy",
-      type:"Cardio",
+      title:
+        "Cardio Energy",
+
+      type:
+        "Cardio",
+
       tasks:[
-        ["Warm-up","5 min easy"],
-        ["Cardio","20 min moderate"],
-        ["Cool-down","5 min"],
-        ["Journal","What gives me energy?"]
+        [
+          "Warm-up",
+          "5 min easy"
+        ],
+        [
+          "Cardio",
+          "20 min moderate"
+        ],
+        [
+          "Cool-down",
+          "5 min"
+        ],
+        [
+          "Journal",
+          "What gives me energy?"
+        ]
       ]
     },
 
+
     {
-      title:"Mobility + Reset",
-      type:"Recovery",
+      title:
+        "Mobility + Reset",
+
+      type:
+        "Recovery",
+
       tasks:[
-        ["Mobility Flow","12 min"],
-        ["Easy Walk","15 min"],
-        ["Breathing","5 min"],
-        ["Journal","What needs attention?"]
+        [
+          "Mobility Flow",
+          "12 min"
+        ],
+        [
+          "Easy Walk",
+          "15 min"
+        ],
+        [
+          "Breathing",
+          "5 min"
+        ],
+        [
+          "Journal",
+          "What needs attention?"
+        ]
       ]
     },
 
+
     {
-      title:"Build",
-      type:"Movement",
+      title:
+        "Build",
+
+      type:
+        "Movement",
+
       tasks:[
-        ["Reverse Lunge","3 × 10 each"],
-        ["Chest Press / Push-up","3 × 12"],
-        ["Row","3 × 12"],
-        ["Plank","3 × 30 sec"],
-        ["Journal","What am I rebuilding?"]
+        [
+          "Reverse Lunge",
+          "3 × 10 each"
+        ],
+        [
+          "Chest Press / Push-up",
+          "3 × 12"
+        ],
+        [
+          "Row",
+          "3 × 12"
+        ],
+        [
+          "Plank",
+          "3 × 30 sec"
+        ],
+        [
+          "Journal",
+          "What am I rebuilding?"
+        ]
       ]
     },
 
+
     {
-      title:"Move With Purpose",
-      type:"Cardio",
+      title:
+        "Move With Purpose",
+
+      type:
+        "Cardio",
+
       tasks:[
-        ["Bike / Rower","20 min"],
-        ["Walk","10 min"],
-        ["Stretch","5 min"],
-        ["Journal","What went well this week?"]
+        [
+          "Bike / Rower",
+          "20 min"
+        ],
+        [
+          "Walk",
+          "10 min"
+        ],
+        [
+          "Stretch",
+          "5 min"
+        ],
+        [
+          "Journal",
+          "What went well this week?"
+        ]
       ]
     },
 
+
     {
-      title:"Weekly Reset",
-      type:"Reset",
+      title:
+        "Weekly Reset",
+
+      type:
+        "Reset",
+
       tasks:[
-        ["Easy Walk","20 min"],
-        ["Mobility","10 min"],
-        ["Breathing Reset","5 min"],
-        ["Journal","Review and reset"]
+        [
+          "Easy Walk",
+          "20 min"
+        ],
+        [
+          "Mobility",
+          "10 min"
+        ],
+        [
+          "Breathing Reset",
+          "5 min"
+        ],
+        [
+          "Journal",
+          "Review and reset"
+        ]
       ]
     }
 
@@ -208,11 +462,16 @@
      HELPERS
      ========================================= */
 
-  function safeJson(raw, fallback) {
+  function safeJson(
+    raw,
+    fallback
+  ) {
 
     try {
 
-      return JSON.parse(raw);
+      return JSON.parse(
+        raw
+      );
 
     } catch (_) {
 
@@ -222,11 +481,15 @@
   }
 
 
-  function loadState(key) {
+  function loadState(
+    key
+  ) {
 
     const state =
       safeJson(
-        localStorage.getItem(key) || "{}",
+        localStorage.getItem(
+          key
+        ) || "{}",
         {}
       );
 
@@ -253,52 +516,73 @@
 
     localStorage.setItem(
       key,
-      JSON.stringify(state)
+      JSON.stringify(
+        state
+      )
     );
   }
 
 
-  function esc(value) {
+  function esc(
+    value
+  ) {
 
-    return String(value ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;");
+    return String(
+      value ?? ""
+    )
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      );
   }
 
 
   function shell() {
 
-    return document.getElementById(
-      "manaV83ProgramShell"
-    );
+    return document
+      .getElementById(
+        "manaV83ProgramShell"
+      );
   }
 
 
   function holder() {
 
-    return document.getElementById(
-      "manaV83Content"
-    );
+    return document
+      .getElementById(
+        "manaV83Content"
+      );
   }
 
 
   function titleEl() {
 
-    return document.getElementById(
-      "manaV83Title"
-    );
+    return document
+      .getElementById(
+        "manaV83Title"
+      );
   }
 
 
   function activeTab() {
 
     return (
-      document.querySelector(
-        "#manaV83Tabs .mana-v83-tab.active"
-      )
-      ?.dataset
-      ?.v83Tab || ""
+      document
+        .querySelector(
+          "#manaV83Tabs " +
+          ".mana-v83-tab.active"
+        )
+        ?.dataset
+        ?.v83Tab ||
+      ""
     );
   }
 
@@ -308,10 +592,11 @@
     const title =
       (
         titleEl()
-          ?.textContent || ""
+          ?.textContent ||
+        ""
       )
-      .trim()
-      .toUpperCase();
+        .trim()
+        .toUpperCase();
 
 
     if (
@@ -343,7 +628,9 @@
   }
 
 
-  function programTab(kind) {
+  function programTab(
+    kind
+  ) {
 
     return (
       kind === "mana28"
@@ -353,7 +640,9 @@
   }
 
 
-  function stateKey(kind) {
+  function stateKey(
+    kind
+  ) {
 
     return (
       kind === "mana28"
@@ -363,7 +652,9 @@
   }
 
 
-  function openTab(name) {
+  function openTab(
+    name
+  ) {
 
     document
       .querySelector(
@@ -375,17 +666,7 @@
 
 
   /* =========================================
-     IMPORTANT LIFE COMPATIBILITY
-
-     Old Mana Life code only runs when
-     title = MANA LIFE.
-
-     We display MANA LYFE on Overview /
-     Program, preventing the old renderer
-     from repainting those screens.
-
-     Reclaim / Progress / Learn switch back
-     internally so existing sections remain.
+     LYFE TITLE COMPATIBILITY
      ========================================= */
 
   function normaliseLyfeTitle() {
@@ -439,20 +720,19 @@
      DAY DATA
      ========================================= */
 
-  function mana28Day(day) {
-
-    /*
-      Use the app's existing full 28-day
-      program if available.
-    */
+  function mana28Day(
+    day
+  ) {
 
     const existing =
-      window.MANA28_PROGRAM?.[
-        String(day)
-      ] ||
-      window.MANA28_PROGRAM?.[
-        day
-      ];
+      window
+        .MANA28_PROGRAM?.[
+          String(day)
+        ] ||
+      window
+        .MANA28_PROGRAM?.[
+          day
+        ];
 
 
     if (existing) {
@@ -472,15 +752,17 @@
             existing.tasks ||
             []
           )
-          .map(
-            item => [
-              item.name ||
+            .map(
+              item => [
+
+                item.name ||
                 "Exercise",
 
-              item.detail ||
+                item.detail ||
                 ""
-            ]
-          )
+
+              ]
+            )
 
       };
 
@@ -493,7 +775,9 @@
   }
 
 
-  function lyfeDay(day) {
+  function lyfeDay(
+    day
+  ) {
 
     const base =
       LYFE_WEEK[
@@ -526,6 +810,87 @@
 
 
   /* =========================================
+     ESTIMATED TIME
+     ========================================= */
+
+  function estimatedTime(
+    kind,
+    data
+  ) {
+
+    const type =
+      String(
+        data?.type || ""
+      )
+        .toLowerCase();
+
+
+    const title =
+      String(
+        data?.title || ""
+      )
+        .toLowerCase();
+
+
+    if (
+      /rest|reset/.test(
+        title
+      )
+    ) {
+
+      return 20;
+
+    }
+
+
+    if (
+      /mobility|recovery|walk/.test(
+        type
+      ) ||
+      /mobility|recovery/.test(
+        title
+      )
+    ) {
+
+      return 25;
+
+    }
+
+
+    if (
+      /cardio|conditioning/.test(
+        type
+      ) ||
+      /cardio|conditioning|interval/.test(
+        title
+      )
+    ) {
+
+      return 35;
+
+    }
+
+
+    if (
+      /strength|movement/.test(
+        type
+      )
+    ) {
+
+      return 40;
+
+    }
+
+
+    return (
+      kind === "lyfe"
+        ? 30
+        : 35
+    );
+  }
+
+
+  /* =========================================
      STYLES
      ========================================= */
 
@@ -551,7 +916,7 @@
     style.textContent = `
 
       /* =====================================
-         OVERVIEW — SAME LANGUAGE AS STRENGTH
+         OVERVIEW
          ===================================== */
 
       .mana-v978-launchpad{
@@ -583,7 +948,8 @@
 
         letter-spacing:.16em;
 
-        text-transform:uppercase;
+        text-transform:
+          uppercase;
       }
 
 
@@ -671,7 +1037,8 @@
 
         cursor:pointer;
 
-        touch-action:manipulation;
+        touch-action:
+          manipulation;
       }
 
 
@@ -747,7 +1114,8 @@
 
         letter-spacing:.14em;
 
-        text-transform:uppercase;
+        text-transform:
+          uppercase;
       }
 
 
@@ -793,6 +1161,13 @@
          PROGRAM FULL HEIGHT
          ===================================== */
 
+      #manaV83ProgramShell
+      .mana-v83-shell{
+
+        min-height:0;
+      }
+
+
       #manaV83ProgramShell.mana-v978-program{
 
         overflow:hidden !important;
@@ -810,13 +1185,16 @@
             )
           ) !important;
 
-        min-height:0 !important;
+        min-height:
+          0 !important;
 
         display:flex !important;
 
-        flex-direction:column !important;
+        flex-direction:
+          column !important;
 
-        overflow:hidden !important;
+        overflow:
+          hidden !important;
       }
 
 
@@ -860,8 +1238,7 @@
       }
 
 
-      .mana-v978-program-head
-      h2{
+      .mana-v978-program-head h2{
 
         margin:
           5px 0;
@@ -874,8 +1251,7 @@
       }
 
 
-      .mana-v978-program-head
-      p{
+      .mana-v978-program-head p{
 
         margin:0;
 
@@ -888,7 +1264,7 @@
 
 
       /* =====================================
-         DAY PAGES
+         DAY CAROUSEL
          ===================================== */
 
       .mana-v978-days{
@@ -947,7 +1323,8 @@
 
         flex-direction:column;
 
-        box-sizing:border-box;
+        box-sizing:
+          border-box;
 
         border:
           1px solid #3b3522;
@@ -1127,7 +1504,7 @@
 
 
       /* =====================================
-         LAPTOP NAVIGATION
+         LAPTOP DAY NAVIGATION
          ===================================== */
 
       .mana-v978-daynav{
@@ -1150,8 +1527,7 @@
       }
 
 
-      .mana-v978-daynav
-      button{
+      .mana-v978-daynav button{
 
         min-height:44px;
 
@@ -1256,56 +1632,135 @@
         }
 
 
-        .mana-v978-program-head
-        h2{
+        /* =================================
+           PHONE PROGRAM HEIGHT
 
-          font-size:24px;
+           Leave room for the fixed
+           bottom navigation.
+           ================================= */
+
+        #manaV83ProgramShell.mana-v978-program
+        .mana-v83-shell{
+
+          height:
+            calc(
+              100dvh
+              -
+              82px
+              -
+              env(
+                safe-area-inset-bottom
+              )
+            ) !important;
+
+          max-height:
+            calc(
+              100dvh
+              -
+              82px
+              -
+              env(
+                safe-area-inset-bottom
+              )
+            ) !important;
         }
 
 
-        .mana-v978-program-head
-        p{
+        #manaV83ProgramShell.mana-v978-program
+        .mana-v83-head{
+
+          margin-bottom:
+            2px !important;
+        }
+
+
+        .mana-v978-program-head{
+
+          margin:
+            0 0 3px;
+        }
+
+
+        .mana-v978-program-head h2{
+
+          margin:
+            2px 0;
+
+          font-size:22px;
+        }
+
+
+        .mana-v978-program-head p{
 
           display:none;
         }
 
 
+        /* =================================
+           DAY CARD
+           ================================= */
+
         .mana-v978-day{
 
-          padding:18px;
+          padding:
+            13px 15px 12px;
 
-          border-radius:20px;
+          border-radius:18px;
         }
 
 
         .mana-v978-day-number{
 
           font-size:12px;
+
+          line-height:1.15;
         }
 
 
         .mana-v978-day h3{
 
+          margin:
+            4px 0 2px;
+
           font-size:28px;
+
+          line-height:1.02;
         }
 
 
         .mana-v978-type{
 
           font-size:13px;
+
+          line-height:1.15;
         }
 
 
-        /*
-          Larger workout text.
-        */
+        /* =================================
+           KEEP FONT LARGE,
+           REDUCE EMPTY SPACING
+           ================================= */
+
+        .mana-v978-preview{
+
+          margin:
+            6px 0 7px;
+
+          justify-content:
+            space-evenly;
+        }
+
 
         .mana-v978-row{
 
           font-size:16px;
 
+          line-height:1.15;
+
           padding:
-            6px 1px;
+            2px 1px;
+
+          gap:10px;
         }
 
 
@@ -1313,22 +1768,23 @@
         span:last-child{
 
           font-size:15px;
+
+          line-height:1.15;
         }
 
 
         .mana-v978-complete{
 
-          flex-basis:50px;
+          flex:
+            0 0 46px;
 
-          min-height:50px;
+          min-height:46px;
 
           font-size:13px;
         }
 
 
-        /*
-          Phone = native swipe.
-        */
+        /* PHONE = SWIPE */
 
         .mana-v978-daynav{
 
@@ -1340,9 +1796,10 @@
     `;
 
 
-    document.head.appendChild(
-      style
-    );
+    document.head
+      .appendChild(
+        style
+      );
   }
 
 
@@ -1373,6 +1830,7 @@
           ${icon}
         </div>
 
+
         <div
           class="mana-v978-copy"
         >
@@ -1383,17 +1841,20 @@
             ${label}
           </div>
 
+
           <div
             class="mana-v978-title"
           >
             ${title}
           </div>
 
+
           <div
             class="mana-v978-text"
           >
             ${text}
           </div>
+
 
           <div
             class="mana-v978-arrow"
@@ -1413,7 +1874,9 @@
      OVERVIEW
      ========================================= */
 
-  function renderOverview(kind) {
+  function renderOverview(
+    kind
+  ) {
 
     const content =
       holder();
@@ -1452,7 +1915,8 @@
       titleEl()
     ) {
 
-      titleEl().textContent =
+      titleEl()
+        .textContent =
         "MANA LYFE";
 
     }
@@ -1478,6 +1942,7 @@
             }
           </div>
 
+
           <h2>
             ${
               lyfe
@@ -1485,6 +1950,7 @@
                 : "Your Mana 28 Hub"
             }
           </h2>
+
 
           <p>
             Everything important in one place.
@@ -1538,7 +2004,7 @@
                   "F",
                   "FUEL",
                   "Nutrition",
-                  "Track calories, protein, meals, water and daily targets.",
+                  "Profile-driven calories, protein, meals, water and daily targets.",
                   "OPEN FUEL →"
                 )
           }
@@ -1583,23 +2049,27 @@
       .forEach(
         button => {
 
-          button.addEventListener(
-            "click",
-            () => {
+          button
+            .addEventListener(
+              "click",
+              () => {
 
-              openTab(
-                button.dataset
-                  .v978Tab
-              );
+                openTab(
+                  button
+                    .dataset
+                    .v978Tab
+                );
 
-            }
-          );
+              }
+            );
 
         }
       );
 
 
-    updateBack(kind);
+    updateBack(
+      kind
+    );
   }
 
 
@@ -1607,7 +2077,9 @@
      PROGRAM
      ========================================= */
 
-  function renderProgram(kind) {
+  function renderProgram(
+    kind
+  ) {
 
     const content =
       holder();
@@ -1632,7 +2104,8 @@
       titleEl()
     ) {
 
-      titleEl().textContent =
+      titleEl()
+        .textContent =
         "MANA LYFE";
 
     }
@@ -1650,7 +2123,7 @@
     for (
       let day = 1;
       day <= 28;
-      day++
+      day += 1
     ) {
 
       const data =
@@ -1664,6 +2137,13 @@
           .includes(day);
 
 
+      const minutes =
+        estimatedTime(
+          kind,
+          data
+        );
+
+
       cards.push(`
 
         <section
@@ -1674,19 +2154,24 @@
           <div
             class="mana-v978-day-number"
           >
-            DAY ${day} OF 28 • UNLOCKED
+            DAY ${day} OF 28
+            • ~${minutes} MIN
           </div>
 
 
           <h3>
-            ${esc(data.title)}
+            ${esc(
+              data.title
+            )}
           </h3>
 
 
           <div
             class="mana-v978-type"
           >
-            ${esc(data.type)}
+            ${esc(
+              data.type
+            )}
           </div>
 
 
@@ -1704,11 +2189,15 @@
                     >
 
                       <span>
-                        ${esc(task[0])}
+                        ${esc(
+                          task[0]
+                        )}
                       </span>
 
                       <span>
-                        ${esc(task[1])}
+                        ${esc(
+                          task[1]
+                        )}
                       </span>
 
                     </div>
@@ -1723,12 +2212,23 @@
 
           <button
             type="button"
+
             class="
               mana-v978-complete
-              ${done ? "done" : ""}
+              ${
+                done
+                  ? "done"
+                  : ""
+              }
             "
+
             data-v978-complete="${day}"
-            ${done ? "disabled" : ""}
+
+            ${
+              done
+                ? "disabled"
+                : ""
+            }
           >
 
             ${
@@ -1763,13 +2263,15 @@
           • 28 DAY PROGRAM
         </div>
 
+
         <h2>
           Move with purpose.
         </h2>
 
+
         <p>
           Swipe on phone or use Previous /
-          Next on laptop. Every day is unlocked.
+          Next on laptop.
         </p>
 
       </div>
@@ -1822,21 +2324,25 @@
       .forEach(
         button => {
 
-          button.addEventListener(
-            "click",
-            () => {
+          button
+            .addEventListener(
+              "click",
+              () => {
 
-              completeDay(
-                kind,
-                Number(
-                  button.dataset
-                    .v978Complete
-                ),
-                button
-              );
+                completeDay(
+                  kind,
 
-            }
-          );
+                  Number(
+                    button
+                      .dataset
+                      .v978Complete
+                  ),
+
+                  button
+                );
+
+              }
+            );
 
         }
       );
@@ -1875,57 +2381,59 @@
 
 
     const days =
-      document.getElementById(
-        "manaV978Days"
-      );
-
-
-    days?.addEventListener(
-      "scroll",
-      () => {
-
-        clearTimeout(
-          scrollTimer
+      document
+        .getElementById(
+          "manaV978Days"
         );
 
 
-        scrollTimer =
-          setTimeout(
-            () => {
+    days
+      ?.addEventListener(
+        "scroll",
+        () => {
 
-              if (
-                !days.clientWidth
-              ) {
-
-                return;
-
-              }
-
-
-              dayIndex =
-                Math.max(
-                  0,
-                  Math.min(
-                    27,
-                    Math.round(
-                      days.scrollLeft /
-                      days.clientWidth
-                    )
-                  )
-                );
-
-
-              updateDayCount();
-
-            },
-            70
+          clearTimeout(
+            scrollTimer
           );
 
-      },
-      {
-        passive:true
-      }
-    );
+
+          scrollTimer =
+            setTimeout(
+              () => {
+
+                if (
+                  !days.clientWidth
+                ) {
+
+                  return;
+
+                }
+
+
+                dayIndex =
+                  Math.max(
+                    0,
+                    Math.min(
+                      27,
+                      Math.round(
+                        days.scrollLeft /
+                        days.clientWidth
+                      )
+                    )
+                  );
+
+
+                updateDayCount();
+
+              },
+              70
+            );
+
+        },
+        {
+          passive:true
+        }
+      );
 
 
     goDay(
@@ -1934,12 +2442,14 @@
     );
 
 
-    updateBack(kind);
+    updateBack(
+      kind
+    );
   }
 
 
   /* =========================================
-     COMPLETE
+     COMPLETE DAY
      ========================================= */
 
   function completeDay(
@@ -1949,11 +2459,15 @@
   ) {
 
     const key =
-      stateKey(kind);
+      stateKey(
+        kind
+      );
 
 
     const state =
-      loadState(key);
+      loadState(
+        key
+      );
 
 
     if (
@@ -1961,12 +2475,15 @@
         .includes(day)
     ) {
 
-      state.completed.push(day);
+      state.completed
+        .push(day);
 
-      state.completed.sort(
-        (a,b) =>
-          a - b
-      );
+
+      state.completed
+        .sort(
+          (a,b) =>
+            a - b
+        );
 
     }
 
@@ -1994,9 +2511,11 @@
     );
 
 
-    button.classList.add(
-      "done"
-    );
+    button
+      .classList
+      .add(
+        "done"
+      );
 
 
     button.textContent =
@@ -2018,9 +2537,10 @@
   ) {
 
     const days =
-      document.getElementById(
-        "manaV978Days"
-      );
+      document
+        .getElementById(
+          "manaV978Days"
+        );
 
 
     if (!days) {
@@ -2061,9 +2581,10 @@
   function updateDayCount() {
 
     const count =
-      document.getElementById(
-        "manaV978Count"
-      );
+      document
+        .getElementById(
+          "manaV978Count"
+        );
 
 
     if (count) {
@@ -2077,15 +2598,17 @@
 
 
     const prev =
-      document.getElementById(
-        "manaV978Prev"
-      );
+      document
+        .getElementById(
+          "manaV978Prev"
+        );
 
 
     const next =
-      document.getElementById(
-        "manaV978Next"
-      );
+      document
+        .getElementById(
+          "manaV978Next"
+        );
 
 
     if (prev) {
@@ -2106,15 +2629,18 @@
 
 
   /* =========================================
-     BACK
+     BACK / OVERVIEW
      ========================================= */
 
-  function updateBack(kind) {
+  function updateBack(
+    kind
+  ) {
 
     const button =
-      document.getElementById(
-        "manaV83Back"
-      );
+      document
+        .getElementById(
+          "manaV83Back"
+        );
 
 
     if (
@@ -2136,56 +2662,58 @@
 
   function installBackRepair() {
 
-    document.addEventListener(
-      "click",
-      event => {
+    document
+      .addEventListener(
+        "click",
+        event => {
 
-        const button =
-          event.target.closest(
-            "#manaV83Back"
+          const button =
+            event.target
+              .closest(
+                "#manaV83Back"
+              );
+
+
+          if (!button) {
+
+            return;
+
+          }
+
+
+          const kind =
+            programKind();
+
+
+          if (!kind) {
+
+            return;
+
+          }
+
+
+          if (
+            activeTab() ===
+            "overview"
+          ) {
+
+            return;
+
+          }
+
+
+          event.preventDefault();
+
+          event.stopImmediatePropagation();
+
+
+          openTab(
+            "overview"
           );
 
-
-        if (!button) {
-
-          return;
-
-        }
-
-
-        const kind =
-          programKind();
-
-
-        if (!kind) {
-
-          return;
-
-        }
-
-
-        if (
-          activeTab() ===
-          "overview"
-        ) {
-
-          return;
-
-        }
-
-
-        event.preventDefault();
-
-        event.stopImmediatePropagation();
-
-
-        openTab(
-          "overview"
-        );
-
-      },
-      true
-    );
+        },
+        true
+      );
   }
 
 
@@ -2217,7 +2745,9 @@
       tab === "overview"
     ) {
 
-      renderOverview(kind);
+      renderOverview(
+        kind
+      );
 
       return;
 
@@ -2229,7 +2759,9 @@
       programTab(kind)
     ) {
 
-      renderProgram(kind);
+      renderProgram(
+        kind
+      );
 
       return;
 
@@ -2245,8 +2777,8 @@
 
     /*
       Reclaim / Progress / Learn
-      stay with existing Mana Life
-      modules for now.
+      remain handled by the existing
+      Mana Life modules for now.
     */
 
     if (
@@ -2254,37 +2786,36 @@
       titleEl()
     ) {
 
-      titleEl().textContent =
+      titleEl()
+        .textContent =
         "MANA LIFE";
 
     }
 
 
-    updateBack(kind);
+    updateBack(
+      kind
+    );
   }
 
 
   function scheduleRender() {
 
-    /*
-      Small finite render window only.
-      No observers or repeating timers.
-    */
-
     [
       0,
       35,
       110
-    ].forEach(
-      delay => {
+    ]
+      .forEach(
+        delay => {
 
-        setTimeout(
-          render,
-          delay
-        );
+          setTimeout(
+            render,
+            delay
+          );
 
-      }
-    );
+        }
+      );
   }
 
 
@@ -2301,39 +2832,42 @@
     scheduleRender();
 
 
-    window.addEventListener(
-      "mana:program-tab-change",
-      scheduleRender
-    );
+    window
+      .addEventListener(
+        "mana:program-tab-change",
+        scheduleRender
+      );
 
 
-    document.addEventListener(
-      "click",
-      event => {
+    document
+      .addEventListener(
+        "click",
+        event => {
 
-        if (
-          event.target.closest(
-            "#manaV80Mana28," +
-            "#manaV80Life," +
-            "#manaV83Tabs"
-          )
-        ) {
+          if (
+            event.target.closest(
+              "#manaV80Mana28," +
+              "#manaV80Life," +
+              "#manaV83Tabs"
+            )
+          ) {
 
-          scheduleRender();
+            scheduleRender();
 
-        }
+          }
 
-      },
-      true
-    );
+        },
+        true
+      );
 
 
-    window.MANA_28_LYFE_BUILD =
+    window
+      .MANA_28_LYFE_BUILD =
       BUILD;
 
 
     console.log(
-      "[Mana v9.78.0] consolidated Mana 28 + Lyfe ready"
+      "[Mana v9.78.1] consolidated Mana 28 + Lyfe ready"
     );
   }
 
@@ -2343,13 +2877,14 @@
     "loading"
   ) {
 
-    document.addEventListener(
-      "DOMContentLoaded",
-      init,
-      {
-        once:true
-      }
-    );
+    document
+      .addEventListener(
+        "DOMContentLoaded",
+        init,
+        {
+          once:true
+        }
+      );
 
   } else {
 
