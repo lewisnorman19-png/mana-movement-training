@@ -1,32 +1,281 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.74.1
-   MANA 28 + MANA LYFE PREMIUM POLISH
+   MANA MOVEMENT TRAINING v9.74.2
+   MANA 28 + MANA LYFE FINAL PROGRAM FLOW
 
-   FIXES
-   - MATCHES MANA STRENGTH OVERVIEW
-   - SELF-HEALS AFTER v9.73 RE-RENDERS
-   - MUTATION OBSERVER FOR PHONE
-   - FULL SCREEN WORKOUT
-   - MOBILE ONE-COLUMN OVERVIEW
-   - EDGE-TO-EDGE WORKOUT EXPERIENCE
+   - OVERVIEW CARDS TAPPABLE ON PHONE
+   - PROGRAM DAY IS THE WORKOUT
+   - NO START WORKOUT SCREEN
+   - NO SECOND WORKOUT MODAL
+   - EACH DAY = ONE FULL PAGE
+   - ZERO DAY-TO-DAY OVERLAP
+   - COMPLETE DAY BUTTON AT BOTTOM
+   - ALL 28 DAYS UNLOCKED
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "97410";
+  const BUILD = "97420";
 
   const STYLE_ID =
     "mana-v974-m28-lyfe-polish-style";
 
+  const M28_KEY =
+    "mana-v973-mana28-state";
+
+  const LYFE_KEY =
+    "mana-v973-lyfe-state";
+
   let observer = null;
-  let modalObserver = null;
+
   let refreshTimer = null;
+
+  let lastProgram = "";
+  let lastDay = 1;
+
+
+  /* =========================================
+     DATA
+     ========================================= */
+
+  const MANA28 = [
+
+    {
+      title:"Full Body Strength",
+      type:"Strength",
+      tasks:[
+        ["Goblet Squat","3 × 10"],
+        ["DB / Machine Chest Press","3 × 10"],
+        ["Seated Row","3 × 10"],
+        ["Romanian Deadlift","3 × 10"],
+        ["Plank","3 × 30–45 sec"]
+      ]
+    },
+
+    {
+      title:"Treadmill Cardio",
+      type:"Cardio",
+      tasks:[
+        ["Warm-up Walk","5 min"],
+        ["Treadmill","20 min moderate"],
+        ["Incline Walk","5 min"],
+        ["Cool-down","5 min"]
+      ]
+    },
+
+    {
+      title:"Lower Body Strength",
+      type:"Strength",
+      tasks:[
+        ["Leg Press / Squat","3 × 10"],
+        ["Romanian Deadlift","3 × 10"],
+        ["Split Squat","3 × 8 each"],
+        ["Hamstring Curl","3 × 12"],
+        ["Calf Raise","3 × 15"]
+      ]
+    },
+
+    {
+      title:"Walk + Mobility",
+      type:"Recovery",
+      tasks:[
+        ["Purposeful Walk","30 min"],
+        ["Hip Mobility","5 min"],
+        ["Thoracic Rotation","2 × 8 each"],
+        ["Breathing Reset","5 min"]
+      ]
+    },
+
+    {
+      title:"Upper Body + Core",
+      type:"Strength",
+      tasks:[
+        ["Chest Press","3 × 10"],
+        ["Lat Pulldown","3 × 10"],
+        ["Shoulder Press","3 × 10"],
+        ["Cable Row","3 × 10"],
+        ["Dead Bug","3 × 8 each"]
+      ]
+    },
+
+    {
+      title:"Bike Intervals",
+      type:"Cardio",
+      tasks:[
+        ["Easy Bike","5 min"],
+        ["Bike Intervals","8 × 30 sec strong"],
+        ["Easy Recovery","60 sec between"],
+        ["Easy Bike","5 min"]
+      ]
+    },
+
+    {
+      title:"Recovery Reset",
+      type:"Recovery",
+      tasks:[
+        ["Easy Walk","20–30 min"],
+        ["Mobility Flow","10 min"],
+        ["Breathing Reset","5 min"]
+      ]
+    }
+
+  ];
+
+
+  const LYFE = [
+
+    {
+      title:"Reset & Move",
+      type:"Movement",
+      tasks:[
+        ["Bodyweight Squat","3 × 12"],
+        ["Push-up / Wall Push-up","3 × 10"],
+        ["Band / Cable Row","3 × 12"],
+        ["Walk","20 min"],
+        ["Mana Lyfe Journal","Complete today's reflection"]
+      ]
+    },
+
+    {
+      title:"Walk & Reflect",
+      type:"Mindset",
+      tasks:[
+        ["Purposeful Walk","30 min"],
+        ["Breathing Reset","5 min"],
+        ["Journal","What do I need to let go of?"]
+      ]
+    },
+
+    {
+      title:"Cardio Energy",
+      type:"Cardio",
+      tasks:[
+        ["Treadmill / Bike","5 min easy"],
+        ["Cardio","20 min moderate"],
+        ["Cool-down","5 min"],
+        ["Journal","What gives me energy?"]
+      ]
+    },
+
+    {
+      title:"Mobility + Reset",
+      type:"Recovery",
+      tasks:[
+        ["Mobility Flow","12 min"],
+        ["Easy Walk","15 min"],
+        ["Breathing","5 min"],
+        ["Journal","What needs more attention?"]
+      ]
+    },
+
+    {
+      title:"Build",
+      type:"Movement",
+      tasks:[
+        ["Reverse Lunge","3 × 10 each"],
+        ["Chest Press / Push-up","3 × 12"],
+        ["Row","3 × 12"],
+        ["Plank","3 × 30 sec"],
+        ["Journal","What am I rebuilding?"]
+      ]
+    },
+
+    {
+      title:"Move With Purpose",
+      type:"Cardio",
+      tasks:[
+        ["Bike / Rower","20 min"],
+        ["Walk","10 min"],
+        ["Stretch","5 min"],
+        ["Journal","What went well this week?"]
+      ]
+    },
+
+    {
+      title:"Weekly Reset",
+      type:"Reset",
+      tasks:[
+        ["Easy Walk","20 min"],
+        ["Mobility","10 min"],
+        ["Breathing Reset","5 min"],
+        ["Journal","Review the week and reset"]
+      ]
+    }
+
+  ];
 
 
   /* =========================================
      HELPERS
      ========================================= */
+
+  function safeJson(
+    raw,
+    fallback
+  ) {
+
+    try {
+
+      return JSON.parse(
+        raw
+      );
+
+    } catch (_) {
+
+      return fallback;
+
+    }
+  }
+
+
+  function loadState(
+    key
+  ) {
+
+    const state =
+      safeJson(
+        localStorage.getItem(
+          key
+        ) || "{}",
+        {}
+      );
+
+
+    if (
+      !Array.isArray(
+        state.completed
+      )
+    ) {
+
+      state.completed = [];
+
+    }
+
+
+    return state;
+  }
+
+
+  function saveState(
+    key,
+    state
+  ) {
+
+    localStorage.setItem(
+      key,
+      JSON.stringify(
+        state
+      )
+    );
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:v973-updated"
+      )
+    );
+  }
+
 
   function shell() {
 
@@ -42,12 +291,14 @@
     return Boolean(
       shell()
         ?.classList
-        .contains("open")
+        .contains(
+          "open"
+        )
     );
   }
 
 
-  function programTitle() {
+  function title() {
 
     return (
       document
@@ -62,7 +313,7 @@
   }
 
 
-  function activeTab() {
+  function tab() {
 
     return (
       document
@@ -77,70 +328,131 @@
   }
 
 
-  function isMana28() {
+  function currentProgram() {
+
+    const t =
+      title();
+
+
+    if (
+      t === "MANA 28"
+    ) {
+
+      return "mana28";
+
+    }
+
+
+    if (
+      t === "MANA LYFE" ||
+      t === "MANA LIFE"
+    ) {
+
+      return "lyfe";
+
+    }
+
+
+    return "";
+  }
+
+
+  function stateKey(
+    program
+  ) {
 
     return (
-      shellOpen() &&
-      programTitle() ===
-        "MANA 28"
+      program === "mana28"
+        ? M28_KEY
+        : LYFE_KEY
     );
   }
 
 
-  function isLyfe() {
+  function dayData(
+    program,
+    day
+  ) {
 
-    const title =
-      programTitle();
+    const week =
+      Math.floor(
+        (day - 1) / 7
+      );
 
 
-    return (
-      shellOpen() &&
-      (
-        title === "MANA LYFE" ||
-        title === "MANA LIFE"
+    if (
+      program === "mana28"
+    ) {
+
+      const base =
+        MANA28[
+          (day - 1) % 7
+        ];
+
+
+      const suffix =
+        week === 0
+          ? ""
+          : week === 1
+            ? " • Build"
+            : week === 2
+              ? " • Progress"
+              : " • Finish Strong";
+
+
+      return {
+        ...base,
+        title:
+          base.title +
+          suffix
+      };
+
+    }
+
+
+    const base =
+      LYFE[
+        (day - 1) % 7
+      ];
+
+
+    const themes = [
+      "RESET",
+      "REBUILD",
+      "GROW",
+      "MOVE FORWARD"
+    ];
+
+
+    return {
+      ...base,
+      theme:
+        themes[week] ||
+        "MOVE FORWARD"
+    };
+  }
+
+
+  function esc(
+    value
+  ) {
+
+    return String(
+      value ?? ""
+    )
+      .replaceAll(
+        "&",
+        "&amp;"
       )
-    );
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      );
   }
-
-
-  function relevantProgram() {
-
-    return (
-      isMana28() ||
-      isLyfe()
-    );
-  }
-
-
-  function isOverview() {
-
-    return (
-      relevantProgram() &&
-      activeTab() ===
-        "overview"
-    );
-  }
-
-
-  /* =========================================
-     ICONS
-     ========================================= */
-
-  const ICONS = {
-
-    program:"28",
-
-    routine:"28",
-
-    progress:"↗",
-
-    fuel:"F",
-
-    learn:"i",
-
-    reclaim:"✦"
-
-  };
 
 
   /* =========================================
@@ -175,9 +487,6 @@
       #manaV83Content
       .mana-v973-hero{
 
-        max-width:
-          860px !important;
-
         margin:
           0
           0
@@ -191,34 +500,11 @@
         border:
           0 !important;
 
-        border-radius:
-          0 !important;
-
         background:
           transparent !important;
 
         box-shadow:
           none !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-kicker{
-
-        color:
-          #e2c25a !important;
-
-        font-size:
-          12px !important;
-
-        font-weight:
-          950 !important;
-
-        letter-spacing:
-          .16em !important;
-
-        text-transform:
-          uppercase !important;
       }
 
 
@@ -230,8 +516,7 @@
           0
           12px !important;
 
-        color:
-          #fff !important;
+        color:#fff !important;
 
         font-size:
           36px !important;
@@ -248,10 +533,7 @@
       .mana-v973-hero p{
 
         max-width:
-          680px !important;
-
-        margin:
-          0 !important;
+          680px;
 
         color:
           #b8b8b8 !important;
@@ -266,12 +548,6 @@
 
       #manaV83Content
       .mana-v973-grid{
-
-        width:
-          100% !important;
-
-        max-width:
-          860px !important;
 
         display:
           grid !important;
@@ -294,22 +570,7 @@
           relative !important;
 
         min-height:
-          196px !important;
-
-        display:
-          grid !important;
-
-        grid-template-columns:
-          62px
-          minmax(0,1fr) !important;
-
-        grid-template-rows:
-          auto
-          auto
-          1fr !important;
-
-        column-gap:
-          18px !important;
+          190px !important;
 
         padding:
           24px !important;
@@ -324,27 +585,22 @@
         background:
           linear-gradient(
             145deg,
-            #171611 0%,
-            #10100d 45%,
-            #090909 100%
+            #171611,
+            #10100d 48%,
+            #090909
           ) !important;
 
-        box-shadow:
-          0
-          14px
-          32px
-          rgba(0,0,0,.22),
-          inset
-          0
-          1px
-          0
-          rgba(255,255,255,.02) !important;
+        cursor:
+          pointer !important;
 
-        overflow:
-          hidden !important;
+        pointer-events:
+          auto !important;
 
-        box-sizing:
-          border-box !important;
+        touch-action:
+          manipulation !important;
+
+        -webkit-tap-highlight-color:
+          transparent !important;
       }
 
 
@@ -357,10 +613,15 @@
           absolute;
 
         top:0;
-        left:22px;
-        right:22px;
 
-        height:2px;
+        left:
+          22px;
+
+        right:
+          22px;
+
+        height:
+          2px;
 
         background:
           linear-gradient(
@@ -369,46 +630,18 @@
             #d9ba55,
             transparent
           );
+
+        pointer-events:
+          none;
       }
 
 
-      .mana-v974-icon{
+      #manaV83Content
+      .mana-v973-hub-card
+      *{
 
-        grid-column:
-          1;
-
-        grid-row:
-          1 / span 3;
-
-        width:
-          62px;
-
-        height:
-          62px;
-
-        display:
-          grid;
-
-        place-items:
-          center;
-
-        border-radius:
-          18px;
-
-        background:
-          linear-gradient(
-            145deg,
-            #f2d978,
-            #c89f2f
-          );
-
-        color:#111;
-
-        font-size:
-          20px;
-
-        font-weight:
-          950;
+        pointer-events:
+          none !important;
       }
 
 
@@ -416,20 +649,13 @@
       .mana-v973-hub-card
       strong{
 
-        grid-column:
-          2 !important;
-
-        color:
-          #fff !important;
+        color:#fff !important;
 
         font-size:
-          26px !important;
+          25px !important;
 
         font-weight:
           950 !important;
-
-        line-height:
-          1.08 !important;
       }
 
 
@@ -437,20 +663,11 @@
       .mana-v973-hub-card
       span{
 
-        grid-column:
-          2 !important;
-
-        margin-top:
-          11px !important;
-
         color:
           #b8b8b8 !important;
 
         font-size:
           15px !important;
-
-        line-height:
-          1.55 !important;
       }
 
 
@@ -458,299 +675,70 @@
       .mana-v973-hub-card
       b{
 
-        grid-column:
-          2 !important;
-
-        align-self:
-          end !important;
-
-        margin-top:
-          16px !important;
-
         color:
           #f3d875 !important;
 
         font-size:
           13px !important;
-
-        font-weight:
-          950 !important;
       }
 
 
       /* =====================================
-         PROGRAM CARDS
+         PROGRAM MODE
          ===================================== */
 
-      #manaV83Content
+      #manaV83ProgramShell
       .mana-v973-program-head{
 
-        max-width:
-          860px !important;
+        flex:
+          0
+          0
+          auto !important;
 
-        margin-bottom:
-          20px !important;
+        margin:
+          0
+          0
+          10px !important;
       }
 
 
-      #manaV83Content
+      #manaV83ProgramShell
       .mana-v973-program-head h2{
 
         margin:
-          8px
+          5px
           0 !important;
 
-        color:#fff;
-
         font-size:
-          32px !important;
+          28px !important;
 
         font-weight:
           950 !important;
       }
 
 
-      #manaV83Content
+      #manaV83ProgramShell
+      .mana-v973-program-head p{
+
+        margin:
+          0 !important;
+
+        color:
+          #888 !important;
+
+        font-size:
+          12px !important;
+      }
+
+
+      #manaV83ProgramShell
       .mana-v973-days{
 
         width:
           100% !important;
 
-        max-width:
-          860px !important;
-
-        gap:
-          14px !important;
-
-        padding:
-          2px
-          2px
-          14px !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-day{
-
-        flex:
-          0
-          0
-          min(
-            520px,
-            88%
-          ) !important;
-
-        padding:
-          22px !important;
-
-        border:
-          1px solid
-          #3a3421 !important;
-
-        border-radius:
-          24px !important;
-
-        background:
-          linear-gradient(
-            145deg,
-            #15140f,
-            #0a0a09
-          ) !important;
-
-        box-sizing:
-          border-box !important;
-      }
-
-
-      #manaV83Content
-      .mana-v973-day h3{
-
-        font-size:
-          27px !important;
-
-        font-weight:
-          950 !important;
-      }
-
-
-      /* =====================================
-         FULL SCREEN WORKOUT
-         ===================================== */
-
-      #manaV973Workout{
-
-        position:
-          fixed !important;
-
-        inset:
-          0 !important;
-
-        z-index:
-          60000 !important;
-
-        padding:
-          0 !important;
-
-        margin:
-          0 !important;
-
-        overflow:
-          hidden !important;
-
-        background:
-          #050505 !important;
-      }
-
-
-      #manaV973Workout.open{
-
         display:
-          block !important;
-      }
-
-
-      #manaV973Workout
-      .mana-v973-work-shell{
-
-        width:
-          100vw !important;
-
-        max-width:
-          none !important;
-
-        height:
-          100vh !important;
-
-        height:
-          100dvh !important;
-
-        margin:
-          0 !important;
-
-        padding:
-          calc(
-            env(
-              safe-area-inset-top
-            ) + 12px
-          )
-          18px
-          calc(
-            env(
-              safe-area-inset-bottom
-            ) + 12px
-          ) !important;
-
-        display:
-          grid !important;
-
-        grid-template-rows:
-          auto
-          auto
-          minmax(0,1fr)
-          auto
-          auto !important;
-
-        box-sizing:
-          border-box !important;
-
-        background:
-          radial-gradient(
-            circle
-            at top,
-            rgba(
-              211,
-              176,
-              55,
-              .07
-            ),
-            transparent
-            34%
-          ),
-          #050505 !important;
-      }
-
-
-      #manaV973Workout
-      .mana-v973-work-head{
-
-        width:
-          min(
-            920px,
-            100%
-          ) !important;
-
-        margin:
-          0 auto !important;
-
-        padding-bottom:
-          10px !important;
-
-        border-bottom:
-          1px solid
-          #26241d !important;
-      }
-
-
-      #manaV973Workout
-      .mana-v973-work-head h2{
-
-        margin:
-          5px
-          0
-          0 !important;
-
-        font-size:
-          30px !important;
-
-        font-weight:
-          950 !important;
-      }
-
-
-      #manaV973Workout
-      .mana-v973-page-counter{
-
-        width:
-          min(
-            920px,
-            100%
-          ) !important;
-
-        margin:
-          9px
-          auto
-          0 !important;
-
-        color:
-          #d6b958 !important;
-
-        font-size:
-          10px !important;
-
-        font-weight:
-          950 !important;
-
-        letter-spacing:
-          .12em !important;
-      }
-
-
-      #manaV973Workout
-      .mana-v973-pages{
-
-        width:
-          min(
-            920px,
-            100%
-          ) !important;
-
-        min-height:
-          0 !important;
-
-        margin:
-          6px
-          auto
-          0 !important;
+          flex !important;
 
         gap:
           0 !important;
@@ -772,15 +760,17 @@
       }
 
 
-      #manaV973Workout
-      .mana-v973-pages::-webkit-scrollbar{
+      #manaV83ProgramShell
+      .mana-v973-days::-webkit-scrollbar{
 
         display:none;
       }
 
 
-      #manaV973Workout
-      .mana-v973-task{
+      /* EXACTLY ONE DAY PER PAGE */
+
+      #manaV83ProgramShell
+      .mana-v973-day{
 
         flex:
           0
@@ -796,14 +786,17 @@
         max-width:
           100% !important;
 
-        min-height:
+        height:
           100% !important;
+
+        min-height:
+          0 !important;
 
         margin:
           0 !important;
 
         padding:
-          32px !important;
+          22px !important;
 
         display:
           flex !important;
@@ -811,136 +804,248 @@
         flex-direction:
           column !important;
 
-        justify-content:
-          center !important;
-
         border:
-          0 !important;
+          1px solid
+          #3b3522 !important;
 
         border-radius:
-          0 !important;
+          24px !important;
 
         background:
-          transparent !important;
+          linear-gradient(
+            145deg,
+            #171611,
+            #0b0b09
+          ) !important;
 
         box-sizing:
           border-box !important;
 
         scroll-snap-align:
           start !important;
+
+        scroll-snap-stop:
+          always !important;
+
+        overflow-y:
+          auto !important;
+
+        overflow-x:
+          hidden !important;
       }
 
 
-      #manaV973Workout
-      .mana-v973-task h3{
+      #manaV83ProgramShell
+      .mana-v973-day-number{
 
-        max-width:
-          760px;
-
-        margin:
-          14px
+        flex:
           0
-          8px !important;
-
-        font-size:
-          clamp(
-            36px,
-            6vw,
-            58px
-          ) !important;
-
-        font-weight:
-          950 !important;
-
-        line-height:
-          .98 !important;
-      }
-
-
-      #manaV973Workout
-      .mana-v973-dose{
+          0
+          auto;
 
         color:
-          #f3d875 !important;
+          #e2c25a !important;
 
         font-size:
-          24px !important;
+          11px !important;
 
         font-weight:
           950 !important;
+
+        letter-spacing:
+          .12em !important;
       }
 
 
-      #manaV973Workout
-      .mana-v973-simple-copy{
+      #manaV83ProgramShell
+      .mana-v973-day h3{
 
-        max-width:
-          650px;
+        flex:
+          0
+          0
+          auto;
 
-        margin-top:
-          22px !important;
+        margin:
+          9px
+          0
+          5px !important;
 
-        color:#aaa !important;
+        color:#fff;
 
         font-size:
-          15px !important;
+          28px !important;
+
+        font-weight:
+          950 !important;
 
         line-height:
-          1.6 !important;
+          1.05 !important;
       }
 
 
-      #manaV973Workout
-      .mana-v973-task-done{
+      #manaV83ProgramShell
+      .mana-v973-type{
 
-        width:
-          min(
-            420px,
-            100%
-          ) !important;
+        flex:
+          0
+          0
+          auto;
 
-        min-height:
-          54px !important;
+        color:
+          #999 !important;
+
+        font-size:
+          11px !important;
+
+        font-weight:
+          850 !important;
+      }
+
+
+      #manaV83ProgramShell
+      .mana-v973-preview{
+
+        flex:
+          0
+          1
+          auto;
 
         margin-top:
-          30px !important;
+          15px !important;
+
+        border-top:
+          1px solid
+          #29271f !important;
       }
 
 
-      #manaV973Workout
-      .mana-v973-navigation{
+      #manaV83ProgramShell
+      .mana-v973-preview-row{
 
-        width:
-          min(
-            920px,
-            100%
-          ) !important;
+        display:
+          grid !important;
 
-        margin:
-          8px
-          auto
+        grid-template-columns:
+          minmax(0,1fr)
+          auto !important;
+
+        gap:
+          12px !important;
+
+        padding:
+          10px
           0 !important;
+
+        border-bottom:
+          1px solid
+          #24231e !important;
+
+        color:
+          #ddd !important;
+
+        font-size:
+          13px !important;
       }
 
 
-      #manaV973Workout
-      .mana-v973-finish{
+      #manaV83ProgramShell
+      .mana-v973-preview-row
+      span:last-child{
+
+        color:
+          #d9bf67 !important;
+
+        font-weight:
+          900 !important;
+
+        text-align:
+          right !important;
+      }
+
+
+      .mana-v974-complete-day{
 
         width:
-          min(
-            920px,
-            100%
-          ) !important;
+          100%;
+
+        min-height:
+          52px;
+
+        flex:
+          0
+          0
+          auto;
 
         margin:
-          7px
           auto
-          0 !important;
+          0
+          0;
+
+        padding:
+          0
+          16px;
+
+        border:
+          0;
+
+        border-radius:
+          15px;
+
+        background:
+          #f3d875;
+
+        color:
+          #111;
+
+        font-size:
+          13px;
+
+        font-weight:
+          950;
+
+        cursor:
+          pointer;
+
+        touch-action:
+          manipulation;
+      }
+
+
+      .mana-v974-complete-day.complete{
+
+        border:
+          1px solid
+          #6b5b22;
+
+        background:
+          #171408;
+
+        color:
+          #f3d875;
+      }
+
+
+      /* old Start Workout completely gone */
+
+      #manaV83ProgramShell
+      .mana-v973-start{
+
+        display:
+          none !important;
+      }
+
+
+      /* old modal no longer used */
+
+      #manaV973Workout{
+
+        display:
+          none !important;
       }
 
 
       /* =====================================
-         PHONE FORCE OVERRIDES
+         PHONE
          ===================================== */
 
       @media(max-width:700px){
@@ -948,13 +1053,8 @@
         #manaV83Content
         .mana-v973-hero{
 
-          padding:
-            4px
-            0
-            0 !important;
-
           margin-bottom:
-            22px !important;
+            20px !important;
         }
 
 
@@ -977,9 +1077,6 @@
         #manaV83Content
         .mana-v973-grid{
 
-          display:
-            grid !important;
-
           grid-template-columns:
             minmax(
               0,
@@ -1001,137 +1098,119 @@
             0 !important;
 
           min-height:
-            164px !important;
-
-          grid-template-columns:
-            56px
-            minmax(
-              0,
-              1fr
-            ) !important;
+            160px !important;
 
           padding:
             20px !important;
-
-          column-gap:
-            15px !important;
         }
 
 
-        .mana-v974-icon{
+        /* PROGRAM USES AVAILABLE SCREEN */
 
-          width:
-            56px !important;
+        #manaV83ProgramShell.mana-v974-program-mode{
+
+          overflow:
+            hidden !important;
+        }
+
+
+        #manaV83ProgramShell.mana-v974-program-mode
+        .mana-v83-shell{
 
           height:
-            56px !important;
+            calc(
+              100dvh
+              -
+              env(
+                safe-area-inset-top
+              )
+              -
+              121px
+          ) !important;
 
-          border-radius:
-            17px !important;
+          display:
+            flex !important;
 
-          font-size:
-            18px !important;
+          flex-direction:
+            column !important;
+
+          overflow:
+            hidden !important;
         }
 
 
-        #manaV83Content
-        .mana-v973-hub-card
-        strong{
-
-          font-size:
-            23px !important;
-        }
-
-
-        #manaV83Content
-        .mana-v973-hub-card
-        span{
-
-          font-size:
-            14px !important;
-        }
-
-
-        #manaV83Content
-        .mana-v973-day{
+        #manaV83ProgramShell.mana-v974-program-mode
+        .mana-v83-head{
 
           flex:
             0
             0
-            94% !important;
+            auto !important;
 
-          width:
-            94% !important;
-
-          max-width:
-            94% !important;
-
-          padding:
-            19px !important;
+          margin-bottom:
+            10px !important;
         }
 
 
-        /* PHONE WORKOUT */
+        #manaV83ProgramShell.mana-v974-program-mode
+        #manaV83Content{
 
-        #manaV973Workout
-        .mana-v973-work-shell{
+          flex:
+            1
+            1
+            auto !important;
 
-          width:
-            100vw !important;
+          min-height:
+            0 !important;
 
-          height:
-            100dvh !important;
+          display:
+            flex !important;
 
-          padding:
-            calc(
-              env(
-                safe-area-inset-top
-              ) + 8px
-            )
-            10px
-            calc(
-              env(
-                safe-area-inset-bottom
-              ) + 9px
-            ) !important;
+          flex-direction:
+            column !important;
+
+          overflow:
+            hidden !important;
         }
 
 
-        #manaV973Workout
-        .mana-v973-work-head{
+        #manaV83ProgramShell
+        .mana-v973-program-head{
 
-          width:
-            100% !important;
-
-          padding-bottom:
+          margin-bottom:
             7px !important;
         }
 
 
-        #manaV973Workout
-        .mana-v973-work-head h2{
+        #manaV83ProgramShell
+        .mana-v973-program-head h2{
 
           font-size:
             22px !important;
+
+          line-height:
+            1.05 !important;
         }
 
 
-        #manaV973Workout
-        .mana-v973-page-counter{
+        #manaV83ProgramShell
+        .mana-v973-program-head p{
 
-          width:
-            100% !important;
-
-          margin-top:
-            6px !important;
-
-          font-size:
-            9px !important;
+          display:
+            none !important;
         }
 
 
-        #manaV973Workout
-        .mana-v973-pages{
+        #manaV83ProgramShell
+        .mana-v973-days{
+
+          flex:
+            1
+            1
+            auto !important;
+
+          min-height:
+            0 !important;
 
           width:
             100% !important;
@@ -1139,13 +1218,13 @@
           max-width:
             100% !important;
 
-          margin-top:
-            4px !important;
+          gap:
+            0 !important;
         }
 
 
-        #manaV973Workout
-        .mana-v973-task{
+        #manaV83ProgramShell
+        .mana-v973-day{
 
           flex:
             0
@@ -1161,107 +1240,55 @@
           max-width:
             100% !important;
 
+          height:
+            100% !important;
+
           padding:
-            16px
-            6px !important;
+            17px !important;
 
-          justify-content:
-            center !important;
+          border-radius:
+            20px !important;
         }
 
 
-        #manaV973Workout
-        .mana-v973-task h3{
-
-          margin:
-            10px
-            0
-            6px !important;
+        #manaV83ProgramShell
+        .mana-v973-day h3{
 
           font-size:
-            clamp(
-              30px,
-              10vw,
-              42px
-            ) !important;
+            24px !important;
         }
 
 
-        #manaV973Workout
-        .mana-v973-dose{
-
-          font-size:
-            19px !important;
-        }
-
-
-        #manaV973Workout
-        .mana-v973-simple-copy{
+        #manaV83ProgramShell
+        .mana-v973-preview{
 
           margin-top:
-            15px !important;
-
-          font-size:
-            13px !important;
-
-          line-height:
-            1.5 !important;
-        }
-
-
-        #manaV973Workout
-        .mana-v973-task-done{
-
-          width:
-            100% !important;
-
-          min-height:
-            48px !important;
-
-          margin-top:
-            19px !important;
-        }
-
-
-        #manaV973Workout
-        .mana-v973-navigation{
-
-          width:
-            100% !important;
-
-          gap:
-            7px !important;
-
-          margin-top:
-            5px !important;
-        }
-
-
-        #manaV973Workout
-        .mana-v973-nav{
-
-          min-height:
-            42px !important;
-
-          font-size:
-            9px !important;
-        }
-
-
-        #manaV973Workout
-        .mana-v973-finish{
-
-          width:
-            100% !important;
-
-          min-height:
-            46px !important;
-
-          margin-top:
-            5px !important;
-
-          font-size:
             11px !important;
+        }
+
+
+        #manaV83ProgramShell
+        .mana-v973-preview-row{
+
+          padding:
+            8px
+            0 !important;
+
+          font-size:
+            12px !important;
+        }
+
+
+        .mana-v974-complete-day{
+
+          min-height:
+            48px;
+
+          margin-top:
+            12px;
+
+          font-size:
+            11px;
         }
 
       }
@@ -1270,18 +1297,82 @@
 
 
     document.head
-      .appendChild(style);
+      .appendChild(
+        style
+      );
   }
 
 
   /* =========================================
-     DECORATE OVERVIEW
+     OVERVIEW TAP REPAIR
      ========================================= */
 
-  function decorateOverview() {
+  function bindOverviewTapRepair() {
+
+    document.addEventListener(
+      "click",
+      event => {
+
+        const card =
+          event.target.closest(
+            ".mana-v973-hub-card" +
+            "[data-v973-tab]"
+          );
+
+
+        if (!card) {
+
+          return;
+        }
+
+
+        const program =
+          currentProgram();
+
+
+        if (!program) {
+
+          return;
+        }
+
+
+        event.preventDefault();
+
+        event.stopImmediatePropagation();
+
+
+        const targetTab =
+          card.dataset
+            .v973Tab;
+
+
+        document
+          .querySelector(
+            "#manaV83Tabs " +
+            `[data-v83-tab="${targetTab}"]`
+          )
+          ?.click();
+
+      },
+      true
+    );
+  }
+
+
+  /* =========================================
+     OVERVIEW COPY
+     ========================================= */
+
+  function polishOverview() {
+
+    const program =
+      currentProgram();
+
 
     if (
-      !isOverview()
+      !program ||
+      tab() !==
+        "overview"
     ) {
 
       return;
@@ -1289,33 +1380,36 @@
 
 
     const holder =
-      document.getElementById(
-        "manaV83Content"
-      );
-
-
-    if (!holder) {
-
-      return;
-    }
+      document
+        .getElementById(
+          "manaV83Content"
+        );
 
 
     const hero =
-      holder.querySelector(
-        ".mana-v973-hero"
-      );
+      holder
+        ?.querySelector(
+          ".mana-v973-hero"
+        );
 
 
     const heading =
-      hero?.querySelector("h2");
+      hero
+        ?.querySelector(
+          "h2"
+        );
 
 
     const copy =
-      hero?.querySelector("p");
+      hero
+        ?.querySelector(
+          "p"
+        );
 
 
     if (
-      isMana28()
+      program ===
+      "mana28"
     ) {
 
       if (heading) {
@@ -1333,12 +1427,7 @@
 
       }
 
-    }
-
-
-    if (
-      isLyfe()
-    ) {
+    } else {
 
       if (heading) {
 
@@ -1356,129 +1445,402 @@
       }
 
     }
-
-
-    holder
-      .querySelectorAll(
-        ".mana-v973-hub-card"
-      )
-      .forEach(
-        card => {
-
-          if (
-            card.querySelector(
-              ".mana-v974-icon"
-            )
-          ) {
-
-            return;
-          }
-
-
-          const icon =
-            document.createElement(
-              "div"
-            );
-
-
-          icon.className =
-            "mana-v974-icon";
-
-
-          icon.textContent =
-            ICONS[
-              card.dataset
-                .v973Tab
-            ] || "M";
-
-
-          card.prepend(icon);
-
-        }
-      );
   }
 
 
   /* =========================================
-     FORCE MOBILE LAYOUT INLINE
-
-     Extra protection against old rules
-     winning after a dynamic redraw.
+     TURN PROGRAM CARDS INTO WORKOUTS
      ========================================= */
 
-  function forceMobileOverview() {
+  function upgradeProgramCards() {
+
+    const program =
+      currentProgram();
+
+
+    const currentTab =
+      tab();
+
+
+    const isProgramTab =
+      (
+        program === "mana28" &&
+        currentTab === "program"
+      ) ||
+      (
+        program === "lyfe" &&
+        currentTab === "routine"
+      );
+
+
+    const programShell =
+      shell();
+
+
+    programShell
+      ?.classList
+      .toggle(
+        "mana-v974-program-mode",
+        isProgramTab
+      );
+
 
     if (
-      !isOverview() ||
-      window.innerWidth > 700
+      !program ||
+      !isProgramTab
     ) {
 
       return;
     }
 
 
-    const grid =
-      document.querySelector(
-        "#manaV83Content " +
-        ".mana-v973-grid"
+    const state =
+      loadState(
+        stateKey(
+          program
+        )
       );
 
 
-    if (grid) {
+    const cards =
+      [
+        ...document
+          .querySelectorAll(
+            "#manaV83Content " +
+            ".mana-v973-day"
+          )
+      ];
 
-      grid.style.setProperty(
-        "display",
-        "grid",
-        "important"
+
+    cards.forEach(
+      (
+        card,
+        index
+      ) => {
+
+        const day =
+          index + 1;
+
+
+        const data =
+          dayData(
+            program,
+            day
+          );
+
+
+        card.dataset
+          .v974Day =
+          String(day);
+
+
+        card.dataset
+          .v974Program =
+          program;
+
+
+        /*
+          Ensure full workout is displayed,
+          not v9.73's four-item preview.
+        */
+
+        const preview =
+          card.querySelector(
+            ".mana-v973-preview"
+          );
+
+
+        if (preview) {
+
+          preview.innerHTML =
+            data.tasks
+              .map(
+                task => `
+
+                  <div
+                    class="mana-v973-preview-row"
+                  >
+
+                    <span>
+                      ${esc(task[0])}
+                    </span>
+
+                    <span>
+                      ${esc(task[1])}
+                    </span>
+
+                  </div>
+
+                `
+              )
+              .join("");
+
+        }
+
+
+        /*
+          Remove the old Start Day button.
+        */
+
+        card
+          .querySelector(
+            ".mana-v973-start"
+          )
+          ?.remove();
+
+
+        /*
+          Completion button.
+        */
+
+        let button =
+          card.querySelector(
+            ".mana-v974-complete-day"
+          );
+
+
+        if (!button) {
+
+          button =
+            document.createElement(
+              "button"
+            );
+
+
+          button.type =
+            "button";
+
+
+          button.className =
+            "mana-v974-complete-day";
+
+
+          card.appendChild(
+            button
+          );
+        }
+
+
+        const complete =
+          state.completed
+            .includes(day);
+
+
+        button.classList
+          .toggle(
+            "complete",
+            complete
+          );
+
+
+        button.textContent =
+          complete
+            ? "DAY COMPLETE ✓"
+            : "COMPLETE DAY →";
+
+
+        button.disabled =
+          complete;
+
+
+        button.onclick =
+          event => {
+
+            event.preventDefault();
+
+            event.stopPropagation();
+
+
+            if (
+              button.classList
+                .contains(
+                  "complete"
+                )
+            ) {
+
+              return;
+            }
+
+
+            lastProgram =
+              program;
+
+            lastDay =
+              day;
+
+
+            completeDay(
+              program,
+              day,
+              data.tasks.length
+            );
+
+          };
+
+      }
+    );
+
+
+    /*
+      Exact sizing also applied inline to
+      beat older mobile style layers.
+    */
+
+    const days =
+      document.getElementById(
+        "manaV973Days"
       );
 
 
-      grid.style.setProperty(
-        "grid-template-columns",
-        "minmax(0,1fr)",
-        "important"
-      );
+    if (days) {
+
+      days.style
+        .setProperty(
+          "gap",
+          "0",
+          "important"
+        );
 
 
-      grid.style.setProperty(
-        "width",
-        "100%",
-        "important"
+      cards.forEach(
+        card => {
+
+          card.style
+            .setProperty(
+              "flex",
+              "0 0 100%",
+              "important"
+            );
+
+
+          card.style
+            .setProperty(
+              "width",
+              "100%",
+              "important"
+            );
+
+
+          card.style
+            .setProperty(
+              "min-width",
+              "100%",
+              "important"
+            );
+
+
+          card.style
+            .setProperty(
+              "max-width",
+              "100%",
+              "important"
+            );
+
+        }
       );
     }
 
 
-    document
-      .querySelectorAll(
-        "#manaV83Content " +
-        ".mana-v973-hub-card"
-      )
-      .forEach(
-        card => {
+    /*
+      Return to current card after v9.73
+      redraws following completion.
+    */
 
-          card.style.setProperty(
-            "width",
-            "100%",
-            "important"
-          );
+    if (
+      program === lastProgram &&
+      lastDay > 1
+    ) {
 
+      setTimeout(
+        () => {
 
-          card.style.setProperty(
-            "min-width",
-            "0",
-            "important"
-          );
+          cards[
+            lastDay - 1
+          ]
+            ?.scrollIntoView({
+              block:"nearest",
+              inline:"start"
+            });
 
-        }
+        },
+        80
       );
+
+    }
+  }
+
+
+  function completeDay(
+    program,
+    day,
+    taskCount
+  ) {
+
+    const key =
+      stateKey(
+        program
+      );
+
+
+    const state =
+      loadState(
+        key
+      );
+
+
+    if (
+      !state.completed
+        .includes(day)
+    ) {
+
+      state.completed
+        .push(day);
+
+
+      state.completed
+        .sort(
+          (a,b) =>
+            a - b
+        );
+    }
+
+
+    /*
+      Keep compatibility with the original
+      v9.73 day detail state.
+    */
+
+    state[
+      `day${day}`
+    ] = {
+
+      checks:
+        Array(
+          taskCount
+        ).fill(true),
+
+      completedAt:
+        new Date()
+          .toISOString()
+
+    };
+
+
+    saveState(
+      key,
+      state
+    );
+
+
+    scheduleApply();
   }
 
 
   /* =========================================
-     WORKOUT POLISH
+     REMOVE OLD WORKOUT MODAL
      ========================================= */
 
-  function polishWorkout() {
+  function closeOldModal() {
 
     const modal =
       document.getElementById(
@@ -1486,100 +1848,37 @@
       );
 
 
-    if (
-      !modal ||
-      !modal.classList
-        .contains("open")
-    ) {
+    if (!modal) {
 
       return;
     }
 
 
-    modal.style.setProperty(
-      "position",
-      "fixed",
-      "important"
-    );
-
-
-    modal.style.setProperty(
-      "inset",
-      "0",
-      "important"
-    );
-
-
-    modal.style.setProperty(
-      "width",
-      "100vw",
-      "important"
-    );
-
-
-    modal.style.setProperty(
-      "height",
-      "100dvh",
-      "important"
-    );
-
-
-    modal.style.setProperty(
-      "padding",
-      "0",
-      "important"
-    );
+    modal.classList
+      .remove(
+        "open"
+      );
 
 
     document.body.style
       .overflow =
-      "hidden";
-
-
-    const shell =
-      modal.querySelector(
-        ".mana-v973-work-shell"
-      );
-
-
-    if (shell) {
-
-      shell.style.setProperty(
-        "width",
-        "100vw",
-        "important"
-      );
-
-
-      shell.style.setProperty(
-        "height",
-        "100dvh",
-        "important"
-      );
-
-
-      shell.style.setProperty(
-        "max-width",
-        "none",
-        "important"
-      );
-    }
+      "";
   }
 
 
   /* =========================================
-     CORE APPLY
+     APPLY
      ========================================= */
 
   function apply() {
 
     installStyles();
 
-    decorateOverview();
+    closeOldModal();
 
-    forceMobileOverview();
+    polishOverview();
 
-    polishWorkout();
+    upgradeProgramCards();
   }
 
 
@@ -1600,8 +1899,7 @@
     [
       80,
       180,
-      350,
-      700
+      400
     ].forEach(
       delay => {
 
@@ -1616,10 +1914,10 @@
 
 
   /* =========================================
-     OBSERVERS
+     OBSERVER
      ========================================= */
 
-  function installObservers() {
+  function installObserver() {
 
     const holder =
       document.getElementById(
@@ -1628,65 +1926,37 @@
 
 
     if (
-      holder &&
-      !observer
+      !holder ||
+      observer
     ) {
 
-      observer =
-        new MutationObserver(
-          () => {
+      return;
+    }
 
-            if (
-              relevantProgram()
-            ) {
 
-              scheduleApply();
+    observer =
+      new MutationObserver(
+        () => {
 
-            }
+          if (
+            currentProgram()
+          ) {
+
+            scheduleApply();
 
           }
-        );
 
-
-      observer.observe(
-        holder,
-        {
-          childList:true,
-          subtree:true
         }
       );
-    }
 
 
-    const modal =
-      document.getElementById(
-        "manaV973Workout"
-      );
-
-
-    if (
-      modal &&
-      !modalObserver
-    ) {
-
-      modalObserver =
-        new MutationObserver(
-          scheduleApply
-        );
-
-
-      modalObserver.observe(
-        modal,
-        {
-          childList:true,
-          subtree:true,
-          attributes:true,
-          attributeFilter:[
-            "class"
-          ]
-        }
-      );
-    }
+    observer.observe(
+      holder,
+      {
+        childList:true,
+        subtree:true
+      }
+    );
   }
 
 
@@ -1698,7 +1968,9 @@
 
     installStyles();
 
-    installObservers();
+    bindOverviewTapRepair();
+
+    installObserver();
 
     scheduleApply();
 
@@ -1736,19 +2008,10 @@
             [
               "#manaV80Mana28",
               "#manaV80Life",
-              "#manaV83Tabs",
-              "[data-v973-start]",
-              "#manaV973Next",
-              "#manaV973Prev"
+              "#manaV83Tabs"
             ].join(",")
           )
         ) {
-
-          setTimeout(
-            installObservers,
-            30
-          );
-
 
           scheduleApply();
 
@@ -1762,17 +2025,11 @@
     setInterval(
       () => {
 
-        installObservers();
+        installObserver();
 
 
         if (
-          relevantProgram() ||
-          document
-            .getElementById(
-              "manaV973Workout"
-            )
-            ?.classList
-            .contains("open")
+          currentProgram()
         ) {
 
           apply();
@@ -1780,7 +2037,7 @@
         }
 
       },
-      1000
+      1200
     );
 
 
@@ -1795,7 +2052,7 @@
 
 
     console.log(
-      "[Mana v9.74.1] persistent polish ready"
+      "[Mana v9.74.2] simplified day flow ready"
     );
   }
 
