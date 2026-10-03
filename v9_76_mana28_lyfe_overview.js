@@ -1,29 +1,30 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.76.0
+   MANA MOVEMENT TRAINING v9.76.1
 
    MANA 28 + MANA LYFE
-   EXACT STRENGTH OVERVIEW SYSTEM
+   STRENGTH OVERVIEW OWNER
 
-   - USES SAME MARKUP AS MANA STRENGTH
-   - SAME ICON BLOCKS
-   - SAME CARD POLISH
-   - SAME TYPOGRAPHY
-   - SAME MOBILE STACK
-   - SAME ARROWS / SPACING
-   - DIRECT TAP HANDLERS
-   - DOES NOT TOUCH PROGRAM / WORKOUT LOGIC
+   FIX
+   - WAITS FOR v9.73 TO FINISH RENDERING
+   - THEN PAINTS THE FINAL OVERVIEW
+   - EXACT MANA STRENGTH COMPONENT CLASSES
+   - NO OBSERVER
+   - NO CONTINUOUS LOOP
+   - DOES NOT TOUCH PROGRAM / WORKOUT
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "97600";
+  const BUILD = "97610";
 
   const M28_KEY =
     "mana-v973-mana28-state";
 
   const LYFE_KEY =
     "mana-v973-lyfe-state";
+
+  let timers = [];
 
 
   /* =========================================
@@ -131,6 +132,18 @@
   }
 
 
+  function isOverview() {
+
+    return (
+      Boolean(
+        currentProgram()
+      ) &&
+      activeTab() ===
+        "overview"
+    );
+  }
+
+
   function openTab(
     tabName
   ) {
@@ -145,23 +158,77 @@
 
 
   /* =========================================
-     MANA 28 OVERVIEW
+     CARD
      ========================================= */
 
-  function renderMana28() {
+  function card({
+    tab,
+    icon,
+    label,
+    title,
+    text,
+    arrow
+  }) {
 
-    const holder =
-      document.getElementById(
-        "manaV83Content"
-      );
+    return `
+
+      <button
+        type="button"
+        class="mana-v964-launch"
+        data-v976-tab="${tab}"
+      >
+
+        <div
+          class="mana-v964-icon"
+        >
+          ${icon}
+        </div>
 
 
-    if (!holder) {
+        <div
+          class="mana-v964-copy"
+        >
 
-      return;
+          <div
+            class="mana-v964-label"
+          >
+            ${label}
+          </div>
 
-    }
 
+          <div
+            class="mana-v964-title"
+          >
+            ${title}
+          </div>
+
+
+          <div
+            class="mana-v964-text"
+          >
+            ${text}
+          </div>
+
+
+          <div
+            class="mana-v964-arrow"
+          >
+            ${arrow}
+          </div>
+
+        </div>
+
+      </button>
+
+    `;
+  }
+
+
+  /* =========================================
+     MANA 28
+     ========================================= */
+
+  function mana28Markup() {
 
     const state =
       loadState(
@@ -173,7 +240,7 @@
       state.completed.length;
 
 
-    holder.innerHTML = `
+    return `
 
       <div
         class="mana-v964-launchpad"
@@ -190,13 +257,14 @@
             MANA 28
           </div>
 
+
           <h2>
             Your Mana 28 Hub
           </h2>
 
+
           <p>
-            Everything important for your
-            28-day reset in one place.
+            Everything important in one place.
             Choose where you want to go next.
           </p>
 
@@ -207,224 +275,62 @@
           class="mana-v964-grid"
         >
 
-          <button
-            type="button"
-            class="mana-v964-launch"
-            data-v976-tab="program"
-          >
-
-            <div
-              class="mana-v964-icon"
-            >
-              28
-            </div>
-
-            <div
-              class="mana-v964-copy"
-            >
-
-              <div
-                class="mana-v964-label"
-              >
-                PROGRAM
-              </div>
-
-              <div
-                class="mana-v964-title"
-              >
-                Your 28 Days
-              </div>
-
-              <div
-                class="mana-v964-text"
-              >
-                Strength, cardio, mobility
-                and recovery across a simple
-                28-day training plan.
-              </div>
-
-              <div
-                class="mana-v964-arrow"
-              >
-                VIEW PROGRAM →
-              </div>
-
-            </div>
-
-          </button>
+          ${card({
+            tab:"program",
+            icon:"28",
+            label:"PROGRAM",
+            title:"Your 28 Days",
+            text:
+              "Strength, cardio, mobility and recovery across your complete 28-day program.",
+            arrow:"VIEW PROGRAM →"
+          })}
 
 
-          <button
-            type="button"
-            class="mana-v964-launch"
-            data-v976-tab="fuel"
-          >
-
-            <div
-              class="mana-v964-icon"
-            >
-              F
-            </div>
-
-            <div
-              class="mana-v964-copy"
-            >
-
-              <div
-                class="mana-v964-label"
-              >
-                FUEL
-              </div>
-
-              <div
-                class="mana-v964-title"
-              >
-                Nutrition
-              </div>
-
-              <div
-                class="mana-v964-text"
-              >
-                Manage your calories,
-                protein, meals, water
-                and daily targets.
-              </div>
-
-              <div
-                class="mana-v964-arrow"
-              >
-                OPEN FUEL →
-              </div>
-
-            </div>
-
-          </button>
+          ${card({
+            tab:"fuel",
+            icon:"F",
+            label:"FUEL",
+            title:"Nutrition",
+            text:
+              "Track calories, protein, meals, water and your daily nutrition targets.",
+            arrow:"OPEN FUEL →"
+          })}
 
 
-          <button
-            type="button"
-            class="mana-v964-launch"
-            data-v976-tab="progress"
-          >
-
-            <div
-              class="mana-v964-icon"
-            >
-              ↗
-            </div>
-
-            <div
-              class="mana-v964-copy"
-            >
-
-              <div
-                class="mana-v964-label"
-              >
-                PROGRESS
-              </div>
-
-              <div
-                class="mana-v964-title"
-              >
-                Your Results
-              </div>
-
-              <div
-                class="mana-v964-text"
-              >
-                ${completed} of 28 days complete.
-                Track consistency and see
-                how far you have come.
-              </div>
-
-              <div
-                class="mana-v964-arrow"
-              >
-                VIEW PROGRESS →
-              </div>
-
-            </div>
-
-          </button>
+          ${card({
+            tab:"progress",
+            icon:"↗",
+            label:"PROGRESS",
+            title:"Your Results",
+            text:
+              `${completed} of 28 days complete. Review your consistency and progress.`,
+            arrow:"VIEW PROGRESS →"
+          })}
 
 
-          <button
-            type="button"
-            class="mana-v964-launch"
-            data-v976-tab="learn"
-          >
-
-            <div
-              class="mana-v964-icon"
-            >
-              i
-            </div>
-
-            <div
-              class="mana-v964-copy"
-            >
-
-              <div
-                class="mana-v964-label"
-              >
-                LEARN
-              </div>
-
-              <div
-                class="mana-v964-title"
-              >
-                Build Better Habits
-              </div>
-
-              <div
-                class="mana-v964-text"
-              >
-                Understand the simple
-                training and lifestyle
-                principles behind Mana 28.
-              </div>
-
-              <div
-                class="mana-v964-arrow"
-              >
-                LEARN MORE →
-              </div>
-
-            </div>
-
-          </button>
+          ${card({
+            tab:"learn",
+            icon:"i",
+            label:"LEARN",
+            title:"Build Better Habits",
+            text:
+              "Understand the training, recovery and lifestyle principles behind Mana 28.",
+            arrow:"LEARN MORE →"
+          })}
 
         </div>
 
       </div>
 
     `;
-
-
-    bindCards(
-      holder
-    );
   }
 
 
   /* =========================================
-     MANA LYFE OVERVIEW
+     MANA LYFE
      ========================================= */
 
-  function renderLyfe() {
-
-    const holder =
-      document.getElementById(
-        "manaV83Content"
-      );
-
-
-    if (!holder) {
-
-      return;
-
-    }
-
+  function lyfeMarkup() {
 
     const state =
       loadState(
@@ -436,7 +342,7 @@
       state.completed.length;
 
 
-    holder.innerHTML = `
+    return `
 
       <div
         class="mana-v964-launchpad"
@@ -453,13 +359,15 @@
             MANA LYFE
           </div>
 
+
           <h2>
             Your Mana Lyfe Hub
           </h2>
 
+
           <p>
-            Movement, mindset and daily action
-            in one place. Choose what you need next.
+            Everything important in one place.
+            Choose where you want to go next.
           </p>
 
         </div>
@@ -469,208 +377,59 @@
           class="mana-v964-grid"
         >
 
-          <button
-            type="button"
-            class="mana-v964-launch"
-            data-v976-tab="routine"
-          >
-
-            <div
-              class="mana-v964-icon"
-            >
-              28
-            </div>
-
-            <div
-              class="mana-v964-copy"
-            >
-
-              <div
-                class="mana-v964-label"
-              >
-                PROGRAM
-              </div>
-
-              <div
-                class="mana-v964-title"
-              >
-                Your 28 Days
-              </div>
-
-              <div
-                class="mana-v964-text"
-              >
-                Simple strength, cardio,
-                walking and recovery combined
-                with daily mindset work.
-              </div>
-
-              <div
-                class="mana-v964-arrow"
-              >
-                VIEW PROGRAM →
-              </div>
-
-            </div>
-
-          </button>
+          ${card({
+            tab:"routine",
+            icon:"28",
+            label:"PROGRAM",
+            title:"Your 28 Days",
+            text:
+              "Movement, cardio, simple strength and daily mindset work across 28 days.",
+            arrow:"VIEW PROGRAM →"
+          })}
 
 
-          <button
-            type="button"
-            class="mana-v964-launch"
-            data-v976-tab="reclaim"
-          >
-
-            <div
-              class="mana-v964-icon"
-            >
-              ✦
-            </div>
-
-            <div
-              class="mana-v964-copy"
-            >
-
-              <div
-                class="mana-v964-label"
-              >
-                JOURNAL
-              </div>
-
-              <div
-                class="mana-v964-title"
-              >
-                Reclaim
-              </div>
-
-              <div
-                class="mana-v964-text"
-              >
-                Reflect, reset and work
-                through the things that
-                matter each day.
-              </div>
-
-              <div
-                class="mana-v964-arrow"
-              >
-                OPEN JOURNAL →
-              </div>
-
-            </div>
-
-          </button>
+          ${card({
+            tab:"reclaim",
+            icon:"✦",
+            label:"JOURNAL",
+            title:"Reclaim",
+            text:
+              "Reflect, reset and work through the things that matter to you each day.",
+            arrow:"OPEN JOURNAL →"
+          })}
 
 
-          <button
-            type="button"
-            class="mana-v964-launch"
-            data-v976-tab="progress"
-          >
-
-            <div
-              class="mana-v964-icon"
-            >
-              ↗
-            </div>
-
-            <div
-              class="mana-v964-copy"
-            >
-
-              <div
-                class="mana-v964-label"
-              >
-                PROGRESS
-              </div>
-
-              <div
-                class="mana-v964-title"
-              >
-                Your Journey
-              </div>
-
-              <div
-                class="mana-v964-text"
-              >
-                ${completed} of 28 days complete.
-                Track consistency, movement
-                and daily momentum.
-              </div>
-
-              <div
-                class="mana-v964-arrow"
-              >
-                VIEW PROGRESS →
-              </div>
-
-            </div>
-
-          </button>
+          ${card({
+            tab:"progress",
+            icon:"↗",
+            label:"PROGRESS",
+            title:"Your Journey",
+            text:
+              `${completed} of 28 days complete. Follow your consistency and momentum.`,
+            arrow:"VIEW PROGRESS →"
+          })}
 
 
-          <button
-            type="button"
-            class="mana-v964-launch"
-            data-v976-tab="learn"
-          >
-
-            <div
-              class="mana-v964-icon"
-            >
-              i
-            </div>
-
-            <div
-              class="mana-v964-copy"
-            >
-
-              <div
-                class="mana-v964-label"
-              >
-                LEARN
-              </div>
-
-              <div
-                class="mana-v964-title"
-              >
-                Tools for Lyfe
-              </div>
-
-              <div
-                class="mana-v964-text"
-              >
-                Learn practical tools for
-                mindset, routine, consistency
-                and moving forward.
-              </div>
-
-              <div
-                class="mana-v964-arrow"
-              >
-                LEARN MORE →
-              </div>
-
-            </div>
-
-          </button>
+          ${card({
+            tab:"learn",
+            icon:"i",
+            label:"LEARN",
+            title:"Tools for Lyfe",
+            text:
+              "Practical tools for mindset, routine, consistency and moving forward.",
+            arrow:"LEARN MORE →"
+          })}
 
         </div>
 
       </div>
 
     `;
-
-
-    bindCards(
-      holder
-    );
   }
 
 
   /* =========================================
-     CARD ACTIONS
+     BIND
      ========================================= */
 
   function bindCards(
@@ -682,9 +441,9 @@
         "[data-v976-tab]"
       )
       .forEach(
-        card => {
+        button => {
 
-          card.onclick =
+          button.onclick =
             event => {
 
               event.preventDefault();
@@ -693,7 +452,7 @@
 
 
               openTab(
-                card.dataset
+                button.dataset
                   .v976Tab
               );
 
@@ -705,19 +464,47 @@
 
 
   /* =========================================
-     RENDER
+     FINAL RENDER
      ========================================= */
 
-  function render() {
+  function renderFinalOverview() {
+
+    if (
+      !isOverview()
+    ) {
+
+      return;
+
+    }
+
+
+    const holder =
+      document.getElementById(
+        "manaV83Content"
+      );
+
+
+    if (!holder) {
+
+      return;
+
+    }
+
 
     const program =
       currentProgram();
 
 
+    /*
+      If our correct screen is already
+      present, leave it alone.
+    */
+
     if (
-      !program ||
-      activeTab() !==
-        "overview"
+      program === "mana28" &&
+      holder.querySelector(
+        "#manaV976Mana28"
+      )
     ) {
 
       return;
@@ -726,33 +513,63 @@
 
 
     if (
-      program ===
-      "mana28"
+      program === "lyfe" &&
+      holder.querySelector(
+        "#manaV976Lyfe"
+      )
     ) {
-
-      renderMana28();
 
       return;
 
     }
 
 
-    renderLyfe();
+    holder.innerHTML =
+      program === "mana28"
+        ? mana28Markup()
+        : lyfeMarkup();
+
+
+    bindCards(
+      holder
+    );
   }
 
 
-  function refresh() {
+  /* =========================================
+     TIMING
+
+     v9.73 performs delayed redraws.
+     Our final pass deliberately happens
+     AFTER those redraws have finished.
+     ========================================= */
+
+  function scheduleFinalRender() {
+
+    timers.forEach(
+      clearTimeout
+    );
+
+
+    timers = [];
+
 
     [
-      20,
-      100,
-      220
+      40,
+      180,
+      420,
+      600,
+      850
     ].forEach(
       delay => {
 
-        setTimeout(
-          render,
-          delay
+        timers.push(
+
+          setTimeout(
+            renderFinalOverview,
+            delay
+          )
+
         );
 
       }
@@ -766,18 +583,18 @@
 
   function init() {
 
-    refresh();
+    scheduleFinalRender();
 
 
     window.addEventListener(
       "mana:program-tab-change",
-      refresh
+      scheduleFinalRender
     );
 
 
     window.addEventListener(
       "mana:v973-updated",
-      refresh
+      scheduleFinalRender
     );
 
 
@@ -790,12 +607,13 @@
             [
               "#manaV80Mana28",
               "#manaV80Life",
-              "#manaV83Back"
+              "#manaV83Back",
+              "#manaV83Tabs"
             ].join(",")
           )
         ) {
 
-          refresh();
+          scheduleFinalRender();
 
         }
 
@@ -811,11 +629,11 @@
 
     window
       .refreshMana28LyfeOverview =
-      refresh;
+      scheduleFinalRender;
 
 
     console.log(
-      "[Mana v9.76.0] exact Strength-style overview ready"
+      "[Mana v9.76.1] final overview owner ready"
     );
   }
 
