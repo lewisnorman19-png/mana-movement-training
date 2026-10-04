@@ -1,22 +1,24 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.80.0
+   MANA MOVEMENT TRAINING v9.80.1
    MANA 28 + MANA LYFE
-   WEEK-BASED PROGRAM LAYOUT
 
-   - WEEK 1 / 2 / 3 / 4 ACROSS TOP
-   - 7 DAYS LISTED UNDER EACH WEEK
-   - TAP DAY TO OPEN FULL SESSION
-   - SAME UX FOR MANA 28 + MANA LYFE
-   - DIFFERENT PROGRAM CONTENT
-   - PHONE + LAPTOP FRIENDLY
-   - NO 28-DAY CAROUSEL
-   - NO MOBILE WORKAROUND REQUIRED
+   WEEK 1 / 2 / 3 / 4 PROGRAM LAYOUT
+
+   WORKOUT DETAIL:
+   - PHONE-FIRST WORKOUT LAYOUT
+   - WARM-UP NOTE AT TOP
+   - EXERCISE BOLD WHITE
+   - SETS / REPS LIGHT TEXT UNDERNEATH
+   - ESTIMATED WORKOUT TIME
+   - FINISHER / NOTES AT BOTTOM
+   - YELLOW MARK COMPLETE BAR
+   - COMPLETE RETURNS TO WEEK SCREEN
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "98000";
+  const BUILD = "98010";
 
   const STYLE_ID =
     "mana-v980-program-style";
@@ -27,17 +29,19 @@
   const LYFE_KEY =
     "mana-v973-lyfe-state";
 
-  const TOTAL_DAYS = 28;
 
   const uiState = {
+
     mana28: {
       week: 1,
       day: null
     },
+
     lyfe: {
       week: 1,
       day: null
     }
+
   };
 
 
@@ -48,91 +52,200 @@
   const MANA28_WEEK = [
 
     {
-      category: "Strength",
-      title: "Full Body Strength A",
-      minutes: 40,
-      tasks: [
-        ["Goblet squat","3 sets × 10 reps"],
-        ["Push-up or chest press","3 sets × 8–12 reps"],
-        ["Dumbbell row","3 sets × 10 reps each side"],
-        ["Romanian deadlift","3 sets × 10 reps"],
-        ["Plank","3 × 30–45 sec"]
+      category:"Strength",
+      title:"Full Body Strength A",
+      minutes:"35–45",
+      tasks:[
+        [
+          "Goblet squat",
+          "3 sets × 10 reps"
+        ],
+        [
+          "Push-up or chest press",
+          "3 sets × 8–12 reps"
+        ],
+        [
+          "Dumbbell row",
+          "3 sets × 10 reps each side"
+        ],
+        [
+          "Romanian deadlift",
+          "3 sets × 10 reps"
+        ],
+        [
+          "Plank",
+          "3 × 30–45 sec"
+        ]
       ]
     },
 
+
     {
-      category: "Cardio",
-      title: "Treadmill Cardio",
-      minutes: 35,
-      tasks: [
-        ["Warm-up walk","5 minutes"],
-        ["Steady treadmill work","20 minutes"],
-        ["Faster intervals","5 × 60 sec"],
-        ["Easy recovery","60 sec between intervals"],
-        ["Cool-down","5 minutes"]
+      category:"Cardio",
+      title:"Treadmill Cardio",
+      minutes:"30–40",
+      tasks:[
+        [
+          "Easy treadmill walk",
+          "5 minutes"
+        ],
+        [
+          "Moderate cardio",
+          "20 minutes"
+        ],
+        [
+          "Faster interval",
+          "60 sec"
+        ],
+        [
+          "Easy recovery",
+          "60 sec"
+        ],
+        [
+          "Intervals",
+          "5 rounds"
+        ],
+        [
+          "Cool-down",
+          "5 minutes"
+        ]
       ]
     },
 
+
     {
-      category: "Strength",
-      title: "Lower Body Strength",
-      minutes: 40,
-      tasks: [
-        ["Squat pattern","4 sets × 8 reps"],
-        ["Romanian deadlift","3 sets × 10 reps"],
-        ["Split squat or step-up","3 sets × 8 each side"],
-        ["Calf raise","3 sets × 15 reps"],
-        ["Dead bug","3 × 10 each side"]
+      category:"Strength",
+      title:"Lower Body Strength",
+      minutes:"35–45",
+      tasks:[
+        [
+          "Squat pattern",
+          "4 sets × 8 reps"
+        ],
+        [
+          "Romanian deadlift",
+          "3 sets × 10 reps"
+        ],
+        [
+          "Split squat or step-up",
+          "3 sets × 8 each side"
+        ],
+        [
+          "Calf raise",
+          "3 sets × 15 reps"
+        ],
+        [
+          "Dead bug",
+          "3 × 10 each side"
+        ]
       ]
     },
 
+
     {
-      category: "Recovery",
-      title: "Walk + Mobility",
-      minutes: 30,
-      tasks: [
-        ["Purposeful walk","20–25 minutes"],
-        ["Hip mobility","2 × 45 sec each side"],
-        ["Thoracic rotations","2 × 8 each side"],
-        ["Breathing reset","3 minutes"]
+      category:"Recovery",
+      title:"Walk + Mobility",
+      minutes:"25–35",
+      tasks:[
+        [
+          "Purposeful walk",
+          "20–25 minutes"
+        ],
+        [
+          "Hip mobility",
+          "2 × 45 sec each side"
+        ],
+        [
+          "Thoracic rotations",
+          "2 × 8 each side"
+        ],
+        [
+          "Breathing reset",
+          "3 minutes"
+        ]
       ]
     },
 
+
     {
-      category: "Strength",
-      title: "Upper Body + Core",
-      minutes: 40,
-      tasks: [
-        ["Chest press","4 sets × 8–10 reps"],
-        ["Seated or dumbbell row","4 sets × 8–10 reps"],
-        ["Shoulder press","3 sets × 10 reps"],
-        ["Lat pulldown","3 sets × 10–12 reps"],
-        ["Plank variation","3 rounds"]
+      category:"Strength",
+      title:"Upper Body + Core",
+      minutes:"35–45",
+      tasks:[
+        [
+          "Chest press",
+          "4 sets × 8–10 reps"
+        ],
+        [
+          "Seated or dumbbell row",
+          "4 sets × 8–10 reps"
+        ],
+        [
+          "Shoulder press",
+          "3 sets × 10 reps"
+        ],
+        [
+          "Lat pulldown",
+          "3 sets × 10–12 reps"
+        ],
+        [
+          "Plank variation",
+          "3 rounds"
+        ]
       ]
     },
 
+
     {
-      category: "Cardio",
-      title: "Bike Intervals",
-      minutes: 35,
-      tasks: [
-        ["Easy bike warm-up","5 minutes"],
-        ["Work interval","30 sec hard"],
-        ["Recovery interval","60 sec easy"],
-        ["Repeat","8 rounds"],
-        ["Cool-down","5 minutes"]
+      category:"Cardio",
+      title:"Bike Intervals",
+      minutes:"30–35",
+      tasks:[
+        [
+          "Easy bike",
+          "5 minute warm-up"
+        ],
+        [
+          "Hard effort",
+          "30 sec"
+        ],
+        [
+          "Easy recovery",
+          "60 sec"
+        ],
+        [
+          "Intervals",
+          "8 rounds"
+        ],
+        [
+          "Cool-down",
+          "5 minutes"
+        ]
       ]
     },
 
+
     {
-      category: "Recovery",
-      title: "Recovery Reset",
-      minutes: 25,
-      tasks: [
-        ["Easy walk","15 minutes"],
-        ["Mobility flow","8–10 minutes"],
-        ["Hydration","Hit water target"],
-        ["Reset","Prepare for next week"]
+      category:"Recovery",
+      title:"Recovery Reset",
+      minutes:"20–30",
+      tasks:[
+        [
+          "Easy walk",
+          "15 minutes"
+        ],
+        [
+          "Mobility flow",
+          "8–10 minutes"
+        ],
+        [
+          "Hydration",
+          "Hit your water target"
+        ],
+        [
+          "Reset",
+          "Prepare for next week"
+        ]
       ]
     }
 
@@ -146,87 +259,180 @@
   const LYFE_WEEK = [
 
     {
-      category: "Movement",
-      title: "Reset & Move",
-      minutes: 30,
-      tasks: [
-        ["Bodyweight squat","3 × 12"],
-        ["Push-up or wall push-up","3 × 10"],
-        ["Row","3 × 12"],
-        ["Purposeful walk","15 minutes"],
-        ["Reflection","What do I need today?"]
+      category:"Movement",
+      title:"Reset & Move",
+      minutes:"30–40",
+      tasks:[
+        [
+          "Bodyweight squat",
+          "3 sets × 12 reps"
+        ],
+        [
+          "Push-up or wall push-up",
+          "3 sets × 10 reps"
+        ],
+        [
+          "Row",
+          "3 sets × 12 reps"
+        ],
+        [
+          "Purposeful walk",
+          "15 minutes"
+        ],
+        [
+          "Reflection",
+          "What do I need today?"
+        ]
       ]
     },
 
+
     {
-      category: "Mindset",
-      title: "Walk & Reflect",
-      minutes: 30,
-      tasks: [
-        ["Purposeful walk","25 minutes"],
-        ["Breathing reset","5 minutes"],
-        ["Reflection","What can I control today?"]
+      category:"Mindset",
+      title:"Walk & Reflect",
+      minutes:"25–35",
+      tasks:[
+        [
+          "Purposeful walk",
+          "25 minutes"
+        ],
+        [
+          "Breathing reset",
+          "5 minutes"
+        ],
+        [
+          "Reflection",
+          "What can I control today?"
+        ]
       ]
     },
 
+
     {
-      category: "Cardio",
-      title: "Cardio Energy",
-      minutes: 35,
-      tasks: [
-        ["Warm-up","5 minutes"],
-        ["Bike / rower / treadmill","20 minutes moderate"],
-        ["Cool-down","5 minutes"],
-        ["Reflection","What gives me energy?"]
+      category:"Cardio",
+      title:"Cardio Energy",
+      minutes:"30–40",
+      tasks:[
+        [
+          "Warm-up",
+          "5 minutes"
+        ],
+        [
+          "Bike / rower / treadmill",
+          "20 minutes moderate"
+        ],
+        [
+          "Cool-down",
+          "5 minutes"
+        ],
+        [
+          "Reflection",
+          "What gives me energy?"
+        ]
       ]
     },
 
+
     {
-      category: "Recovery",
-      title: "Mobility + Reset",
-      minutes: 25,
-      tasks: [
-        ["Mobility flow","12 minutes"],
-        ["Easy walk","10 minutes"],
-        ["Breathing","3 minutes"],
-        ["Reflection","What needs less of my energy?"]
+      category:"Recovery",
+      title:"Mobility + Reset",
+      minutes:"20–30",
+      tasks:[
+        [
+          "Mobility flow",
+          "12 minutes"
+        ],
+        [
+          "Easy walk",
+          "10 minutes"
+        ],
+        [
+          "Breathing",
+          "3 minutes"
+        ],
+        [
+          "Reflection",
+          "What needs less of my energy?"
+        ]
       ]
     },
 
+
     {
-      category: "Movement",
-      title: "Build",
-      minutes: 35,
-      tasks: [
-        ["Reverse lunge","3 × 10 each"],
-        ["Chest press / push-up","3 × 12"],
-        ["Row","3 × 12"],
-        ["Plank","3 × 30 sec"],
-        ["Reflection","What am I rebuilding?"]
+      category:"Movement",
+      title:"Build",
+      minutes:"30–40",
+      tasks:[
+        [
+          "Reverse lunge",
+          "3 sets × 10 each side"
+        ],
+        [
+          "Chest press / push-up",
+          "3 sets × 12 reps"
+        ],
+        [
+          "Row",
+          "3 sets × 12 reps"
+        ],
+        [
+          "Plank",
+          "3 × 30 sec"
+        ],
+        [
+          "Reflection",
+          "What am I rebuilding?"
+        ]
       ]
     },
 
+
     {
-      category: "Cardio",
-      title: "Move With Purpose",
-      minutes: 35,
-      tasks: [
-        ["Bike / rower","20 minutes"],
-        ["Walk","10 minutes"],
-        ["Stretch","5 minutes"],
-        ["Reflection","What went well this week?"]
+      category:"Cardio",
+      title:"Move With Purpose",
+      minutes:"30–40",
+      tasks:[
+        [
+          "Bike / rower",
+          "20 minutes"
+        ],
+        [
+          "Walk",
+          "10 minutes"
+        ],
+        [
+          "Stretch",
+          "5 minutes"
+        ],
+        [
+          "Reflection",
+          "What went well this week?"
+        ]
       ]
     },
 
+
     {
-      category: "Reset",
-      title: "Weekly Reset",
-      minutes: 25,
-      tasks: [
-        ["Easy walk","15 minutes"],
-        ["Mobility","8 minutes"],
-        ["Breathing","2 minutes"],
-        ["Reflection","What do I take into next week?"]
+      category:"Reset",
+      title:"Weekly Reset",
+      minutes:"20–30",
+      tasks:[
+        [
+          "Easy walk",
+          "15 minutes"
+        ],
+        [
+          "Mobility",
+          "8 minutes"
+        ],
+        [
+          "Breathing",
+          "2 minutes"
+        ],
+        [
+          "Reflection",
+          "What do I take into next week?"
+        ]
       ]
     }
 
@@ -338,7 +544,6 @@
     ) {
 
       return "mana28";
-
     }
 
 
@@ -352,7 +557,6 @@
     ) {
 
       return "lyfe";
-
     }
 
 
@@ -424,7 +628,6 @@
     ) {
 
       state.completed = [];
-
     }
 
 
@@ -475,13 +678,13 @@
         ];
 
 
+    const fallback =
+      MANA28_WEEK[
+        (day - 1) % 7
+      ];
+
+
     if (existing) {
-
-      const fallback =
-        MANA28_WEEK[
-          (day - 1) % 7
-        ];
-
 
       return {
 
@@ -514,14 +717,11 @@
             )
 
       };
-
     }
 
 
     return {
-      ...MANA28_WEEK[
-        (day - 1) % 7
-      ]
+      ...fallback
     };
   }
 
@@ -543,10 +743,15 @@
 
 
     const themes = {
+
       1:"RESET",
+
       2:"REBUILD",
+
       3:"GROW",
+
       4:"MOVE FORWARD"
+
     };
 
 
@@ -575,6 +780,151 @@
 
 
   /* =========================================
+     WARM-UP
+     ========================================= */
+
+  function warmupText(
+    kind,
+    data
+  ) {
+
+    const category =
+      String(
+        data.category || ""
+      )
+        .toLowerCase();
+
+
+    if (
+      category.includes(
+        "strength"
+      ) ||
+      category.includes(
+        "movement"
+      )
+    ) {
+
+      return (
+        "5–7 minutes of easy movement to raise your body temperature. " +
+        "Then complete one light preparation set of the first main exercise before starting your working sets."
+      );
+    }
+
+
+    if (
+      category.includes(
+        "cardio"
+      )
+    ) {
+
+      return (
+        "Begin easy for the first 5 minutes. Gradually increase your pace until you feel warm and ready to work."
+      );
+    }
+
+
+    if (
+      category.includes(
+        "recovery"
+      ) ||
+      category.includes(
+        "reset"
+      ) ||
+      category.includes(
+        "mindset"
+      )
+    ) {
+
+      return (
+        "Start easy. Breathe slowly, relax the shoulders and allow your body and mind to settle into the session."
+      );
+    }
+
+
+    return (
+      kind === "lyfe"
+        ? "Take 3–5 minutes to settle, breathe and prepare yourself for the session."
+        : "Take 5 minutes to warm up gradually before beginning."
+    );
+  }
+
+
+  /* =========================================
+     FINISHER / NOTES
+     ========================================= */
+
+  function finisherText(
+    kind,
+    data
+  ) {
+
+    const category =
+      String(
+        data.category || ""
+      )
+        .toLowerCase();
+
+
+    if (
+      category.includes(
+        "strength"
+      ) ||
+      category.includes(
+        "movement"
+      )
+    ) {
+
+      return (
+        "Move with control and good technique. Rest around 60–90 seconds between working sets. " +
+        "Finish with 3–5 minutes of easy walking and breathing."
+      );
+    }
+
+
+    if (
+      category.includes(
+        "cardio"
+      )
+    ) {
+
+      return (
+        "Finish with 3–5 minutes at an easy pace. Let your breathing return toward normal before stopping."
+      );
+    }
+
+
+    if (
+      category.includes(
+        "recovery"
+      ) ||
+      category.includes(
+        "reset"
+      )
+    ) {
+
+      return (
+        "Keep the session comfortable. The goal today is to restore energy, move well and leave feeling better than when you started."
+      );
+    }
+
+
+    if (
+      kind === "lyfe"
+    ) {
+
+      return (
+        "Before you finish, take one minute to notice how your energy or mindset has changed since the start of the session."
+      );
+    }
+
+
+    return (
+      "Finish calmly, hydrate and give yourself a few minutes to recover."
+    );
+  }
+
+
+  /* =========================================
      STYLES
      ========================================= */
 
@@ -598,10 +948,6 @@
 
 
     style.textContent = `
-
-      /* =====================================
-         PROGRAM ROOT
-         ===================================== */
 
       .mana-v980-root{
 
@@ -638,7 +984,7 @@
       .mana-v980-intro h2{
 
         margin:
-          6px 0 6px;
+          6px 0;
 
         color:#fff;
 
@@ -699,8 +1045,6 @@
         font-weight:950;
 
         cursor:pointer;
-
-        touch-action:manipulation;
       }
 
 
@@ -718,10 +1062,6 @@
         color:#111;
       }
 
-
-      /* =====================================
-         WEEK LABEL
-         ===================================== */
 
       .mana-v980-week-head{
 
@@ -759,7 +1099,7 @@
 
 
       /* =====================================
-         DAY LIST
+         WORKOUT LIST
          ===================================== */
 
       .mana-v980-list{
@@ -807,15 +1147,6 @@
         color:#fff;
 
         cursor:pointer;
-
-        touch-action:manipulation;
-      }
-
-
-      .mana-v980-day:active{
-
-        transform:
-          scale(.995);
       }
 
 
@@ -910,17 +1241,17 @@
 
 
       /* =====================================
-         SESSION DETAIL
+         OPEN WORKOUT
          ===================================== */
 
       .mana-v980-session{
 
         width:100%;
 
-        max-width:720px;
+        max-width:680px;
 
         margin:
-          0 auto 40px;
+          0 auto 35px;
       }
 
 
@@ -933,7 +1264,7 @@
 
         align-items:center;
 
-        gap:12px;
+        gap:10px;
 
         margin-bottom:14px;
       }
@@ -958,46 +1289,106 @@
         font-size:12px;
 
         font-weight:950;
-
-        cursor:pointer;
       }
 
 
       .mana-v980-day-label{
 
-        color:#b79e50;
+        color:#a89456;
 
         font-size:11px;
 
         font-weight:950;
 
-        letter-spacing:.12em;
+        letter-spacing:.09em;
       }
 
 
-      .mana-v980-session-card{
+      .mana-v980-workout-category{
 
-        padding:22px;
+        color:#d0b150;
+
+        font-size:10px;
+
+        font-weight:950;
+
+        letter-spacing:.14em;
+
+        text-transform:uppercase;
+      }
+
+
+      .mana-v980-workout-title{
+
+        margin:
+          7px 0 4px;
+
+        color:#fff;
+
+        font-size:32px;
+
+        font-weight:950;
+
+        line-height:1.04;
+      }
+
+
+      .mana-v980-duration{
+
+        display:inline-flex;
+
+        align-items:center;
+
+        min-height:30px;
+
+        margin-top:5px;
+
+        padding:
+          0 10px;
 
         border:
-          1px solid #393323;
+          1px solid #4b4120;
 
-        border-radius:22px;
+        border-radius:999px;
 
-        background:
-          linear-gradient(
-            145deg,
-            #171611,
-            #090909
-          );
+        background:#15130c;
+
+        color:#f2d875;
+
+        font-size:11px;
+
+        font-weight:950;
       }
 
 
-      .mana-v980-session-category{
+      /* =====================================
+         WARMUP + NOTES
+         ===================================== */
 
-        color:#d1b355;
+      .mana-v980-note{
 
-        font-size:11px;
+        margin-top:17px;
+
+        padding:
+          14px 15px;
+
+        border-left:
+          3px solid #d0ad39;
+
+        border-radius:
+          5px 14px 14px 5px;
+
+        background:#12110d;
+      }
+
+
+      .mana-v980-note-title{
+
+        margin-bottom:6px;
+
+        color:#f2d875;
+
+        font-size:10px;
 
         font-weight:950;
 
@@ -1007,117 +1398,95 @@
       }
 
 
-      .mana-v980-session h2{
+      .mana-v980-note-text{
 
-        margin:
-          7px 0 5px;
+        color:#c7c7c7;
 
-        color:#fff;
+        font-size:14px;
 
-        font-size:32px;
-
-        line-height:1.04;
+        line-height:1.5;
       }
 
 
-      .mana-v980-meta{
-
-        color:#979797;
-
-        font-size:13px;
-
-        font-weight:800;
-      }
-
-
-      .mana-v980-theme{
-
-        margin-top:8px;
-
-        color:#d1b355;
-
-        font-size:11px;
-
-        font-weight:900;
-      }
-
+      /* =====================================
+         EXERCISES
+         ===================================== */
 
       .mana-v980-exercises{
 
-        margin:
-          18px 0;
-
-        border-top:
-          1px solid #29271f;
-
-        border-bottom:
-          1px solid #29271f;
+        margin-top:12px;
       }
 
 
       .mana-v980-exercise{
 
-        display:grid;
-
-        grid-template-columns:
-          minmax(0,1fr)
-          minmax(120px,auto);
-
-        gap:15px;
-
-        align-items:center;
-
-        min-height:62px;
-
         padding:
-          10px 1px;
+          14px 2px;
 
         border-bottom:
-          1px solid #24231e;
+          1px solid #262626;
       }
 
 
-      .mana-v980-exercise:last-child{
+      .mana-v980-exercise:first-child{
 
-        border-bottom:0;
+        border-top:
+          1px solid #262626;
       }
 
 
-      .mana-v980-exercise strong{
+      .mana-v980-exercise-name{
 
-        color:#f0f0f0;
+        display:block;
+
+        color:#fff;
 
         font-size:17px;
 
-        line-height:1.25;
-      }
-
-
-      .mana-v980-exercise span{
-
-        color:#f2d875;
-
-        font-size:15px;
-
-        font-weight:900;
+        font-weight:950;
 
         line-height:1.2;
-
-        text-align:right;
       }
 
+
+      .mana-v980-exercise-detail{
+
+        display:block;
+
+        margin-top:5px;
+
+        color:#c5c5c5;
+
+        font-size:14px;
+
+        font-weight:600;
+
+        line-height:1.3;
+      }
+
+
+      /* =====================================
+         COMPLETE BAR
+         ===================================== */
 
       .mana-v980-complete{
 
         width:100%;
 
-        min-height:52px;
+        min-height:56px;
+
+        margin-top:14px;
 
         border:0;
 
         border-radius:15px;
 
-        background:#f2d875;
+        background:
+          linear-gradient(
+            135deg,
+            #f4da78,
+            #cba22f
+          );
 
         color:#111;
 
@@ -1125,18 +1494,9 @@
 
         font-weight:950;
 
+        letter-spacing:.04em;
+
         cursor:pointer;
-      }
-
-
-      .mana-v980-complete.done{
-
-        border:
-          1px solid #5c4e21;
-
-        background:#171408;
-
-        color:#f2d875;
       }
 
 
@@ -1148,175 +1508,174 @@
 
         .mana-v980-root{
 
-          margin-bottom:
-            24px;
+          margin-bottom:24px;
         }
 
 
         .mana-v980-intro{
 
-          margin-bottom:
-            13px;
+          margin-bottom:13px;
         }
 
 
         .mana-v980-intro h2{
 
-          font-size:
-            26px;
+          font-size:26px;
         }
 
 
         .mana-v980-weeks{
 
-          gap:
-            5px;
+          gap:5px;
 
-          margin-bottom:
-            12px;
+          margin-bottom:12px;
         }
 
 
         .mana-v980-week{
 
-          min-height:
-            43px;
+          min-height:43px;
 
-          padding:
-            0 4px;
+          padding:0 3px;
 
-          font-size:
-            10px;
+          font-size:10px;
 
-          border-radius:
-            11px;
-        }
-
-
-        .mana-v980-week-head{
-
-          margin-bottom:
-            7px;
+          border-radius:11px;
         }
 
 
         .mana-v980-week-title{
 
-          font-size:
-            18px;
+          font-size:18px;
         }
 
 
         .mana-v980-day{
 
-          min-height:
-            76px;
+          min-height:76px;
 
           grid-template-columns:
             48px
             minmax(0,1fr)
             20px;
 
-          gap:
-            11px;
+          gap:11px;
 
           padding:
             10px 11px;
 
-          border-radius:
-            16px;
+          border-radius:16px;
         }
 
 
         .mana-v980-number{
 
-          width:
-            48px;
+          width:48px;
 
-          height:
-            48px;
+          height:48px;
 
-          border-radius:
-            14px;
+          border-radius:14px;
 
-          font-size:
-            20px;
+          font-size:20px;
         }
 
 
         .mana-v980-title{
 
-          font-size:
-            16px;
+          font-size:16px;
         }
 
 
         .mana-v980-category{
 
-          font-size:
-            9px;
+          font-size:9px;
         }
 
 
         .mana-v980-time{
 
-          font-size:
-            10px;
+          font-size:10px;
         }
 
 
-        .mana-v980-arrow{
+        /* PHONE WORKOUT */
 
-          font-size:
-            18px;
+        .mana-v980-session{
+
+          margin-bottom:22px;
         }
 
 
-        .mana-v980-session-card{
+        .mana-v980-session-top{
+
+          margin-bottom:12px;
+        }
+
+
+        .mana-v980-workout-title{
+
+          margin:
+            6px 0 4px;
+
+          font-size:28px;
+        }
+
+
+        .mana-v980-duration{
+
+          min-height:28px;
+
+          font-size:10px;
+        }
+
+
+        .mana-v980-note{
+
+          margin-top:14px;
 
           padding:
-            16px 14px;
-
-          border-radius:
-            18px;
+            12px 13px;
         }
 
 
-        .mana-v980-session h2{
+        .mana-v980-note-text{
 
-          font-size:
-            27px;
+          font-size:13px;
+
+          line-height:1.45;
         }
 
 
         .mana-v980-exercise{
 
-          grid-template-columns:
-            minmax(0,1fr)
-            minmax(96px,auto);
-
-          gap:
-            9px;
-
-          min-height:
-            54px;
-
           padding:
-            9px 1px;
+            13px 1px;
         }
 
 
-        .mana-v980-exercise strong{
+        .mana-v980-exercise-name{
 
-          font-size:
-            16px;
+          font-size:17px;
         }
 
 
-        .mana-v980-exercise span{
+        .mana-v980-exercise-detail{
 
-          font-size:
-            14px;
+          margin-top:4px;
+
+          font-size:14px;
+
+          color:#bdbdbd;
+        }
+
+
+        .mana-v980-complete{
+
+          min-height:54px;
+
+          margin-top:13px;
+
+          font-size:13px;
         }
 
       }
@@ -1332,7 +1691,7 @@
 
 
   /* =========================================
-     WEEK LIST
+     WEEK SCREEN
      ========================================= */
 
   function renderWeek(
@@ -1346,7 +1705,6 @@
     if (!content) {
 
       return;
-
     }
 
 
@@ -1362,8 +1720,7 @@
       titleEl()
     ) {
 
-      titleEl()
-        .textContent =
+      titleEl().textContent =
         "MANA LYFE";
     }
 
@@ -1406,7 +1763,7 @@
         .length;
 
 
-    const days = [];
+    const rows = [];
 
 
     for (
@@ -1433,7 +1790,7 @@
         1;
 
 
-      days.push(`
+      rows.push(`
 
         <button
           type="button"
@@ -1481,7 +1838,9 @@
               class="mana-v980-time"
             >
               DAY ${day}
-              • ~${data.minutes} MIN
+              • ${esc(
+                data.minutes
+              )} MIN
             </div>
 
           </div>
@@ -1528,8 +1887,8 @@
 
 
           <p>
-            Choose a week, then tap a day
-            to open the full session.
+            Choose your week, then open
+            the workout you are ready for.
           </p>
 
         </div>
@@ -1590,7 +1949,7 @@
         <div
           class="mana-v980-list"
         >
-          ${days.join("")}
+          ${rows.join("")}
         </div>
 
       </div>
@@ -1605,25 +1964,23 @@
       .forEach(
         button => {
 
-          button
-            .addEventListener(
-              "click",
-              () => {
+          button.addEventListener(
+            "click",
+            () => {
 
-                ui.week =
-                  Number(
-                    button
-                      .dataset
-                      .v980Week
-                  );
-
-
-                renderWeek(
-                  kind
+              ui.week =
+                Number(
+                  button.dataset
+                    .v980Week
                 );
 
-              }
-            );
+
+              renderWeek(
+                kind
+              );
+
+            }
+          );
 
         }
       );
@@ -1636,30 +1993,28 @@
       .forEach(
         button => {
 
-          button
-            .addEventListener(
-              "click",
-              () => {
+          button.addEventListener(
+            "click",
+            () => {
 
-                const day =
-                  Number(
-                    button
-                      .dataset
-                      .v980Day
-                  );
-
-
-                ui.day =
-                  day;
-
-
-                renderSession(
-                  kind,
-                  day
+              const day =
+                Number(
+                  button.dataset
+                    .v980Day
                 );
 
-              }
-            );
+
+              ui.day =
+                day;
+
+
+              renderSession(
+                kind,
+                day
+              );
+
+            }
+          );
 
         }
       );
@@ -1672,7 +2027,7 @@
 
 
   /* =========================================
-     SESSION DETAIL
+     OPEN WORKOUT
      ========================================= */
 
   function renderSession(
@@ -1687,7 +2042,6 @@
     if (!content) {
 
       return;
-
     }
 
 
@@ -1696,17 +2050,6 @@
         kind,
         day
       );
-
-
-    const state =
-      loadState(
-        kind
-      );
-
-
-    const done =
-      state.completed
-        .includes(day);
 
 
     const week =
@@ -1721,6 +2064,39 @@
 
     uiState[kind].day =
       day;
+
+
+    const exercises =
+      data.tasks
+        .map(
+          task => `
+
+            <div
+              class="mana-v980-exercise"
+            >
+
+              <strong
+                class="mana-v980-exercise-name"
+              >
+                ${esc(
+                  task[0]
+                )}
+              </strong>
+
+
+              <span
+                class="mana-v980-exercise-detail"
+              >
+                ${esc(
+                  task[1]
+                )}
+              </span>
+
+            </div>
+
+          `
+        )
+        .join("");
 
 
     content.innerHTML = `
@@ -1752,108 +2128,98 @@
 
 
         <div
-          class="mana-v980-session-card"
+          class="mana-v980-workout-category"
+        >
+          ${esc(
+            data.category
+          )}
+        </div>
+
+
+        <h2
+          class="mana-v980-workout-title"
+        >
+          ${esc(
+            data.title
+          )}
+        </h2>
+
+
+        <div
+          class="mana-v980-duration"
+        >
+          APPROX.
+          ${esc(
+            data.minutes
+          )}
+          MINUTES
+        </div>
+
+
+        <div
+          class="mana-v980-note"
         >
 
           <div
-            class="mana-v980-session-category"
+            class="mana-v980-note-title"
           >
-            ${esc(
-              data.category
-            )}
+            WARM-UP
           </div>
-
-
-          <h2>
-            ${esc(
-              data.title
-            )}
-          </h2>
 
 
           <div
-            class="mana-v980-meta"
+            class="mana-v980-note-text"
           >
-            ~${data.minutes} MIN
+            ${esc(
+              warmupText(
+                kind,
+                data
+              )
+            )}
           </div>
-
-
-          ${
-            kind === "lyfe" &&
-            data.theme
-
-              ? `
-
-                <div
-                  class="mana-v980-theme"
-                >
-                  WEEK ${week}
-                  • ${esc(
-                    data.theme
-                  )}
-                </div>
-
-              `
-
-              : ""
-          }
-
-
-          <div
-            class="mana-v980-exercises"
-          >
-
-            ${
-              data.tasks
-                .map(
-                  task => `
-
-                    <div
-                      class="mana-v980-exercise"
-                    >
-
-                      <strong>
-                        ${esc(
-                          task[0]
-                        )}
-                      </strong>
-
-
-                      <span>
-                        ${esc(
-                          task[1]
-                        )}
-                      </span>
-
-                    </div>
-
-                  `
-                )
-                .join("")
-            }
-
-          </div>
-
-
-          <button
-            type="button"
-            id="manaV980Complete"
-            class="
-              mana-v980-complete
-              ${done ? "done" : ""}
-            "
-            ${done ? "disabled" : ""}
-          >
-
-            ${
-              done
-                ? "DAY COMPLETE ✓"
-                : "COMPLETE DAY →"
-            }
-
-          </button>
 
         </div>
+
+
+        <div
+          class="mana-v980-exercises"
+        >
+          ${exercises}
+        </div>
+
+
+        <div
+          class="mana-v980-note"
+        >
+
+          <div
+            class="mana-v980-note-title"
+          >
+            FINISHER / NOTES
+          </div>
+
+
+          <div
+            class="mana-v980-note-text"
+          >
+            ${esc(
+              finisherText(
+                kind,
+                data
+              )
+            )}
+          </div>
+
+        </div>
+
+
+        <button
+          type="button"
+          id="manaV980Complete"
+          class="mana-v980-complete"
+        >
+          MARK COMPLETE
+        </button>
 
       </div>
 
@@ -1882,12 +2248,11 @@
       )
       ?.addEventListener(
         "click",
-        event => {
+        () => {
 
           completeDay(
             kind,
-            day,
-            event.currentTarget
+            day
           );
 
         }
@@ -1897,17 +2262,27 @@
     updateBackButton(
       kind
     );
+
+
+    const parentShell =
+      shell();
+
+
+    if (parentShell) {
+
+      parentShell.scrollTop =
+        0;
+    }
   }
 
 
   /* =========================================
-     COMPLETE DAY
+     COMPLETE
      ========================================= */
 
   function completeDay(
     kind,
-    day,
-    button
+    day
   ) {
 
     const state =
@@ -1921,15 +2296,15 @@
         .includes(day)
     ) {
 
-      state.completed
-        .push(day);
+      state.completed.push(
+        day
+      );
 
 
-      state.completed
-        .sort(
-          (a,b) =>
-            a - b
-        );
+      state.completed.sort(
+        (a,b) =>
+          a - b
+      );
     }
 
 
@@ -1956,19 +2331,29 @@
     );
 
 
-    button
-      .classList
-      .add(
-        "done"
-      );
+    /*
+      Return immediately to the
+      selected week's workout list.
+    */
+
+    uiState[kind].day =
+      null;
 
 
-    button.textContent =
-      "DAY COMPLETE ✓";
+    renderWeek(
+      kind
+    );
 
 
-    button.disabled =
-      true;
+    const parentShell =
+      shell();
+
+
+    if (parentShell) {
+
+      parentShell.scrollTop =
+        0;
+    }
   }
 
 
@@ -1981,22 +2366,19 @@
   ) {
 
     const button =
-      document
-        .getElementById(
-          "manaV83Back"
-        );
+      document.getElementById(
+        "manaV83Back"
+      );
 
 
     if (!button) {
 
       return;
-
     }
 
 
     if (
-      uiState[kind]
-        ?.day
+      uiState[kind]?.day
     ) {
 
       button.textContent =
@@ -2014,66 +2396,62 @@
 
   function installBackHandler() {
 
-    document
-      .addEventListener(
-        "click",
-        event => {
+    document.addEventListener(
+      "click",
+      event => {
 
-          const button =
-            event.target
-              .closest(
-                "#manaV83Back"
-              );
+        const button =
+          event.target.closest(
+            "#manaV83Back"
+          );
 
 
-          if (!button) {
+        if (!button) {
 
-            return;
-
-          }
-
-
-          const kind =
-            programKind();
+          return;
+        }
 
 
-          if (
-            !kind ||
-            !isProgramTab(kind)
-          ) {
-
-            return;
-
-          }
+        const kind =
+          programKind();
 
 
-          event.preventDefault();
+        if (
+          !kind ||
+          !isProgramTab(kind)
+        ) {
 
-          event.stopImmediatePropagation();
-
-
-          if (
-            uiState[kind]
-              .day
-          ) {
-
-            uiState[kind].day =
-              null;
+          return;
+        }
 
 
-            renderWeek(
-              kind
-            );
+        event.preventDefault();
 
-            return;
-          }
+        event.stopImmediatePropagation();
 
 
-          openOverview();
+        if (
+          uiState[kind].day
+        ) {
 
-        },
-        true
-      );
+          uiState[kind].day =
+            null;
+
+
+          renderWeek(
+            kind
+          );
+
+
+          return;
+        }
+
+
+        openOverview();
+
+      },
+      true
+    );
   }
 
 
@@ -2101,15 +2479,13 @@
       titleEl()
     ) {
 
-      titleEl()
-        .textContent =
+      titleEl().textContent =
         "MANA LYFE";
     }
 
 
     if (
-      uiState[kind]
-        .day
+      uiState[kind].day
     ) {
 
       renderSession(
@@ -2159,32 +2535,30 @@
     scheduleRender();
 
 
-    window
-      .addEventListener(
-        "mana:program-tab-change",
-        scheduleRender
-      );
+    window.addEventListener(
+      "mana:program-tab-change",
+      scheduleRender
+    );
 
 
-    document
-      .addEventListener(
-        "click",
-        event => {
+    document.addEventListener(
+      "click",
+      event => {
 
-          if (
-            event.target.closest(
-              "#manaV80Mana28," +
-              "#manaV80Life," +
-              "#manaV83Tabs"
-            )
-          ) {
+        if (
+          event.target.closest(
+            "#manaV80Mana28," +
+            "#manaV80Life," +
+            "#manaV83Tabs"
+          )
+        ) {
 
-            scheduleRender();
-          }
+          scheduleRender();
+        }
 
-        },
-        true
-      );
+      },
+      true
+    );
 
 
     window.MANA_WEEK_PROGRAM_BUILD =
@@ -2192,7 +2566,7 @@
 
 
     console.log(
-      "[Mana v9.80.0] Mana28 + Mana Lyfe weekly program layout ready"
+      "[Mana v9.80.1] phone-style workouts ready"
     );
   }
 
@@ -2202,14 +2576,13 @@
     "loading"
   ) {
 
-    document
-      .addEventListener(
-        "DOMContentLoaded",
-        init,
-        {
-          once:true
-        }
-      );
+    document.addEventListener(
+      "DOMContentLoaded",
+      init,
+      {
+        once:true
+      }
+    );
 
   } else {
 
