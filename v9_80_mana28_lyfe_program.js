@@ -1,8 +1,16 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.80.2
-   PREMIUM 4-WEEK PROGRAM EXPERIENCE
+   MANA MOVEMENT TRAINING v9.80.3
+   PREMIUM PROGRAM EXPERIENCE
 
    MANA 28 + MANA LYFE
+
+   MANA 28
+   - YOUR 4-WEEK PLAN
+   - 28 DAY PROGRAM
+
+   MANA LYFE
+   - YOUR LYFE PATH
+   - RESET • REBUILD • MOVE FORWARD
 
    WEEKLY FLOW
    1 STRENGTH
@@ -30,7 +38,7 @@
 (() => {
   "use strict";
 
-  const BUILD = "98020";
+  const BUILD = "98030";
 
   const STYLE_ID =
     "mana-v980-program-style";
@@ -59,14 +67,11 @@
 
   /* =========================================
      MANA 28
-     4-WEEK PROGRAM
      ========================================= */
 
   const MANA28_PROGRAM = [
 
-    /* =====================================
-       WEEK 1 — FOUNDATION
-       ===================================== */
+    /* WEEK 1 */
 
     {
       category:"Strength",
@@ -167,9 +172,7 @@
     },
 
 
-    /* =====================================
-       WEEK 2 — BUILD
-       ===================================== */
+    /* WEEK 2 */
 
     {
       category:"Strength",
@@ -273,9 +276,7 @@
     },
 
 
-    /* =====================================
-       WEEK 3 — PROGRESS
-       ===================================== */
+    /* WEEK 3 */
 
     {
       category:"Strength",
@@ -379,9 +380,7 @@
     },
 
 
-    /* =====================================
-       WEEK 4 — FINISH STRONG
-       ===================================== */
+    /* WEEK 4 */
 
     {
       category:"Strength",
@@ -490,12 +489,11 @@
 
   /* =========================================
      MANA LYFE
-     SAME STRUCTURE — DIFFERENT PURPOSE
      ========================================= */
 
   const LYFE_PROGRAM = [
 
-    /* WEEK 1 */
+    /* WEEK 1 — RESET */
 
     {
       category:"Strength",
@@ -593,7 +591,7 @@
     },
 
 
-    /* WEEK 2 */
+    /* WEEK 2 — REBUILD */
 
     {
       category:"Strength",
@@ -692,7 +690,7 @@
     },
 
 
-    /* WEEK 3 */
+    /* WEEK 3 — GROW */
 
     {
       category:"Strength",
@@ -791,7 +789,7 @@
     },
 
 
-    /* WEEK 4 */
+    /* WEEK 4 — MOVE FORWARD */
 
     {
       category:"Strength",
@@ -878,14 +876,14 @@
 
     {
       category:"Rest",
-      title:"Day 28 — Move Forward",
+      title:"Move Forward",
       minutes:"20–30",
       focus:"Complete",
       tasks:[
         ["Easy walk","20 minutes"],
         ["Mobility","5–10 minutes"],
         ["Breathing","3 minutes"],
-        ["Reflection","What changed over these 28 days?"],
+        ["Reflection","What has changed for me?"],
         ["Next step","Choose what you carry forward"]
       ]
     }
@@ -900,8 +898,11 @@
   function safeJson(raw,fallback) {
 
     try {
+
       return JSON.parse(raw);
+
     } catch (_) {
+
       return fallback;
     }
   }
@@ -963,16 +964,24 @@
 
 
     if (
-      title.startsWith("MANA 28")
+      title.startsWith(
+        "MANA 28"
+      )
     ) {
+
       return "mana28";
     }
 
 
     if (
-      title.startsWith("MANA LIFE") ||
-      title.startsWith("MANA LYFE")
+      title.startsWith(
+        "MANA LIFE"
+      ) ||
+      title.startsWith(
+        "MANA LYFE"
+      )
     ) {
+
       return "lyfe";
     }
 
@@ -990,14 +999,20 @@
     if (
       kind === "mana28"
     ) {
-      return tab === "program";
+
+      return (
+        tab === "program"
+      );
     }
 
 
     if (
       kind === "lyfe"
     ) {
-      return tab === "routine";
+
+      return (
+        tab === "routine"
+      );
     }
 
 
@@ -1031,6 +1046,7 @@
         state.completed
       )
     ) {
+
       state.completed = [];
     }
 
@@ -1179,7 +1195,7 @@
     ) {
 
       return (
-        "Recovery is part of the program. Keep the day easy and take a moment to reflect on your energy, mindset and progress."
+        "Recovery is part of the path. Keep the day easy and take a moment to notice your energy, mindset and progress."
       );
     }
 
@@ -1215,47 +1231,28 @@
 
     style.textContent = `
 
-      /* =====================================
-         ROOT
-         ===================================== */
-
       .mana-v980-root{
-
         width:100%;
-
         max-width:780px;
-
         margin:0 auto 38px;
       }
 
 
       .mana-v980-intro{
-
         position:relative;
-
         margin-bottom:20px;
-
         padding-bottom:17px;
-
-        border-bottom:
-          1px solid #26231b;
+        border-bottom:1px solid #26231b;
       }
 
 
       .mana-v980-intro::after{
-
         content:"";
-
         position:absolute;
-
         left:0;
-
         bottom:-1px;
-
         width:86px;
-
         height:2px;
-
         background:
           linear-gradient(
             90deg,
@@ -1266,93 +1263,57 @@
 
 
       .mana-v980-kicker{
-
         color:#dbbd56;
-
         font-size:11px;
-
         font-weight:950;
-
         letter-spacing:.17em;
-
         text-transform:uppercase;
       }
 
 
       .mana-v980-intro h2{
-
         margin:7px 0 7px;
-
         color:#fff;
-
         font-size:32px;
-
         font-weight:950;
-
         line-height:1.02;
       }
 
 
       .mana-v980-intro p{
-
-        max-width:600px;
-
+        max-width:620px;
         margin:0;
-
         color:#9f9f9f;
-
         font-size:14px;
-
         line-height:1.5;
       }
 
 
-      /* =====================================
-         WEEK TABS
-         ===================================== */
+      /* WEEK TABS */
 
       .mana-v980-weeks{
-
         display:grid;
-
         grid-template-columns:
           repeat(4,minmax(0,1fr));
-
         gap:8px;
-
         padding:5px;
-
         margin-bottom:18px;
-
-        border:
-          1px solid #252525;
-
+        border:1px solid #252525;
         border-radius:17px;
-
         background:#080808;
       }
 
 
       .mana-v980-week{
-
         min-height:48px;
-
         border:0;
-
         border-radius:13px;
-
         background:transparent;
-
         color:#777;
-
         font-size:11px;
-
         font-weight:950;
-
         letter-spacing:.04em;
-
         cursor:pointer;
-
         transition:
           transform .15s ease,
           background .15s ease;
@@ -1360,149 +1321,98 @@
 
 
       .mana-v980-week:active{
-
         transform:scale(.98);
       }
 
 
       .mana-v980-week.active{
-
         background:
           linear-gradient(
             145deg,
             #f5dc7b,
             #c99f2f
           );
-
         color:#111;
-
         box-shadow:
-          0 8px 24px rgba(212,175,55,.12);
+          0 8px 24px
+          rgba(212,175,55,.12);
       }
 
 
-      /* =====================================
-         WEEK HEADING
-         ===================================== */
+      /* WEEK HEADING */
 
       .mana-v980-week-head{
-
         display:flex;
-
         justify-content:space-between;
-
         align-items:center;
-
         gap:12px;
-
-        margin:
-          0 2px 10px;
+        margin:0 2px 10px;
       }
 
 
       .mana-v980-week-title{
-
         color:#fff;
-
         font-size:21px;
-
         font-weight:950;
       }
 
 
       .mana-v980-week-progress{
-
-        padding:
-          6px 9px;
-
-        border:
-          1px solid #3a321b;
-
+        padding:6px 9px;
+        border:1px solid #3a321b;
         border-radius:999px;
-
         background:#11100c;
-
         color:#d6b752;
-
         font-size:10px;
-
         font-weight:950;
       }
 
 
-      /* =====================================
-         DAY LIST
-         ===================================== */
+      /* DAY LIST */
 
       .mana-v980-list{
-
         display:grid;
-
         gap:10px;
       }
 
 
       .mana-v980-day{
-
         position:relative;
-
         width:100%;
-
         min-height:86px;
-
         display:grid;
-
         grid-template-columns:
           56px
           minmax(0,1fr)
           24px;
-
         align-items:center;
-
         gap:15px;
-
         overflow:hidden;
-
-        padding:
-          13px 15px;
-
+        padding:13px 15px;
         text-align:left;
-
-        border:
-          1px solid #292820;
-
+        border:1px solid #292820;
         border-radius:19px;
-
         background:
           linear-gradient(
             145deg,
             #15140f,
             #090909
           );
-
         color:#fff;
-
         cursor:pointer;
-
         box-shadow:
-          0 8px 28px rgba(0,0,0,.16);
+          0 8px 28px
+          rgba(0,0,0,.16);
       }
 
 
       .mana-v980-day::before{
-
         content:"";
-
         position:absolute;
-
         left:0;
-
         top:18px;
-
         bottom:18px;
-
         width:2px;
-
         background:
           linear-gradient(
             180deg,
@@ -1510,283 +1420,182 @@
             #d1ad39,
             transparent
           );
-
         opacity:.65;
       }
 
 
       .mana-v980-day:active{
-
         transform:scale(.994);
       }
 
 
       .mana-v980-number{
-
         width:56px;
-
         height:56px;
-
         display:grid;
-
         place-items:center;
-
         border-radius:17px;
-
-        border:
-          1px solid #50451f;
-
+        border:1px solid #50451f;
         background:
           linear-gradient(
             145deg,
             #18150c,
             #0e0d09
           );
-
         color:#f2d875;
-
         font-size:22px;
-
         font-weight:950;
       }
 
 
       .mana-v980-day.done
       .mana-v980-number{
-
         border-color:#d4b241;
-
         background:
           linear-gradient(
             145deg,
             #f2d875,
             #c89f2f
           );
-
         color:#111;
       }
 
 
       .mana-v980-copy{
-
         min-width:0;
       }
 
 
       .mana-v980-category{
-
         color:#c6a948;
-
         font-size:9px;
-
         font-weight:950;
-
         letter-spacing:.15em;
-
         text-transform:uppercase;
       }
 
 
       .mana-v980-title{
-
         margin-top:5px;
-
         color:#fff;
-
         font-size:18px;
-
         font-weight:950;
-
         line-height:1.1;
       }
 
 
       .mana-v980-time{
-
         margin-top:5px;
-
         color:#898989;
-
         font-size:10px;
-
         font-weight:800;
       }
 
 
       .mana-v980-arrow{
-
         color:#d8ba57;
-
         font-size:22px;
-
         font-weight:950;
-
         text-align:center;
       }
 
 
-      /* =====================================
-         WORKOUT DETAIL
-         ===================================== */
+      /* WORKOUT DETAIL */
 
       .mana-v980-session{
-
         width:100%;
-
         max-width:690px;
-
         margin:0 auto 38px;
       }
 
 
       .mana-v980-session-top{
-
         display:flex;
-
         justify-content:space-between;
-
         align-items:center;
-
         gap:12px;
-
         margin-bottom:18px;
       }
 
 
       .mana-v980-back-week{
-
         min-height:40px;
-
-        padding:
-          0 13px;
-
-        border:
-          1px solid #333;
-
+        padding:0 13px;
+        border:1px solid #333;
         border-radius:12px;
-
         background:#0d0d0d;
-
         color:#f2d875;
-
         font-size:11px;
-
         font-weight:950;
+        cursor:pointer;
       }
 
 
       .mana-v980-day-label{
-
         color:#897a49;
-
         font-size:10px;
-
         font-weight:950;
-
         letter-spacing:.11em;
       }
 
 
       .mana-v980-workout-head{
-
         padding-bottom:17px;
-
-        border-bottom:
-          1px solid #26231b;
+        border-bottom:1px solid #26231b;
       }
 
 
       .mana-v980-workout-category{
-
         color:#d1b252;
-
         font-size:10px;
-
         font-weight:950;
-
         letter-spacing:.16em;
-
         text-transform:uppercase;
       }
 
 
       .mana-v980-workout-title{
-
-        margin:
-          7px 0 6px;
-
+        margin:7px 0 6px;
         color:#fff;
-
         font-size:34px;
-
         font-weight:950;
-
         line-height:1.02;
       }
 
 
       .mana-v980-focus{
-
         margin-top:4px;
-
         color:#999;
-
         font-size:12px;
-
         font-weight:700;
       }
 
 
       .mana-v980-duration{
-
         display:inline-flex;
-
         align-items:center;
-
         min-height:30px;
-
         margin-top:9px;
-
-        padding:
-          0 11px;
-
-        border:
-          1px solid #4d421f;
-
+        padding:0 11px;
+        border:1px solid #4d421f;
         border-radius:999px;
-
         background:#14120a;
-
         color:#f3d875;
-
         font-size:10px;
-
         font-weight:950;
-
         letter-spacing:.04em;
       }
 
 
-      /* =====================================
-         NOTES
-         ===================================== */
+      /* NOTES */
 
       .mana-v980-note{
-
         position:relative;
-
         margin-top:17px;
-
         overflow:hidden;
-
-        padding:
-          14px 15px 14px 17px;
-
-        border:
-          1px solid #2d291c;
-
+        padding:14px 15px 14px 17px;
+        border:1px solid #2d291c;
         border-radius:15px;
-
         background:
           linear-gradient(
             145deg,
@@ -1797,139 +1606,87 @@
 
 
       .mana-v980-note::before{
-
         content:"";
-
         position:absolute;
-
         top:0;
-
         left:0;
-
         bottom:0;
-
         width:3px;
-
         background:#d2af3c;
       }
 
 
       .mana-v980-note-title{
-
         margin-bottom:7px;
-
         color:#efd16c;
-
         font-size:9px;
-
         font-weight:950;
-
         letter-spacing:.16em;
-
         text-transform:uppercase;
       }
 
 
       .mana-v980-note-text{
-
         color:#bdbdbd;
-
         font-size:13px;
-
         line-height:1.5;
       }
 
 
-      /* =====================================
-         EXERCISES
-         ===================================== */
+      /* EXERCISES */
 
       .mana-v980-exercises{
-
         margin-top:14px;
-
-        border-top:
-          1px solid #242424;
+        border-top:1px solid #242424;
       }
 
 
       .mana-v980-exercise{
-
         position:relative;
-
-        padding:
-          15px 3px;
-
-        border-bottom:
-          1px solid #242424;
+        padding:15px 3px;
+        border-bottom:1px solid #242424;
       }
 
 
       .mana-v980-exercise-name{
-
         display:block;
-
         padding-right:12px;
-
         color:#fff;
-
         font-size:17px;
-
         font-weight:950;
-
         line-height:1.2;
       }
 
 
       .mana-v980-exercise-detail{
-
         display:block;
-
         margin-top:5px;
-
         color:#b6b6b6;
-
         font-size:14px;
-
         font-weight:550;
-
         line-height:1.3;
       }
 
 
-      /* =====================================
-         COMPLETE
-         ===================================== */
+      /* COMPLETE */
 
       .mana-v980-complete{
-
         width:100%;
-
         min-height:58px;
-
         margin-top:16px;
-
         border:0;
-
         border-radius:16px;
-
         background:
           linear-gradient(
             135deg,
             #f5dc7a,
             #c69a28
           );
-
         color:#111;
-
         font-size:13px;
-
         font-weight:950;
-
         letter-spacing:.08em;
-
         cursor:pointer;
-
         box-shadow:
           0 10px 30px
           rgba(212,175,55,.14);
@@ -1937,222 +1694,164 @@
 
 
       .mana-v980-complete:active{
-
         transform:scale(.995);
       }
 
 
-      /* =====================================
-         PHONE PREMIUM
-         ===================================== */
+      /* PHONE */
 
       @media(max-width:700px){
 
         .mana-v980-root{
-
           margin-bottom:24px;
         }
 
 
         .mana-v980-intro{
-
           margin-bottom:15px;
-
           padding-bottom:14px;
         }
 
 
         .mana-v980-intro h2{
-
           font-size:27px;
         }
 
 
         .mana-v980-weeks{
-
           gap:4px;
-
           padding:4px;
-
           margin-bottom:14px;
-
           border-radius:14px;
         }
 
 
         .mana-v980-week{
-
           min-height:42px;
-
           padding:0 2px;
-
           border-radius:10px;
-
           font-size:9px;
         }
 
 
         .mana-v980-week-head{
-
           margin-bottom:8px;
         }
 
 
         .mana-v980-week-title{
-
           font-size:18px;
         }
 
 
         .mana-v980-day{
-
           min-height:78px;
-
           grid-template-columns:
             49px
             minmax(0,1fr)
             18px;
-
           gap:11px;
-
-          padding:
-            10px 11px;
-
+          padding:10px 11px;
           border-radius:16px;
         }
 
 
         .mana-v980-day::before{
-
           top:15px;
-
           bottom:15px;
         }
 
 
         .mana-v980-number{
-
           width:49px;
-
           height:49px;
-
           border-radius:14px;
-
           font-size:20px;
         }
 
 
         .mana-v980-title{
-
           font-size:16px;
         }
 
 
         .mana-v980-time{
-
           font-size:9px;
         }
 
 
         .mana-v980-arrow{
-
           font-size:18px;
         }
 
 
         .mana-v980-session{
-
           margin-bottom:24px;
         }
 
 
         .mana-v980-session-top{
-
           margin-bottom:14px;
         }
 
 
         .mana-v980-workout-head{
-
           padding-bottom:14px;
         }
 
 
         .mana-v980-workout-title{
-
-          margin:
-            6px 0 5px;
-
+          margin:6px 0 5px;
           font-size:28px;
         }
 
 
         .mana-v980-focus{
-
           font-size:11px;
         }
 
 
         .mana-v980-duration{
-
           min-height:28px;
-
           margin-top:8px;
-
           font-size:9px;
         }
 
 
         .mana-v980-note{
-
           margin-top:14px;
-
-          padding:
-            12px 12px 12px 15px;
-
+          padding:12px 12px 12px 15px;
           border-radius:13px;
         }
 
 
         .mana-v980-note-text{
-
           font-size:13px;
-
           line-height:1.45;
         }
 
 
         .mana-v980-exercise{
-
-          padding:
-            13px 2px;
+          padding:13px 2px;
         }
 
 
         .mana-v980-exercise-name{
-
           font-size:17px;
         }
 
 
         .mana-v980-exercise-detail{
-
           margin-top:4px;
-
           color:#b8b8b8;
-
           font-size:14px;
         }
 
 
         .mana-v980-complete{
-
           min-height:55px;
-
           margin-top:14px;
-
           border-radius:14px;
-
           font-size:12px;
         }
 
@@ -2310,10 +2009,12 @@
             <div
               class="mana-v980-time"
             >
-              DAY ${day}
-              • ${esc(
-                data.minutes
-              )} MIN
+              ${
+                kind === "mana28"
+                  ? `DAY ${day} • `
+                  : ""
+              }
+              ${esc(data.minutes)} MIN
             </div>
 
           </div>
@@ -2332,6 +2033,37 @@
     }
 
 
+    const kicker =
+      kind === "mana28"
+
+        ? "MANA 28 • 28 DAY PROGRAM"
+
+        : "MANA LYFE • RESET • REBUILD • MOVE FORWARD";
+
+
+    const heading =
+      kind === "mana28"
+
+        ? "Your 4-Week Plan"
+
+        : "Your Lyfe Path";
+
+
+    const intro =
+      kind === "mana28"
+
+        ? (
+            "Each week follows the same rhythm " +
+            "with new workouts and progressive training."
+          )
+
+        : (
+            "Four weeks of movement, strength, recovery " +
+            "and mindset designed to help you reset, " +
+            "rebuild and move forward."
+          );
+
+
     content.innerHTML = `
 
       <div
@@ -2345,24 +2077,17 @@
           <div
             class="mana-v980-kicker"
           >
-            ${
-              kind === "mana28"
-                ? "MANA 28"
-                : "MANA LYFE"
-            }
-            • 28 DAY PROGRAM
+            ${kicker}
           </div>
 
 
           <h2>
-            Your 4-Week Plan
+            ${heading}
           </h2>
 
 
           <p>
-            Each week follows the same rhythm
-            with new workouts and progressive
-            training.
+            ${intro}
           </p>
 
         </div>
@@ -2409,7 +2134,17 @@
           <div
             class="mana-v980-week-title"
           >
-            Week ${week}
+            ${
+              kind === "mana28"
+                ? `Week ${week}`
+                : [
+                    "",
+                    "Reset",
+                    "Rebuild",
+                    "Grow",
+                    "Move Forward"
+                  ][week]
+            }
           </div>
 
 
@@ -2594,7 +2329,13 @@
           <div
             class="mana-v980-day-label"
           >
-            DAY ${day} OF 28
+            ${
+              kind === "mana28"
+                ? `DAY ${day} OF 28`
+                : `WEEK ${week} • SESSION ${
+                    ((day - 1) % 7) + 1
+                  }`
+            }
           </div>
 
         </div>
@@ -2834,7 +2575,7 @@
 
 
   /* =========================================
-     BACK
+     BACK BUTTON
      ========================================= */
 
   function updateBackButton(kind) {
@@ -3031,7 +2772,7 @@
 
 
     console.log(
-      "[Mana v9.80.2] premium 4-week programs ready"
+      "[Mana v9.80.3] premium Mana28 + Mana Lyfe programs ready"
     );
   }
 
