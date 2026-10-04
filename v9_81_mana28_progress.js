@@ -1,31 +1,25 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.81.2
+   MANA MOVEMENT TRAINING v9.81.3
    MANA 28 — PREMIUM PROGRESS
 
-   FILTERS
-   - DAILY
-   - WEEKLY
-   - MONTHLY
-   - TO DATE
-
-   ALL METRICS RESPOND TO FILTER
-
-   - WORKOUTS %
-   - WATER %
-   - CALORIES %
-   - PROTEIN %
-   - RECOVERY %
-
-   RECOVERY TARGET
-   - 8 HOURS DAILY
+   FIXES
+   - MANA 28 DATES COME ONLY FROM MANA 28
+   - NO OLD STRENGTH / FUEL HISTORY
+     USED TO START THE PROGRAM
+   - WEEKLY = CURRENT MANA 28 PROGRAM WEEK
+   - MONTHLY = PROGRAM DAYS IN CURRENT MONTH
+   - TO DATE = ACTUAL PROGRAM DAYS ELAPSED
+   - RECOVERY READS FROM FUEL recoveryHours
+   - WORKOUTS / WATER / RECOVERY /
+     CALORIES / PROTEIN ALL RESPOND
+     TO THE PERIOD BUTTONS
 
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD =
-    "98120";
+  const BUILD = "98130";
 
   const STYLE_ID =
     "mana-v981-progress-style";
@@ -42,6 +36,9 @@
   const RECOVERY_TARGET =
     8;
 
+  const PROGRAM_DAYS =
+    28;
+
   let selectedPeriod =
     "daily";
 
@@ -50,12 +47,21 @@
      HELPERS
      ========================================= */
 
-  function safeJson(raw,fallback) {
+  function safeJson(
+    raw,
+    fallback
+  ) {
 
     try {
-      return JSON.parse(raw);
+
+      return JSON.parse(
+        raw
+      );
+
     } catch (_) {
+
       return fallback;
+
     }
 
   }
@@ -80,18 +86,20 @@
 
   function shell() {
 
-    return document.getElementById(
-      "manaV83ProgramShell"
-    );
+    return document
+      .getElementById(
+        "manaV83ProgramShell"
+      );
 
   }
 
 
   function holder() {
 
-    return document.getElementById(
-      "manaV83Content"
-    );
+    return document
+      .getElementById(
+        "manaV83Content"
+      );
 
   }
 
@@ -99,11 +107,12 @@
   function activeTab() {
 
     return (
-      document.querySelector(
-        "#manaV83Tabs .mana-v83-tab.active"
-      )
-      ?.dataset
-      ?.v83Tab
+      document
+        .querySelector(
+          "#manaV83Tabs .mana-v83-tab.active"
+        )
+        ?.dataset
+        ?.v83Tab
       || ""
     );
 
@@ -155,93 +164,136 @@
      DATE HELPERS
      ========================================= */
 
-  function startOfDay(input) {
+  function startOfDay(
+    input
+  ) {
 
-    const d =
-      new Date(input);
+    const date =
+      new Date(
+        input
+      );
 
-    d.setHours(
-      0,0,0,0
+
+    date.setHours(
+      0,
+      0,
+      0,
+      0
     );
 
-    return d;
+
+    return date;
 
   }
 
 
-  function endOfDay(input) {
+  function endOfDay(
+    input
+  ) {
 
-    const d =
-      new Date(input);
+    const date =
+      new Date(
+        input
+      );
 
-    d.setHours(
-      23,59,59,999
+
+    date.setHours(
+      23,
+      59,
+      59,
+      999
     );
 
-    return d;
+
+    return date;
 
   }
 
 
-  function dateKey(input) {
+  function addDays(
+    input,
+    amount
+  ) {
 
-    const d =
-      new Date(input);
+    const date =
+      startOfDay(
+        input
+      );
+
+
+    date.setDate(
+      date.getDate() +
+      Number(
+        amount || 0
+      )
+    );
+
+
+    return date;
+
+  }
+
+
+  function daysBetween(
+    start,
+    end
+  ) {
+
+    const a =
+      startOfDay(
+        start
+      );
+
+
+    const b =
+      startOfDay(
+        end
+      );
+
+
+    return Math.floor(
+      (
+        b.getTime() -
+        a.getTime()
+      )
+      /
+      86400000
+    );
+
+  }
+
+
+  function dateKey(
+    input
+  ) {
+
+    const date =
+      new Date(
+        input
+      );
 
 
     return [
 
-      d.getFullYear(),
+      date.getFullYear(),
 
       String(
-        d.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      ),
-
-      String(
-        d.getDate()
-      ).padStart(
-        2,
-        "0"
+        date.getMonth() + 1
       )
+        .padStart(
+          2,
+          "0"
+        ),
+
+      String(
+        date.getDate()
+      )
+        .padStart(
+          2,
+          "0"
+        )
 
     ].join("-");
-
-  }
-
-
-  function parseDateKey(key) {
-
-    const parts =
-      String(
-        key || ""
-      )
-        .split("-")
-        .map(Number);
-
-
-    if (
-      parts.length !== 3
-    ) {
-      return null;
-    }
-
-
-    const d =
-      new Date(
-        parts[0],
-        parts[1] - 1,
-        parts[2]
-      );
-
-
-    return Number.isNaN(
-      d.getTime()
-    )
-      ? null
-      : d;
 
   }
 
@@ -251,13 +303,17 @@
     end
   ) {
 
-    const result = [];
+    const dates = [];
 
-    const cursor =
-      startOfDay(start);
+    let cursor =
+      startOfDay(
+        start
+      );
 
     const finish =
-      startOfDay(end);
+      startOfDay(
+        end
+      );
 
     let guard =
       0;
@@ -265,17 +321,21 @@
 
     while (
       cursor <= finish &&
-      guard < 370
+      guard < 40
     ) {
 
-      result.push(
-        dateKey(cursor)
+      dates.push(
+        dateKey(
+          cursor
+        )
       );
 
 
-      cursor.setDate(
-        cursor.getDate() + 1
-      );
+      cursor =
+        addDays(
+          cursor,
+          1
+        );
 
 
       guard += 1;
@@ -283,13 +343,31 @@
     }
 
 
-    return result;
+    return dates;
+
+  }
+
+
+  function shortDate(
+    input
+  ) {
+
+    return new Date(
+      input
+    )
+      .toLocaleDateString(
+        undefined,
+        {
+          day:"numeric",
+          month:"short"
+        }
+      );
 
   }
 
 
   /* =========================================
-     STORES
+     DATA
      ========================================= */
 
   function loadProgram() {
@@ -366,7 +444,7 @@
 
 
   /* =========================================
-     WORKOUT COMPLETION RECORDS
+     COMPLETION RECORDS
      ========================================= */
 
   function completionRecords(
@@ -398,7 +476,9 @@
           if (raw) {
 
             const parsed =
-              new Date(raw);
+              new Date(
+                raw
+              );
 
 
             if (
@@ -416,35 +496,46 @@
 
 
           return {
+
             day:
-              Number(day),
+              Number(
+                day
+              ),
+
             date
+
           };
 
         }
+      )
+      .filter(
+        record =>
+          record.day >= 1 &&
+          record.day <= 28
       );
 
   }
 
 
   /* =========================================
-     PROGRAM START
+     MANA 28 START DATE
+
+     IMPORTANT:
+     NO FUEL DATES ARE USED HERE.
+
+     IF DAY 6 WAS COMPLETED ON OCT 5,
+     WE CAN INFER DAY 1 WAS SEP 30.
      ========================================= */
 
   function programStart(
-    state,
-    fuel
+    state
   ) {
-
-    const dates =
-      [];
-
 
     if (
       state.startedAt
     ) {
 
-      const parsed =
+      const explicit =
         new Date(
           state.startedAt
         );
@@ -452,17 +543,20 @@
 
       if (
         !Number.isNaN(
-          parsed.getTime()
+          explicit.getTime()
         )
       ) {
 
-        dates.push(
-          parsed
+        return startOfDay(
+          explicit
         );
 
       }
 
     }
+
+
+    const inferred = [];
 
 
     completionRecords(
@@ -472,187 +566,450 @@
         record => {
 
           if (
-            record.date
+            !record.date
           ) {
 
-            dates.push(
-              record.date
-            );
+            return;
 
           }
 
-        }
-      );
 
+          inferred.push(
 
-    Object.keys(
-      fuel
-    )
-      .forEach(
-        key => {
+            addDays(
+              record.date,
+              -(
+                record.day - 1
+              )
+            )
 
-          const parsed =
-            parseDateKey(
-              key
-            );
-
-
-          if (parsed) {
-
-            dates.push(
-              parsed
-            );
-
-          }
+          );
 
         }
       );
 
 
     if (
-      !dates.length
+      inferred.length
     ) {
 
+      inferred.sort(
+        (a,b) =>
+          a.getTime() -
+          b.getTime()
+      );
+
+
       return startOfDay(
-        new Date()
+        inferred[0]
       );
 
     }
 
 
-    dates.sort(
-      (a,b) =>
-        a.getTime() -
-        b.getTime()
+    return startOfDay(
+      new Date()
     );
 
+  }
 
-    return startOfDay(
-      dates[0]
+
+  function programEnd(
+    start
+  ) {
+
+    return addDays(
+      start,
+      PROGRAM_DAYS - 1
+    );
+
+  }
+
+
+  function programDayNumber(
+    start,
+    date = new Date()
+  ) {
+
+    return (
+      daysBetween(
+        start,
+        date
+      ) + 1
     );
 
   }
 
 
   /* =========================================
-     SELECTED PERIOD
+     PERIODS
      ========================================= */
 
   function periodRange(
-    startDate
+    programStartDate
   ) {
 
-    const now =
-      new Date();
-
-
-    let start =
-      startOfDay(now);
-
-
-    const end =
-      endOfDay(now);
-
-
-    if (
-      selectedPeriod ===
-      "weekly"
-    ) {
-
-      start.setDate(
-        start.getDate() - 6
+    const today =
+      startOfDay(
+        new Date()
       );
 
-    }
+
+    const programFinish =
+      programEnd(
+        programStartDate
+      );
 
 
-    if (
-      selectedPeriod ===
-      "monthly"
-    ) {
-
-      start =
-        startOfDay(
-          new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            1
-          )
-        );
-
-    }
+    const currentDay =
+      programDayNumber(
+        programStartDate,
+        today
+      );
 
 
-    if (
-      selectedPeriod ===
-      "todate"
-    ) {
-
-      start =
-        startOfDay(
-          startDate
-        );
-
-    }
-
-
-    if (
-      start <
-      startDate
-    ) {
-
-      start =
-        startOfDay(
-          startDate
-        );
-
-    }
-
-
-    return {
-      start,
-      end
-    };
-
-  }
-
-
-  function periodName() {
+    /*
+      DAILY
+    */
 
     if (
       selectedPeriod ===
       "daily"
     ) {
-      return "TODAY";
+
+      return {
+
+        start:
+          today,
+
+        end:
+          today,
+
+        dataEnd:
+          today,
+
+        workoutTarget:
+          (
+            currentDay >= 1 &&
+            currentDay <= 28
+          )
+            ? 1
+            : 0,
+
+        label:
+          "TODAY",
+
+        detail:
+          shortDate(
+            today
+          )
+
+      };
+
     }
 
+
+    /*
+      WEEKLY
+
+      Week 1 = Days 1–7
+      Week 2 = Days 8–14
+      etc.
+    */
 
     if (
       selectedPeriod ===
       "weekly"
     ) {
-      return "LAST 7 DAYS";
+
+      const safeDay =
+        clamp(
+          currentDay,
+          1,
+          28
+        );
+
+
+      const weekIndex =
+        Math.floor(
+          (
+            safeDay - 1
+          )
+          /
+          7
+        );
+
+
+      const weekStart =
+        addDays(
+          programStartDate,
+          weekIndex * 7
+        );
+
+
+      const weekEnd =
+        addDays(
+          weekStart,
+          6
+        );
+
+
+      return {
+
+        start:
+          weekStart,
+
+        end:
+          weekEnd,
+
+        dataEnd:
+          today < weekEnd
+            ? today
+            : weekEnd,
+
+        workoutTarget:
+          7,
+
+        label:
+          `WEEK ${weekIndex + 1}`,
+
+        detail:
+          `${shortDate(
+            weekStart
+          )} – ${shortDate(
+            weekEnd
+          )}`
+
+      };
+
     }
 
+
+    /*
+      MONTHLY
+
+      Only count dates that overlap
+      this Mana 28 program.
+    */
 
     if (
       selectedPeriod ===
       "monthly"
     ) {
-      return "THIS MONTH";
+
+      const monthStart =
+        startOfDay(
+          new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            1
+          )
+        );
+
+
+      const monthEnd =
+        startOfDay(
+          new Date(
+            today.getFullYear(),
+            today.getMonth() + 1,
+            0
+          )
+        );
+
+
+      const start =
+        monthStart >
+        programStartDate
+
+          ? monthStart
+
+          : programStartDate;
+
+
+      const end =
+        monthEnd <
+        programFinish
+
+          ? monthEnd
+
+          : programFinish;
+
+
+      const valid =
+        start <= end;
+
+
+      const target =
+        valid
+
+          ? (
+              daysBetween(
+                start,
+                end
+              ) + 1
+            )
+
+          : 0;
+
+
+      return {
+
+        start,
+
+        end,
+
+        dataEnd:
+          !valid
+            ? start
+            : (
+                today < end
+                  ? today
+                  : end
+              ),
+
+        workoutTarget:
+          target,
+
+        label:
+          today
+            .toLocaleDateString(
+              undefined,
+              {
+                month:"long"
+              }
+            )
+            .toUpperCase(),
+
+        detail:
+          valid
+            ? `${target} Mana 28 program days`
+            : "No Mana 28 days this month"
+
+      };
+
     }
 
 
-    return "PROGRAM TO DATE";
+    /*
+      TO DATE
+
+      Only elapsed Mana 28 days are used.
+      Overall 28-day completion remains
+      in the hero card separately.
+    */
+
+    const elapsed =
+      clamp(
+        currentDay,
+        0,
+        28
+      );
+
+
+    const toDateEnd =
+      today <
+      programFinish
+
+        ? today
+
+        : programFinish;
+
+
+    return {
+
+      start:
+        programStartDate,
+
+      end:
+        toDateEnd,
+
+      dataEnd:
+        toDateEnd,
+
+      workoutTarget:
+        Math.max(
+          0,
+          elapsed
+        ),
+
+      label:
+        "TO DATE",
+
+      detail:
+        elapsed > 0
+          ? `${elapsed} program days elapsed`
+          : "Program not started"
+
+    };
 
   }
 
 
   /* =========================================
-     DAILY FUEL TOTALS
+     COMPLETED WORKOUTS IN PERIOD
      ========================================= */
 
-  function dayTotals(day) {
+  function workoutCountForRange(
+    state,
+    range
+  ) {
+
+    if (
+      range.workoutTarget <= 0
+    ) {
+
+      return 0;
+
+    }
+
+
+    return completionRecords(
+      state
+    )
+      .filter(
+        record => {
+
+          /*
+            Prefer scheduled Mana 28 day
+            rather than the calendar day
+            the user happened to tap Complete.
+          */
+
+          const scheduledDate =
+            addDays(
+              programStart(
+                state
+              ),
+              record.day - 1
+            );
+
+
+          return (
+            scheduledDate >=
+              startOfDay(
+                range.start
+              )
+            &&
+            scheduledDate <=
+              endOfDay(
+                range.end
+              )
+          );
+
+        }
+      )
+      .length;
+
+  }
+
+
+  /* =========================================
+     FUEL TOTALS
+     ========================================= */
+
+  function dayTotals(
+    day
+  ) {
 
     const totals = {
 
@@ -709,7 +1066,7 @@
 
 
   /* =========================================
-     PERIOD METRICS
+     METRICS
      ========================================= */
 
   function periodMetrics(
@@ -719,76 +1076,54 @@
     range
   ) {
 
+    /*
+      Fuel / recovery are only scored
+      through today.
+
+      Future days in the week/month do
+      not count as missed nutrition yet.
+    */
+
+    const validDataRange =
+      (
+        range.workoutTarget > 0 &&
+        range.dataEnd >=
+          range.start
+      );
+
+
     const dates =
-      datesBetween(
-        range.start,
-        range.end
-      );
+      validDataRange
 
+        ? datesBetween(
+            range.start,
+            range.dataEnd
+          )
 
-    const records =
-      completionRecords(
-        state
-      );
+        : [];
 
 
     const workoutCount =
-      selectedPeriod ===
-      "todate"
-
-        ? state.completed.length
-
-        : records
-            .filter(
-              record =>
-
-                record.date
-
-                &&
-
-                record.date >=
-                  range.start
-
-                &&
-
-                record.date <=
-                  range.end
-            )
-            .length;
-
-
-    let workoutTarget;
-
-
-    if (
-      selectedPeriod ===
-      "todate"
-    ) {
-
-      workoutTarget =
-        28;
-
-    } else {
-
-      workoutTarget =
-        Math.max(
-          1,
-          dates.length
-        );
-
-    }
-
-
-    const workoutPct =
-      clamp(
-        Math.round(
-          workoutCount /
-          workoutTarget *
-          100
-        ),
-        0,
-        100
+      workoutCountForRange(
+        state,
+        range
       );
+
+
+    const workoutPercent =
+      range.workoutTarget > 0
+
+        ? clamp(
+            Math.round(
+              workoutCount /
+              range.workoutTarget *
+              100
+            ),
+            0,
+            100
+          )
+
+        : 0;
 
 
     let waterScore =
@@ -816,6 +1151,10 @@
           );
 
 
+        /*
+          WATER
+        */
+
         if (
           targets.water > 0
         ) {
@@ -832,6 +1171,10 @@
         }
 
 
+        /*
+          PROTEIN
+        */
+
         if (
           targets.protein > 0
         ) {
@@ -847,6 +1190,12 @@
 
         }
 
+
+        /*
+          CALORIES
+
+          Accuracy toward target.
+        */
 
         if (
           targets.calories > 0
@@ -874,6 +1223,10 @@
         }
 
 
+        /*
+          RECOVERY
+        */
+
         recoveryHours +=
           totals.recovery;
 
@@ -892,29 +1245,36 @@
 
 
     const dayCount =
-      Math.max(
-        1,
-        dates.length
-      );
+      dates.length;
 
 
     return {
 
+      daysScored:
+        dayCount,
+
+
       workouts:{
+
         percent:
-          workoutPct,
+          workoutPercent,
 
         count:
           workoutCount,
 
         target:
-          workoutTarget
+          range.workoutTarget
+
       },
 
 
       water:{
+
         percent:
-          targets.water > 0
+          (
+            dayCount > 0 &&
+            targets.water > 0
+          )
 
             ? Math.round(
                 waterScore /
@@ -922,12 +1282,17 @@
               )
 
             : null
+
       },
 
 
       calories:{
+
         percent:
-          targets.calories > 0
+          (
+            dayCount > 0 &&
+            targets.calories > 0
+          )
 
             ? Math.round(
                 calorieScore /
@@ -935,12 +1300,17 @@
               )
 
             : null
+
       },
 
 
       protein:{
+
         percent:
-          targets.protein > 0
+          (
+            dayCount > 0 &&
+            targets.protein > 0
+          )
 
             ? Math.round(
                 proteinScore /
@@ -948,24 +1318,33 @@
               )
 
             : null
+
       },
 
 
       recovery:{
+
         percent:
-          Math.round(
-            recoveryScore /
-            dayCount
-          ),
+          dayCount > 0
+
+            ? Math.round(
+                recoveryScore /
+                dayCount
+              )
+
+            : 0,
 
         hours:
           Math.round(
             recoveryHours * 10
-          ) / 10,
+          )
+          /
+          10,
 
         targetHours:
           dayCount *
           RECOVERY_TARGET
+
       }
 
     };
@@ -974,7 +1353,7 @@
 
 
   /* =========================================
-     STYLES
+     STYLE
      ========================================= */
 
   function installStyles() {
@@ -1047,13 +1426,15 @@
 
 
       .mana-v981-head p{
-        margin:0;
         max-width:590px;
+        margin:0;
         color:#999;
         font-size:13px;
         line-height:1.5;
       }
 
+
+      /* PERIOD BUTTONS */
 
       .mana-v981-periods{
         display:grid;
@@ -1080,6 +1461,7 @@
         font-size:10px;
         font-weight:950;
         cursor:pointer;
+        touch-action:manipulation;
       }
 
 
@@ -1093,6 +1475,8 @@
         color:#111;
       }
 
+
+      /* JOURNEY HERO */
 
       .mana-v981-overall{
         position:relative;
@@ -1148,6 +1532,14 @@
       }
 
 
+      .mana-v981-overall-sub{
+        margin-top:7px;
+        color:#888;
+        font-size:10px;
+        font-weight:800;
+      }
+
+
       .mana-v981-overall-bar,
       .mana-v981-bar{
         height:7px;
@@ -1176,15 +1568,36 @@
       }
 
 
-      .mana-v981-section{
+      /* PERIOD HEADER */
+
+      .mana-v981-period-head{
+        display:flex;
+        justify-content:
+          space-between;
+        align-items:flex-end;
+        gap:12px;
         margin:
-          16px 2px 9px;
-        color:#ddd;
-        font-size:11px;
-        font-weight:950;
-        letter-spacing:.11em;
+          16px 2px 10px;
       }
 
+
+      .mana-v981-period-name{
+        color:#eee;
+        font-size:12px;
+        font-weight:950;
+        letter-spacing:.10em;
+      }
+
+
+      .mana-v981-period-detail{
+        color:#777;
+        font-size:9px;
+        font-weight:800;
+        text-align:right;
+      }
+
+
+      /* CARDS */
 
       .mana-v981-grid{
         display:grid;
@@ -1212,7 +1625,8 @@
 
 
       .mana-v981-card.workout{
-        grid-column:1 / -1;
+        grid-column:
+          1 / -1;
         min-height:130px;
       }
 
@@ -1233,7 +1647,7 @@
         border-radius:10px;
         background:#18150d;
         color:#f0d26d;
-        font-size:10px;
+        font-size:9px;
         font-weight:950;
       }
 
@@ -1256,7 +1670,7 @@
 
 
       .mana-v981-sub{
-        min-height:29px;
+        min-height:30px;
         margin-top:7px;
         color:#858585;
         font-size:11px;
@@ -1334,13 +1748,27 @@
           font-size:24px;
         }
 
+
+        .mana-v981-period-head{
+          align-items:flex-start;
+          flex-direction:column;
+          gap:4px;
+        }
+
+
+        .mana-v981-period-detail{
+          text-align:left;
+        }
+
       }
 
     `;
 
 
     document.head
-      .appendChild(style);
+      .appendChild(
+        style
+      );
 
   }
 
@@ -1352,22 +1780,27 @@
   function card(
     icon,
     label,
-    value,
-    sub,
     percentage,
-    extraClass = ""
+    sub,
+    className = ""
   ) {
 
-    const pct =
-      percentage === null
+    const available =
+      percentage !== null;
 
-        ? 0
 
-        : clamp(
-            Number(percentage),
+    const value =
+      available
+
+        ? clamp(
+            Number(
+              percentage
+            ),
             0,
             100
-          );
+          )
+
+        : 0;
 
 
     return `
@@ -1375,7 +1808,7 @@
       <div
         class="
           mana-v981-card
-          ${extraClass}
+          ${className}
         "
       >
 
@@ -1403,9 +1836,9 @@
           class="mana-v981-value"
         >
           ${
-            percentage === null
-              ? "—"
-              : value
+            available
+              ? `${value}%`
+              : "—"
           }
         </div>
 
@@ -1420,11 +1853,13 @@
         <div
           class="mana-v981-bar"
         >
+
           <span
             style="
-              width:${pct}%
+              width:${value}%
             "
           ></span>
+
         </div>
 
       </div>
@@ -1443,7 +1878,9 @@
     if (
       !progressOpen()
     ) {
+
       return;
+
     }
 
 
@@ -1452,7 +1889,9 @@
 
 
     if (!root) {
+
       return;
+
     }
 
 
@@ -1470,8 +1909,7 @@
 
     const start =
       programStart(
-        state,
-        fuel
+        state
       );
 
 
@@ -1490,15 +1928,36 @@
       );
 
 
-    const overall =
+    const totalComplete =
+      state.completed
+        .filter(
+          day =>
+            Number(day) >= 1 &&
+            Number(day) <= 28
+        )
+        .length;
+
+
+    const overallPercent =
       clamp(
         Math.round(
-          state.completed.length /
+          totalComplete /
           28 *
           100
         ),
         0,
         100
+      );
+
+
+    const currentProgramDay =
+      clamp(
+        programDayNumber(
+          start,
+          new Date()
+        ),
+        1,
+        28
       );
 
 
@@ -1525,9 +1984,9 @@
 
 
           <p>
-            See how your training,
-            nutrition, hydration and
-            recovery are tracking.
+            Training, nutrition,
+            hydration and recovery
+            across your Mana 28 journey.
           </p>
 
         </div>
@@ -1548,6 +2007,7 @@
 
                 <button
                   type="button"
+
                   class="
                     mana-v981-period
                     ${
@@ -1557,6 +2017,7 @@
                         : ""
                     }
                   "
+
                   data-v981-period="${item[0]}"
                 >
                   ${item[1]}
@@ -1576,7 +2037,7 @@
           <div
             class="mana-v981-overall-label"
           >
-            OVERALL PROGRAM
+            MANA 28 JOURNEY
           </div>
 
 
@@ -1584,29 +2045,53 @@
             class="mana-v981-overall-value"
           >
             <span>
-              ${state.completed.length}
+              ${totalComplete}
             </span>
             OF 28 COMPLETE
           </div>
 
 
           <div
+            class="mana-v981-overall-sub"
+          >
+            DAY ${currentProgramDay}
+            • ${overallPercent}%
+            OF PROGRAM COMPLETE
+          </div>
+
+
+          <div
             class="mana-v981-overall-bar"
           >
+
             <span
               style="
-                width:${overall}%
+                width:${overallPercent}%
               "
             ></span>
+
           </div>
 
         </div>
 
 
         <div
-          class="mana-v981-section"
+          class="mana-v981-period-head"
         >
-          ${periodName()}
+
+          <div
+            class="mana-v981-period-name"
+          >
+            ${range.label}
+          </div>
+
+
+          <div
+            class="mana-v981-period-detail"
+          >
+            ${range.detail}
+          </div>
+
         </div>
 
 
@@ -1617,9 +2102,10 @@
           ${card(
             "W/O",
             "WORKOUTS",
-            `${metrics.workouts.percent}%`,
-            `${metrics.workouts.count} of ${metrics.workouts.target} program days completed`,
             metrics.workouts.percent,
+            metrics.workouts.target > 0
+              ? `${metrics.workouts.count} of ${metrics.workouts.target} program days completed`
+              : "No Mana 28 workout scheduled",
             "workout"
           )}
 
@@ -1627,42 +2113,38 @@
           ${card(
             "W",
             "WATER",
-            `${metrics.water.percent ?? 0}%`,
+            metrics.water.percent,
             metrics.water.percent === null
-              ? "Set your Fuel water target"
-              : "average target achieved",
-            metrics.water.percent
+              ? "Set your water target in Fuel"
+              : `average across ${metrics.daysScored} program day${metrics.daysScored === 1 ? "" : "s"}`
           )}
 
 
           ${card(
             "R",
             "RECOVERY",
-            `${metrics.recovery.percent}%`,
-            `${metrics.recovery.hours} of ${metrics.recovery.targetHours} hrs logged`,
-            metrics.recovery.percent
+            metrics.recovery.percent,
+            `${metrics.recovery.hours} of ${metrics.recovery.targetHours} hrs logged`
           )}
 
 
           ${card(
             "C",
             "CALORIES",
-            `${metrics.calories.percent ?? 0}%`,
+            metrics.calories.percent,
             metrics.calories.percent === null
-              ? "Set your Fuel calorie target"
-              : "average target accuracy",
-            metrics.calories.percent
+              ? "Set your calorie target in Fuel"
+              : `average accuracy across ${metrics.daysScored} program day${metrics.daysScored === 1 ? "" : "s"}`
           )}
 
 
           ${card(
             "P",
             "PROTEIN",
-            `${metrics.protein.percent ?? 0}%`,
+            metrics.protein.percent,
             metrics.protein.percent === null
-              ? "Set your Fuel protein target"
-              : "average target achieved",
-            metrics.protein.percent
+              ? "Set your protein target in Fuel"
+              : `average across ${metrics.daysScored} program day${metrics.daysScored === 1 ? "" : "s"}`
           )}
 
         </div>
@@ -1673,14 +2155,16 @@
         >
 
           <strong>
-            Consistency over perfection.
+            The period buttons now control
+            every card.
           </strong>
 
-          Use the period buttons above
-          to see exactly how today,
-          your week, your month and
-          your full Mana 28 journey
-          are tracking.
+          Weekly follows your actual
+          Mana 28 week, Monthly only
+          includes Mana 28 dates inside
+          the current month, and To Date
+          only uses program days that
+          have actually elapsed.
 
         </div>
 
@@ -1735,21 +2219,43 @@
     renderSoon();
 
 
-    window.addEventListener(
+    [
       "mana:program-tab-change",
-      renderSoon
-    );
-
-
-    window.addEventListener(
       "mana:recovery-updated",
+      "mana:fuel-updated"
+    ]
+      .forEach(
+        eventName => {
+
+          window.addEventListener(
+            eventName,
+            renderSoon
+          );
+
+        }
+      );
+
+
+    window.addEventListener(
+      "focus",
       renderSoon
     );
 
 
-    window.addEventListener(
-      "mana:fuel-updated",
-      renderSoon
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+
+          renderSoon();
+
+        }
+
+      }
     );
 
 
@@ -1778,7 +2284,7 @@
 
 
     console.log(
-      "[Mana v9.81.2] filtered premium progress ready"
+      "[Mana v9.81.3] corrected Mana 28 progress ready"
     );
 
   }
@@ -1792,7 +2298,9 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {once:true}
+      {
+        once:true
+      }
     );
 
   } else {
