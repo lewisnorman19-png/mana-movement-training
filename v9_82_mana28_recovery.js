@@ -1,41 +1,34 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.82.1
+   MANA MOVEMENT TRAINING v9.82.2
 
    MANA 28 RECOVERY + LYFE IDENTITY
 
-   FIX:
-   - SHARED FUEL CAN RENDER FIRST
-   - THIS FILE THEN OWNS THE MANA 28
-     DAILY PROGRESS ENHANCEMENT
-   - WATCHES FOR SHARED FUEL REPAINTS
-   - RE-APPLIES RECOVERY WITHOUT FLICKER
-   - DOES NOT CHANGE MANA STRENGTH FUEL
-
-   FEATURES:
-   - LYFE OVERVIEW CARD RENAMED
-   - MANA 28 RECOVERY BESIDE WATER
-   - +2 HRS / +4 HRS / +8 HRS
-   - 8 HOUR DAILY TARGET
-   - RECOVERY SAVED IN DAILY FUEL DATA
+   - STABLE / NO REPEATED FUEL REPAINTS
+   - WATER + RECOVERY DIRECT DOM UPDATE
+   - RECOVERY SAVED TO DAILY FUEL STORE
+   - RECOVERY EVENT SENT TO PROGRESS
+   - 8 HOUR DAILY RECOVERY TARGET
+   - +2 / +4 / +8 HOUR QUICK ADD
+   - MANA LYFE OVERVIEW NAME
+   - STRENGTH FUEL UNTOUCHED
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD =
-    "98210";
+  const BUILD = "98220";
 
   const FUEL_KEY =
     "mana-fuel-v571";
+
+  const TARGET_KEY =
+    "mana-fuel-v58-targets";
 
   const STYLE_ID =
     "mana-v982-recovery-style";
 
   const RECOVERY_TARGET =
     8;
-
-  let timer =
-    null;
 
   let observer =
     null;
@@ -48,62 +41,18 @@
      HELPERS
      ========================================= */
 
-  function safeJson(
-    raw,
-    fallback
-  ) {
+  function safeJson(raw,fallback) {
 
     try {
-
-      return JSON.parse(
-        raw
-      );
-
+      return JSON.parse(raw);
     } catch (_) {
-
       return fallback;
-
     }
 
   }
 
 
-  function todayKey() {
-
-    const date =
-      new Date();
-
-
-    return [
-
-      date.getFullYear(),
-
-      String(
-        date.getMonth() + 1
-      )
-        .padStart(
-          2,
-          "0"
-        ),
-
-      String(
-        date.getDate()
-      )
-        .padStart(
-          2,
-          "0"
-        )
-
-    ].join("-");
-
-  }
-
-
-  function clamp(
-    value,
-    min,
-    max
-  ) {
+  function clamp(value,min,max) {
 
     return Math.max(
       min,
@@ -116,22 +65,38 @@
   }
 
 
-  function shell() {
+  function todayKey() {
 
-    return document
-      .getElementById(
-        "manaV83ProgramShell"
-      );
+    const d =
+      new Date();
+
+    return [
+      d.getFullYear(),
+      String(
+        d.getMonth() + 1
+      ).padStart(2,"0"),
+      String(
+        d.getDate()
+      ).padStart(2,"0")
+    ].join("-");
 
   }
 
 
   function holder() {
 
-    return document
-      .getElementById(
-        "manaV83Content"
-      );
+    return document.getElementById(
+      "manaV83Content"
+    );
+
+  }
+
+
+  function shell() {
+
+    return document.getElementById(
+      "manaV83ProgramShell"
+    );
 
   }
 
@@ -145,8 +110,8 @@
         )
         ?.textContent
         ?.trim()
-        ?.toUpperCase() ||
-      ""
+        ?.toUpperCase()
+      || ""
     );
 
   }
@@ -155,13 +120,12 @@
   function activeTab() {
 
     return (
-      document
-        .querySelector(
-          "#manaV83Tabs .mana-v83-tab.active"
-        )
-        ?.dataset
-        ?.v83Tab ||
-      ""
+      document.querySelector(
+        "#manaV83Tabs .mana-v83-tab.active"
+      )
+      ?.dataset
+      ?.v83Tab
+      || ""
     );
 
   }
@@ -173,9 +137,7 @@
 
       shell()
         ?.classList
-        .contains(
-          "open"
-        )
+        .contains("open")
 
       &&
 
@@ -194,28 +156,18 @@
 
   function lyfeOverviewOpen() {
 
-    const currentTitle =
-      title();
-
-
     return Boolean(
 
       shell()
         ?.classList
-        .contains(
-          "open"
-        )
+        .contains("open")
 
       &&
 
       (
-        currentTitle ===
-          "MANA LIFE"
-
+        title() === "MANA LYFE"
         ||
-
-        currentTitle ===
-          "MANA LYFE"
+        title() === "MANA LIFE"
       )
 
       &&
@@ -235,30 +187,32 @@
   function loadStore() {
 
     return safeJson(
-
       localStorage.getItem(
         FUEL_KEY
       ) || "{}",
-
       {}
-
     );
 
   }
 
 
-  function saveStore(
-    store
-  ) {
+  function saveStore(store) {
 
     localStorage.setItem(
-
       FUEL_KEY,
+      JSON.stringify(store)
+    );
 
-      JSON.stringify(
-        store
-      )
+  }
 
+
+  function loadTargets() {
+
+    return safeJson(
+      localStorage.getItem(
+        TARGET_KEY
+      ) || "{}",
+      {}
     );
 
   }
@@ -269,15 +223,10 @@
     return {
 
       meals:{
-
         Breakfast:[],
-
         Lunch:[],
-
         Dinner:[],
-
         Snacks:[]
-
       },
 
       water:0,
@@ -294,184 +243,24 @@
     const store =
       loadStore();
 
-
     return (
-
-      store[
-        todayKey()
-      ]
-
+      store[todayKey()]
       ||
-
       blankDay()
-
     );
 
   }
 
 
-  function saveToday(
-    day
-  ) {
+  function saveToday(day) {
 
     const store =
       loadStore();
 
-
-    store[
-      todayKey()
-    ] =
+    store[todayKey()] =
       day;
 
-
-    saveStore(
-      store
-    );
-
-  }
-
-
-  /* =========================================
-     RECOVERY
-     ========================================= */
-
-  function recoveryToday() {
-
-    return Number(
-      loadToday()
-        .recoveryHours || 0
-    );
-
-  }
-
-
-  function addRecovery(
-    hours
-  ) {
-
-    const day =
-      loadToday();
-
-
-    day.recoveryHours =
-      Math.max(
-
-        0,
-
-        Number(
-          day.recoveryHours || 0
-        )
-
-        +
-
-        Number(
-          hours || 0
-        )
-
-      );
-
-
-    saveToday(
-      day
-    );
-
-
-    enhanceFuel(
-      true
-    );
-
-  }
-
-
-  function resetRecovery() {
-
-    const day =
-      loadToday();
-
-
-    day.recoveryHours =
-      0;
-
-
-    saveToday(
-      day
-    );
-
-
-    enhanceFuel(
-      true
-    );
-
-  }
-
-
-  /* =========================================
-     WATER
-     ========================================= */
-
-  function addWater(
-    amount
-  ) {
-
-    const day =
-      loadToday();
-
-
-    day.water =
-      Math.max(
-
-        0,
-
-        Number(
-          day.water || 0
-        )
-
-        +
-
-        Number(
-          amount || 0
-        )
-
-      );
-
-
-    saveToday(
-      day
-    );
-
-
-    /*
-      Ask the existing shared Fuel renderer
-      to update its normal water totals.
-
-      Our MutationObserver will immediately
-      restore Recovery after that repaint.
-    */
-
-    window.dispatchEvent(
-
-      new CustomEvent(
-        "mana:profile-synced"
-      )
-
-    );
-
-
-    schedule(
-      30
-    );
-
-
-    setTimeout(
-      () => enhanceFuel(true),
-      100
-    );
-
-
-    setTimeout(
-      () => enhanceFuel(true),
-      240
-    );
+    saveStore(store);
 
   }
 
@@ -501,238 +290,141 @@
 
     style.textContent = `
 
-      /* =====================================
-         WATER / RECOVERY CARDS
-         ===================================== */
-
       .mana-v897-grid
-      .mana-v897-stat.mana-v982-water{
-
+      .mana-v982-water-card{
         grid-column:auto !important;
-
       }
 
 
-      .mana-v982-recovery-stat{
-
+      .mana-v982-recovery-card{
         padding:14px;
-
-        border:
-          1px solid #292929;
-
+        border:1px solid #292929;
         border-radius:16px;
-
         background:#090909;
-
       }
 
 
       .mana-v982-label{
-
-        color:#999;
-
-        font-size:11px;
-
         margin-bottom:6px;
-
+        color:#999;
+        font-size:11px;
       }
 
 
       .mana-v982-value{
-
         color:#f3d875;
-
         font-size:20px;
-
         font-weight:900;
-
       }
 
 
       .mana-v982-track{
-
         height:6px;
-
         margin-top:10px;
-
         overflow:hidden;
-
         border-radius:999px;
-
         background:#242424;
-
       }
 
 
       .mana-v982-fill{
-
         height:100%;
-
         border-radius:999px;
-
         background:
           linear-gradient(
             90deg,
-            #c79e2d,
+            #c69d2d,
             #f3d875
           );
-
       }
 
 
-      /* =====================================
-         QUICK ADD
-         ===================================== */
-
       .mana-v982-quick-wrap{
-
         display:grid;
-
         grid-template-columns:
-          1fr 1fr;
-
+          repeat(
+            2,
+            minmax(0,1fr)
+          );
         gap:10px;
-
         margin-top:14px;
-
         padding-top:14px;
-
-        border-top:
-          1px solid #292929;
-
+        border-top:1px solid #292929;
       }
 
 
       .mana-v982-quick{
-
         min-width:0;
-
-        padding:12px;
-
-        border:
-          1px solid #272727;
-
+        padding:11px;
+        border:1px solid #272727;
         border-radius:15px;
-
         background:#0a0a0a;
-
       }
 
 
       .mana-v982-quick-title{
-
         margin-bottom:9px;
-
         color:#aaa;
-
-        font-size:11px;
-
-        font-weight:900;
-
-        letter-spacing:.03em;
-
+        font-size:10px;
+        font-weight:950;
+        letter-spacing:.05em;
       }
 
 
       .mana-v982-buttons{
-
         display:grid;
-
         grid-template-columns:
           repeat(
             3,
             minmax(0,1fr)
           );
-
         gap:6px;
-
       }
 
 
       .mana-v982-btn{
-
-        min-height:44px;
-
         min-width:0;
-
-        padding:
-          0 4px;
-
-        border:
-          1px solid #40371b;
-
+        min-height:44px;
+        padding:0 3px;
+        border:1px solid #40371b;
         border-radius:11px;
-
         background:
           linear-gradient(
             145deg,
-            #16140d,
+            #17150d,
             #101010
           );
-
         color:#f3d875;
-
         font-size:10px;
-
         font-weight:950;
-
         cursor:pointer;
-
         touch-action:manipulation;
-
       }
 
 
       .mana-v982-btn:active{
-
-        transform:
-          scale(.98);
-
+        transform:scale(.98);
       }
 
 
       .mana-v982-reset{
-
         width:100%;
-
-        min-height:33px;
-
+        min-height:31px;
         margin-top:7px;
-
-        border:
-          1px solid #282828;
-
+        border:1px solid #292929;
         border-radius:9px;
-
         background:#090909;
-
-        color:#727272;
-
+        color:#747474;
         font-size:8px;
-
         font-weight:900;
-
-        letter-spacing:.04em;
-
       }
 
 
       @media(max-width:470px){
 
         .mana-v982-quick-wrap{
-
-          grid-template-columns:
-            1fr;
-
+          grid-template-columns:1fr;
           gap:9px;
-
-        }
-
-
-        .mana-v982-quick{
-
-          padding:11px;
-
         }
 
       }
@@ -741,15 +433,13 @@
 
 
     document.head
-      .appendChild(
-        style
-      );
+      .appendChild(style);
 
   }
 
 
   /* =========================================
-     LYFE OVERVIEW
+     LYFE OVERVIEW NAME
      ========================================= */
 
   function renameLyfeOverview() {
@@ -757,9 +447,7 @@
     if (
       !lyfeOverviewOpen()
     ) {
-
       return;
-
     }
 
 
@@ -767,15 +455,8 @@
       holder();
 
 
-    if (!root) {
-
-      return;
-
-    }
-
-
     root
-      .querySelectorAll(
+      ?.querySelectorAll(
         ".mana-v978-launch"
       )
       .forEach(
@@ -786,9 +467,7 @@
               .v978Tab !==
             "routine"
           ) {
-
             return;
-
           }
 
 
@@ -797,24 +476,20 @@
               ".mana-v978-label"
             );
 
-
           const heading =
             card.querySelector(
               ".mana-v978-title"
             );
-
 
           const text =
             card.querySelector(
               ".mana-v978-text"
             );
 
-
           const arrow =
             card.querySelector(
               ".mana-v978-arrow"
             );
-
 
           const icon =
             card.querySelector(
@@ -823,18 +498,14 @@
 
 
           if (label) {
-
             label.textContent =
               "LYFE SESSIONS";
-
           }
 
 
           if (heading) {
-
             heading.textContent =
               "Move • Reset • Rebuild";
-
           }
 
 
@@ -847,18 +518,14 @@
 
 
           if (arrow) {
-
             arrow.textContent =
               "VIEW SESSIONS →";
-
           }
 
 
           if (icon) {
-
             icon.textContent =
               "LY";
-
           }
 
         }
@@ -868,31 +535,26 @@
 
 
   /* =========================================
-     FIND WATER CARD
+     WATER CARD
      ========================================= */
 
-  function findWaterCard(
-    grid
-  ) {
+  function findWaterCard(grid) {
 
     return (
       [...grid.children]
         .find(
-          child => {
+          card =>
 
-            return (
-              child
-                .querySelector(
-                  ".mana-v897-label"
-                )
-                ?.textContent
-                ?.trim()
-                ?.toLowerCase()
-              ===
-              "water"
-            );
+            card
+              .querySelector(
+                ".mana-v897-label"
+              )
+              ?.textContent
+              ?.trim()
+              ?.toLowerCase()
+            ===
+            "water"
 
-          }
         )
       ||
       null
@@ -901,21 +563,296 @@
   }
 
 
+  function updateWaterCard() {
+
+    if (
+      !mana28FuelOpen()
+    ) {
+      return;
+    }
+
+
+    const grid =
+      holder()
+        ?.querySelector(
+          ".mana-v897-grid"
+        );
+
+
+    if (!grid) {
+      return;
+    }
+
+
+    const card =
+      findWaterCard(grid);
+
+
+    if (!card) {
+      return;
+    }
+
+
+    const day =
+      loadToday();
+
+
+    const targets =
+      loadTargets();
+
+
+    const water =
+      Number(
+        day.water || 0
+      );
+
+
+    const target =
+      Number(
+        targets.water || 0
+      );
+
+
+    const percentage =
+      target > 0
+
+        ? clamp(
+            Math.round(
+              water /
+              target *
+              100
+            ),
+            0,
+            100
+          )
+
+        : 0;
+
+
+    const value =
+      card.querySelector(
+        ".mana-v897-value"
+      );
+
+
+    const fill =
+      card.querySelector(
+        ".mana-v897-fill"
+      );
+
+
+    if (value) {
+
+      value.textContent =
+        target > 0
+          ? `${Math.round(water)} / ${target}ml`
+          : `${Math.round(water)}ml`;
+
+    }
+
+
+    if (fill) {
+
+      fill.style.width =
+        `${percentage}%`;
+
+    }
+
+  }
+
+
   /* =========================================
-     ENHANCE MANA 28 FUEL
+     RECOVERY CARD
      ========================================= */
 
-  function enhanceFuel(
-    force = false
-  ) {
+  function updateRecoveryCard() {
+
+    const card =
+      document.getElementById(
+        "manaV982Recovery"
+      );
+
+
+    if (!card) {
+      return;
+    }
+
+
+    const hours =
+      Number(
+        loadToday()
+          .recoveryHours || 0
+      );
+
+
+    const percentage =
+      clamp(
+        Math.round(
+          hours /
+          RECOVERY_TARGET *
+          100
+        ),
+        0,
+        100
+      );
+
+
+    const value =
+      card.querySelector(
+        ".mana-v982-value"
+      );
+
+
+    const fill =
+      card.querySelector(
+        ".mana-v982-fill"
+      );
+
+
+    if (value) {
+
+      value.textContent =
+        `${hours} / ${RECOVERY_TARGET} hrs`;
+
+    }
+
+
+    if (fill) {
+
+      fill.style.width =
+        `${percentage}%`;
+
+    }
+
+  }
+
+
+  /* =========================================
+     ADD WATER
+     ========================================= */
+
+  function addWater(amount) {
+
+    const day =
+      loadToday();
+
+
+    day.water =
+      Math.max(
+        0,
+        Number(
+          day.water || 0
+        )
+        +
+        Number(
+          amount || 0
+        )
+      );
+
+
+    saveToday(day);
+
+
+    updateWaterCard();
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:fuel-updated"
+      )
+    );
+
+  }
+
+
+  /* =========================================
+     ADD RECOVERY
+     ========================================= */
+
+  function addRecovery(hours) {
+
+    const day =
+      loadToday();
+
+
+    day.recoveryHours =
+      Math.max(
+        0,
+        Number(
+          day.recoveryHours || 0
+        )
+        +
+        Number(
+          hours || 0
+        )
+      );
+
+
+    saveToday(day);
+
+
+    updateRecoveryCard();
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:recovery-updated"
+      )
+    );
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:fuel-updated"
+      )
+    );
+
+  }
+
+
+  function resetRecovery() {
+
+    const day =
+      loadToday();
+
+
+    day.recoveryHours =
+      0;
+
+
+    saveToday(day);
+
+
+    updateRecoveryCard();
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:recovery-updated"
+      )
+    );
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:fuel-updated"
+      )
+    );
+
+  }
+
+
+  /* =========================================
+     ENHANCE FUEL
+     ========================================= */
+
+  function enhanceFuel() {
 
     if (
       enhancing ||
       !mana28FuelOpen()
     ) {
-
       return;
-
     }
 
 
@@ -923,7 +860,7 @@
       holder();
 
 
-    const progressCard =
+    const card =
       root
         ?.querySelector(
           ".mana-v897-progress"
@@ -931,7 +868,7 @@
 
 
     const grid =
-      progressCard
+      card
         ?.querySelector(
           ".mana-v897-grid"
         );
@@ -939,29 +876,24 @@
 
     if (
       !root ||
-      !progressCard ||
+      !card ||
       !grid
     ) {
-
       return;
-
     }
 
 
     if (
-      !force &&
-
-      progressCard
-        .dataset
+      card.dataset
         .v982Enhanced ===
-        BUILD &&
-
-      grid.querySelector(
-        "#manaV982RecoveryStat"
-      ) &&
-
-      progressCard.querySelector(
-        "#manaV982QuickWrap"
+        BUILD
+      &&
+      document.getElementById(
+        "manaV982Recovery"
+      )
+      &&
+      document.getElementById(
+        "manaV982QuickWrap"
       )
     ) {
 
@@ -976,41 +908,11 @@
 
     try {
 
-      const recovery =
-        recoveryToday();
-
-
-      const recoveryPct =
-        clamp(
-
-          Math.round(
-
-            recovery /
-            RECOVERY_TARGET *
-            100
-
-          ),
-
-          0,
-
-          100
-
-        );
-
-
-      /* =====================================
-         WATER CARD
-         ===================================== */
-
       const waterCard =
-        findWaterCard(
-          grid
-        );
+        findWaterCard(grid);
 
 
-      if (
-        waterCard
-      ) {
+      if (waterCard) {
 
         waterCard
           .classList
@@ -1022,319 +924,269 @@
         waterCard
           .classList
           .add(
-            "mana-v982-water"
+            "mana-v982-water-card"
           );
 
       }
 
 
-      /* =====================================
-         RECOVERY CARD
-         ===================================== */
-
-      let recoveryCard =
-        grid.querySelector(
-          "#manaV982RecoveryStat"
+      let recovery =
+        document.getElementById(
+          "manaV982Recovery"
         );
 
 
-      if (
-        !recoveryCard
-      ) {
+      if (!recovery) {
 
-        recoveryCard =
+        recovery =
           document.createElement(
             "div"
           );
 
 
-        recoveryCard.id =
-          "manaV982RecoveryStat";
+        recovery.id =
+          "manaV982Recovery";
 
 
-        recoveryCard.className =
-          "mana-v982-recovery-stat";
+        recovery.className =
+          "mana-v982-recovery-card";
+
+
+        recovery.innerHTML = `
+
+          <div
+            class="mana-v982-label"
+          >
+            Recovery
+          </div>
+
+
+          <div
+            class="mana-v982-value"
+          >
+            0 / 8 hrs
+          </div>
+
+
+          <div
+            class="mana-v982-track"
+          >
+
+            <div
+              class="mana-v982-fill"
+            ></div>
+
+          </div>
+
+        `;
 
 
         grid.appendChild(
-          recoveryCard
+          recovery
         );
 
       }
 
 
-      recoveryCard.innerHTML = `
-
-        <div
-          class="mana-v982-label"
-        >
-          Recovery
-        </div>
+      const oldQuick =
+        card.querySelector(
+          ".mana-v897-water"
+        );
 
 
-        <div
-          class="mana-v982-value"
-        >
-          ${recovery}
-          /
-          ${RECOVERY_TARGET} hrs
-        </div>
+      let quick =
+        document.getElementById(
+          "manaV982QuickWrap"
+        );
 
 
-        <div
-          class="mana-v982-track"
-        >
+      if (!quick) {
 
-          <div
-            class="mana-v982-fill"
-
-            style="
-              width:${recoveryPct}%
-            "
-          ></div>
-
-        </div>
-
-      `;
-
-
-      /* =====================================
-         QUICK ADD
-         ===================================== */
-
-      const originalWaterQuick =
-        progressCard
-          .querySelector(
-            ".mana-v897-water"
-          );
-
-
-      let quickWrap =
-        progressCard
-          .querySelector(
-            "#manaV982QuickWrap"
-          );
-
-
-      if (
-        !quickWrap
-      ) {
-
-        quickWrap =
+        quick =
           document.createElement(
             "div"
           );
 
 
-        quickWrap.id =
+        quick.id =
           "manaV982QuickWrap";
 
 
-        quickWrap.className =
+        quick.className =
           "mana-v982-quick-wrap";
 
 
-        if (
-          originalWaterQuick
-        ) {
+        quick.innerHTML = `
 
-          originalWaterQuick
-            .replaceWith(
-              quickWrap
-            );
+          <div
+            class="mana-v982-quick"
+          >
+
+            <div
+              class="mana-v982-quick-title"
+            >
+              QUICK ADD WATER
+            </div>
+
+
+            <div
+              class="mana-v982-buttons"
+            >
+
+              <button
+                type="button"
+                class="mana-v982-btn"
+                data-v982-water="250"
+              >
+                +250ML
+              </button>
+
+
+              <button
+                type="button"
+                class="mana-v982-btn"
+                data-v982-water="500"
+              >
+                +500ML
+              </button>
+
+
+              <button
+                type="button"
+                class="mana-v982-btn"
+                data-v982-water="750"
+              >
+                +750ML
+              </button>
+
+            </div>
+
+          </div>
+
+
+          <div
+            class="mana-v982-quick"
+          >
+
+            <div
+              class="mana-v982-quick-title"
+            >
+              QUICK ADD RECOVERY
+            </div>
+
+
+            <div
+              class="mana-v982-buttons"
+            >
+
+              <button
+                type="button"
+                class="mana-v982-btn"
+                data-v982-recovery="2"
+              >
+                +2 HRS
+              </button>
+
+
+              <button
+                type="button"
+                class="mana-v982-btn"
+                data-v982-recovery="4"
+              >
+                +4 HRS
+              </button>
+
+
+              <button
+                type="button"
+                class="mana-v982-btn"
+                data-v982-recovery="8"
+              >
+                +8 HRS
+              </button>
+
+            </div>
+
+
+            <button
+              type="button"
+              id="manaV982Reset"
+              class="mana-v982-reset"
+            >
+              RESET TODAY'S RECOVERY
+            </button>
+
+          </div>
+
+        `;
+
+
+        if (oldQuick) {
+
+          oldQuick.replaceWith(
+            quick
+          );
 
         } else {
 
-          progressCard
-            .appendChild(
-              quickWrap
-            );
+          card.appendChild(
+            quick
+          );
 
         }
 
       }
 
 
-      quickWrap.innerHTML = `
-
-        <div
-          class="mana-v982-quick"
-        >
-
-          <div
-            class="mana-v982-quick-title"
-          >
-            QUICK ADD WATER
-          </div>
-
-
-          <div
-            class="mana-v982-buttons"
-          >
-
-            <button
-              type="button"
-
-              class="mana-v982-btn"
-
-              data-v982-water="250"
-            >
-              +250ML
-            </button>
-
-
-            <button
-              type="button"
-
-              class="mana-v982-btn"
-
-              data-v982-water="500"
-            >
-              +500ML
-            </button>
-
-
-            <button
-              type="button"
-
-              class="mana-v982-btn"
-
-              data-v982-water="750"
-            >
-              +750ML
-            </button>
-
-          </div>
-
-        </div>
-
-
-        <div
-          class="mana-v982-quick"
-        >
-
-          <div
-            class="mana-v982-quick-title"
-          >
-            QUICK ADD RECOVERY
-          </div>
-
-
-          <div
-            class="mana-v982-buttons"
-          >
-
-            <button
-              type="button"
-
-              class="mana-v982-btn"
-
-              data-v982-recovery="2"
-            >
-              +2 HRS
-            </button>
-
-
-            <button
-              type="button"
-
-              class="mana-v982-btn"
-
-              data-v982-recovery="4"
-            >
-              +4 HRS
-            </button>
-
-
-            <button
-              type="button"
-
-              class="mana-v982-btn"
-
-              data-v982-recovery="8"
-            >
-              +8 HRS
-            </button>
-
-          </div>
-
-
-          <button
-            type="button"
-
-            class="mana-v982-reset"
-
-            id="manaV982ResetRecovery"
-          >
-            RESET TODAY'S RECOVERY
-          </button>
-
-        </div>
-
-      `;
-
-
-      /* =====================================
-         BUTTONS
-         ===================================== */
-
-      quickWrap
+      quick
         .querySelectorAll(
           "[data-v982-water]"
         )
         .forEach(
           button => {
 
-            button.addEventListener(
-              "click",
+            button.onclick =
               () => {
 
                 addWater(
-
                   Number(
                     button.dataset
                       .v982Water
                   )
-
                 );
 
-              }
-            );
+              };
 
           }
         );
 
 
-      quickWrap
+      quick
         .querySelectorAll(
           "[data-v982-recovery]"
         )
         .forEach(
           button => {
 
-            button.addEventListener(
-              "click",
+            button.onclick =
               () => {
 
                 addRecovery(
-
                   Number(
                     button.dataset
                       .v982Recovery
                   )
-
                 );
 
-              }
-            );
+              };
 
           }
         );
 
 
-      quickWrap
-        .querySelector(
-          "#manaV982ResetRecovery"
+      document
+        .getElementById(
+          "manaV982Reset"
         )
         ?.addEventListener(
           "click",
@@ -1342,10 +1194,14 @@
         );
 
 
-      progressCard
-        .dataset
+      card.dataset
         .v982Enhanced =
         BUILD;
+
+
+      updateWaterCard();
+
+      updateRecoveryCard();
 
     }
 
@@ -1360,12 +1216,7 @@
 
 
   /* =========================================
-     MUTATION WATCHER
-
-     THIS IS THE IMPORTANT FIX.
-
-     IF SHARED FUEL REPAINTS THE SCREEN,
-     WE RE-ENHANCE THE NEW CARD.
+     OBSERVER
      ========================================= */
 
   function installObserver() {
@@ -1376,9 +1227,8 @@
 
     if (!root) {
 
-      setTimeout(
-        installObserver,
-        250
+      requestAnimationFrame(
+        installObserver
       );
 
       return;
@@ -1386,82 +1236,35 @@
     }
 
 
-    if (
-      observer
-    ) {
-
-      observer.disconnect();
-
-    }
+    observer
+      ?.disconnect();
 
 
     observer =
       new MutationObserver(
-        mutations => {
+        () => {
 
           if (
-            enhancing ||
-            !mana28FuelOpen()
+            enhancing
+          ) {
+            return;
+          }
+
+
+          if (
+            mana28FuelOpen()
           ) {
 
-            return;
+            enhanceFuel();
 
           }
 
 
-          const progressCard =
-            root.querySelector(
-              ".mana-v897-progress"
-            );
-
-
           if (
-            !progressCard
+            lyfeOverviewOpen()
           ) {
 
-            return;
-
-          }
-
-
-          const enhanced =
-            progressCard
-              .dataset
-              .v982Enhanced ===
-            BUILD;
-
-
-          const recoveryExists =
-            Boolean(
-
-              progressCard
-                .querySelector(
-                  "#manaV982RecoveryStat"
-                )
-
-            );
-
-
-          const quickExists =
-            Boolean(
-
-              progressCard
-                .querySelector(
-                  "#manaV982QuickWrap"
-                )
-
-            );
-
-
-          if (
-            !enhanced ||
-            !recoveryExists ||
-            !quickExists
-          ) {
-
-            schedule(
-              10
-            );
+            renameLyfeOverview();
 
           }
 
@@ -1472,11 +1275,8 @@
     observer.observe(
       root,
       {
-
         childList:true,
-
         subtree:true
-
       }
     );
 
@@ -1484,181 +1284,62 @@
 
 
   /* =========================================
-     RUN
+     EVENTS
      ========================================= */
 
   function run() {
 
     renameLyfeOverview();
 
-
-    if (
-      mana28FuelOpen()
-    ) {
-
-      enhanceFuel();
-
-    }
+    enhanceFuel();
 
   }
 
-
-  function schedule(
-    delay = 60
-  ) {
-
-    clearTimeout(
-      timer
-    );
-
-
-    timer =
-      setTimeout(
-        run,
-        delay
-      );
-
-  }
-
-
-  /* =========================================
-     INIT
-     ========================================= */
 
   function init() {
 
     installStyles();
 
-
     installObserver();
 
 
-    schedule(
-      50
+    queueMicrotask(
+      run
     );
 
 
     window.addEventListener(
-
       "mana:program-tab-change",
-
       () => {
 
-        schedule(
-          20
-        );
-
-
-        setTimeout(
-          run,
-          90
-        );
-
-
-        setTimeout(
-          run,
-          220
-        );
-
-
-        setTimeout(
-          run,
-          500
+        queueMicrotask(
+          run
         );
 
       }
-
-    );
-
-
-    window.addEventListener(
-
-      "mana:profile-synced",
-
-      () => {
-
-        schedule(
-          30
-        );
-
-
-        setTimeout(
-          run,
-          180
-        );
-
-      }
-
-    );
-
-
-    window.addEventListener(
-
-      "focus",
-
-      () => {
-
-        schedule(
-          50
-        );
-
-      }
-
     );
 
 
     document.addEventListener(
-
-      "visibilitychange",
-
-      () => {
-
-        if (
-          document.visibilityState ===
-          "visible"
-        ) {
-
-          schedule(
-            40
-          );
-
-        }
-
-      }
-
-    );
-
-
-    document.addEventListener(
-
       "click",
-
       event => {
 
         if (
           event.target.closest(
+            "#manaV83Tabs," +
             "#manaV80Mana28," +
-            "#manaV80Life," +
-            "#manaV83Tabs"
+            "#manaV80Life"
           )
         ) {
 
-          schedule(
-            30
-          );
-
-
-          setTimeout(
-            run,
-            150
+          queueMicrotask(
+            run
           );
 
         }
 
       },
-
       true
-
     );
 
 
@@ -1667,7 +1348,7 @@
 
 
     console.log(
-      "[Mana v9.82.1] stable recovery owner ready"
+      "[Mana v9.82.2] stable recovery ready"
     );
 
   }
@@ -1681,9 +1362,7 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {
-        once:true
-      }
+      {once:true}
     );
 
   } else {
