@@ -1,20 +1,17 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.86.0
+   MANA MOVEMENT TRAINING v9.86.3
    VISUAL IDENTITY UPGRADE
 
    LOGIN
-   - MĀORI WARRIOR BACKGROUND
-   - STRONGER MANA BRAND HEADER
-   - GLASS / BLACK LOGIN PANELS
+   - WARRIOR BACKGROUND
+   - IMPROVED DESKTOP CROP
+   - BETTER LOGIN POSITIONING
 
    INTRODUCTION
-   - MĀORI WAHINE BACKGROUND
-   - MOKO KAUAE PORTRAIT
-   - READABLE DARK OVERLAY
+   - WAHINE BACKGROUND KEPT AS-IS
 
    HOME
    - SELECTED PROGRAM = GOLD / YELLOW
-   - CLEAR CURRENT PROGRAM STATE
 
    NO RENDER OBSERVERS
    NO WORKOUT LOGIC CHANGES
@@ -23,14 +20,11 @@
 (() => {
   "use strict";
 
-
   const BUILD =
-    "98600";
-
+    "98630";
 
   const STYLE_ID =
     "mana-v986-visual-style";
-
 
   /* =========================================
      STYLES
@@ -44,16 +38,13 @@
       )
       ?.remove();
 
-
     const style =
       document.createElement(
         "style"
       );
 
-
     style.id =
       STYLE_ID;
-
 
     style.textContent = `
 
@@ -68,27 +59,29 @@
         background:
           linear-gradient(
             180deg,
-            rgba(0,0,0,.22) 0%,
-            rgba(0,0,0,.48) 35%,
-            rgba(0,0,0,.88) 72%,
+            rgba(0,0,0,.20) 0%,
+            rgba(0,0,0,.40) 38%,
+            rgba(0,0,0,.82) 74%,
             #050505 100%
           ),
           linear-gradient(
             90deg,
-            rgba(0,0,0,.15),
-            rgba(0,0,0,.42)
+            rgba(0,0,0,.32) 0%,
+            rgba(0,0,0,.18) 48%,
+            rgba(0,0,0,.08) 100%
           ),
           url(
             "assets/exercises/mana-warrior-login.jpg"
           )
-          center 18%
+          right center
           /
-          cover
+          auto 100vh
           fixed
           no-repeat;
 
-      }
+        background-color:#050505;
 
+      }
 
       body:has(#authView:not(.hide))
       > .wrap{
@@ -101,6 +94,15 @@
 
         min-height:100dvh;
 
+        margin-left:
+          clamp(
+            28px,
+            8vw,
+            120px
+          );
+
+        margin-right:auto;
+
         padding-top:
           calc(
             env(
@@ -109,7 +111,6 @@
           );
 
       }
-
 
       /* existing Mana header */
 
@@ -173,7 +174,6 @@
 
       }
 
-
       body:has(#authView:not(.hide))
       .brand .mark{
 
@@ -212,7 +212,6 @@
 
       }
 
-
       body:has(#authView:not(.hide))
       .brand h1{
 
@@ -235,7 +234,6 @@
 
       }
 
-
       body:has(#authView:not(.hide))
       .brand small{
 
@@ -251,7 +249,6 @@
 
       }
 
-
       body:has(#authView:not(.hide))
       #authView{
 
@@ -260,7 +257,6 @@
         z-index:3;
 
       }
-
 
       body:has(#authView:not(.hide))
       #authView .card{
@@ -308,14 +304,12 @@
 
       }
 
-
       body:has(#authView:not(.hide))
       #authView .hero{
 
         margin-top:5px;
 
       }
-
 
       body:has(#authView:not(.hide))
       #authView .hero h2{
@@ -337,7 +331,6 @@
           #000;
 
       }
-
 
       body:has(#authView:not(.hide))
       #authView .hero .pill{
@@ -361,7 +354,6 @@
         color:#f3d875;
 
       }
-
 
       body:has(#authView:not(.hide))
       #authView input{
@@ -397,7 +389,6 @@
 
       }
 
-
       body:has(#authView:not(.hide))
       #authView input:focus{
 
@@ -415,7 +406,6 @@
           );
 
       }
-
 
       body:has(#authView:not(.hide))
       #authView .primary{
@@ -447,6 +437,7 @@
 
       /* =====================================
          INTRODUCTION / WAHINE
+         KEPT AS-IS
          ===================================== */
 
       #manaV81Intro{
@@ -501,7 +492,6 @@
 
       }
 
-
       #manaV81Intro
       .mana-v81-content{
 
@@ -510,7 +500,6 @@
         z-index:3;
 
       }
-
 
       #manaV81Intro
       .mana-v81-mark{
@@ -534,7 +523,6 @@
 
       }
 
-
       #manaV81Intro
       .mana-v81-title{
 
@@ -549,7 +537,6 @@
 
       }
 
-
       #manaV81Intro
       .mana-v81-lead{
 
@@ -560,7 +547,6 @@
           #000;
 
       }
-
 
       #manaV81Intro
       .mana-v81-card,
@@ -604,8 +590,6 @@
 
       /* =====================================
          HOME CURRENT PROGRAM
-
-         FULL YELLOW SELECTED STATE
          ===================================== */
 
       #manaV80Home
@@ -647,7 +631,6 @@
 
       }
 
-
       #manaV80Home
       .mana-v8013-program.current::before{
 
@@ -664,7 +647,6 @@
           !important;
 
       }
-
 
       #manaV80Home
       .mana-v8013-program.current
@@ -691,7 +673,6 @@
 
       }
 
-
       #manaV80Home
       .mana-v8013-program.current
       p{
@@ -699,7 +680,6 @@
         opacity:.82;
 
       }
-
 
       #manaV80Home
       .mana-v8013-program.current
@@ -728,7 +708,6 @@
 
       }
 
-
       #manaV80Home
       .mana-v8013-program.current
       .mana-v8013-current-badge{
@@ -754,20 +733,26 @@
         body:has(#authView:not(.hide)){
 
           background-position:
-            58% 10%;
+            58% top;
+
+          background-size:
+            cover;
 
         }
 
-
         body:has(#authView:not(.hide))
         > .wrap{
+
+          max-width:none;
+
+          margin:
+            0 auto;
 
           padding-left:14px;
 
           padding-right:14px;
 
         }
-
 
         body:has(#authView:not(.hide))
         .brand{
@@ -778,7 +763,6 @@
           margin-bottom:20px;
 
         }
-
 
         body:has(#authView:not(.hide))
         .brand .mark{
@@ -793,14 +777,12 @@
 
         }
 
-
         body:has(#authView:not(.hide))
         .brand h1{
 
           font-size:17px;
 
         }
-
 
         #manaV81Intro{
 
@@ -809,7 +791,6 @@
             !important;
 
         }
-
 
         #manaV80Home
         .mana-v8013-program.current{
@@ -822,7 +803,6 @@
 
     `;
 
-
     document.head
       .appendChild(
         style
@@ -833,19 +813,12 @@
 
   /* =========================================
      HOME PROGRAM SELECTION
-
-     v8.0 already saves
-     mana-current-program.
-
-     This simply guarantees the visual
-     selection is refreshed immediately.
      ========================================= */
 
   function refreshHomeSelection() {
 
     let current =
       "strength";
-
 
     try {
 
@@ -857,7 +830,6 @@
         "strength";
 
     } catch (_) {}
-
 
     document
       .querySelectorAll(
@@ -896,13 +868,11 @@
                 ".mana-v8013-program"
               );
 
-
           if (!card) {
 
             return;
 
           }
-
 
           try {
 
@@ -912,7 +882,6 @@
             );
 
           } catch (_) {}
-
 
           refreshHomeSelection();
 
@@ -935,12 +904,10 @@
 
     refreshHomeSelection();
 
-
     window.addEventListener(
       "focus",
       refreshHomeSelection
     );
-
 
     document.addEventListener(
       "visibilitychange",
@@ -958,13 +925,11 @@
       }
     );
 
-
     window.MANA_VISUAL_IDENTITY_BUILD =
       BUILD;
 
-
     console.log(
-      "[Mana v9.86.0] visual identity ready"
+      "[Mana v9.86.3] visual identity ready"
     );
 
   }
