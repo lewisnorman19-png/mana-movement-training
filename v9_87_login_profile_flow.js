@@ -1,13 +1,13 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.87.0
+   MANA MOVEMENT TRAINING v9.87.1
    LOGIN IDENTITY + REPEAT PROFILE GATE
 
    LOGIN
-   - STRONG MANA MOVEMENT BRAND AT TOP
-   - LARGE M MARK
-   - OPEN PORTRAIT SPACE FOR WARRIOR FACE
-   - LOGIN CONTENT LOWER ON PAGE
-   - PHONE-FIRST PORTRAIT DISPLAY
+   - COMPACT STANDARD MANA HEADER
+   - HEADER STAYS AT TOP
+   - WARRIOR PORTRAIT STARTS BELOW HEADER
+   - FACE SITS IN GAP ABOVE LOGIN
+   - PHONE-FIRST
 
    CLIENT FLOW
    EXPLICIT LOGIN
@@ -18,12 +18,12 @@
       ↓
    RETURN TO APP
 
-   IMPORTANT
-   - FIRST-EVER ONBOARDING STILL USES v9.68
-   - EXISTING LOGGED-IN SESSION IS NOT INTERRUPTED
-   - WORKOUT / OVERVIEW POSITION IS NOT RESET
-   - NO AUTH LOGIC CHANGES
-   - NO WORKOUT LOGIC CHANGES
+   EXISTING SIGNED-IN SESSION
+   - NOT INTERRUPTED
+   - WORKOUT / OVERVIEW REMAINS AVAILABLE
+
+   NO WORKOUT LOGIC CHANGES
+   NO AUTH LOGIC CHANGES
    ========================================= */
 
 (() => {
@@ -31,7 +31,7 @@
 
 
   const BUILD =
-    "98700";
+    "98710";
 
 
   const STYLE_ID =
@@ -168,10 +168,7 @@
     style.textContent = `
 
       /* =====================================
-         LOGIN BACKGROUND
-
-         Full portrait behind page.
-         Do not split warrior to one side.
+         LOGIN PAGE
          ===================================== */
 
       body:has(#authView:not(.hide)){
@@ -182,6 +179,17 @@
         background-color:
           #050505 !important;
 
+        /*
+          Layer 1:
+          readability gradient.
+
+          Layer 2:
+          warrior portrait.
+
+          Portrait deliberately starts
+          BELOW the Mana header.
+        */
+
         background-image:
 
           linear-gradient(
@@ -191,46 +199,46 @@
               0,
               0,
               0,
-              .03
-            ) 0%,
+              .04
+            ) 0px,
 
             rgba(
               0,
               0,
               0,
-              .06
-            ) 18%,
+              .05
+            ) 110px,
 
             rgba(
               0,
               0,
               0,
-              .10
-            ) 34%,
+              .04
+            ) 200px,
 
             rgba(
               0,
               0,
               0,
-              .36
-            ) 48%,
+              .16
+            ) 340px,
 
             rgba(
               0,
               0,
               0,
-              .76
-            ) 67%,
+              .58
+            ) 500px,
 
             rgba(
               5,
               5,
               5,
-              .94
-            ) 84%,
+              .90
+            ) 680px,
 
             #050505
-            100%
+            850px
           ),
 
           url(
@@ -241,30 +249,43 @@
 
 
         background-repeat:
+          no-repeat,
           no-repeat !important;
 
 
+        /*
+          Gradient starts at top.
+
+          Warrior begins below header.
+        */
+
         background-position:
-          center top !important;
+          center top,
+          center 82px !important;
 
 
         /*
-          Height-based sizing avoids the
-          aggressive desktop COVER crop.
+          Gradient fills screen.
+
+          Portrait preserves composition.
         */
 
         background-size:
-          auto 100dvh !important;
+          100% 100%,
+          auto calc(100dvh - 82px)
+          !important;
 
 
         background-attachment:
-          scroll !important;
+          scroll,
+          scroll
+          !important;
 
       }
 
 
       /* =====================================
-         LOGIN WRAPPER
+         PAGE WRAPPER
          ===================================== */
 
       body:has(#authView:not(.hide))
@@ -280,7 +301,7 @@
           min(
             540px,
             calc(
-              100% - 32px
+              100% - 28px
             )
           );
 
@@ -297,7 +318,7 @@
           calc(
             env(
               safe-area-inset-top
-            ) + 14px
+            ) + 10px
           ) !important;
 
         padding-bottom:
@@ -311,7 +332,7 @@
 
 
       /* =====================================
-         BRAND HEADER
+         STANDARD MANA HEADER
          ===================================== */
 
       body:has(#authView:not(.hide))
@@ -330,13 +351,16 @@
           center;
 
         gap:
-          17px;
+          13px;
 
         margin:
           0 !important;
 
         padding:
-          15px 18px !important;
+          11px 13px !important;
+
+        min-height:
+          66px;
 
         border:
           1px solid
@@ -344,26 +368,26 @@
             243,
             216,
             117,
-            .40
+            .28
           ) !important;
 
         border-radius:
-          20px !important;
+          17px !important;
 
         background:
           linear-gradient(
             145deg,
             rgba(
-              4,
-              4,
-              4,
-              .88
+              15,
+              14,
+              10,
+              .92
             ),
             rgba(
-              10,
-              9,
               5,
-              .68
+              5,
+              5,
+              .86
             )
           ) !important;
 
@@ -378,26 +402,14 @@
           );
 
         box-shadow:
-
           0
-          15px
-          45px
+          12px
+          32px
           rgba(
             0,
             0,
             0,
-            .36
-          ),
-
-          inset
-          0
-          0
-          24px
-          rgba(
-            243,
-            216,
-            117,
-            .025
+            .30
           );
 
       }
@@ -407,15 +419,15 @@
       .brand .mark{
 
         width:
-          72px !important;
+          48px !important;
 
         height:
-          72px !important;
+          48px !important;
 
         flex:
           0
           0
-          72px !important;
+          48px !important;
 
         display:
           grid;
@@ -425,48 +437,22 @@
 
         border:
           2px solid
-          #f3d875 !important;
+          #d4af37 !important;
 
         background:
-          rgba(
-            0,
-            0,
-            0,
-            .86
-          ) !important;
+          #080808 !important;
 
         color:
           #f3d875 !important;
 
-        font-size:
-          46px !important;
+        font:
+          700
+          31px
+          Georgia,
+          serif !important;
 
         line-height:
           1;
-
-        box-shadow:
-
-          0
-          0
-          0
-          1px
-          rgba(
-            243,
-            216,
-            117,
-            .08
-          ),
-
-          inset
-          0
-          0
-          24px
-          rgba(
-            243,
-            216,
-            117,
-            .07
-          );
 
       }
 
@@ -481,7 +467,7 @@
           #fff !important;
 
         font-size:
-          24px !important;
+          17px !important;
 
         font-weight:
           950 !important;
@@ -490,17 +476,17 @@
           1.05;
 
         letter-spacing:
-          .12em !important;
+          .14em !important;
 
         text-shadow:
           0
-          3px
-          16px
+          2px
+          12px
           rgba(
             0,
             0,
             0,
-            .95
+            .90
           );
 
       }
@@ -513,28 +499,28 @@
           block;
 
         margin-top:
-          7px !important;
+          5px !important;
 
         color:
-          #f3d875 !important;
+          #d4b85b !important;
 
         font-size:
-          10px !important;
+          9px !important;
 
         font-weight:
           950 !important;
 
         letter-spacing:
-          .18em !important;
+          .15em !important;
 
       }
 
 
       /* =====================================
-         WARRIOR PORTRAIT WINDOW
+         WARRIOR FACE GAP
 
-         This empty area is deliberate.
-         The warrior face lives here.
+         Compact header above.
+         Login starts below portrait.
          ===================================== */
 
       body:has(#authView:not(.hide))
@@ -542,9 +528,9 @@
 
         margin-top:
           clamp(
-            190px,
-            28dvh,
-            285px
+            225px,
+            31dvh,
+            315px
           ) !important;
 
       }
@@ -563,16 +549,16 @@
             243,
             216,
             117,
-            .24
+            .23
           ) !important;
 
         background:
           linear-gradient(
             145deg,
             rgba(
-              12,
-              12,
-              12,
+              13,
+              13,
+              13,
               .91
             ),
             rgba(
@@ -601,7 +587,7 @@
             0,
             0,
             0,
-            .46
+            .44
           );
 
       }
@@ -617,9 +603,9 @@
 
         font-size:
           clamp(
-            40px,
+            38px,
             8vw,
-            50px
+            48px
           ) !important;
 
         line-height:
@@ -644,7 +630,7 @@
             0,
             0,
             0,
-            .52
+            .50
           ) !important;
 
         color:
@@ -654,7 +640,7 @@
 
 
       /* =====================================
-         REPEAT LOGIN PROFILE
+         RETURNING CLIENT PROFILE NOTE
          ===================================== */
 
       #manaProfileScreen
@@ -721,15 +707,21 @@
         body:has(#authView:not(.hide)){
 
           /*
-            Show full image width on phone
-            instead of cropping the sides.
+            Keep full portrait width.
+
+            Most importantly:
+            portrait now starts lower,
+            underneath the compact banner.
           */
 
-          background-size:
-            100% auto !important;
-
           background-position:
-            center top !important;
+            center top,
+            center 78px !important;
+
+          background-size:
+            100% 100%,
+            100% auto
+            !important;
 
         }
 
@@ -747,25 +739,37 @@
             0 auto !important;
 
           padding-left:
-            14px !important;
+            12px !important;
 
           padding-right:
-            14px !important;
+            12px !important;
+
+          padding-top:
+            calc(
+              env(
+                safe-area-inset-top
+              ) + 8px
+            ) !important;
 
         }
 
+
+        /* Standard app-sized banner */
 
         body:has(#authView:not(.hide))
         .brand{
 
           gap:
-            13px;
+            11px;
+
+          min-height:
+            60px;
 
           padding:
-            12px 13px !important;
+            9px 11px !important;
 
           border-radius:
-            18px !important;
+            16px !important;
 
         }
 
@@ -774,16 +778,16 @@
         .brand .mark{
 
           width:
-            62px !important;
+            44px !important;
 
           height:
-            62px !important;
+            44px !important;
 
           flex-basis:
-            62px !important;
+            44px !important;
 
           font-size:
-            40px !important;
+            28px !important;
 
         }
 
@@ -792,10 +796,10 @@
         .brand h1{
 
           font-size:
-            19px !important;
+            16px !important;
 
           letter-spacing:
-            .10em !important;
+            .12em !important;
 
         }
 
@@ -803,8 +807,11 @@
         body:has(#authView:not(.hide))
         .brand small{
 
+          margin-top:
+            4px !important;
+
           font-size:
-            9px !important;
+            8px !important;
 
           letter-spacing:
             .13em !important;
@@ -813,8 +820,10 @@
 
 
         /*
-          Leave a clean portrait area
-          between brand and login.
+          Portrait window.
+
+          This is deliberately a decent gap.
+          Warrior face should sit here.
         */
 
         body:has(#authView:not(.hide))
@@ -822,9 +831,9 @@
 
           margin-top:
             clamp(
-              175px,
-              27dvh,
-              245px
+              215px,
+              29dvh,
+              285px
             ) !important;
 
         }
@@ -835,9 +844,9 @@
 
           font-size:
             clamp(
-              38px,
-              11vw,
-              47px
+              37px,
+              10.5vw,
+              46px
             ) !important;
 
         }
@@ -853,13 +862,45 @@
         max-width:600px
       )
       and
-      (max-height:700px){
+      (max-height:720px){
 
         body:has(#authView:not(.hide))
         #authView .hero{
 
           margin-top:
-            145px !important;
+            185px !important;
+
+        }
+
+      }
+
+
+      /* =====================================
+         LARGE DESKTOP
+         ===================================== */
+
+      @media(
+        min-width:900px
+      ){
+
+        body:has(#authView:not(.hide)){
+
+          background-position:
+            center top,
+            center 86px !important;
+
+        }
+
+
+        body:has(#authView:not(.hide))
+        #authView .hero{
+
+          margin-top:
+            clamp(
+              220px,
+              29dvh,
+              310px
+            ) !important;
 
         }
 
@@ -878,14 +919,6 @@
 
   /* =========================================
      EXPLICIT LOGIN DETECTION
-
-     This is the important distinction:
-
-     USER SUBMITS LOGIN FORM
-     = run Intro → Profile.
-
-     EXISTING SUPABASE SESSION RESTORES
-     = leave client where they are.
      ========================================= */
 
   function bindLoginIntent() {
@@ -1031,11 +1064,8 @@
 
 
     /*
-      New clients still use the complete
-      v9.68 first-time onboarding flow.
-
-      This repeat-login gate is only for
-      clients who already completed it.
+      First-time users still use
+      the original onboarding flow.
     */
 
     if (
@@ -1118,13 +1148,6 @@
     }
 
 
-    /*
-      v8.1 closes the intro normally.
-
-      We wait briefly, then open the
-      existing profile screen.
-    */
-
     setTimeout(
       openRepeatLoginProfile,
       120
@@ -1134,7 +1157,7 @@
 
 
   /* =========================================
-     PROFILE SAVE
+     PROFILE SAVED
      ========================================= */
 
   function handleProfileSaved() {
@@ -1153,12 +1176,6 @@
         "manaProfileScreen"
       );
 
-
-    /*
-      v6.7 has already saved all profile
-      and Fuel data by the time this
-      event fires.
-    */
 
     setTimeout(
       () => {
@@ -1206,11 +1223,7 @@
 
 
   /* =========================================
-     CANCEL / CLOSE PROFILE
-
-     If a returning client closes Profile
-     manually, count the login gate as
-     complete so it does not loop.
+     PROFILE CLOSED MANUALLY
      ========================================= */
 
   function handleProfileClose(
@@ -1250,16 +1263,7 @@
 
 
   /* =========================================
-     SAFETY
-
-     A restored session should never
-     accidentally carry an old pending
-     login into a future app launch.
-
-     If auth is already hidden when this
-     file first starts and no login form
-     was submitted during this page life,
-     do not start a Profile gate.
+     EXISTING SESSION PROTECTION
      ========================================= */
 
   function protectSessionRestore() {
@@ -1284,8 +1288,10 @@
 
 
     /*
-      A client session is already active.
-      Do not manufacture a fresh login gate.
+      Already signed in.
+
+      Do not force the login/profile
+      sequence on a restored session.
     */
 
     if (
@@ -1338,12 +1344,6 @@
     );
 
 
-    /*
-      Login DOM already exists today,
-      but these small delayed binds make
-      this safe if auth rendering changes.
-    */
-
     [
       300,
       900
@@ -1364,8 +1364,8 @@
 
 
     console.log(
-      "[Mana v9.87.0] " +
-      "login identity + profile gate ready"
+      "[Mana v9.87.1] " +
+      "login + profile flow ready"
     );
 
   }
