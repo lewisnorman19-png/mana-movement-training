@@ -79,7 +79,7 @@
             rgba(0,0,0,.42)
           ),
           url(
-            "assets/mana-warrior-login.jpg"
+            "assets/exercises/mana-warrior-login.jpg"
           )
           center 18%
           /
@@ -490,7 +490,7 @@
             )
           ),
           url(
-            "assets/mana-wahine-intro.jpg"
+            "assets/exercises/mana-wahine-intro.jpg"
           )
           center top
           /
