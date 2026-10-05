@@ -1,69 +1,122 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.87.4
+   MANA MOVEMENT TRAINING v9.87.5
    LOGIN KORU + PROFILE FLOW
+
+   LOGIN
+   - BIGGER MANA MOVEMENT HEADER
+   - HEADER TIGHT TO ILLUSTRATION
+   - KORU ART FILLS GAP TO LOGIN
+   - NO HERO BANNER
+
+   CLIENT FLOW
+   EXPLICIT LOGIN
+      ↓
+   INTRODUCTION
+      ↓
+   PROFILE
+      ↓
+   RETURN TO APP
+
+   RESTORED SESSION
+   - NO INTERRUPTION
+   - WORKOUT / OVERVIEW PRESERVED
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "98740";
-  const STYLE_ID = "mana-v9874-login-profile-style";
+  const BUILD = "98750";
+  const STYLE_ID = "mana-v9875-login-profile-style";
 
-  const LOGIN_PENDING_KEY = "mana-v987-explicit-login-pending";
-  const PROFILE_GATE_KEY = "mana-v987-profile-gate-open";
-  const ONBOARDING_COMPLETE_KEY = "mana-onboarding-complete-v9683";
+  const LOGIN_PENDING_KEY =
+    "mana-v987-explicit-login-pending";
+
+  const PROFILE_GATE_KEY =
+    "mana-v987-profile-gate-open";
+
+  const ONBOARDING_COMPLETE_KEY =
+    "mana-onboarding-complete-v9683";
+
 
   /* =========================================
      HELPERS
      ========================================= */
 
   function onboardingComplete() {
+
     try {
+
       return (
         localStorage.getItem(
           ONBOARDING_COMPLETE_KEY
         ) === "1"
       );
+
     } catch (_) {
+
       return false;
+
     }
+
   }
 
+
   function explicitLoginPending() {
+
     try {
+
       return (
         sessionStorage.getItem(
           LOGIN_PENDING_KEY
         ) === "1"
       );
+
     } catch (_) {
+
       return false;
+
     }
+
   }
 
+
   function profileGateOpen() {
+
     try {
+
       return (
         sessionStorage.getItem(
           PROFILE_GATE_KEY
         ) === "1"
       );
+
     } catch (_) {
+
       return false;
+
     }
+
   }
 
+
   function markExplicitLogin() {
+
     try {
+
       sessionStorage.setItem(
         LOGIN_PENDING_KEY,
         "1"
       );
+
     } catch (_) {}
+
   }
 
+
   function clearLoginGate() {
+
     try {
+
       sessionStorage.removeItem(
         LOGIN_PENDING_KEY
       );
@@ -71,36 +124,45 @@
       sessionStorage.removeItem(
         PROFILE_GATE_KEY
       );
+
     } catch (_) {}
+
   }
+
 
   /* =========================================
      STYLES
      ========================================= */
 
   function installStyles() {
+
     document
       .getElementById(
         STYLE_ID
       )
       ?.remove();
 
+
     const style =
       document.createElement(
         "style"
       );
 
+
     style.id =
       STYLE_ID;
+
 
     style.textContent = `
 
       /* =====================================
-         LOGIN PAGE
+         PAGE
          ===================================== */
 
       body:has(#authView:not(.hide)){
-        min-height:100dvh;
+
+        min-height:
+          100dvh;
 
         background:
           #050505
@@ -146,7 +208,7 @@
           calc(
             env(
               safe-area-inset-top
-            ) + 12px
+            ) + 10px
           )
           !important;
 
@@ -154,7 +216,7 @@
           calc(
             env(
               safe-area-inset-bottom
-            ) + 32px
+            ) + 30px
           );
       }
 
@@ -189,20 +251,20 @@
           center;
 
         gap:
-          14px;
+          16px;
 
         width:
           100%;
 
         min-height:
-          72px;
+          88px;
 
         margin:
-          0 0 14px
+          0
           !important;
 
         padding:
-          12px 14px
+          16px 18px
           !important;
 
         border:
@@ -211,7 +273,7 @@
             243,
             216,
             117,
-            .26
+            .30
           )
           !important;
 
@@ -244,15 +306,15 @@
       .brand .mark{
 
         width:
-          54px
+          62px
           !important;
 
         height:
-          54px
+          62px
           !important;
 
         flex:
-          0 0 54px
+          0 0 62px
           !important;
 
         display:
@@ -276,7 +338,7 @@
 
         font:
           700
-          34px
+          40px
           Georgia,
           serif
           !important;
@@ -297,7 +359,7 @@
           !important;
 
         font-size:
-          18px
+          24px
           !important;
 
         font-weight:
@@ -305,10 +367,10 @@
           !important;
 
         line-height:
-          1.03;
+          1.02;
 
         letter-spacing:
-          .12em
+          .11em
           !important;
       }
 
@@ -320,7 +382,7 @@
           block;
 
         margin-top:
-          5px
+          6px
           !important;
 
         color:
@@ -328,7 +390,7 @@
           !important;
 
         font-size:
-          9px
+          11px
           !important;
 
         font-weight:
@@ -369,12 +431,12 @@
           2;
 
         padding-top:
-          340px;
+          300px;
       }
 
 
       /* =====================================
-         NGAI TAKOTO KORU ARTWORK
+         NGAI TAKOTO KORU ART
          ===================================== */
 
       body:has(#authView:not(.hide))
@@ -402,12 +464,15 @@
           100%;
 
         height:
-          320px;
+          300px;
 
         pointer-events:
           none;
 
         border-radius:
+          0
+          0
+          22px
           22px;
 
         overflow:
@@ -430,25 +495,25 @@
               0,
               0,
               .03
-            ) 48%,
+            ) 55%,
 
             rgba(
               0,
               0,
               0,
-              .22
-            ) 72%,
+              .20
+            ) 78%,
 
             rgba(
               5,
               5,
               5,
-              .92
+              .90
             ) 100%
           ),
 
           url(
-            "assets/exercises/mana-ngaitakoto-koru-login.png?v=1001"
+            "assets/exercises/mana-ngaitakoto-koru-login.png?v=1002"
           );
 
 
@@ -475,7 +540,7 @@
             0,
             0,
             0,
-            .32
+            .26
           );
       }
 
@@ -493,6 +558,10 @@
 
         z-index:
           3;
+
+        margin-top:
+          0
+          !important;
 
         border:
           1px solid
@@ -555,10 +624,13 @@
       .mana-v987-login-note{
 
         margin:
-          0 0 18px;
+          0
+          0
+          18px;
 
         padding:
-          14px 16px;
+          14px
+          16px;
 
         border:
           1px solid
@@ -642,17 +714,18 @@
         .brand{
 
           min-height:
-            66px;
+            78px;
 
           padding:
-            11px 12px
+            14px
+            14px
             !important;
 
           gap:
-            12px;
+            13px;
 
           margin:
-            0 0 12px
+            0
             !important;
         }
 
@@ -662,20 +735,20 @@
         .mark{
 
           width:
-            50px
+            56px
             !important;
 
           height:
-            50px
+            56px
             !important;
 
           flex:
-            0 0 50px
+            0 0 56px
             !important;
 
           font:
             700
-            31px
+            36px
             Georgia,
             serif
             !important;
@@ -687,7 +760,7 @@
         h1{
 
           font-size:
-            16px
+            20px
             !important;
         }
 
@@ -697,7 +770,7 @@
         small{
 
           font-size:
-            8px
+            10px
             !important;
         }
 
@@ -706,7 +779,7 @@
         #authView{
 
           padding-top:
-            285px;
+            245px;
         }
 
 
@@ -714,9 +787,12 @@
         #authView::before{
 
           height:
-            270px;
+            245px;
 
           border-radius:
+            0
+            0
+            20px
             20px;
 
           background-size:
@@ -745,7 +821,7 @@
         #authView{
 
           padding-top:
-            255px;
+            220px;
         }
 
 
@@ -753,7 +829,7 @@
         #authView::before{
 
           height:
-            240px;
+            220px;
         }
 
       }
@@ -787,10 +863,10 @@
         .brand{
 
           min-height:
-            76px;
+            92px;
 
           padding:
-            13px 15px
+            16px 18px
             !important;
         }
 
@@ -800,20 +876,20 @@
         .mark{
 
           width:
-            56px
+            64px
             !important;
 
           height:
-            56px
+            64px
             !important;
 
           flex:
-            0 0 56px
+            0 0 64px
             !important;
 
           font:
             700
-            35px
+            42px
             Georgia,
             serif
             !important;
@@ -825,7 +901,7 @@
         h1{
 
           font-size:
-            19px
+            25px
             !important;
         }
 
@@ -834,7 +910,7 @@
         #authView{
 
           padding-top:
-            360px;
+            320px;
         }
 
 
@@ -842,7 +918,7 @@
         #authView::before{
 
           height:
-            335px;
+            320px;
 
           background-size:
             cover,
@@ -1274,7 +1350,7 @@
 
 
     console.log(
-      "[Mana v9.87.4] " +
+      "[Mana v9.87.5] " +
       "Ngai Takoto koru login + profile gate ready"
     );
   }
