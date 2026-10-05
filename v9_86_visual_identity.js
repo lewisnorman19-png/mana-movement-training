@@ -1,11 +1,12 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.86.3
+   MANA MOVEMENT TRAINING v9.86.4
    VISUAL IDENTITY UPGRADE
 
    LOGIN
-   - WARRIOR BACKGROUND
-   - IMPROVED DESKTOP CROP
-   - BETTER LOGIN POSITIONING
+   - FULL-SCREEN WARRIOR BACKGROUND
+   - CLEARER FACE / UPPER BODY
+   - DARKER LOWER FORM AREA
+   - PHONE + DESKTOP POSITIONING
 
    INTRODUCTION
    - WAHINE BACKGROUND KEPT AS-IS
@@ -21,7 +22,7 @@
   "use strict";
 
   const BUILD =
-    "98630";
+    "98640";
 
   const STYLE_ID =
     "mana-v986-visual-style";
@@ -59,23 +60,26 @@
         background:
           linear-gradient(
             180deg,
-            rgba(0,0,0,.20) 0%,
-            rgba(0,0,0,.40) 38%,
-            rgba(0,0,0,.82) 74%,
+            rgba(0,0,0,.08) 0%,
+            rgba(0,0,0,.12) 24%,
+            rgba(0,0,0,.28) 44%,
+            rgba(0,0,0,.62) 66%,
+            rgba(0,0,0,.88) 82%,
             #050505 100%
           ),
           linear-gradient(
             90deg,
-            rgba(0,0,0,.32) 0%,
-            rgba(0,0,0,.18) 48%,
-            rgba(0,0,0,.08) 100%
+            rgba(0,0,0,.22) 0%,
+            rgba(0,0,0,.10) 42%,
+            rgba(0,0,0,.04) 68%,
+            rgba(0,0,0,.12) 100%
           ),
           url(
             "assets/exercises/mana-warrior-login.jpg"
           )
-          right center
+          58% 10%
           /
-          auto 100vh
+          cover
           fixed
           no-repeat;
 
@@ -94,12 +98,7 @@
 
         min-height:100dvh;
 
-        margin-left:
-          clamp(
-            28px,
-            8vw,
-            120px
-          );
+        margin-left:auto;
 
         margin-right:auto;
 
@@ -147,21 +146,21 @@
               10,
               10,
               10,
-              .82
+              .78
             ),
             rgba(
               3,
               3,
               3,
-              .58
+              .56
             )
           );
 
         -webkit-backdrop-filter:
-          blur(12px);
+          blur(10px);
 
         backdrop-filter:
-          blur(12px);
+          blur(10px);
 
         box-shadow:
           0 18px 50px
@@ -193,7 +192,7 @@
             0,
             0,
             0,
-            .72
+            .68
           );
 
         color:#f3d875;
@@ -277,21 +276,21 @@
               13,
               13,
               13,
-              .92
+              .88
             ),
             rgba(
               5,
               5,
               5,
-              .82
+              .78
             )
           );
 
         -webkit-backdrop-filter:
-          blur(14px);
+          blur(12px);
 
         backdrop-filter:
-          blur(14px);
+          blur(12px);
 
         box-shadow:
           0 20px 55px
@@ -348,7 +347,7 @@
             0,
             0,
             0,
-            .52
+            .48
           );
 
         color:#f3d875;
@@ -733,7 +732,7 @@
         body:has(#authView:not(.hide)){
 
           background-position:
-            58% top;
+            62% 6%;
 
           background-size:
             cover;
@@ -762,6 +761,23 @@
 
           margin-bottom:20px;
 
+          background:
+            linear-gradient(
+              145deg,
+              rgba(
+                10,
+                10,
+                10,
+                .70
+              ),
+              rgba(
+                3,
+                3,
+                3,
+                .46
+              )
+            );
+
         }
 
         body:has(#authView:not(.hide))
@@ -781,6 +797,28 @@
         .brand h1{
 
           font-size:17px;
+
+        }
+
+        body:has(#authView:not(.hide))
+        #authView .card{
+
+          background:
+            linear-gradient(
+              145deg,
+              rgba(
+                13,
+                13,
+                13,
+                .84
+              ),
+              rgba(
+                5,
+                5,
+                5,
+                .74
+              )
+            );
 
         }
 
@@ -929,7 +967,7 @@
       BUILD;
 
     console.log(
-      "[Mana v9.86.3] visual identity ready"
+      "[Mana v9.86.4] visual identity ready"
     );
 
   }
