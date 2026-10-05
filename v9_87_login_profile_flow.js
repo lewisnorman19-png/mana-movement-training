@@ -1,13 +1,12 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.87.1
-   LOGIN IDENTITY + REPEAT PROFILE GATE
+   MANA MOVEMENT TRAINING v9.87.2
+   LOGIN PORTRAIT + PROFILE FLOW
 
    LOGIN
-   - COMPACT STANDARD MANA HEADER
-   - HEADER STAYS AT TOP
-   - WARRIOR PORTRAIT STARTS BELOW HEADER
-   - FACE SITS IN GAP ABOVE LOGIN
-   - PHONE-FIRST
+   - STANDARD COMPACT MANA BANNER
+   - DEDICATED WARRIOR PORTRAIT WINDOW
+   - NO LOGIN CARD OVER WARRIOR FACE
+   - PHONE + DESKTOP
 
    CLIENT FLOW
    EXPLICIT LOGIN
@@ -18,12 +17,9 @@
       ↓
    RETURN TO APP
 
-   EXISTING SIGNED-IN SESSION
-   - NOT INTERRUPTED
-   - WORKOUT / OVERVIEW REMAINS AVAILABLE
-
-   NO WORKOUT LOGIC CHANGES
-   NO AUTH LOGIC CHANGES
+   RESTORED SESSION
+   - NO INTERRUPTION
+   - WORKOUT / OVERVIEW PRESERVED
    ========================================= */
 
 (() => {
@@ -31,7 +27,7 @@
 
 
   const BUILD =
-    "98710";
+    "98720";
 
 
   const STYLE_ID =
@@ -143,7 +139,7 @@
 
 
   /* =========================================
-     VISUAL STYLE
+     LOGIN STYLING
      ========================================= */
 
   function installStyles() {
@@ -168,27 +164,283 @@
     style.textContent = `
 
       /* =====================================
-         LOGIN PAGE
+         PAGE
          ===================================== */
 
       body:has(#authView:not(.hide)){
 
-        min-height:
-          100dvh;
+        min-height:100dvh;
 
-        background-color:
-          #050505 !important;
+        background:#050505
+          !important;
+
+        background-image:none
+          !important;
+
+        overflow-x:hidden;
+
+      }
+
+
+      body:has(#authView:not(.hide))
+      > .wrap{
+
+        position:relative;
+
+        z-index:2;
+
+        width:
+          min(
+            540px,
+            calc(100% - 28px)
+          );
+
+        max-width:540px;
+
+        min-height:100dvh;
+
+        margin:
+          0 auto
+          !important;
+
+        padding-top:
+          calc(
+            env(
+              safe-area-inset-top
+            ) + 10px
+          )
+          !important;
+
+        padding-bottom:
+          calc(
+            env(
+              safe-area-inset-bottom
+            ) + 32px
+          );
+
+      }
+
+
+      /* =====================================
+         STANDARD MANA BANNER
+         ===================================== */
+
+      body:has(#authView:not(.hide))
+      .brand{
+
+        display:flex
+          !important;
+
+        visibility:visible
+          !important;
+
+        opacity:1
+          !important;
+
+        position:relative
+          !important;
+
+        z-index:20;
+
+        align-items:center;
+
+        gap:11px;
+
+        width:100%;
+
+        min-height:58px;
+
+        margin:
+          0
+          0
+          10px
+          !important;
+
+        padding:
+          9px
+          11px
+          !important;
+
+        border:
+          1px solid
+          rgba(
+            243,
+            216,
+            117,
+            .26
+          )
+          !important;
+
+        border-radius:
+          15px
+          !important;
+
+        background:
+          linear-gradient(
+            145deg,
+            #17150e,
+            #080808
+          )
+          !important;
+
+        box-shadow:
+          0
+          10px
+          28px
+          rgba(
+            0,
+            0,
+            0,
+            .28
+          );
+
+      }
+
+
+      body:has(#authView:not(.hide))
+      .brand .mark{
+
+        width:44px
+          !important;
+
+        height:44px
+          !important;
+
+        flex:
+          0 0 44px
+          !important;
+
+        display:grid;
+
+        place-items:center;
+
+        border:
+          2px solid
+          #d4af37
+          !important;
+
+        background:
+          #080808
+          !important;
+
+        color:
+          #f3d875
+          !important;
+
+        font:
+          700
+          28px
+          Georgia,
+          serif
+          !important;
+
+        line-height:1;
+
+      }
+
+
+      body:has(#authView:not(.hide))
+      .brand h1{
+
+        margin:0;
+
+        color:#fff
+          !important;
+
+        font-size:16px
+          !important;
+
+        font-weight:950
+          !important;
+
+        line-height:1.05;
+
+        letter-spacing:
+          .12em
+          !important;
+
+      }
+
+
+      body:has(#authView:not(.hide))
+      .brand small{
+
+        display:block;
+
+        margin-top:4px
+          !important;
+
+        color:
+          #d4b85b
+          !important;
+
+        font-size:8px
+          !important;
+
+        font-weight:950
+          !important;
+
+        letter-spacing:
+          .13em
+          !important;
+
+      }
+
+
+      /* =====================================
+         AUTH AREA
+         ===================================== */
+
+      body:has(#authView:not(.hide))
+      #authView{
+
+        position:relative;
+
+        z-index:2;
 
         /*
-          Layer 1:
-          readability gradient.
-
-          Layer 2:
+          Reserve actual space for
           warrior portrait.
 
-          Portrait deliberately starts
-          BELOW the Mana header.
+          Nothing overlaps it.
         */
+
+        padding-top:
+          270px;
+
+      }
+
+
+      /* =====================================
+         WARRIOR PORTRAIT WINDOW
+         ===================================== */
+
+      body:has(#authView:not(.hide))
+      #authView::before{
+
+        content:"";
+
+        display:block;
+
+        position:absolute;
+
+        z-index:0;
+
+        top:0;
+
+        left:50%;
+
+        transform:
+          translateX(-50%);
+
+        width:100vw;
+
+        height:255px;
+
+        pointer-events:none;
+
+        background-color:
+          #050505;
 
         background-image:
 
@@ -199,339 +451,55 @@
               0,
               0,
               0,
-              .04
-            ) 0px,
+              .02
+            ) 0%,
 
             rgba(
               0,
               0,
               0,
-              .05
-            ) 110px,
+              .02
+            ) 58%,
 
             rgba(
               0,
               0,
               0,
-              .04
-            ) 200px,
-
-            rgba(
-              0,
-              0,
-              0,
-              .16
-            ) 340px,
-
-            rgba(
-              0,
-              0,
-              0,
-              .58
-            ) 500px,
-
-            rgba(
-              5,
-              5,
-              5,
-              .90
-            ) 680px,
+              .32
+            ) 78%,
 
             #050505
-            850px
+            100%
           ),
 
           url(
             "assets/exercises/mana-warrior-login.jpg"
-          )
-
-          !important;
+          );
 
 
         background-repeat:
           no-repeat,
-          no-repeat !important;
+          no-repeat;
 
 
         /*
-          Gradient starts at top.
-
-          Warrior begins below header.
-        */
-
-        background-position:
-          center top,
-          center 82px !important;
-
-
-        /*
-          Gradient fills screen.
-
-          Portrait preserves composition.
+          Show the portrait properly,
+          rather than using COVER.
         */
 
         background-size:
           100% 100%,
-          auto calc(100dvh - 82px)
-          !important;
+          auto 100%;
 
 
-        background-attachment:
-          scroll,
-          scroll
-          !important;
+        /*
+          Move the portrait DOWN slightly
+          inside this dedicated window.
+        */
 
-      }
-
-
-      /* =====================================
-         PAGE WRAPPER
-         ===================================== */
-
-      body:has(#authView:not(.hide))
-      > .wrap{
-
-        position:
-          relative;
-
-        z-index:
-          2;
-
-        width:
-          min(
-            540px,
-            calc(
-              100% - 28px
-            )
-          );
-
-        max-width:
-          540px;
-
-        min-height:
-          100dvh;
-
-        margin:
-          0 auto !important;
-
-        padding-top:
-          calc(
-            env(
-              safe-area-inset-top
-            ) + 10px
-          ) !important;
-
-        padding-bottom:
-          calc(
-            env(
-              safe-area-inset-bottom
-            ) + 34px
-          );
-
-      }
-
-
-      /* =====================================
-         STANDARD MANA HEADER
-         ===================================== */
-
-      body:has(#authView:not(.hide))
-      .brand{
-
-        position:
-          relative;
-
-        z-index:
-          5;
-
-        display:
-          flex;
-
-        align-items:
-          center;
-
-        gap:
-          13px;
-
-        margin:
-          0 !important;
-
-        padding:
-          11px 13px !important;
-
-        min-height:
-          66px;
-
-        border:
-          1px solid
-          rgba(
-            243,
-            216,
-            117,
-            .28
-          ) !important;
-
-        border-radius:
-          17px !important;
-
-        background:
-          linear-gradient(
-            145deg,
-            rgba(
-              15,
-              14,
-              10,
-              .92
-            ),
-            rgba(
-              5,
-              5,
-              5,
-              .86
-            )
-          ) !important;
-
-        -webkit-backdrop-filter:
-          blur(
-            9px
-          );
-
-        backdrop-filter:
-          blur(
-            9px
-          );
-
-        box-shadow:
-          0
-          12px
-          32px
-          rgba(
-            0,
-            0,
-            0,
-            .30
-          );
-
-      }
-
-
-      body:has(#authView:not(.hide))
-      .brand .mark{
-
-        width:
-          48px !important;
-
-        height:
-          48px !important;
-
-        flex:
-          0
-          0
-          48px !important;
-
-        display:
-          grid;
-
-        place-items:
-          center;
-
-        border:
-          2px solid
-          #d4af37 !important;
-
-        background:
-          #080808 !important;
-
-        color:
-          #f3d875 !important;
-
-        font:
-          700
-          31px
-          Georgia,
-          serif !important;
-
-        line-height:
-          1;
-
-      }
-
-
-      body:has(#authView:not(.hide))
-      .brand h1{
-
-        margin:
-          0;
-
-        color:
-          #fff !important;
-
-        font-size:
-          17px !important;
-
-        font-weight:
-          950 !important;
-
-        line-height:
-          1.05;
-
-        letter-spacing:
-          .14em !important;
-
-        text-shadow:
-          0
-          2px
-          12px
-          rgba(
-            0,
-            0,
-            0,
-            .90
-          );
-
-      }
-
-
-      body:has(#authView:not(.hide))
-      .brand small{
-
-        display:
-          block;
-
-        margin-top:
-          5px !important;
-
-        color:
-          #d4b85b !important;
-
-        font-size:
-          9px !important;
-
-        font-weight:
-          950 !important;
-
-        letter-spacing:
-          .15em !important;
-
-      }
-
-
-      /* =====================================
-         WARRIOR FACE GAP
-
-         Compact header above.
-         Login starts below portrait.
-         ===================================== */
-
-      body:has(#authView:not(.hide))
-      #authView .hero{
-
-        margin-top:
-          clamp(
-            225px,
-            31dvh,
-            315px
-          ) !important;
+        background-position:
+          center center,
+          center 18%;
 
       }
 
@@ -543,6 +511,10 @@
       body:has(#authView:not(.hide))
       #authView .card{
 
+        position:relative;
+
+        z-index:3;
+
         border:
           1px solid
           rgba(
@@ -550,7 +522,8 @@
             216,
             117,
             .23
-          ) !important;
+          )
+          !important;
 
         background:
           linear-gradient(
@@ -559,25 +532,22 @@
               13,
               13,
               13,
-              .91
+              .96
             ),
             rgba(
               5,
               5,
               5,
-              .84
+              .91
             )
-          ) !important;
+          )
+          !important;
 
         -webkit-backdrop-filter:
-          blur(
-            12px
-          );
+          blur(12px);
 
         backdrop-filter:
-          blur(
-            12px
-          );
+          blur(12px);
 
         box-shadow:
           0
@@ -589,6 +559,15 @@
             0,
             .44
           );
+
+      }
+
+
+      body:has(#authView:not(.hide))
+      #authView .hero{
+
+        margin-top:0
+          !important;
 
       }
 
@@ -606,10 +585,10 @@
             38px,
             8vw,
             48px
-          ) !important;
+          )
+          !important;
 
-        line-height:
-          .98;
+        line-height:.98;
 
       }
 
@@ -623,24 +602,27 @@
             216,
             117,
             .38
-          ) !important;
+          )
+          !important;
 
         background:
           rgba(
             0,
             0,
             0,
-            .50
-          ) !important;
+            .55
+          )
+          !important;
 
         color:
-          #f3d875 !important;
+          #f3d875
+          !important;
 
       }
 
 
       /* =====================================
-         RETURNING CLIENT PROFILE NOTE
+         RETURNING PROFILE NOTE
          ===================================== */
 
       #manaProfileScreen
@@ -664,8 +646,7 @@
             .30
           );
 
-        border-radius:
-          15px;
+        border-radius:15px;
 
         background:
           linear-gradient(
@@ -674,14 +655,11 @@
             #0c0c0c
           );
 
-        color:
-          #cfc6a2;
+        color:#cfc6a2;
 
-        font-size:
-          13px;
+        font-size:13px;
 
-        line-height:
-          1.5;
+        line-height:1.5;
 
       }
 
@@ -690,8 +668,7 @@
       .mana-v987-login-note
       strong{
 
-        color:
-          #f3d875;
+        color:#f3d875;
 
       }
 
@@ -704,137 +681,65 @@
         max-width:600px
       ){
 
-        body:has(#authView:not(.hide)){
-
-          /*
-            Keep full portrait width.
-
-            Most importantly:
-            portrait now starts lower,
-            underneath the compact banner.
-          */
-
-          background-position:
-            center top,
-            center 78px !important;
-
-          background-size:
-            100% 100%,
-            100% auto
-            !important;
-
-        }
-
-
         body:has(#authView:not(.hide))
         > .wrap{
 
-          width:
-            auto;
+          width:auto;
 
-          max-width:
-            none;
+          max-width:none;
 
           margin:
-            0 auto !important;
+            0 auto
+            !important;
 
           padding-left:
-            12px !important;
+            12px
+            !important;
 
           padding-right:
-            12px !important;
+            12px
+            !important;
 
           padding-top:
             calc(
               env(
                 safe-area-inset-top
               ) + 8px
-            ) !important;
-
-        }
-
-
-        /* Standard app-sized banner */
-
-        body:has(#authView:not(.hide))
-        .brand{
-
-          gap:
-            11px;
-
-          min-height:
-            60px;
-
-          padding:
-            9px 11px !important;
-
-          border-radius:
-            16px !important;
+            )
+            !important;
 
         }
 
 
         body:has(#authView:not(.hide))
-        .brand .mark{
+        #authView{
 
-          width:
-            44px !important;
+          padding-top:
+            235px;
+
+        }
+
+
+        body:has(#authView:not(.hide))
+        #authView::before{
 
           height:
-            44px !important;
-
-          flex-basis:
-            44px !important;
-
-          font-size:
-            28px !important;
-
-        }
+            222px;
 
 
-        body:has(#authView:not(.hide))
-        .brand h1{
-
-          font-size:
-            16px !important;
-
-          letter-spacing:
-            .12em !important;
-
-        }
+          background-size:
+            100% 100%,
+            auto 100%;
 
 
-        body:has(#authView:not(.hide))
-        .brand small{
+          /*
+            Face sits a little lower
+            on mobile.
+          */
 
-          margin-top:
-            4px !important;
-
-          font-size:
-            8px !important;
-
-          letter-spacing:
-            .13em !important;
-
-        }
-
-
-        /*
-          Portrait window.
-
-          This is deliberately a decent gap.
-          Warrior face should sit here.
-        */
-
-        body:has(#authView:not(.hide))
-        #authView .hero{
-
-          margin-top:
-            clamp(
-              215px,
-              29dvh,
-              285px
-            ) !important;
+          background-position:
+            center center,
+            center 26%;
 
         }
 
@@ -847,7 +752,8 @@
               37px,
               10.5vw,
               46px
-            ) !important;
+            )
+            !important;
 
         }
 
@@ -862,13 +768,22 @@
         max-width:600px
       )
       and
-      (max-height:720px){
+      (max-height:700px){
 
         body:has(#authView:not(.hide))
-        #authView .hero{
+        #authView{
 
-          margin-top:
-            185px !important;
+          padding-top:
+            205px;
+
+        }
+
+
+        body:has(#authView:not(.hide))
+        #authView::before{
+
+          height:
+            192px;
 
         }
 
@@ -876,31 +791,37 @@
 
 
       /* =====================================
-         LARGE DESKTOP
+         DESKTOP
          ===================================== */
 
       @media(
         min-width:900px
       ){
 
-        body:has(#authView:not(.hide)){
+        body:has(#authView:not(.hide))
+        #authView{
 
-          background-position:
-            center top,
-            center 86px !important;
+          padding-top:
+            285px;
 
         }
 
 
         body:has(#authView:not(.hide))
-        #authView .hero{
+        #authView::before{
 
-          margin-top:
-            clamp(
-              220px,
-              29dvh,
-              310px
-            ) !important;
+          height:
+            270px;
+
+
+          background-size:
+            100% 100%,
+            auto 100%;
+
+
+          background-position:
+            center center,
+            center 22%;
 
         }
 
@@ -918,7 +839,7 @@
 
 
   /* =========================================
-     EXPLICIT LOGIN DETECTION
+     EXPLICIT LOGIN
      ========================================= */
 
   function bindLoginIntent() {
@@ -960,7 +881,7 @@
 
 
   /* =========================================
-     PROFILE LOGIN MESSAGE
+     PROFILE NOTE
      ========================================= */
 
   function addProfileLoginNote() {
@@ -1049,7 +970,7 @@
 
 
   /* =========================================
-     OPEN PROFILE AFTER INTRO
+     PROFILE AFTER INTRO
      ========================================= */
 
   function openRepeatLoginProfile() {
@@ -1062,11 +983,6 @@
 
     }
 
-
-    /*
-      First-time users still use
-      the original onboarding flow.
-    */
 
     if (
       !onboardingComplete()
@@ -1223,7 +1139,7 @@
 
 
   /* =========================================
-     PROFILE CLOSED MANUALLY
+     PROFILE CLOSE
      ========================================= */
 
   function handleProfileClose(
@@ -1263,7 +1179,7 @@
 
 
   /* =========================================
-     EXISTING SESSION PROTECTION
+     EXISTING SESSION
      ========================================= */
 
   function protectSessionRestore() {
@@ -1286,13 +1202,6 @@
 
     }
 
-
-    /*
-      Already signed in.
-
-      Do not force the login/profile
-      sequence on a restored session.
-    */
 
     if (
       !profileGateOpen()
@@ -1364,8 +1273,8 @@
 
 
     console.log(
-      "[Mana v9.87.1] " +
-      "login + profile flow ready"
+      "[Mana v9.87.2] " +
+      "portrait login + profile gate ready"
     );
 
   }
