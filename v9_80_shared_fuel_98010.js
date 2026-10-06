@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.80.0
+   MANA MOVEMENT TRAINING v9.80.10
    SHARED FUEL — MANA 28 + MANA STRENGTH
 
    ONE FUEL EXPERIENCE FOR BOTH PROGRAMS:
@@ -32,22 +32,14 @@
 (() => {
   "use strict";
 
-  const BUILD = "98000";
+  const BUILD = "98010";
 
-  const ROOT_ID =
-    "manaV980SharedFuel";
+  const ROOT_ID = "manaV980SharedFuel";
+  const STYLE_ID = "mana-v980-shared-fuel-style";
 
-  const STYLE_ID =
-    "mana-v980-shared-fuel-style";
-
-  const FUEL_KEY =
-    "mana-fuel-v571";
-
-  const TARGET_KEY =
-    "mana-fuel-v58-targets";
-
-  const DAILY_KEY =
-    "mana-strength-v866-daily";
+  const FUEL_KEY = "mana-fuel-v571";
+  const TARGET_KEY = "mana-fuel-v58-targets";
+  const DAILY_KEY = "mana-strength-v866-daily";
 
   let openPanel = "";
   let openMeal = "";
@@ -61,11 +53,9 @@
   const MEAL_OPTIONS = {
 
     Breakfast: [
-
       {
         name: "Eggs + toast",
-        detail:
-          "3 eggs • wholegrain toast • fruit",
+        detail: "3 eggs • wholegrain toast • fruit",
         calories: 430,
         protein: 28,
         carbs: 38,
@@ -74,8 +64,7 @@
 
       {
         name: "Greek yoghurt bowl",
-        detail:
-          "Greek yoghurt • berries • oats • honey",
+        detail: "Greek yoghurt • berries • oats • honey",
         calories: 390,
         protein: 30,
         carbs: 48,
@@ -84,8 +73,7 @@
 
       {
         name: "Protein oats",
-        detail:
-          "Oats • protein • banana • milk",
+        detail: "Oats • protein • banana • milk",
         calories: 470,
         protein: 35,
         carbs: 64,
@@ -94,23 +82,19 @@
 
       {
         name: "Breakfast wrap",
-        detail:
-          "Egg • lean bacon • spinach • wrap",
+        detail: "Egg • lean bacon • spinach • wrap",
         calories: 450,
         protein: 31,
         carbs: 39,
         fat: 18
       }
-
     ],
 
 
     Lunch: [
-
       {
         name: "Chicken rice bowl",
-        detail:
-          "Chicken • rice • vegetables • light sauce",
+        detail: "Chicken • rice • vegetables • light sauce",
         calories: 560,
         protein: 46,
         carbs: 62,
@@ -119,8 +103,7 @@
 
       {
         name: "Tuna wrap",
-        detail:
-          "Tuna • wrap • salad • light mayo",
+        detail: "Tuna • wrap • salad • light mayo",
         calories: 430,
         protein: 38,
         carbs: 42,
@@ -129,8 +112,7 @@
 
       {
         name: "Beef + sweet potato",
-        detail:
-          "Lean beef • sweet potato • greens",
+        detail: "Lean beef • sweet potato • greens",
         calories: 540,
         protein: 42,
         carbs: 49,
@@ -139,23 +121,19 @@
 
       {
         name: "Chicken salad",
-        detail:
-          "Chicken • mixed salad • avocado • dressing",
+        detail: "Chicken • mixed salad • avocado • dressing",
         calories: 450,
         protein: 43,
         carbs: 20,
         fat: 22
       }
-
     ],
 
 
     Dinner: [
-
       {
         name: "Lean beef + rice",
-        detail:
-          "Lean beef mince • rice • vegetables",
+        detail: "Lean beef mince • rice • vegetables",
         calories: 620,
         protein: 48,
         carbs: 68,
@@ -164,8 +142,7 @@
 
       {
         name: "Chicken + potato",
-        detail:
-          "Chicken • potato • greens",
+        detail: "Chicken • potato • greens",
         calories: 560,
         protein: 50,
         carbs: 52,
@@ -174,8 +151,7 @@
 
       {
         name: "Salmon + rice",
-        detail:
-          "Salmon • rice • vegetables",
+        detail: "Salmon • rice • vegetables",
         calories: 640,
         protein: 42,
         carbs: 58,
@@ -184,23 +160,19 @@
 
       {
         name: "High-protein pasta",
-        detail:
-          "Lean mince • pasta • tomato • vegetables",
+        detail: "Lean mince • pasta • tomato • vegetables",
         calories: 650,
         protein: 47,
         carbs: 75,
         fat: 17
       }
-
     ],
 
 
     Snacks: [
-
       {
         name: "Protein shake",
-        detail:
-          "Protein powder • milk or water",
+        detail: "Protein powder • milk or water",
         calories: 180,
         protein: 30,
         carbs: 8,
@@ -209,8 +181,7 @@
 
       {
         name: "Yoghurt + fruit",
-        detail:
-          "High-protein yoghurt • fruit",
+        detail: "High-protein yoghurt • fruit",
         calories: 220,
         protein: 20,
         carbs: 30,
@@ -219,8 +190,7 @@
 
       {
         name: "Tuna + crackers",
-        detail:
-          "Tuna • wholegrain crackers",
+        detail: "Tuna • wholegrain crackers",
         calories: 250,
         protein: 26,
         carbs: 25,
@@ -229,14 +199,12 @@
 
       {
         name: "Cottage cheese bowl",
-        detail:
-          "Cottage cheese • fruit • cinnamon",
+        detail: "Cottage cheese • fruit • cinnamon",
         calories: 230,
         protein: 25,
         carbs: 26,
         fat: 4
       }
-
     ]
 
   };
@@ -246,95 +214,37 @@
      HELPERS
      ========================================= */
 
-  function safeJson(
-    raw,
-    fallback
-  ) {
-
+  function safeJson(raw, fallback) {
     try {
-
-      return JSON.parse(
-        raw
-      );
-
+      return JSON.parse(raw);
     } catch (_) {
-
       return fallback;
-
     }
-
   }
 
 
-  function esc(
-    value
-  ) {
-
-    return String(
-      value ?? ""
-    )
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-      .replaceAll(
-        '"',
-        "&quot;"
-      );
-
+  function esc(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
   }
 
 
-  function clamp(
-    value,
-    min,
-    max
-  ) {
-
-    return Math.max(
-      min,
-      Math.min(
-        max,
-        value
-      )
-    );
-
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
   }
 
 
   function todayKey() {
-
-    const d =
-      new Date();
+    const d = new Date();
 
     return [
-
       d.getFullYear(),
-
-      String(
-        d.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      ),
-
-      String(
-        d.getDate()
-      ).padStart(
-        2,
-        "0"
-      )
-
+      String(d.getMonth() + 1).padStart(2, "0"),
+      String(d.getDate()).padStart(2, "0")
     ].join("-");
-
   }
 
 
@@ -343,14 +253,10 @@
      ========================================= */
 
   function loadFuel() {
-
-    const data =
-      safeJson(
-        localStorage.getItem(
-          FUEL_KEY
-        ) || "{}",
-        {}
-      );
+    const data = safeJson(
+      localStorage.getItem(FUEL_KEY) || "{}",
+      {}
+    );
 
     return (
       data &&
@@ -358,107 +264,69 @@
     )
       ? data
       : {};
-
   }
 
 
-  function saveFuel(
-    store
-  ) {
-
+  function saveFuel(store) {
     localStorage.setItem(
       FUEL_KEY,
-      JSON.stringify(
-        store
-      )
+      JSON.stringify(store)
     );
 
     window.dispatchEvent(
-      new CustomEvent(
-        "mana:fuel-updated"
-      )
+      new CustomEvent("mana:fuel-updated")
     );
-
   }
 
 
   function loadTargets() {
-
-    const data =
-      safeJson(
-        localStorage.getItem(
-          TARGET_KEY
-        ) || "{}",
-        {}
-      );
+    const data = safeJson(
+      localStorage.getItem(TARGET_KEY) || "{}",
+      {}
+    );
 
     return {
+      calories: Math.max(
+        0,
+        Number(data.calories) || 2200
+      ),
 
-      calories:
-        Math.max(
-          0,
-          Number(
-            data.calories
-          ) || 2200
-        ),
+      protein: Math.max(
+        0,
+        Number(data.protein) || 150
+      ),
 
-      protein:
-        Math.max(
-          0,
-          Number(
-            data.protein
-          ) || 150
-        ),
-
-      water:
-        Math.max(
-          0,
-          Number(
-            data.water
-          ) || 2500
-        )
-
+      water: Math.max(
+        0,
+        Number(data.water) || 2500
+      )
     };
-
   }
 
 
   function todayData() {
-
-    const store =
-      loadFuel();
-
-    const key =
-      todayKey();
+    const store = loadFuel();
+    const key = todayKey();
 
     const day =
       store[key] &&
-      typeof store[key] ===
-        "object"
-
+      typeof store[key] === "object"
         ? store[key]
-
         : {
-
             meals: {
               Breakfast: [],
               Lunch: [],
               Dinner: [],
               Snacks: []
             },
-
             water: 0
-
           };
 
 
     day.meals =
       day.meals &&
-      typeof day.meals ===
-        "object"
-
+      typeof day.meals === "object"
         ? day.meals
-
         : {};
 
 
@@ -467,108 +335,54 @@
       "Lunch",
       "Dinner",
       "Snacks"
-    ]
-      .forEach(
-        name => {
-
-          if (
-            !Array.isArray(
-              day.meals[name]
-            )
-          ) {
-
-            day.meals[name] =
-              [];
-
-          }
-
-        }
-      );
+    ].forEach(name => {
+      if (!Array.isArray(day.meals[name])) {
+        day.meals[name] = [];
+      }
+    });
 
 
-    day.water =
-      Math.max(
-        0,
-        Number(
-          day.water
-        ) || 0
-      );
-
+    day.water = Math.max(
+      0,
+      Number(day.water) || 0
+    );
 
     return day;
-
   }
 
 
-  function writeToday(
-    day
-  ) {
+  function writeToday(day) {
+    const store = loadFuel();
 
-    const store =
-      loadFuel();
+    store[todayKey()] = day;
 
-    store[
-      todayKey()
-    ] =
-      day;
-
-    saveFuel(
-      store
-    );
-
+    saveFuel(store);
   }
 
 
   function totals() {
-
-    const day =
-      todayData();
+    const day = todayData();
 
     const result = {
-
       calories: 0,
-
       protein: 0,
-
-      water:
-        day.water
-
+      water: day.water
     };
 
 
-    Object
-      .values(
-        day.meals
-      )
-      .forEach(
-        items => {
+    Object.values(day.meals)
+      .forEach(items => {
+        (items || [])
+          .forEach(item => {
+            result.calories +=
+              Number(item?.calories) || 0;
 
-          (
-            items ||
-            []
-          )
-            .forEach(
-              item => {
-
-                result.calories +=
-                  Number(
-                    item?.calories
-                  ) || 0;
-
-                result.protein +=
-                  Number(
-                    item?.protein
-                  ) || 0;
-
-              }
-            );
-
-        }
-      );
-
+            result.protein +=
+              Number(item?.protein) || 0;
+          });
+      });
 
     return result;
-
   }
 
 
@@ -577,115 +391,75 @@
      ========================================= */
 
   function recoveryState() {
+    const store = safeJson(
+      localStorage.getItem(DAILY_KEY) || "{}",
+      {}
+    );
 
-    const store =
-      safeJson(
-        localStorage.getItem(
-          DAILY_KEY
-        ) || "{}",
-        {}
-      );
+    const day = store[todayKey()] || {};
 
-    const day =
-      store[
-        todayKey()
-      ] || {};
-
-    const raw =
-      String(
-        day.recoveryLevel ||
-        day.recovery ||
-        ""
-      )
-        .toLowerCase();
+    const raw = String(
+      day.recoveryLevel ||
+      day.recovery ||
+      ""
+    ).toLowerCase();
 
 
     if (
       raw === "good" ||
       raw === "true"
     ) {
-
       return "Good";
-
     }
 
 
-    if (
-      raw === "moderate"
-    ) {
-
+    if (raw === "moderate") {
       return "Moderate";
-
     }
 
 
     if (
-      raw ===
-        "needs-attention" ||
+      raw === "needs-attention" ||
       raw === "low"
     ) {
-
       return "Needs attention";
-
     }
 
 
     return "Not set";
-
   }
 
 
-  function saveRecovery(
-    level
-  ) {
+  function saveRecovery(level) {
+    const store = safeJson(
+      localStorage.getItem(DAILY_KEY) || "{}",
+      {}
+    );
 
-    const store =
-      safeJson(
-        localStorage.getItem(
-          DAILY_KEY
-        ) || "{}",
-        {}
-      );
-
-    const key =
-      todayKey();
+    const key = todayKey();
 
     const day =
       store[key] &&
-      typeof store[key] ===
-        "object"
-
+      typeof store[key] === "object"
         ? store[key]
-
         : {};
 
 
-    day.recoveryLevel =
-      level;
+    day.recoveryLevel = level;
+    day.recovery = level === "good";
 
-    day.recovery =
-      level ===
-      "good";
-
-
-    store[key] =
-      day;
+    store[key] = day;
 
 
     localStorage.setItem(
       DAILY_KEY,
-      JSON.stringify(
-        store
-      )
+      JSON.stringify(store)
     );
 
 
     window.dispatchEvent(
-      new CustomEvent(
-        "mana:recovery-updated"
-      )
+      new CustomEvent("mana:recovery-updated")
     );
-
   }
 
 
@@ -694,23 +468,18 @@
      ========================================= */
 
   function programName() {
-
     return String(
       document
-        .getElementById(
-          "manaV83Title"
-        )
+        .getElementById("manaV83Title")
         ?.textContent ||
       ""
     )
       .trim()
       .toUpperCase();
-
   }
 
 
   function fuelOpen() {
-
     const shell =
       document.getElementById(
         "manaV83ProgramShell"
@@ -721,33 +490,17 @@
         "#manaV83Tabs .mana-v83-tab.active"
       );
 
-    const title =
-      programName();
+    const title = programName();
 
 
     return Boolean(
-
-      shell
-        ?.classList
-        .contains(
-          "open"
-        ) &&
-
-      tab
-        ?.dataset
-        ?.v83Tab ===
-          "fuel" &&
-
+      shell?.classList.contains("open") &&
+      tab?.dataset?.v83Tab === "fuel" &&
       (
-        title ===
-          "MANA STRENGTH" ||
-
-        title ===
-          "MANA 28"
+        title === "MANA STRENGTH" ||
+        title === "MANA 28"
       )
-
     );
-
   }
 
 
@@ -761,53 +514,37 @@
     target,
     suffix = ""
   ) {
-
     const pct =
       target
-
         ? clamp(
             Math.round(
               (
                 Number(
                   String(value)
-                    .replaceAll(
-                      ",",
-                      ""
-                    )
+                    .replaceAll(",", "")
                 ) /
                 Number(
                   String(target)
-                    .replaceAll(
-                      ",",
-                      ""
-                    )
+                    .replaceAll(",", "")
                 )
-              ) *
-              100
+              ) * 100
             ),
             0,
             100
           )
-
         : 0;
 
 
     return `
+      <div class="m980-metric">
 
-      <div
-        class="m980-metric"
-      >
-
-        <div
-          class="m980-metric-top"
-        >
+        <div class="m980-metric-top">
 
           <span>
             ${esc(label)}
           </span>
 
           <strong>
-
             ${esc(value)}
             ${suffix}
 
@@ -821,113 +558,63 @@
                 `
                 : ""
             }
-
           </strong>
 
         </div>
 
         ${
           target
-
             ? `
-
-              <div
-                class="m980-track"
-              >
-
+              <div class="m980-track">
                 <div
                   class="m980-fill"
-                  style="
-                    width:${pct}%;
-                  "
+                  style="width:${pct}%"
                 ></div>
-
               </div>
-
             `
-
             : ""
         }
 
       </div>
-
     `;
-
   }
 
 
-  function loggedMealHtml(
-    mealKey
-  ) {
-
+  function loggedMealHtml(mealKey) {
     const items =
       todayData()
-        .meals[
-          mealKey
-        ] || [];
+        .meals[mealKey] || [];
 
 
-    if (
-      !items.length
-    ) {
-
+    if (!items.length) {
       return "";
-
     }
 
 
     return `
-
-      <div
-        class="m980-logged"
-      >
+      <div class="m980-logged">
 
         ${items
           .map(
-            (
-              item,
-              index
-            ) => `
-
-              <div
-                class="m980-logged-row"
-              >
+            (item, index) => `
+              <div class="m980-logged-row">
 
                 <div>
-
                   <strong>
-                    ${
-                      esc(
-                        item.name ||
-                        "Meal"
-                      )
-                    }
+                    ${esc(item.name || "Meal")}
                   </strong>
 
                   <span>
-
-                    ${
-                      Math.round(
-                        Number(
-                          item.calories
-                        ) || 0
-                      )
-                    }
+                    ${Math.round(
+                      Number(item.calories) || 0
+                    )}
                     kcal
-
                     •
-
-                    ${
-                      Math.round(
-                        Number(
-                          item.protein
-                        ) || 0
-                      )
-                    }
+                    ${Math.round(
+                      Number(item.protein) || 0
+                    )}
                     g protein
-
                   </span>
-
                 </div>
 
                 <button
@@ -939,50 +626,33 @@
                 </button>
 
               </div>
-
             `
           )
           .join("")}
 
       </div>
-
     `;
-
   }
 
 
-  function mealOptionsHtml(
-    mealKey
-  ) {
-
+  function mealOptionsHtml(mealKey) {
     const options =
-      MEAL_OPTIONS[
-        mealKey
-      ] || [];
+      MEAL_OPTIONS[mealKey] || [];
 
 
     return `
-
-      <div
-        class="m980-meal-options"
-      >
+      <div class="m980-meal-options">
 
         ${options
           .map(
-            (
-              item,
-              index
-            ) => `
-
+            (item, index) => `
               <button
                 type="button"
                 class="m980-option"
                 data-m980-add="${mealKey}:${index}"
               >
 
-                <span
-                  class="m980-option-copy"
-                >
+                <span class="m980-option-copy">
 
                   <strong>
                     ${esc(item.name)}
@@ -1002,54 +672,36 @@
 
                 </span>
 
-                <span
-                  class="m980-plus"
-                >
+                <span class="m980-plus">
                   +
                 </span>
 
               </button>
-
             `
           )
           .join("")}
 
       </div>
-
     `;
-
   }
 
 
-  function mealRow(
-    mealKey,
-    label
-  ) {
-
+  function mealRow(mealKey, label) {
     const expanded =
-      openMeal ===
-      mealKey;
+      openMeal === mealKey;
 
     const count =
       (
         todayData()
-          .meals[
-            mealKey
-          ] || []
-      )
-        .length;
+          .meals[mealKey] || []
+      ).length;
 
 
     return `
-
       <div
         class="
           m980-meal
-          ${
-            expanded
-              ? "open"
-              : ""
-          }
+          ${expanded ? "open" : ""}
         "
       >
 
@@ -1060,63 +712,41 @@
         >
 
           <span>
-
             <strong>
               ${esc(label)}
             </strong>
 
             <small>
-
               ${
                 count
-
                   ? `${count} logged today`
-
                   : "Choose a meal"
               }
-
             </small>
-
           </span>
 
           <b>
-            ${
-              expanded
-                ? "−"
-                : "+"
-            }
+            ${expanded ? "−" : "+"}
           </b>
 
         </button>
 
         ${
           expanded
-
             ? `
+              <div class="m980-meal-body">
 
-              <div
-                class="m980-meal-body"
-              >
+                ${loggedMealHtml(mealKey)}
 
-                ${loggedMealHtml(
-                  mealKey
-                )}
-
-                ${mealOptionsHtml(
-                  mealKey
-                )}
+                ${mealOptionsHtml(mealKey)}
 
               </div>
-
             `
-
             : ""
         }
 
       </div>
-
     `;
-
   }
 
 
@@ -1125,99 +755,53 @@
      ========================================= */
 
   function todayFuelBody() {
-
-    const t =
-      totals();
-
-    const targets =
-      loadTargets();
-
-    const recovery =
-      recoveryState();
+    const t = totals();
+    const targets = loadTargets();
+    const recovery = recoveryState();
 
 
     return `
-
-      <div
-        class="m980-panel-body"
-      >
+      <div class="m980-panel-body">
 
         ${metric(
           "Calories",
-          Math.round(
-            t.calories
-          )
-            .toLocaleString(),
-          Math.round(
-            targets.calories
-          )
-            .toLocaleString(),
+          Math.round(t.calories).toLocaleString(),
+          Math.round(targets.calories).toLocaleString(),
           " kcal"
         )}
 
 
         ${metric(
           "Protein",
-          Math.round(
-            t.protein
-          ),
-          Math.round(
-            targets.protein
-          ),
+          Math.round(t.protein),
+          Math.round(targets.protein),
           " g"
         )}
 
 
         ${metric(
           "Water",
-          (
-            t.water /
-            1000
-          )
-            .toFixed(
-              1
-            ),
-          (
-            targets.water /
-            1000
-          )
-            .toFixed(
-              1
-            ),
+          (t.water / 1000).toFixed(1),
+          (targets.water / 1000).toFixed(1),
           " L"
         )}
 
 
-        <div
-          class="
-            m980-metric
-            m980-water-actions
-          "
-        >
+        <div class="m980-metric m980-water-actions">
 
-          <div
-            class="m980-metric-top"
-          >
-
+          <div class="m980-metric-top">
             <span>
               Quick water
             </span>
 
             <strong>
-              ${
-                Math.round(
-                  t.water
-                )
-              }
+              ${Math.round(t.water)}
               ml
             </strong>
-
           </div>
 
 
-          <div
-            class="m980-chip-row"
-          >
+          <div class="m980-chip-row">
 
             <button
               type="button"
@@ -1245,16 +829,9 @@
         </div>
 
 
-        <div
-          class="
-            m980-metric
-            m980-recovery
-          "
-        >
+        <div class="m980-metric m980-recovery">
 
-          <div
-            class="m980-metric-top"
-          >
+          <div class="m980-metric-top">
 
             <span>
               Recovery
@@ -1267,16 +844,13 @@
           </div>
 
 
-          <div
-            class="m980-chip-row"
-          >
+          <div class="m980-chip-row">
 
             <button
               type="button"
               data-m980-recovery="good"
               class="${
-                recovery ===
-                  "Good"
+                recovery === "Good"
                   ? "active"
                   : ""
               }"
@@ -1288,8 +862,7 @@
               type="button"
               data-m980-recovery="moderate"
               class="${
-                recovery ===
-                  "Moderate"
+                recovery === "Moderate"
                   ? "active"
                   : ""
               }"
@@ -1301,8 +874,7 @@
               type="button"
               data-m980-recovery="needs-attention"
               class="${
-                recovery ===
-                  "Needs attention"
+                recovery === "Needs attention"
                   ? "active"
                   : ""
               }"
@@ -1315,9 +887,7 @@
         </div>
 
       </div>
-
     `;
-
   }
 
 
@@ -1326,40 +896,16 @@
      ========================================= */
 
   function mealsBody() {
-
     return `
+      <div class="m980-panel-body m980-meals-body">
 
-      <div
-        class="
-          m980-panel-body
-          m980-meals-body
-        "
-      >
-
-        ${mealRow(
-          "Breakfast",
-          "Breakfast"
-        )}
-
-        ${mealRow(
-          "Lunch",
-          "Lunch"
-        )}
-
-        ${mealRow(
-          "Dinner",
-          "Dinner"
-        )}
-
-        ${mealRow(
-          "Snacks",
-          "Snack"
-        )}
+        ${mealRow("Breakfast", "Breakfast")}
+        ${mealRow("Lunch", "Lunch")}
+        ${mealRow("Dinner", "Dinner")}
+        ${mealRow("Snacks", "Snack")}
 
       </div>
-
     `;
-
   }
 
 
@@ -1368,29 +914,19 @@
      ========================================= */
 
   function pageHtml() {
-
     const todayOpen =
-      openPanel ===
-      "today";
+      openPanel === "today";
 
     const mealsOpen =
-      openPanel ===
-      "meals";
+      openPanel === "meals";
 
 
     return `
+      <div id="${ROOT_ID}">
 
-      <div
-        id="${ROOT_ID}"
-      >
+        <div class="m980-hero">
 
-        <div
-          class="m980-hero"
-        >
-
-          <div
-            class="m980-kicker"
-          >
+          <div class="m980-kicker">
             FUEL
           </div>
 
@@ -1410,11 +946,7 @@
         <div
           class="
             m980-section
-            ${
-              todayOpen
-                ? "open"
-                : ""
-            }
+            ${todayOpen ? "open" : ""}
           "
         >
 
@@ -1424,13 +956,9 @@
             data-m980-panel="today"
           >
 
-            <span
-              class="m980-banner-copy"
-            >
+            <span class="m980-banner-copy">
 
-              <span
-                class="m980-icon"
-              >
+              <span class="m980-icon">
                 01
               </span>
 
@@ -1449,11 +977,7 @@
             </span>
 
             <b>
-              ${
-                todayOpen
-                  ? "−"
-                  : "+"
-              }
+              ${todayOpen ? "−" : "+"}
             </b>
 
           </button>
@@ -1470,11 +994,7 @@
         <div
           class="
             m980-section
-            ${
-              mealsOpen
-                ? "open"
-                : ""
-            }
+            ${mealsOpen ? "open" : ""}
           "
         >
 
@@ -1484,13 +1004,9 @@
             data-m980-panel="meals"
           >
 
-            <span
-              class="m980-banner-copy"
-            >
+            <span class="m980-banner-copy">
 
-              <span
-                class="m980-icon"
-              >
+              <span class="m980-icon">
                 02
               </span>
 
@@ -1509,11 +1025,7 @@
             </span>
 
             <b>
-              ${
-                mealsOpen
-                  ? "−"
-                  : "+"
-              }
+              ${mealsOpen ? "−" : "+"}
             </b>
 
           </button>
@@ -1527,19 +1039,13 @@
         </div>
 
 
-        <div
-          class="m980-chat"
-        >
+        <div class="m980-chat">
 
-          <div
-            class="m980-kicker"
-          >
+          <div class="m980-kicker">
             COACH CHAT
           </div>
 
-          <div
-            class="m980-chat-row"
-          >
+          <div class="m980-chat-row">
 
             <div>
 
@@ -1566,9 +1072,7 @@
         </div>
 
       </div>
-
     `;
-
   }
 
 
@@ -1577,25 +1081,17 @@
      ========================================= */
 
   function injectStyles() {
-
     if (
-      document.getElementById(
-        STYLE_ID
-      )
+      document.getElementById(STYLE_ID)
     ) {
-
       return;
-
     }
 
 
     const style =
-      document.createElement(
-        "style"
-      );
+      document.createElement("style");
 
-    style.id =
-      STYLE_ID;
+    style.id = STYLE_ID;
 
 
     style.textContent = `
@@ -1613,11 +1109,9 @@
         box-sizing:border-box;
       }
 
-
       .m980-hero{
         padding:8px 2px 22px;
       }
-
 
       .m980-kicker{
         font-size:11px;
@@ -1627,19 +1121,13 @@
         text-transform:uppercase;
       }
 
-
       .m980-hero h2{
         margin:7px 0 7px;
-        font-size:clamp(
-          26px,
-          5vw,
-          42px
-        );
+        font-size:clamp(26px,5vw,42px);
         line-height:1.05;
         letter-spacing:-.7px;
         color:#fff;
       }
-
 
       .m980-hero p{
         margin:0;
@@ -1647,7 +1135,6 @@
         font-size:15px;
         line-height:1.5;
       }
-
 
       .m980-section,
       .m980-chat{
@@ -1658,19 +1145,12 @@
         overflow:hidden;
         box-shadow:
           0 14px 35px
-          rgba(
-            0,
-            0,
-            0,
-            .2
-          );
+          rgba(0,0,0,.2);
       }
-
 
       .m980-section.open{
         border-color:#4d4422;
       }
-
 
       .m980-banner{
         width:100%;
@@ -1687,14 +1167,12 @@
         cursor:pointer;
       }
 
-
       .m980-banner-copy{
         display:flex;
         align-items:center;
         gap:14px;
         min-width:0;
       }
-
 
       .m980-icon{
         width:46px;
@@ -1711,13 +1189,11 @@
         letter-spacing:1px;
       }
 
-
       .m980-banner strong{
         display:block;
         font-size:18px;
         letter-spacing:.3px;
       }
-
 
       .m980-banner small{
         display:block;
@@ -1728,7 +1204,6 @@
         font-weight:650;
       }
 
-
       .m980-banner > b{
         color:#f3d875;
         font-size:28px;
@@ -1736,31 +1211,20 @@
         line-height:1;
       }
 
-
       .m980-panel-body{
-        border-top:
-          1px solid
-          #242424;
-        padding:
-          5px
-          18px
-          18px;
+        border-top:1px solid #242424;
+        padding:5px 18px 18px;
       }
-
 
       .m980-metric{
         padding:16px 0;
-        border-bottom:
-          1px solid
-          #222;
+        border-bottom:1px solid #222;
       }
-
 
       .m980-metric:last-child{
         border-bottom:0;
         padding-bottom:2px;
       }
-
 
       .m980-metric-top{
         display:flex;
@@ -1769,13 +1233,11 @@
         gap:12px;
       }
 
-
       .m980-metric-top span{
         font-size:14px;
         font-weight:800;
         color:#d0d0d0;
       }
-
 
       .m980-metric-top strong{
         font-size:17px;
@@ -1783,13 +1245,11 @@
         white-space:nowrap;
       }
 
-
       .m980-metric-top small{
         font-size:12px;
         color:#7d7d7d;
         font-weight:700;
       }
-
 
       .m980-track{
         height:7px;
@@ -1799,13 +1259,11 @@
         overflow:hidden;
       }
 
-
       .m980-fill{
         height:100%;
         border-radius:999px;
         background:#e1c35a;
       }
-
 
       .m980-chip-row{
         display:flex;
@@ -1814,11 +1272,8 @@
         margin-top:12px;
       }
 
-
       .m980-chip-row button{
-        border:
-          1px solid
-          #3a3a3a;
+        border:1px solid #3a3a3a;
         background:#171717;
         color:#ddd;
         border-radius:999px;
@@ -1828,7 +1283,6 @@
         cursor:pointer;
       }
 
-
       .m980-chip-row button.active,
       .m980-chip-row button:hover{
         border-color:#6b5e27;
@@ -1836,23 +1290,17 @@
         color:#f3d875;
       }
 
-
       .m980-meals-body{
         padding-top:9px;
       }
 
-
       .m980-meal{
-        border-bottom:
-          1px solid
-          #222;
+        border-bottom:1px solid #222;
       }
-
 
       .m980-meal:last-child{
         border-bottom:0;
       }
-
 
       .m980-meal-head{
         width:100%;
@@ -1867,12 +1315,10 @@
         cursor:pointer;
       }
 
-
       .m980-meal-head strong{
         display:block;
         font-size:16px;
       }
-
 
       .m980-meal-head small{
         display:block;
@@ -1881,29 +1327,23 @@
         font-size:12px;
       }
 
-
       .m980-meal-head b{
         font-size:22px;
         color:#e7c95b;
         font-weight:400;
       }
 
-
       .m980-meal-body{
         padding:0 0 14px;
       }
-
 
       .m980-logged{
         margin-bottom:10px;
         border-radius:14px;
         background:#131313;
-        border:
-          1px solid
-          #282828;
+        border:1px solid #282828;
         overflow:hidden;
       }
-
 
       .m980-logged-row{
         display:flex;
@@ -1911,22 +1351,17 @@
         justify-content:space-between;
         gap:12px;
         padding:11px 12px;
-        border-bottom:
-          1px solid
-          #232323;
+        border-bottom:1px solid #232323;
       }
-
 
       .m980-logged-row:last-child{
         border-bottom:0;
       }
 
-
       .m980-logged-row strong{
         display:block;
         font-size:13px;
       }
-
 
       .m980-logged-row span{
         display:block;
@@ -1935,34 +1370,26 @@
         margin-top:3px;
       }
 
-
       .m980-logged-row button{
         width:30px;
         height:30px;
         border-radius:50%;
-        border:
-          1px solid
-          #333;
+        border:1px solid #333;
         background:#171717;
         color:#aaa;
         font-size:19px;
         cursor:pointer;
       }
 
-
       .m980-meal-options{
         display:grid;
-        grid-template-columns:
-          1fr 1fr;
+        grid-template-columns:1fr 1fr;
         gap:8px;
       }
 
-
       .m980-option{
         min-height:96px;
-        border:
-          1px solid
-          #303030;
+        border:1px solid #303030;
         background:#141414;
         color:#fff;
         border-radius:15px;
@@ -1975,18 +1402,15 @@
         cursor:pointer;
       }
 
-
       .m980-option:hover{
         border-color:#665924;
         background:#17160f;
       }
 
-
       .m980-option-copy strong{
         display:block;
         font-size:13px;
       }
-
 
       .m980-option-copy small{
         display:block;
@@ -1995,7 +1419,6 @@
         font-size:10px;
         line-height:1.35;
       }
-
 
       .m980-option-copy em{
         display:block;
@@ -2006,17 +1429,14 @@
         font-weight:850;
       }
 
-
       .m980-plus{
         font-size:22px;
         color:#e7c95b;
       }
 
-
       .m980-chat{
         padding:18px;
       }
-
 
       .m980-chat-row{
         display:flex;
@@ -2026,12 +1446,10 @@
         margin-top:8px;
       }
 
-
       .m980-chat-row strong{
         display:block;
         font-size:16px;
       }
-
 
       .m980-chat-row span{
         display:block;
@@ -2040,11 +1458,8 @@
         font-size:12px;
       }
 
-
       #m980CoachChat{
-        border:
-          1px solid
-          #625624;
+        border:1px solid #625624;
         background:#18160d;
         color:#f3d875;
         border-radius:999px;
@@ -2056,27 +1471,17 @@
       }
 
 
-      @media(
-        max-width:620px
-      ){
+      @media(max-width:620px){
 
         #${ROOT_ID}{
           width:100%;
           max-width:none;
-          padding:
-            2px
-            0
-            94px;
+          padding:2px 0 94px;
         }
-
 
         .m980-hero{
-          padding:
-            7px
-            2px
-            18px;
+          padding:7px 2px 18px;
         }
-
 
         .m980-section,
         .m980-chat{
@@ -2084,14 +1489,10 @@
           margin-bottom:11px;
         }
 
-
         .m980-banner{
           min-height:84px;
-          padding:
-            15px
-            14px;
+          padding:15px 14px;
         }
-
 
         .m980-icon{
           width:42px;
@@ -2100,40 +1501,28 @@
           border-radius:13px;
         }
 
-
         .m980-banner strong{
           font-size:16px;
         }
-
 
         .m980-banner small{
           font-size:11px;
         }
 
-
         .m980-panel-body{
-          padding:
-            4px
-            14px
-            15px;
+          padding:4px 14px 15px;
         }
-
 
         .m980-meal-options{
-          grid-template-columns:
-            1fr;
+          grid-template-columns:1fr;
         }
-
 
         .m980-option{
           min-height:82px;
         }
 
-
         .m980-chat{
-          padding:
-            16px
-            14px;
+          padding:16px 14px;
         }
 
       }
@@ -2141,10 +1530,7 @@
     `;
 
 
-    document.head.appendChild(
-      style
-    );
-
+    document.head.appendChild(style);
   }
 
 
@@ -2153,13 +1539,8 @@
      ========================================= */
 
   function render() {
-
-    if (
-      !fuelOpen()
-    ) {
-
+    if (!fuelOpen()) {
       return false;
-
     }
 
 
@@ -2169,52 +1550,31 @@
       );
 
 
-    if (
-      !holder
-    ) {
-
+    if (!holder) {
       return false;
-
     }
 
 
     injectStyles();
 
-
-    holder.innerHTML =
-      pageHtml();
-
+    holder.innerHTML = pageHtml();
 
     return true;
-
   }
 
 
-  function scheduleTakeover(
-    delay = 90
-  ) {
-
-    clearTimeout(
-      takeoverTimer
-    );
+  function scheduleTakeover(delay = 90) {
+    clearTimeout(takeoverTimer);
 
 
     takeoverTimer =
-      setTimeout(
-        () => {
+      setTimeout(() => {
 
-          if (
-            fuelOpen()
-          ) {
+        if (fuelOpen()) {
+          render();
+        }
 
-            render();
-
-          }
-
-        },
-        delay
-      );
-
+      }, delay);
   }
 
 
@@ -2222,115 +1582,68 @@
      MEAL ACTIONS
      ========================================= */
 
-  function addMeal(
-    mealKey,
-    index
-  ) {
-
+  function addMeal(mealKey, index) {
     const option =
-      MEAL_OPTIONS[
-        mealKey
-      ]
-        ?.[
-          index
-        ];
+      MEAL_OPTIONS[mealKey]?.[index];
 
 
-    if (
-      !option
-    ) {
-
+    if (!option) {
       return;
-
     }
 
 
-    const day =
-      todayData();
+    const day = todayData();
 
 
-    day
-      .meals[
-        mealKey
-      ]
-      .push({
+    day.meals[mealKey].push({
 
-        ...option,
+      ...option,
 
-        id:
-          `m980-${
-            Date.now()
-          }-${
-            Math
-              .random()
-              .toString(
-                36
-              )
-              .slice(
-                2,
-                7
-              )
-          }`,
+      id:
+        `m980-${Date.now()}-${
+          Math
+            .random()
+            .toString(36)
+            .slice(2, 7)
+        }`,
 
-        addedAt:
-          new Date()
-            .toISOString(),
+      addedAt:
+        new Date().toISOString(),
 
-        source:
-          "mana-v980-shared-fuel"
+      source:
+        "mana-v980-shared-fuel"
 
-      });
+    });
 
 
-    writeToday(
-      day
-    );
-
+    writeToday(day);
 
     render();
-
   }
 
 
-  function removeMeal(
-    mealKey,
-    index
-  ) {
-
-    const day =
-      todayData();
+  function removeMeal(mealKey, index) {
+    const day = todayData();
 
 
     if (
       !Array.isArray(
-        day.meals[
-          mealKey
-        ]
+        day.meals[mealKey]
       )
     ) {
-
       return;
-
     }
 
 
-    day
-      .meals[
-        mealKey
-      ]
-      .splice(
-        index,
-        1
-      );
-
-
-    writeToday(
-      day
+    day.meals[mealKey].splice(
+      index,
+      1
     );
 
 
-    render();
+    writeToday(day);
 
+    render();
   }
 
 
@@ -2338,35 +1651,21 @@
      WATER
      ========================================= */
 
-  function changeWater(
-    delta
-  ) {
-
-    const day =
-      todayData();
+  function changeWater(delta) {
+    const day = todayData();
 
 
-    day.water =
-      Math.max(
-        0,
-
-        (
-          Number(
-            day.water
-          ) || 0
-        ) +
-
-        delta
-      );
-
-
-    writeToday(
-      day
+    day.water = Math.max(
+      0,
+      (
+        Number(day.water) || 0
+      ) + delta
     );
 
 
-    render();
+    writeToday(day);
 
+    render();
   }
 
 
@@ -2375,41 +1674,24 @@
      ========================================= */
 
   function openCoachChat() {
-
     const candidates = [
-
       "openManaCoachChat",
-
       "openManaChat",
-
       "openCoachChat",
-
       "showCoachChat"
-
     ];
 
 
-    for (
-      const name
-      of candidates
-    ) {
+    for (const name of candidates) {
 
       if (
-        typeof
-          window[
-            name
-          ] ===
+        typeof window[name] ===
         "function"
       ) {
 
         try {
-
-          window[
-            name
-          ]();
-
+          window[name]();
           return;
-
         } catch (_) {}
 
       }
@@ -2418,27 +1700,15 @@
 
 
     window.dispatchEvent(
-
       new CustomEvent(
-
         "mana:open-coach-chat",
-
         {
-
           detail: {
-
-            source:
-              "fuel",
-
-            program:
-              programName()
-
+            source: "fuel",
+            program: programName()
           }
-
         }
-
       )
-
     );
 
 
@@ -2446,13 +1716,11 @@
 
       if (
         typeof
-          window
-            .refreshManaStrengthChat ===
+          window.refreshManaStrengthChat ===
         "function"
       ) {
 
-        window
-          .refreshManaStrengthChat();
+        window.refreshManaStrengthChat();
 
 
         document
@@ -2464,19 +1732,13 @@
             `
           )
           ?.scrollIntoView({
-
-            behavior:
-              "smooth",
-
-            block:
-              "center"
-
+            behavior: "smooth",
+            block: "center"
           });
 
       }
 
     } catch (_) {}
-
   }
 
 
@@ -2484,16 +1746,9 @@
      CLICKS
      ========================================= */
 
-  function handleClick(
-    event
-  ) {
-
-    if (
-      !fuelOpen()
-    ) {
-
+  function handleClick(event) {
+    if (!fuelOpen()) {
       return;
-
     }
 
 
@@ -2503,38 +1758,22 @@
       );
 
 
-    if (
-      panel
-    ) {
+    if (panel) {
 
       openPanel =
         openPanel ===
-          panel
-            .dataset
-            .m980Panel
-
+          panel.dataset.m980Panel
           ? ""
-
-          : panel
-              .dataset
-              .m980Panel;
+          : panel.dataset.m980Panel;
 
 
-      if (
-        openPanel !==
-        "meals"
-      ) {
-
-        openMeal =
-          "";
-
+      if (openPanel !== "meals") {
+        openMeal = "";
       }
 
 
       render();
-
       return;
-
     }
 
 
@@ -2544,27 +1783,17 @@
       );
 
 
-    if (
-      meal
-    ) {
+    if (meal) {
 
       openMeal =
         openMeal ===
-          meal
-            .dataset
-            .m980Meal
-
+          meal.dataset.m980Meal
           ? ""
-
-          : meal
-              .dataset
-              .m980Meal;
+          : meal.dataset.m980Meal;
 
 
       render();
-
       return;
-
     }
 
 
@@ -2574,9 +1803,7 @@
       );
 
 
-    if (
-      add
-    ) {
+    if (add) {
 
       const [
         mealKey,
@@ -2585,20 +1812,15 @@
         add
           .dataset
           .m980Add
-          .split(
-            ":"
-          );
+          .split(":");
 
 
       addMeal(
         mealKey,
-        Number(
-          index
-        )
+        Number(index)
       );
 
       return;
-
     }
 
 
@@ -2608,9 +1830,7 @@
       );
 
 
-    if (
-      remove
-    ) {
+    if (remove) {
 
       const [
         mealKey,
@@ -2619,20 +1839,15 @@
         remove
           .dataset
           .m980Remove
-          .split(
-            ":"
-          );
+          .split(":");
 
 
       removeMeal(
         mealKey,
-        Number(
-          index
-        )
+        Number(index)
       );
 
       return;
-
     }
 
 
@@ -2642,20 +1857,15 @@
       );
 
 
-    if (
-      water
-    ) {
+    if (water) {
 
       changeWater(
         Number(
-          water
-            .dataset
-            .m980Water
+          water.dataset.m980Water
         ) || 0
       );
 
       return;
-
     }
 
 
@@ -2665,9 +1875,7 @@
       );
 
 
-    if (
-      recovery
-    ) {
+    if (recovery) {
 
       saveRecovery(
         recovery
@@ -2677,9 +1885,7 @@
 
 
       render();
-
       return;
-
     }
 
 
@@ -2688,11 +1894,8 @@
         "#m980CoachChat"
       )
     ) {
-
       openCoachChat();
-
     }
-
   }
 
 
@@ -2702,137 +1905,87 @@
 
   function watch() {
 
-    document
-      .addEventListener(
-        "click",
-        handleClick
-      );
+    document.addEventListener(
+      "click",
+      handleClick
+    );
 
 
-    window
-      .addEventListener(
+    window.addEventListener(
+      "mana:program-tab-change",
+      () => {
 
-        "mana:program-tab-change",
+        /*
+          Older MANA 28 Fuel renderer
+          may paint just after this event.
 
-        () => {
+          This bounded delayed render
+          takes ownership after that.
+        */
 
-          /*
-            Older MANA 28 Fuel renderer
-            may paint just after this event.
+        scheduleTakeover(120);
 
-            This bounded delayed render
-            takes ownership after that.
-          */
+      }
+    );
 
-          scheduleTakeover(
-            120
-          );
 
+    window.addEventListener(
+      "mana:fuel-updated",
+      () => {
+
+        if (fuelOpen()) {
+          scheduleTakeover(90);
         }
 
-      );
+      }
+    );
 
 
-    window
-      .addEventListener(
+    window.addEventListener(
+      "mana:recovery-updated",
+      () => {
 
-        "mana:fuel-updated",
-
-        () => {
-
-          if (
-            fuelOpen()
-          ) {
-
-            scheduleTakeover(
-              90
-            );
-
-          }
-
+        if (fuelOpen()) {
+          scheduleTakeover(90);
         }
 
-      );
+      }
+    );
 
 
-    window
-      .addEventListener(
+    window.addEventListener(
+      "storage",
+      event => {
 
-        "mana:recovery-updated",
-
-        () => {
-
-          if (
-            fuelOpen()
-          ) {
-
-            scheduleTakeover(
-              90
-            );
-
-          }
-
+        if (
+          fuelOpen() &&
+          [
+            FUEL_KEY,
+            TARGET_KEY,
+            DAILY_KEY
+          ].includes(event.key)
+        ) {
+          scheduleTakeover(90);
         }
 
-      );
+      }
+    );
 
 
-    window
-      .addEventListener(
+    document.addEventListener(
+      "visibilitychange",
+      () => {
 
-        "storage",
-
-        event => {
-
-          if (
-            fuelOpen() &&
-
-            [
-              FUEL_KEY,
-              TARGET_KEY,
-              DAILY_KEY
-            ]
-              .includes(
-                event.key
-              )
-          ) {
-
-            scheduleTakeover(
-              90
-            );
-
-          }
-
+        if (
+          document.visibilityState ===
+            "visible" &&
+          fuelOpen()
+        ) {
+          scheduleTakeover(120);
         }
 
-      );
-
-
-    document
-      .addEventListener(
-
-        "visibilitychange",
-
-        () => {
-
-          if (
-            document
-              .visibilityState ===
-                "visible" &&
-
-            fuelOpen()
-          ) {
-
-            scheduleTakeover(
-              120
-            );
-
-          }
-
-        }
-
-      );
-
+      }
+    );
   }
 
 
@@ -2858,9 +2011,8 @@
       shared Fuel renderer.
     */
 
-    window
-      .renderManaStrengthFuel =
-        render;
+    window.renderManaStrengthFuel =
+      render;
 
 
     /*
@@ -2868,31 +2020,19 @@
       future modules.
     */
 
-    window
-      .renderManaSharedFuel =
-        render;
+    window.renderManaSharedFuel =
+      render;
+
+    window.refreshManaSharedFuel =
+      render;
+
+    window.MANA_SHARED_FUEL_BUILD =
+      BUILD;
 
 
-    window
-      .refreshManaSharedFuel =
-        render;
-
-
-    window
-      .MANA_SHARED_FUEL_BUILD =
-        BUILD;
-
-
-    if (
-      fuelOpen()
-    ) {
-
-      scheduleTakeover(
-        140
-      );
-
+    if (fuelOpen()) {
+      scheduleTakeover(140);
     }
-
   }
 
 
@@ -2901,11 +2041,10 @@
     "loading"
   ) {
 
-    document
-      .addEventListener(
-        "DOMContentLoaded",
-        init
-      );
+    document.addEventListener(
+      "DOMContentLoaded",
+      init
+    );
 
   } else {
 
