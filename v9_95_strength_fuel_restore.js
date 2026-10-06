@@ -1,19 +1,23 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.95.1
-   STRENGTH FUEL — POST MEAL RESTORE
+   MANA MOVEMENT TRAINING v9.95.3
+   STRENGTH FUEL STABILITY
 
    FIX
-   - Meal add/change/remove rebuilds Fuel
-   - Recovery restores immediately
-   - Existing Fuel polish restores immediately
-   - Existing chat system is left alone
+   - Quick Add Water no longer rebuilds Fuel
+   - No screen flick on water add
+   - Recovery remains in place
+   - Coach Chat remains in place
+   - Meal redraw still restores Recovery/polish
 
-   NO:
-   - duplicate chat card
-   - Fuel data reset
-   - Profile changes
-   - Workout changes
-   - Timers
+   DATA
+   - Uses existing mana-fuel-v571 store
+   - Same daily water value
+   - Same targets
+
+   NO
+   - data reset
+   - workout changes
+   - timers
    - MutationObserver
    ========================================= */
 
@@ -22,7 +26,15 @@
 
 
   const BUILD =
-    "99510";
+    "99530";
+
+
+  const FUEL_KEY =
+    "mana-fuel-v571";
+
+
+  const TARGET_KEY =
+    "mana-fuel-v58-targets";
 
 
   let restoreTimer =
@@ -30,8 +42,79 @@
 
 
   /* =========================================
-     STATE
+     HELPERS
      ========================================= */
+
+  function safeJson(
+    raw,
+    fallback
+  ) {
+
+    try {
+
+      return JSON.parse(
+        raw
+      );
+
+    } catch (_) {
+
+      return fallback;
+
+    }
+
+  }
+
+
+  function todayKey() {
+
+    const date =
+      new Date();
+
+
+    return [
+      date.getFullYear(),
+      String(
+        date.getMonth() + 1
+      ).padStart(
+        2,
+        "0"
+      ),
+      String(
+        date.getDate()
+      ).padStart(
+        2,
+        "0"
+      )
+    ].join(
+      "-"
+    );
+
+  }
+
+
+  function loadFuelStore() {
+
+    return safeJson(
+      localStorage.getItem(
+        FUEL_KEY
+      ) || "{}",
+      {}
+    );
+
+  }
+
+
+  function loadTargets() {
+
+    return safeJson(
+      localStorage.getItem(
+        TARGET_KEY
+      ) || "{}",
+      {}
+    );
+
+  }
+
 
   function programTitle() {
 
@@ -90,6 +173,212 @@
         "fuel"
 
     );
+
+  }
+
+
+  function pct(
+    current,
+    target
+  ) {
+
+    if (
+      !Number(
+        target
+      )
+    ) {
+
+      return 0;
+
+    }
+
+
+    return Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(
+          Number(
+            current || 0
+          )
+          /
+          Number(
+            target
+          )
+          *
+          100
+        )
+      )
+    );
+
+  }
+
+
+  /* =========================================
+     WATER — SAVE WITHOUT FULL RENDER
+     ========================================= */
+
+  function addWaterWithoutRender(
+    amount
+  ) {
+
+    const store =
+      loadFuelStore();
+
+
+    const key =
+      todayKey();
+
+
+    const day =
+      store[key] || {
+        meals:{
+          Breakfast:[],
+          Lunch:[],
+          Dinner:[],
+          Snacks:[]
+        },
+        water:0
+      };
+
+
+    day.water =
+      Number(
+        day.water || 0
+      )
+      +
+      Number(
+        amount || 0
+      );
+
+
+    store[key] =
+      day;
+
+
+    localStorage.setItem(
+      FUEL_KEY,
+      JSON.stringify(
+        store
+      )
+    );
+
+
+    updateWaterDisplay(
+      day.water
+    );
+
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:fuel-updated",
+        {
+          detail:{
+            source:
+              "water",
+            water:
+              day.water
+          }
+        }
+      )
+    );
+
+  }
+
+
+  /* =========================================
+     UPDATE ONLY WATER UI
+     ========================================= */
+
+  function updateWaterDisplay(
+    water
+  ) {
+
+    const root =
+      document.querySelector(
+        "#manaV83Content .mana-v897-root"
+      );
+
+
+    if (!root) {
+
+      return;
+
+    }
+
+
+    const targets =
+      loadTargets();
+
+
+    const target =
+      Number(
+        targets.water || 0
+      );
+
+
+    const stats =
+      [
+        ...root.querySelectorAll(
+          ".mana-v897-stat"
+        )
+      ];
+
+
+    const waterStat =
+      stats.find(
+        stat =>
+          stat
+            .querySelector(
+              ".mana-v897-label"
+            )
+            ?.textContent
+            ?.trim()
+            ?.toLowerCase() ===
+          "water"
+      );
+
+
+    if (!waterStat) {
+
+      return;
+
+    }
+
+
+    const value =
+      waterStat.querySelector(
+        ".mana-v897-value"
+      );
+
+
+    if (value) {
+
+      value.textContent =
+        `${Math.round(
+          Number(
+            water || 0
+          )
+        )} / ${target}ml`;
+
+    }
+
+
+    const fill =
+      waterStat.querySelector(
+        ".mana-v897-fill"
+      );
+
+
+    if (fill) {
+
+      fill.style.width =
+        `${pct(
+          water,
+          target
+        )}%`;
+
+    }
 
   }
 
@@ -167,7 +456,7 @@
 
 
   /* =========================================
-     COMPLETE RESTORE
+     POST MEAL RESTORE
      ========================================= */
 
   function restoreFuelExtras() {
@@ -185,32 +474,33 @@
 
 
     setTimeout(
-      restoreFuelPolish,
-      35
+      () => {
+
+        restoreFuelPolish();
+
+        restoreRecovery();
+
+      },
+      40
     );
 
-
-    /*
-      One bounded second pass catches
-      the shared Fuel renderer finishing.
-    */
 
     setTimeout(
       () => {
 
-        restoreRecovery();
-
         restoreFuelPolish();
 
+        restoreRecovery();
+
       },
-      140
+      150
     );
 
   }
 
 
   function scheduleRestore(
-    delay = 40
+    delay = 50
   ) {
 
     clearTimeout(
@@ -228,35 +518,53 @@
 
 
   /* =========================================
-     FUEL UPDATED EVENT
-     ========================================= */
-
-  function announceFuelUpdated() {
-
-    window.dispatchEvent(
-      new CustomEvent(
-        "mana:fuel-updated",
-        {
-          detail:{
-            source:
-              "meal-change"
-          }
-        }
-      )
-    );
-
-  }
-
-
-  /* =========================================
      EVENTS
      ========================================= */
 
   function wireEvents() {
 
+    /*
+      CAPTURE PHASE.
+
+      We catch Water before the old v8.9
+      button handler can call renderFuel().
+    */
+
     document.addEventListener(
       "click",
       event => {
+
+        const waterButton =
+          event.target.closest(
+            "[data-mana-water]"
+          );
+
+
+        if (
+          waterButton &&
+          strengthFuelOpen()
+        ) {
+
+          event.preventDefault();
+
+          event.stopPropagation();
+
+          event.stopImmediatePropagation();
+
+
+          addWaterWithoutRender(
+            Number(
+              waterButton
+                .dataset
+                .manaWater || 0
+            )
+          );
+
+
+          return;
+
+        }
+
 
         const mealSelected =
           event.target.closest(
@@ -283,19 +591,22 @@
         ) {
 
           /*
-            Let existing Fuel save and redraw,
-            then restore Recovery / layout.
+            Meal system still performs a full
+            Fuel render.
+
+            Restore only the extra Fuel layers
+            afterwards.
           */
 
           setTimeout(
-            () => {
+            restoreFuelExtras,
+            50
+          );
 
-              announceFuelUpdated();
 
-              restoreFuelExtras();
-
-            },
-            35
+          setTimeout(
+            restoreFuelExtras,
+            180
           );
 
 
@@ -330,25 +641,7 @@
         ) {
 
           scheduleRestore(
-            90
-          );
-
-        }
-
-      }
-    );
-
-
-    window.addEventListener(
-      "mana:fuel-updated",
-      () => {
-
-        if (
-          strengthFuelOpen()
-        ) {
-
-          scheduleRestore(
-            60
+            100
           );
 
         }
@@ -401,13 +694,9 @@
       BUILD;
 
 
-    window.refreshManaStrengthFuelExtras =
-      scheduleRestore;
-
-
     console.log(
-      "[Mana v9.95.1] " +
-      "Strength Fuel restore ready"
+      "[Mana v9.95.3] " +
+      "Strength Fuel stable water ready"
     );
 
   }
