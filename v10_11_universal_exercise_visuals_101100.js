@@ -1,14 +1,15 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.11.2
+   MANA MOVEMENT TRAINING v10.11.3
    UNIVERSAL EXERCISE VISUAL SYSTEM
-   ENLARGED PREMIUM MUSCLE ARTWORK
+   ENLARGED DESKTOP + MOBILE MUSCLE ARTWORK
 
-   BUILD: 101120
+   BUILD: 101130
 
    PURPOSE
    -----------------------------------------
    - One premium muscle visual system
    - Larger premium muscle illustrations
+   - Larger phone / tablet artwork
    - One demo layout for every exercise
    - Shared coach + client exercise visuals
    - No one-off JS files for each exercise
@@ -20,10 +21,10 @@
 (() => {
   "use strict";
 
-  const BUILD = "101120";
+  const BUILD = "101130";
 
   const STYLE_ID =
-    "mana-v10112-universal-exercise-visuals-style";
+    "mana-v10113-universal-exercise-visuals-style";
 
   const ROOT =
     "assets/exercises/";
@@ -589,7 +590,7 @@
 
 
       /* =====================================
-         LARGER MASTER ILLUSTRATION
+         MASTER ILLUSTRATION
          ===================================== */
 
       .m10111-image{
@@ -1069,20 +1070,23 @@
 
         .m10111-target{
           grid-template-columns:
-            125px
+            136px
             minmax(0,1fr);
 
           gap:
-            13px;
+            14px;
+
+          padding:
+            11px;
         }
 
 
         .m10111-image{
           width:
-            125px;
+            136px;
 
           height:
-            125px;
+            136px;
         }
 
 
@@ -1105,11 +1109,11 @@
 
         .m10111-target{
           grid-template-columns:
-            108px
+            125px
             minmax(0,1fr);
 
           gap:
-            11px;
+            12px;
 
           padding:
             10px;
@@ -1121,19 +1125,28 @@
 
         .m10111-image{
           width:
-            108px;
+            125px;
 
           height:
-            108px;
+            125px;
 
           border-radius:
-            13px;
+            14px;
         }
 
 
         .m10111-image img{
           border-radius:
-            12px;
+            13px;
+        }
+
+
+        .m10111-kicker{
+          font-size:
+            8px;
+
+          letter-spacing:
+            .12em;
         }
 
 
@@ -1146,6 +1159,9 @@
         .m10111-note{
           font-size:
             9px;
+
+          line-height:
+            1.35;
         }
 
 
@@ -1168,7 +1184,7 @@
 
         .m10111-target{
           grid-template-columns:
-            96px
+            112px
             minmax(0,1fr);
 
           gap:
@@ -1181,22 +1197,79 @@
 
         .m10111-image{
           width:
-            96px;
+            112px;
 
           height:
-            96px;
+            112px;
+
+          border-radius:
+            13px;
+        }
+
+
+        .m10111-image img{
+          border-radius:
+            12px;
         }
 
 
         .m10111-kicker{
           font-size:
-            8px;
+            7px;
+
+          letter-spacing:
+            .10em;
         }
 
 
         .m10111-target-name{
           font-size:
             14px;
+        }
+
+
+        .m10111-note{
+          font-size:
+            8px;
+        }
+
+      }
+
+
+      /* =====================================
+         VERY SMALL PHONE
+         ===================================== */
+
+      @media(
+        max-width:
+        360px
+      ){
+
+        .m10111-target{
+          grid-template-columns:
+            104px
+            minmax(0,1fr);
+
+          gap:
+            9px;
+
+          padding:
+            8px;
+        }
+
+
+        .m10111-image{
+          width:
+            104px;
+
+          height:
+            104px;
+        }
+
+
+        .m10111-target-name{
+          font-size:
+            13px;
         }
 
       }
