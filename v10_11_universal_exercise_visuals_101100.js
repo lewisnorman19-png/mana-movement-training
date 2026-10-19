@@ -1,13 +1,14 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.11.1
+   MANA MOVEMENT TRAINING v10.11.2
    UNIVERSAL EXERCISE VISUAL SYSTEM
-   STABLE CARD + DEMO ENGINE
+   ENLARGED PREMIUM MUSCLE ARTWORK
 
-   BUILD: 101110
+   BUILD: 101120
 
    PURPOSE
    -----------------------------------------
    - One premium muscle visual system
+   - Larger premium muscle illustrations
    - One demo layout for every exercise
    - Shared coach + client exercise visuals
    - No one-off JS files for each exercise
@@ -19,10 +20,10 @@
 (() => {
   "use strict";
 
-  const BUILD = "101110";
+  const BUILD = "101120";
 
   const STYLE_ID =
-    "mana-v10111-universal-exercise-visuals-style";
+    "mana-v10112-universal-exercise-visuals-style";
 
   const ROOT =
     "assets/exercises/";
@@ -547,135 +548,277 @@
 
     style.textContent = `
 
+      /* =====================================
+         PREMIUM MUSCLE TARGET CARD
+         ===================================== */
+
       .m10111-target{
         display:grid;
-        grid-template-columns:110px minmax(0,1fr);
-        gap:14px;
+
+        grid-template-columns:
+          150px
+          minmax(0,1fr);
+
+        gap:16px;
+
         align-items:center;
-        margin:12px 0 14px;
-        padding:11px;
-        border:1px solid #51431c;
-        border-radius:17px;
+
+        margin:
+          12px
+          0
+          16px;
+
+        padding:12px;
+
+        border:
+          1px solid
+          #51431c;
+
+        border-radius:
+          18px;
+
         background:
           linear-gradient(
             145deg,
             #100e08,
             #070707
           );
+
         overflow:hidden;
       }
 
 
+      /* =====================================
+         LARGER MASTER ILLUSTRATION
+         ===================================== */
+
       .m10111-image{
         position:relative;
+
         display:grid;
+
         place-items:center;
-        width:110px;
-        height:120px;
+
+        width:150px;
+
+        height:150px;
+
         overflow:hidden;
-        border:1px solid #302815;
-        border-radius:14px;
+
+        border:
+          1px solid
+          #3b3015;
+
+        border-radius:
+          16px;
+
         background:
           radial-gradient(
             circle,
             rgba(220,179,59,.18),
-            transparent 55%
+            transparent 58%
           ),
           #050505;
+
+        box-shadow:
+          0
+          8px
+          24px
+          rgba(0,0,0,.28);
       }
 
 
       .m10111-image img{
-        width:100%;
-        height:100%;
         display:block;
-        object-fit:contain;
+
+        width:100%;
+
+        height:100%;
+
+        object-fit:cover;
+
+        object-position:center;
+
+        border-radius:
+          15px;
       }
 
 
+      /* =====================================
+         FALLBACK
+         ===================================== */
+
       .m10111-fallback{
         display:none;
+
         place-items:center;
+
         width:100%;
+
         height:100%;
       }
 
 
       .m10111-ring{
         display:grid;
+
         place-items:center;
-        width:72px;
-        height:72px;
+
+        width:82px;
+
+        height:82px;
+
         padding:7px;
-        border:1px solid #896e27;
-        border-radius:50%;
+
+        border:
+          1px solid
+          #896e27;
+
+        border-radius:
+          50%;
+
         background:
           radial-gradient(
             circle,
             rgba(228,185,54,.18),
             transparent 70%
           );
-        color:#e6c75e;
+
+        color:
+          #e6c75e;
+
         text-align:center;
+
         font-size:9px;
+
         line-height:1.15;
+
         font-weight:950;
+
         letter-spacing:.04em;
       }
 
 
+      /* =====================================
+         COPY
+         ===================================== */
+
       .m10111-copy{
         min-width:0;
+
+        padding-right:
+          8px;
       }
 
 
       .m10111-kicker{
-        color:#8d7938;
-        font-size:9px;
-        font-weight:950;
-        letter-spacing:.14em;
+        color:
+          #9a8238;
+
+        font-size:
+          9px;
+
+        font-weight:
+          950;
+
+        letter-spacing:
+          .15em;
+
+        text-transform:
+          uppercase;
       }
 
 
       .m10111-target-name{
         display:block;
-        margin-top:6px;
-        color:#f0cf62;
-        font-size:17px;
-        line-height:1.2;
-        font-weight:950;
+
+        margin-top:
+          7px;
+
+        color:
+          #f0cf62;
+
+        font-size:
+          18px;
+
+        line-height:
+          1.2;
+
+        font-weight:
+          950;
       }
 
 
       .m10111-note{
         display:block;
-        margin-top:6px;
-        color:#777;
-        font-size:10px;
+
+        margin-top:
+          7px;
+
+        color:
+          #777;
+
+        font-size:
+          10px;
+
+        line-height:
+          1.4;
       }
 
+
+      /* =====================================
+         DEMO BUTTON
+         ===================================== */
 
       .m10111-demo-button{
-        border-color:#6b5720 !important;
-        background:#151107 !important;
-        color:#f0cf62 !important;
-        font-weight:950 !important;
+        border-color:
+          #6b5720
+          !important;
+
+        background:
+          #151107
+          !important;
+
+        color:
+          #f0cf62
+          !important;
+
+        font-weight:
+          950
+          !important;
       }
 
+
+      /* =====================================
+         DEMO PLAYER
+         ===================================== */
 
       .m10111-player{
         overflow:hidden;
-        margin-top:8px;
-        border:1px solid #62501e;
-        border-radius:19px;
-        background:#070707;
+
+        margin-top:
+          8px;
+
+        border:
+          1px solid
+          #62501e;
+
+        border-radius:
+          19px;
+
+        background:
+          #070707;
       }
 
 
       .m10111-stage{
         position:relative;
-        height:430px;
+
+        height:
+          430px;
+
         overflow:hidden;
+
         background:
           radial-gradient(
             circle,
@@ -688,12 +831,21 @@
 
       .m10111-frame{
         position:absolute;
+
         inset:0;
+
         width:100%;
+
         height:100%;
+
         object-fit:contain;
+
         opacity:0;
-        transition:opacity .4s ease;
+
+        transition:
+          opacity
+          .4s
+          ease;
       }
 
 
@@ -711,31 +863,58 @@
 
       .m10111-demo-empty{
         position:absolute;
+
         inset:0;
+
         display:grid;
+
         place-items:center;
-        padding:25px;
+
+        padding:
+          25px;
+
         text-align:center;
       }
 
 
       .m10111-demo-circle{
         display:grid;
+
         place-items:center;
-        width:150px;
-        height:150px;
-        margin:0 auto 18px;
-        border:1px solid #725d21;
-        border-radius:50%;
+
+        width:
+          150px;
+
+        height:
+          150px;
+
+        margin:
+          0 auto 18px;
+
+        border:
+          1px solid
+          #725d21;
+
+        border-radius:
+          50%;
+
         background:
           radial-gradient(
             circle,
             rgba(229,188,61,.20),
             transparent 70%
           );
-        color:#e3c259;
-        font-size:45px;
-        transition:transform .5s ease;
+
+        color:
+          #e3c259;
+
+        font-size:
+          45px;
+
+        transition:
+          transform
+          .5s
+          ease;
       }
 
 
@@ -749,91 +928,275 @@
 
       .m10111-demo-empty strong{
         display:block;
-        color:#f0cf62;
-        font-size:14px;
+
+        color:
+          #f0cf62;
+
+        font-size:
+          14px;
       }
 
 
       .m10111-demo-empty span{
         display:block;
-        margin-top:8px;
-        color:#777;
-        font-size:11px;
-        line-height:1.5;
+
+        margin-top:
+          8px;
+
+        color:
+          #777;
+
+        font-size:
+          11px;
+
+        line-height:
+          1.5;
       }
 
 
       .m10111-badge{
         position:absolute;
+
         z-index:5;
-        top:14px;
-        left:14px;
-        padding:8px 13px;
-        border:1px solid #756024;
-        border-radius:999px;
-        background:#121007;
-        color:#efcc5f;
-        font-size:10px;
-        font-weight:950;
+
+        top:
+          14px;
+
+        left:
+          14px;
+
+        padding:
+          8px 13px;
+
+        border:
+          1px solid
+          #756024;
+
+        border-radius:
+          999px;
+
+        background:
+          #121007;
+
+        color:
+          #efcc5f;
+
+        font-size:
+          10px;
+
+        font-weight:
+          950;
       }
 
 
       .m10111-controls{
         display:grid;
-        grid-template-columns:1fr 1fr;
-        gap:9px;
-        padding:12px;
-        border-top:1px solid #221e14;
-        background:#0b0a07;
+
+        grid-template-columns:
+          1fr
+          1fr;
+
+        gap:
+          9px;
+
+        padding:
+          12px;
+
+        border-top:
+          1px solid
+          #221e14;
+
+        background:
+          #0b0a07;
       }
 
 
       .m10111-control{
-        min-height:46px;
-        border:1px solid #66531f;
-        border-radius:12px;
-        background:#171307;
-        color:#f0cf62;
-        font-size:11px;
-        font-weight:950;
+        min-height:
+          46px;
+
+        border:
+          1px solid
+          #66531f;
+
+        border-radius:
+          12px;
+
+        background:
+          #171307;
+
+        color:
+          #f0cf62;
+
+        font-size:
+          11px;
+
+        font-weight:
+          950;
+
         cursor:pointer;
       }
 
 
       .m10111-cue{
-        grid-column:1/-1;
-        padding:5px 8px;
-        color:#bdbdbd;
-        font-size:11px;
-        line-height:1.5;
+        grid-column:
+          1 / -1;
+
+        padding:
+          5px 8px;
+
+        color:
+          #bdbdbd;
+
+        font-size:
+          11px;
+
+        line-height:
+          1.5;
+
         text-align:center;
       }
 
 
-      @media(max-width:600px){
+      /* =====================================
+         TABLET
+         ===================================== */
+
+      @media(
+        max-width:
+        760px
+      ){
 
         .m10111-target{
           grid-template-columns:
-            88px
+            125px
             minmax(0,1fr);
-          gap:10px;
-          padding:9px;
+
+          gap:
+            13px;
         }
 
 
         .m10111-image{
-          width:88px;
-          height:102px;
+          width:
+            125px;
+
+          height:
+            125px;
         }
 
 
         .m10111-target-name{
-          font-size:15px;
+          font-size:
+            16px;
+        }
+
+      }
+
+
+      /* =====================================
+         MOBILE
+         ===================================== */
+
+      @media(
+        max-width:
+        600px
+      ){
+
+        .m10111-target{
+          grid-template-columns:
+            108px
+            minmax(0,1fr);
+
+          gap:
+            11px;
+
+          padding:
+            10px;
+
+          border-radius:
+            16px;
+        }
+
+
+        .m10111-image{
+          width:
+            108px;
+
+          height:
+            108px;
+
+          border-radius:
+            13px;
+        }
+
+
+        .m10111-image img{
+          border-radius:
+            12px;
+        }
+
+
+        .m10111-target-name{
+          font-size:
+            15px;
+        }
+
+
+        .m10111-note{
+          font-size:
+            9px;
         }
 
 
         .m10111-stage{
-          height:370px;
+          height:
+            370px;
+        }
+
+      }
+
+
+      /* =====================================
+         SMALL PHONE
+         ===================================== */
+
+      @media(
+        max-width:
+        420px
+      ){
+
+        .m10111-target{
+          grid-template-columns:
+            96px
+            minmax(0,1fr);
+
+          gap:
+            10px;
+
+          padding:
+            9px;
+        }
+
+
+        .m10111-image{
+          width:
+            96px;
+
+          height:
+            96px;
+        }
+
+
+        .m10111-kicker{
+          font-size:
+            8px;
+        }
+
+
+        .m10111-target-name{
+          font-size:
+            14px;
         }
 
       }
@@ -1069,10 +1432,6 @@
 
   /* =========================================
      REMOVE OLD VISUALS ONLY
-
-     IMPORTANT:
-     We DO NOT remove our own m10111 target.
-     This fixes the disappearing issue.
      ========================================= */
 
   function removeLegacyVisuals(
@@ -1148,11 +1507,6 @@
       );
 
 
-    /*
-      Already correct:
-      LEAVE IT ALONE.
-    */
-
     if (
       existing &&
       existing.dataset.manaExercise ===
@@ -1163,11 +1517,6 @@
 
     }
 
-
-    /*
-      Only replace if the exercise itself
-      has actually changed.
-    */
 
     existing?.remove();
 
@@ -1944,11 +2293,6 @@
 
   /* =========================================
      STABLE OBSERVER
-
-     Only reacts when exercise cards are
-     genuinely added/rebuilt.
-
-     It ignores our own m10111 updates.
      ========================================= */
 
   function startObserver() {
