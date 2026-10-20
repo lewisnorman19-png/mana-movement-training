@@ -1,17 +1,18 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.16.2
+   MANA MOVEMENT TRAINING v10.16.3
    PROFILE ACTIVITY + DESKTOP FUEL FIT
-   + MOBILE WORKOUT COMPATIBILITY
+   + PREMIUM MOBILE WORKOUT SCALE
 
-   BUILD: 101620
+   BUILD: 101630
 
    PURPOSE
    -----------------------------------------
-   1. Restore Daily Activity to Profile
+   1. Keep Daily Activity in Profile
    2. Recalculate Fuel targets on Profile save
-   3. Fix desktop Fuel illustration fit
+   3. Slightly enlarge desktop Fuel artwork
    4. Leave phone Fuel completely untouched
-   5. Keep compact mobile workout arrows
+   5. Make phone exercise illustration larger
+   6. Make Previous / Next compact + centred
 
    IMPORTANT
    -----------------------------------------
@@ -24,16 +25,12 @@
   "use strict";
 
 
-  /* =========================================
-     BUILD
-     ========================================= */
-
   const BUILD =
-    "101620";
+    "101630";
 
 
   const STYLE_ID =
-    "mana-v10162-compatibility-style";
+    "mana-v10163-compatibility-style";
 
 
   const PROFILE_KEY =
@@ -315,11 +312,6 @@
       );
 
 
-    /*
-      Planned training adds a small
-      allowance above normal daily activity.
-    */
-
     const trainingAddition =
       trainingDays * 0.05;
 
@@ -381,10 +373,6 @@
 
     }
 
-
-    /*
-      Mifflin-St Jeor
-    */
 
     const base =
       (
@@ -601,8 +589,7 @@
       /* =====================================
          DESKTOP FUEL ONLY
 
-         Phone Fuel remains completely
-         untouched.
+         Phone Fuel remains untouched.
          ===================================== */
 
       @media(min-width:601px){
@@ -638,13 +625,22 @@
             #050505 !important;
 
           transform:
-            none !important;
+            scale(1.13) !important;
+
+          transform-origin:
+            center center !important;
 
         }
 
 
         #manaV1015Fuel
         .m1015-category-copy{
+
+          position:
+            relative !important;
+
+          z-index:
+            2 !important;
 
           min-height:
             56px !important;
@@ -655,11 +651,17 @@
             8px
             11px !important;
 
+          background:
+            #080808 !important;
+
         }
 
 
         #manaV1015Fuel
         .m1015-category-arrow{
+
+          z-index:
+            3 !important;
 
           right:
             11px !important;
@@ -724,10 +726,271 @@
 
 
       /* =====================================
-         MOBILE WORKOUT ARROWS
+         PHONE — LARGER EXERCISE VISUAL
+
+         v10.12 previously:
+         165px / 150px / 135px
+
+         v10.16.3:
+         180px / 170px / 150px
+         ===================================== */
+
+      @media(max-width:600px){
+
+        #manaV64Exercises
+        .m10111-target{
+
+          grid-template-columns:
+            180px
+            minmax(0,1fr)
+            !important;
+
+          gap:
+            9px
+            !important;
+
+          padding:
+            8px
+            !important;
+
+          margin:
+            8px
+            0
+            10px
+            !important;
+
+          align-items:
+            center
+            !important;
+
+        }
+
+
+        #manaV64Exercises
+        .m10111-image{
+
+          width:
+            180px
+            !important;
+
+          height:
+            180px
+            !important;
+
+          min-width:
+            180px
+            !important;
+
+          min-height:
+            180px
+            !important;
+
+          border-radius:
+            17px
+            !important;
+
+        }
+
+
+        #manaV64Exercises
+        .m10111-image img{
+
+          width:
+            100%
+            !important;
+
+          height:
+            100%
+            !important;
+
+          object-fit:
+            cover
+            !important;
+
+          border-radius:
+            16px
+            !important;
+
+        }
+
+
+        #manaV64Exercises
+        .m10111-copy{
+
+          min-width:
+            0
+            !important;
+
+          padding-right:
+            0
+            !important;
+
+        }
+
+
+        #manaV64Exercises
+        .m10111-target-name{
+
+          font-size:
+            14px
+            !important;
+
+          line-height:
+            1.12
+            !important;
+
+        }
+
+
+        #manaV64Exercises
+        .m10111-kicker{
+
+          font-size:
+            7px
+            !important;
+
+        }
+
+
+        #manaV64Exercises
+        .m10111-note{
+
+          font-size:
+            8px
+            !important;
+
+          line-height:
+            1.25
+            !important;
+
+        }
+
+      }
+
+
+      @media(max-width:420px){
+
+        #manaV64Exercises
+        .m10111-target{
+
+          grid-template-columns:
+            170px
+            minmax(0,1fr)
+            !important;
+
+          gap:
+            8px
+            !important;
+
+          padding:
+            7px
+            !important;
+
+        }
+
+
+        #manaV64Exercises
+        .m10111-image{
+
+          width:
+            170px
+            !important;
+
+          height:
+            170px
+            !important;
+
+          min-width:
+            170px
+            !important;
+
+          min-height:
+            170px
+            !important;
+
+        }
+
+      }
+
+
+      @media(max-width:360px){
+
+        #manaV64Exercises
+        .m10111-target{
+
+          grid-template-columns:
+            150px
+            minmax(0,1fr)
+            !important;
+
+          gap:
+            7px
+            !important;
+
+        }
+
+
+        #manaV64Exercises
+        .m10111-image{
+
+          width:
+            150px
+            !important;
+
+          height:
+            150px
+            !important;
+
+          min-width:
+            150px
+            !important;
+
+          min-height:
+            150px
+            !important;
+
+        }
+
+      }
+
+
+      /* =====================================
+         COMPACT CENTRED WORKOUT NAVIGATION
          ===================================== */
 
       @media(max-width:700px){
+
+        #manaV971BottomNav{
+
+          display:
+            grid !important;
+
+          grid-template-columns:
+            46px
+            46px !important;
+
+          justify-content:
+            center !important;
+
+          align-items:
+            center !important;
+
+          gap:
+            14px !important;
+
+          width:
+            max-content !important;
+
+          max-width:
+            100% !important;
+
+          margin:
+            6px
+            auto
+            2px !important;
+
+        }
+
 
         #manaV971BottomNav
         .mana-v971-nav-btn{
@@ -741,17 +1004,29 @@
           place-items:
             center !important;
 
+          width:
+            46px !important;
+
+          min-width:
+            46px !important;
+
+          max-width:
+            46px !important;
+
           min-height:
-            62px !important;
+            44px !important;
 
           height:
-            62px !important;
+            44px !important;
 
           padding:
             0 !important;
 
           margin:
             0 !important;
+
+          border-radius:
+            12px !important;
 
           overflow:
             hidden !important;
@@ -776,11 +1051,14 @@
           content:
             "←";
 
+          display:
+            block;
+
           color:
             #f3d875;
 
           font-size:
-            37px;
+            27px;
 
           font-weight:
             800;
@@ -796,11 +1074,14 @@
           content:
             "→";
 
+          display:
+            block;
+
           color:
             #f3d875;
 
           font-size:
-            37px;
+            27px;
 
           font-weight:
             800;
@@ -1282,8 +1563,6 @@
 
     /*
       PROFILE OPENING
-
-      Any Profile button can trigger this.
     */
 
     document.addEventListener(
@@ -1326,9 +1605,6 @@
 
     /*
       PROFILE SAVE
-
-      Save Daily Activity BEFORE the
-      master profile save runs.
     */
 
     document.addEventListener(
