@@ -1,8 +1,8 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.12.3
+   MANA MOVEMENT TRAINING v10.12.4
    LEAN MOBILE DEMO + WORKOUT POLISH
 
-   BUILD: 101230
+   BUILD: 101240
 
    PURPOSE
    -----------------------------------------
@@ -12,6 +12,8 @@
    - Larger muscle artwork on phone
    - Handle mobile carousel rebuilds
    - Observe ONLY workout exercise area
+   - Correct LEG CURL mapping to HAMSTRINGS
+   - Correct LEG CURL Demo coaching cues
    - No whole-page observer
    - No repeated Demo opening
    ========================================= */
@@ -20,12 +22,20 @@
   "use strict";
 
 
+  /* =========================================
+     BUILD
+     ========================================= */
+
   const BUILD =
-    "101230";
+    "101240";
 
 
   const STYLE_ID =
-    "mana-v10123-demo-ui-polish-style";
+    "mana-v10124-demo-ui-polish-style";
+
+
+  const ROOT =
+    "assets/exercises/";
 
 
   let observer =
@@ -33,6 +43,10 @@
 
 
   let refreshTimer =
+    null;
+
+
+  let guideTimer =
     null;
 
 
@@ -86,6 +100,46 @@
 
       ""
 
+    );
+
+  }
+
+
+  function isLegCurl(
+    name
+  ) {
+
+    const clean =
+      normalise(
+        name
+      )
+      .toLowerCase();
+
+
+    return (
+
+      clean.includes(
+        "leg curl"
+      ) ||
+
+      clean.includes(
+        "hamstring curl"
+      )
+
+    );
+
+  }
+
+
+  function versionedAsset(
+    filename
+  ) {
+
+    return (
+      ROOT +
+      filename +
+      "?v=" +
+      BUILD
     );
 
   }
@@ -528,6 +582,342 @@
 
 
   /* =========================================
+     LEG CURL CORRECTION
+
+     The universal engine previously matched
+     generic "curl" before reaching Leg Curl.
+
+     Force Leg Curl back to:
+     - Hamstrings
+     - Posterior illustration
+     ========================================= */
+
+  function fixLegCurlCard(
+    card
+  ) {
+
+    if (!card) {
+
+      return;
+
+    }
+
+
+    const name =
+      exerciseNameFromCard(
+        card
+      );
+
+
+    if (
+      !isLegCurl(
+        name
+      )
+    ) {
+
+      return;
+
+    }
+
+
+    const target =
+      card.querySelector(
+        ".m10111-target"
+      );
+
+
+    if (!target) {
+
+      return;
+
+    }
+
+
+    const image =
+      target.querySelector(
+        ".m10111-image img"
+      );
+
+
+    const fallback =
+      target.querySelector(
+        ".m10111-fallback"
+      );
+
+
+    const targetName =
+      target.querySelector(
+        ".m10111-target-name"
+      );
+
+
+    const ring =
+      target.querySelector(
+        ".m10111-ring"
+      );
+
+
+    if (image) {
+
+      const correctSrc =
+        versionedAsset(
+          "muscle-glutes-hamstrings.png"
+        );
+
+
+      if (
+        image.dataset
+          .manaLegCurlFixed !==
+        BUILD
+      ) {
+
+        image.dataset
+          .manaLegCurlFixed =
+          BUILD;
+
+
+        image.alt =
+          "Hamstrings";
+
+
+        image.onload =
+          () => {
+
+            image.style.display =
+              "block";
+
+
+            if (fallback) {
+
+              fallback.style.display =
+                "none";
+
+            }
+
+          };
+
+
+        image.src =
+          correctSrc;
+
+      }
+
+    }
+
+
+    if (
+      targetName
+    ) {
+
+      targetName.textContent =
+        "Hamstrings";
+
+    }
+
+
+    if (
+      ring
+    ) {
+
+      ring.textContent =
+        "HAMSTRINGS";
+
+    }
+
+
+    target.dataset
+      .manaLegCurlCorrected =
+      BUILD;
+
+  }
+
+
+  function fixLegCurlCards(
+    root = document
+  ) {
+
+    root
+      .querySelectorAll(
+        "#manaV64Exercises .mana-v64-card"
+      )
+      .forEach(
+        fixLegCurlCard
+      );
+
+  }
+
+
+  /* =========================================
+     LEG CURL DEMO GUIDE CORRECTION
+     ========================================= */
+
+  function fixLegCurlGuide(
+    name
+  ) {
+
+    if (
+      !isLegCurl(
+        name
+      )
+    ) {
+
+      return;
+
+    }
+
+
+    const modal =
+      document.getElementById(
+        "manaV970FormGuide"
+      );
+
+
+    if (!modal) {
+
+      return;
+
+    }
+
+
+    const subtitle =
+      modal.querySelector(
+        ".m10116-subtitle"
+      );
+
+
+    if (
+      subtitle
+    ) {
+
+      subtitle.textContent =
+        "Hamstrings";
+
+    }
+
+
+    const cueList =
+      modal.querySelector(
+        ".m10116-coaching ul"
+      );
+
+
+    if (
+      cueList
+    ) {
+
+      cueList.innerHTML = `
+
+        <li>
+          Keep the hips and torso stable.
+        </li>
+
+        <li>
+          Curl the heels toward the glutes.
+        </li>
+
+        <li>
+          Squeeze the hamstrings at the top.
+        </li>
+
+        <li>
+          Lower the weight under control.
+        </li>
+
+      `;
+
+    }
+
+
+    const avoid =
+      modal.querySelector(
+        ".m10116-avoid"
+      );
+
+
+    if (
+      avoid
+    ) {
+
+      avoid.innerHTML = `
+
+        <strong>
+          Avoid:
+        </strong>
+
+        Avoid lifting the hips or using momentum
+        to move the weight.
+
+      `;
+
+    }
+
+
+    /*
+      v10.13 removes the duplicate single cue,
+      but update it too in case this runs first.
+    */
+
+    const singleCue =
+      modal.querySelector(
+        ".m10111-cue"
+      );
+
+
+    if (
+      singleCue
+    ) {
+
+      singleCue.textContent =
+        "Curl under control and squeeze the hamstrings.";
+
+    }
+
+  }
+
+
+  function scheduleLegCurlGuideFix(
+    name
+  ) {
+
+    clearTimeout(
+      guideTimer
+    );
+
+
+    /*
+      Universal guide loads the player
+      asynchronously, so perform two very
+      small targeted passes.
+    */
+
+    setTimeout(
+      () => {
+
+        fixLegCurlGuide(
+          name
+        );
+
+      },
+      80
+    );
+
+
+    guideTimer =
+      setTimeout(
+        () => {
+
+          fixLegCurlGuide(
+            name
+          );
+
+        },
+        350
+      );
+
+  }
+
+
+  /* =========================================
      REFRESH CARD UI
      ========================================= */
 
@@ -536,6 +926,8 @@
     renameDemoButtons();
 
     hideOldButtons();
+
+    fixLegCurlCards();
 
   }
 
@@ -583,6 +975,12 @@
         name
       );
 
+
+      scheduleLegCurlGuideFix(
+        name
+      );
+
+
       return;
 
     }
@@ -599,6 +997,11 @@
         .openDemo(
           name
         );
+
+
+      scheduleLegCurlGuideFix(
+        name
+      );
 
     }
 
@@ -894,6 +1297,10 @@
     window.MANA_DEMO_UI_POLISH_BUILD =
       BUILD;
 
+
+    window.MANA_LEG_CURL_MAPPING_BUILD =
+      BUILD;
+
   }
 
 
@@ -916,6 +1323,13 @@
 
     console.log(
       "Mana Mobile Demo Polish",
+      BUILD
+    );
+
+
+    console.log(
+      "Mana Leg Curl Mapping",
+      "Hamstrings",
       BUILD
     );
 
