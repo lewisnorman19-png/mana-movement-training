@@ -1,28 +1,36 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.12.2
-   LEAN DEMO UI BRIDGE
+   MANA MOVEMENT TRAINING v10.12.3
+   LEAN MOBILE DEMO + WORKOUT POLISH
 
-   BUILD: 101220
+   BUILD: 101230
 
    PURPOSE
    -----------------------------------------
    - Rename FORM GUIDE to DEMO
-   - Hide redundant HOW TO PERFORM button
-   - Open premium Demo once only
-   - Larger phone muscle artwork
-   - NO page-wide MutationObserver
-   - NO repeated DOM refresh loop
-   - NO double Demo loading
+   - Permanently hide HOW TO PERFORM
+   - Keep universal premium Demo
+   - Larger muscle artwork on phone
+   - Handle mobile carousel rebuilds
+   - Observe ONLY workout exercise area
+   - No whole-page observer
+   - No repeated Demo opening
    ========================================= */
 
 (() => {
   "use strict";
 
+
   const BUILD =
-    "101220";
+    "101230";
+
 
   const STYLE_ID =
-    "mana-v10122-demo-ui-polish-style";
+    "mana-v10123-demo-ui-polish-style";
+
+
+  let observer =
+    null;
+
 
   let refreshTimer =
     null;
@@ -85,10 +93,6 @@
 
   /* =========================================
      STYLES
-
-     IMPORTANT:
-     Hide old button with CSS.
-     Do NOT continually remove it from DOM.
      ========================================= */
 
   function installStyles() {
@@ -112,23 +116,34 @@
 
     style.textContent = `
 
-      /* OLD REDUNDANT HOW TO PERFORM */
+      /* =====================================
+         REMOVE REDUNDANT OLD BUTTON
+         ===================================== */
 
+      #manaV64Exercises
       .mana-v955-demo-button,
+
+      #manaV64Exercises
       .mana-v957-demo-button{
-        display:none !important;
+
+        display:
+          none
+          !important;
+
       }
 
 
       /* =====================================
-         PHONE MUSCLE ARTWORK
+         PHONE
          ===================================== */
 
       @media(max-width:600px){
 
+        #manaV64Exercises
         .m10111-target{
+
           grid-template-columns:
-            148px
+            165px
             minmax(0,1fr)
             !important;
 
@@ -143,32 +158,95 @@
           align-items:
             center
             !important;
+
+          margin:
+            10px
+            0
+            12px
+            !important;
+
         }
 
 
+        #manaV64Exercises
         .m10111-image{
+
           width:
-            148px
+            165px
             !important;
 
           height:
-            148px
+            165px
+            !important;
+
+          min-width:
+            165px
+            !important;
+
+          min-height:
+            165px
+            !important;
+
+          border-radius:
+            16px
+            !important;
+
+        }
+
+
+        #manaV64Exercises
+        .m10111-image img{
+
+          width:
+            100%
+            !important;
+
+          height:
+            100%
+            !important;
+
+          object-fit:
+            cover
             !important;
 
           border-radius:
             15px
             !important;
+
         }
 
 
-        .m10111-image img{
-          border-radius:
-            14px
+        #manaV64Exercises
+        .m10111-copy{
+
+          min-width:
+            0
             !important;
+
+          padding-right:
+            2px
+            !important;
+
         }
 
 
+        #manaV64Exercises
+        .m10111-kicker{
+
+          font-size:
+            8px
+            !important;
+
+          letter-spacing:
+            .08em
+            !important;
+
+        }
+
+
+        #manaV64Exercises
         .m10111-target-name{
+
           font-size:
             15px
             !important;
@@ -176,34 +254,37 @@
           line-height:
             1.15
             !important;
+
         }
 
 
-        .m10111-kicker{
+        #manaV64Exercises
+        .m10111-note{
+
           font-size:
             8px
             !important;
 
-          letter-spacing:
-            .10em
+          line-height:
+            1.3
             !important;
-        }
 
-
-        .m10111-note{
-          font-size:
-            9px
-            !important;
         }
 
       }
 
 
+      /* =====================================
+         NORMAL SMALL PHONE
+         ===================================== */
+
       @media(max-width:420px){
 
+        #manaV64Exercises
         .m10111-target{
+
           grid-template-columns:
-            132px
+            150px
             minmax(0,1fr)
             !important;
 
@@ -214,61 +295,94 @@
           padding:
             9px
             !important;
+
         }
 
 
+        #manaV64Exercises
         .m10111-image{
+
           width:
-            132px
+            150px
             !important;
 
           height:
-            132px
+            150px
             !important;
+
+          min-width:
+            150px
+            !important;
+
+          min-height:
+            150px
+            !important;
+
         }
 
 
+        #manaV64Exercises
         .m10111-target-name{
+
           font-size:
             14px
             !important;
+
         }
 
 
+        #manaV64Exercises
         .m10111-kicker{
+
           font-size:
             7px
             !important;
-        }
 
-
-        .m10111-note{
-          font-size:
-            8px
-            !important;
         }
 
       }
 
 
+      /* =====================================
+         VERY NARROW PHONE
+         ===================================== */
+
       @media(max-width:360px){
 
+        #manaV64Exercises
         .m10111-target{
+
           grid-template-columns:
-            120px
+            135px
             minmax(0,1fr)
             !important;
+
+          gap:
+            8px
+            !important;
+
         }
 
 
+        #manaV64Exercises
         .m10111-image{
+
           width:
-            120px
+            135px
             !important;
 
           height:
-            120px
+            135px
             !important;
+
+          min-width:
+            135px
+            !important;
+
+          min-height:
+            135px
+            !important;
+
         }
 
       }
@@ -276,40 +390,30 @@
     `;
 
 
-    document
-      .head
-      .appendChild(
-        style
-      );
+    document.head.appendChild(
+      style
+    );
 
   }
 
 
   /* =========================================
-     RENAME FORM GUIDE -> DEMO
-
-     This only touches the actual buttons.
+     RENAME GUIDE BUTTON
      ========================================= */
 
-  function renameDemoButtons() {
+  function renameDemoButtons(
+    root = document
+  ) {
 
-    document
+    root
       .querySelectorAll(
         "[data-v970-guide]"
       )
       .forEach(
         button => {
 
-          if (
-            button.textContent
-              .trim() !==
-            "DEMO"
-          ) {
-
-            button.textContent =
-              "DEMO";
-
-          }
+          button.textContent =
+            "DEMO";
 
 
           button.setAttribute(
@@ -324,13 +428,120 @@
 
 
   /* =========================================
-     LIGHT REFRESH
-
-     One timer only.
+     REMOVE / HIDE OLD HOW TO PERFORM
      ========================================= */
 
+  function hideOldButtons(
+    root = document
+  ) {
+
+    root
+      .querySelectorAll(
+        [
+          ".mana-v955-demo-button",
+          ".mana-v957-demo-button"
+        ].join(",")
+      )
+      .forEach(
+        button => {
+
+          button.style.setProperty(
+            "display",
+            "none",
+            "important"
+          );
+
+
+          button.setAttribute(
+            "aria-hidden",
+            "true"
+          );
+
+
+          button.tabIndex =
+            -1;
+
+        }
+      );
+
+
+    /*
+      Safety for any old button rebuilt
+      without its expected CSS class.
+    */
+
+    root
+      .querySelectorAll(
+        "#manaV64Exercises button"
+      )
+      .forEach(
+        button => {
+
+          const text =
+            normalise(
+              button.textContent
+            )
+            .toUpperCase();
+
+
+          if (
+            text ===
+              "HOW TO PERFORM" ||
+
+            text ===
+              "HOW TO PERFORM →" ||
+
+            text ===
+              "VISUAL DEMO"
+          ) {
+
+            if (
+              !button.hasAttribute(
+                "data-v970-guide"
+              )
+            ) {
+
+              button.style.setProperty(
+                "display",
+                "none",
+                "important"
+              );
+
+
+              button.setAttribute(
+                "aria-hidden",
+                "true"
+              );
+
+
+              button.tabIndex =
+                -1;
+
+            }
+
+          }
+
+        }
+      );
+
+  }
+
+
+  /* =========================================
+     REFRESH CARD UI
+     ========================================= */
+
+  function refreshWorkoutUI() {
+
+    renameDemoButtons();
+
+    hideOldButtons();
+
+  }
+
+
   function scheduleRefresh(
-    delay = 120
+    delay = 50
   ) {
 
     clearTimeout(
@@ -340,7 +551,7 @@
 
     refreshTimer =
       setTimeout(
-        renameDemoButtons,
+        refreshWorkoutUI,
         delay
       );
 
@@ -349,8 +560,6 @@
 
   /* =========================================
      OPEN PREMIUM DEMO
-
-     ONE call only.
      ========================================= */
 
   function openPremiumDemo(
@@ -366,15 +575,13 @@
 
     if (
       typeof
-        window
-          .openManaExerciseGuide ===
+        window.openManaExerciseGuide ===
       "function"
     ) {
 
-      window
-        .openManaExerciseGuide(
-          name
-        );
+      window.openManaExerciseGuide(
+        name
+      );
 
       return;
 
@@ -383,14 +590,12 @@
 
     if (
       typeof
-        window
-          .MANA_EXERCISE_VISUALS
+        window.MANA_EXERCISE_VISUALS
           ?.openDemo ===
       "function"
     ) {
 
-      window
-        .MANA_EXERCISE_VISUALS
+      window.MANA_EXERCISE_VISUALS
         .openDemo(
           name
         );
@@ -401,13 +606,9 @@
 
 
   /* =========================================
-     DEMO BUTTON BRIDGE
+     DEMO BRIDGE
 
-     Let v9.70 perform its normal click once,
-     then replace that guide once.
-
-     No second safety-open.
-     No mutation watcher.
+     ONE universal open only.
      ========================================= */
 
   function bindDemoBridge() {
@@ -419,11 +620,9 @@
       event => {
 
         const button =
-          event
-            .target
-            .closest(
-              "[data-v970-guide]"
-            );
+          event.target.closest(
+            "[data-v970-guide]"
+          );
 
 
         if (!button) {
@@ -434,10 +633,9 @@
 
 
         const card =
-          button
-            .closest(
-              ".mana-v64-card"
-            );
+          button.closest(
+            ".mana-v64-card"
+          );
 
 
         const name =
@@ -454,10 +652,8 @@
 
 
         /*
-          Old guide opens synchronously.
-
-          Replace it once on the next
-          browser task.
+          Let old handler finish,
+          replace it once.
         */
 
         setTimeout(
@@ -479,31 +675,154 @@
 
 
   /* =========================================
-     EVENTS
+     TARGETED MOBILE WORKOUT OBSERVER
 
-     Refresh only when workout navigation
-     genuinely changes.
+     IMPORTANT:
+     We do NOT watch document.body.
+
+     We only watch #manaV64Exercises because
+     v9.71 rebuilds mobile exercise cards there.
+     ========================================= */
+
+  function attachWorkoutObserver() {
+
+    const workout =
+      document.getElementById(
+        "manaV64Exercises"
+      );
+
+
+    if (!workout) {
+
+      return false;
+
+    }
+
+
+    observer?.disconnect();
+
+
+    observer =
+      new MutationObserver(
+        mutations => {
+
+          let needsRefresh =
+            false;
+
+
+          for (
+            const mutation
+            of mutations
+          ) {
+
+            if (
+              mutation.addedNodes.length ||
+              mutation.removedNodes.length
+            ) {
+
+              needsRefresh =
+                true;
+
+              break;
+
+            }
+
+          }
+
+
+          if (
+            needsRefresh
+          ) {
+
+            scheduleRefresh(
+              40
+            );
+
+          }
+
+        }
+      );
+
+
+    observer.observe(
+      workout,
+      {
+
+        childList:
+          true,
+
+        subtree:
+          true
+
+      }
+    );
+
+
+    refreshWorkoutUI();
+
+
+    return true;
+
+  }
+
+
+  /* =========================================
+     WORKOUT ENTRY
+
+     Attach observer only when workout exists.
+     ========================================= */
+
+  function findWorkout() {
+
+    if (
+      attachWorkoutObserver()
+    ) {
+
+      return;
+
+    }
+
+
+    /*
+      Short startup retries only.
+      Stops once workout exists.
+    */
+
+    let attempts =
+      0;
+
+
+    const timer =
+      setInterval(
+        () => {
+
+          attempts +=
+            1;
+
+
+          if (
+            attachWorkoutObserver() ||
+            attempts >= 10
+          ) {
+
+            clearInterval(
+              timer
+            );
+
+          }
+
+        },
+        250
+      );
+
+  }
+
+
+  /* =========================================
+     EVENTS
      ========================================= */
 
   function bindEvents() {
-
-    window.addEventListener(
-      "mana:program-tab-change",
-      () =>
-        scheduleRefresh(
-          120
-        )
-    );
-
-
-    window.addEventListener(
-      "mana:strength-synced",
-      () =>
-        scheduleRefresh(
-          120
-        )
-    );
-
 
     document.addEventListener(
 
@@ -527,14 +846,40 @@
 
         ) {
 
-          scheduleRefresh(
-            180
+          setTimeout(
+            findWorkout,
+            100
           );
 
         }
 
       }
 
+    );
+
+
+    window.addEventListener(
+      "mana:program-tab-change",
+      () => {
+
+        setTimeout(
+          findWorkout,
+          100
+        );
+
+      }
+    );
+
+
+    window.addEventListener(
+      "mana:strength-synced",
+      () => {
+
+        scheduleRefresh(
+          80
+        );
+
+      }
     );
 
   }
@@ -546,8 +891,7 @@
 
   function exposeBuild() {
 
-    window
-      .MANA_DEMO_UI_POLISH_BUILD =
+    window.MANA_DEMO_UI_POLISH_BUILD =
       BUILD;
 
   }
@@ -567,29 +911,11 @@
 
     bindEvents();
 
-
-    renameDemoButtons();
-
-
-    /*
-      Two small startup passes only.
-      No continuous observer.
-    */
-
-    setTimeout(
-      renameDemoButtons,
-      400
-    );
-
-
-    setTimeout(
-      renameDemoButtons,
-      1000
-    );
+    findWorkout();
 
 
     console.log(
-      "Mana Lean Demo UI",
+      "Mana Mobile Demo Polish",
       BUILD
     );
 
