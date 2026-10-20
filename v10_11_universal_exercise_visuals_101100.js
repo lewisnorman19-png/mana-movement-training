@@ -1,41 +1,57 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.11.3
+   MANA MOVEMENT TRAINING v10.11.4
    UNIVERSAL EXERCISE VISUAL SYSTEM
-   ENLARGED DESKTOP + MOBILE MUSCLE ARTWORK
+   ASSET REFRESH + RETRY
 
-   BUILD: 101130
+   BUILD: 101140
 
    PURPOSE
    -----------------------------------------
    - One premium muscle visual system
    - Larger premium muscle illustrations
    - Larger phone / tablet artwork
+   - Fresh image asset versioning
+   - Retry newly deployed muscle images once
    - One demo layout for every exercise
    - Shared coach + client exercise visuals
    - No one-off JS files for each exercise
-   - Stop old illustration duplication
-   - Stop observer refresh loops
    - Keep visuals stable after render
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "101130";
+
+  /* =========================================
+     BUILD
+     ========================================= */
+
+  const BUILD =
+    "101140";
+
 
   const STYLE_ID =
-    "mana-v10113-universal-exercise-visuals-style";
+    "mana-v10114-universal-exercise-visuals-style";
+
 
   const ROOT =
     "assets/exercises/";
 
-  let refreshTimer = null;
 
-  let refreshing = false;
+  let refreshTimer =
+    null;
 
-  let observer = null;
 
-  let activePlayer = null;
+  let refreshing =
+    false;
+
+
+  let observer =
+    null;
+
+
+  let activePlayer =
+    null;
 
 
   /* =========================================
@@ -45,34 +61,44 @@
   const MUSCLE_ASSETS = {
 
     chest:
-      ROOT + "muscle-chest.png",
+      ROOT +
+      "muscle-chest.png",
 
     back:
-      ROOT + "muscle-back.png",
+      ROOT +
+      "muscle-back.png",
 
     shoulders:
-      ROOT + "muscle-shoulders.png",
+      ROOT +
+      "muscle-shoulders.png",
 
     biceps:
-      ROOT + "muscle-biceps.png",
+      ROOT +
+      "muscle-biceps.png",
 
     triceps:
-      ROOT + "muscle-triceps.png",
+      ROOT +
+      "muscle-triceps.png",
 
     core:
-      ROOT + "muscle-core.png",
+      ROOT +
+      "muscle-core.png",
 
     quads:
-      ROOT + "muscle-quads.png",
+      ROOT +
+      "muscle-quads.png",
 
     posterior:
-      ROOT + "muscle-glutes-hamstrings.png",
+      ROOT +
+      "muscle-glutes-hamstrings.png",
 
     calves:
-      ROOT + "muscle-calves.png",
+      ROOT +
+      "muscle-calves.png",
 
     fullbody:
-      ROOT + "muscle-full-body.png"
+      ROOT +
+      "muscle-full-body.png"
 
   };
 
@@ -83,318 +109,592 @@
 
   const EXERCISES = [
 
-    /* CHEST */
+    /* =======================================
+       CHEST
+       ======================================= */
 
     {
-      match:/^bench press$/i,
-      muscle:"chest",
-      target:"Chest + Triceps",
-      demo:ROOT + "bench-press-demo.png",
+      match:
+        /^bench press$/i,
+
+      muscle:
+        "chest",
+
+      target:
+        "Chest + Triceps",
+
+      demo:
+        ROOT +
+        "bench-press-demo.png",
+
       cue:
         "Set your shoulders, lower under control and press strongly through the chest."
     },
 
+
     {
-      match:/incline.*press/i,
-      muscle:"chest",
-      target:"Upper Chest + Triceps",
+      match:
+        /incline.*press/i,
+
+      muscle:
+        "chest",
+
+      target:
+        "Upper Chest + Triceps",
+
       cue:
         "Keep your shoulders set and press smoothly through the upper chest."
     },
 
+
     {
-      match:/chest press/i,
-      muscle:"chest",
-      target:"Chest + Triceps",
+      match:
+        /chest press/i,
+
+      muscle:
+        "chest",
+
+      target:
+        "Chest + Triceps",
+
       cue:
         "Keep your chest lifted and press through a controlled range."
     },
 
+
     {
-      match:/push[\s-]?up/i,
-      muscle:"chest",
-      target:"Chest + Triceps + Core",
+      match:
+        /push[\s-]?up/i,
+
+      muscle:
+        "chest",
+
+      target:
+        "Chest + Triceps + Core",
+
       cue:
         "Keep your body strong and lower the chest under control."
     },
 
+
     {
-      match:/fly|pec deck/i,
-      muscle:"chest",
-      target:"Chest",
+      match:
+        /fly|pec deck/i,
+
+      muscle:
+        "chest",
+
+      target:
+        "Chest",
+
       cue:
         "Keep a soft elbow and bring the arms together using the chest."
     },
 
 
-    /* BACK */
+    /* =======================================
+       BACK
+       ======================================= */
 
     {
-      match:/lat pulldown/i,
-      muscle:"back",
-      target:"Lats + Upper Back",
+      match:
+        /lat pulldown/i,
+
+      muscle:
+        "back",
+
+      target:
+        "Lats + Upper Back",
+
       cue:
         "Keep your chest lifted and drive your elbows toward your sides."
     },
 
+
     {
-      match:/seated.*row/i,
-      muscle:"back",
-      target:"Mid Back + Lats",
+      match:
+        /seated.*row/i,
+
+      muscle:
+        "back",
+
+      target:
+        "Mid Back + Lats",
+
       cue:
         "Stay tall and pull your elbows behind you without swinging."
     },
 
+
     {
-      match:/chest supported.*row/i,
-      muscle:"back",
-      target:"Upper Back + Lats",
+      match:
+        /chest supported.*row/i,
+
+      muscle:
+        "back",
+
+      target:
+        "Upper Back + Lats",
+
       cue:
         "Keep the chest supported and drive the elbows behind you."
     },
 
+
     {
-      match:/dumbbell.*row|single.*arm.*row|one.*arm.*row/i,
-      muscle:"back",
-      target:"Lats + Mid Back",
+      match:
+        /dumbbell.*row|single.*arm.*row|one.*arm.*row/i,
+
+      muscle:
+        "back",
+
+      target:
+        "Lats + Mid Back",
+
       cue:
         "Keep the torso stable and drive the elbow back toward the hip."
     },
 
+
     {
-      match:/barbell.*row|bent.*row/i,
-      muscle:"back",
-      target:"Back + Lats",
+      match:
+        /barbell.*row|bent.*row/i,
+
+      muscle:
+        "back",
+
+      target:
+        "Back + Lats",
+
       cue:
         "Brace your trunk and pull toward the lower ribs."
     },
 
+
     {
-      match:/pull[\s-]?up|chin[\s-]?up/i,
-      muscle:"back",
-      target:"Lats + Upper Back + Arms",
+      match:
+        /pull[\s-]?up|chin[\s-]?up/i,
+
+      muscle:
+        "back",
+
+      target:
+        "Lats + Upper Back + Arms",
+
       cue:
         "Start from a strong shoulder position and pull the chest upward."
     },
 
 
-    /* SHOULDERS */
+    /* =======================================
+       SHOULDERS
+       ======================================= */
 
     {
-      match:/shoulder press|overhead press|military press|arnold press/i,
-      muscle:"shoulders",
-      target:"Shoulders + Triceps",
-      demo:ROOT + "shoulder-press-demo.png",
+      match:
+        /shoulder press|overhead press|military press|arnold press/i,
+
+      muscle:
+        "shoulders",
+
+      target:
+        "Shoulders + Triceps",
+
+      demo:
+        ROOT +
+        "shoulder-press-demo.png",
+
       cue:
         "Brace your core and press overhead with control."
     },
 
+
     {
-      match:/lateral raise|side raise|side lateral/i,
-      muscle:"shoulders",
-      target:"Shoulders — Lateral Deltoids",
-      demo:ROOT + "lateral-raise-demo.png",
+      match:
+        /lateral raise|side raise|side lateral/i,
+
+      muscle:
+        "shoulders",
+
+      target:
+        "Shoulders — Lateral Deltoids",
+
+      demo:
+        ROOT +
+        "lateral-raise-demo.png",
+
       cue:
         "Lift under control to shoulder height and avoid swinging."
     },
 
+
     {
-      match:/front raise/i,
-      muscle:"shoulders",
-      target:"Front Deltoids",
+      match:
+        /front raise/i,
+
+      muscle:
+        "shoulders",
+
+      target:
+        "Front Deltoids",
+
       cue:
         "Lift smoothly without momentum and lower under control."
     },
 
+
     {
-      match:/rear delt|reverse fly|face pull/i,
-      muscle:"shoulders",
-      target:"Rear Delts + Upper Back",
+      match:
+        /rear delt|reverse fly|face pull/i,
+
+      muscle:
+        "shoulders",
+
+      target:
+        "Rear Delts + Upper Back",
+
       cue:
         "Keep the shoulders controlled and move through the rear delts."
     },
 
 
-    /* ARMS */
+    /* =======================================
+       BICEPS
+       ======================================= */
 
     {
-      match:/bicep|biceps|curl/i,
-      muscle:"biceps",
-      target:"Biceps",
+      match:
+        /bicep|biceps|curl/i,
+
+      muscle:
+        "biceps",
+
+      target:
+        "Biceps",
+
       cue:
         "Keep the upper arm stable and curl without swinging."
     },
 
+
+    /* =======================================
+       TRICEPS
+       ======================================= */
+
     {
-      match:/tricep|triceps|pushdown|skull crusher/i,
-      muscle:"triceps",
-      target:"Triceps",
+      match:
+        /tricep|triceps|pushdown|pressdown|skull crusher/i,
+
+      muscle:
+        "triceps",
+
+      target:
+        "Triceps",
+
       cue:
         "Keep the upper arm controlled and extend fully through the elbow."
     },
 
 
-    /* QUADS */
+    /* =======================================
+       QUADS
+       ======================================= */
 
     {
-      match:/^back squat$/i,
-      muscle:"quads",
-      target:"Quadriceps + Glutes",
-      demo:ROOT + "back-squat-demo.png",
+      match:
+        /^back squat$/i,
+
+      muscle:
+        "quads",
+
+      target:
+        "Quadriceps + Glutes",
+
+      demo:
+        ROOT +
+        "back-squat-demo.png",
+
       cue:
         "Brace your core, keep your chest strong and drive through your feet."
     },
 
+
     {
-      match:/front squat/i,
-      muscle:"quads",
-      target:"Quadriceps + Glutes",
+      match:
+        /front squat/i,
+
+      muscle:
+        "quads",
+
+      target:
+        "Quadriceps + Glutes",
+
       cue:
         "Keep your elbows high and torso upright."
     },
 
+
     {
-      match:/goblet squat/i,
-      muscle:"quads",
-      target:"Quadriceps + Glutes",
+      match:
+        /goblet squat/i,
+
+      muscle:
+        "quads",
+
+      target:
+        "Quadriceps + Glutes",
+
       cue:
         "Keep the weight close and sit between the hips."
     },
 
+
     {
-      match:/leg press/i,
-      muscle:"quads",
-      target:"Quadriceps + Glutes",
+      match:
+        /leg press/i,
+
+      muscle:
+        "quads",
+
+      target:
+        "Quadriceps + Glutes",
+
       cue:
         "Control the descent and drive through the whole foot."
     },
 
+
     {
-      match:/leg extension/i,
-      muscle:"quads",
-      target:"Quadriceps",
+      match:
+        /leg extension/i,
+
+      muscle:
+        "quads",
+
+      target:
+        "Quadriceps",
+
       cue:
         "Extend smoothly and squeeze the quadriceps at the top."
     },
 
+
     {
-      match:/split squat|bulgarian|lunge|step[\s-]?up/i,
-      muscle:"quads",
-      target:"Quadriceps + Glutes",
+      match:
+        /split squat|bulgarian|lunge|step[\s-]?up/i,
+
+      muscle:
+        "quads",
+
+      target:
+        "Quadriceps + Glutes",
+
       cue:
         "Stay controlled and keep the knee tracking over the foot."
     },
 
 
-    /* GLUTES + HAMSTRINGS */
+    /* =======================================
+       GLUTES + HAMSTRINGS
+       ======================================= */
 
     {
-      match:/romanian deadlift|rdl/i,
-      muscle:"posterior",
-      target:"Hamstrings + Glutes",
+      match:
+        /romanian deadlift|rdl/i,
+
+      muscle:
+        "posterior",
+
+      target:
+        "Hamstrings + Glutes",
+
       cue:
         "Push the hips back while maintaining a strong neutral spine."
     },
 
+
     {
-      match:/^deadlift$/i,
-      muscle:"posterior",
-      target:"Glutes + Hamstrings + Back",
+      match:
+        /^deadlift$/i,
+
+      muscle:
+        "posterior",
+
+      target:
+        "Glutes + Hamstrings + Back",
+
       cue:
         "Brace strongly, keep the weight close and push the floor away."
     },
 
+
     {
-      match:/hip thrust/i,
-      muscle:"posterior",
-      target:"Glutes",
+      match:
+        /hip thrust/i,
+
+      muscle:
+        "posterior",
+
+      target:
+        "Glutes",
+
       cue:
         "Drive through the heels and finish with a strong glute contraction."
     },
 
+
     {
-      match:/glute bridge/i,
-      muscle:"posterior",
-      target:"Glutes",
+      match:
+        /glute bridge/i,
+
+      muscle:
+        "posterior",
+
+      target:
+        "Glutes",
+
       cue:
         "Drive the hips upward using the glutes."
     },
 
+
     {
-      match:/hamstring curl|leg curl/i,
-      muscle:"posterior",
-      target:"Hamstrings",
+      match:
+        /hamstring curl|leg curl/i,
+
+      muscle:
+        "posterior",
+
+      target:
+        "Hamstrings",
+
       cue:
         "Curl under control and squeeze the hamstrings."
     },
 
 
-    /* CALVES */
+    /* =======================================
+       CALVES
+       ======================================= */
 
     {
-      match:/calf raise|calves/i,
-      muscle:"calves",
-      target:"Calves",
+      match:
+        /calf raise|calves|calf/i,
+
+      muscle:
+        "calves",
+
+      target:
+        "Calves",
+
       cue:
         "Use a full controlled range and pause briefly at the top."
     },
 
 
-    /* CORE */
+    /* =======================================
+       CORE
+       ======================================= */
 
     {
-      match:/plank/i,
-      muscle:"core",
-      target:"Core",
+      match:
+        /plank/i,
+
+      muscle:
+        "core",
+
+      target:
+        "Core",
+
       cue:
         "Brace the trunk and keep the hips level."
     },
 
+
     {
-      match:/dead bug/i,
-      muscle:"core",
-      target:"Core",
+      match:
+        /dead bug/i,
+
+      muscle:
+        "core",
+
+      target:
+        "Core",
+
       cue:
         "Keep the lower back controlled while moving opposite arm and leg."
     },
 
+
     {
-      match:/bird dog/i,
-      muscle:"core",
-      target:"Core + Stability",
+      match:
+        /bird dog/i,
+
+      muscle:
+        "core",
+
+      target:
+        "Core + Stability",
+
       cue:
         "Keep the hips square and reach long through opposite arm and leg."
     },
 
+
     {
-      match:/crunch|sit[\s-]?up/i,
-      muscle:"core",
-      target:"Abdominals",
+      match:
+        /crunch|sit[\s-]?up/i,
+
+      muscle:
+        "core",
+
+      target:
+        "Abdominals",
+
       cue:
         "Move through the abdominals rather than pulling through the neck."
     },
 
+
     {
-      match:/russian twist|pallof/i,
-      muscle:"core",
-      target:"Core + Obliques",
+      match:
+        /russian twist|pallof/i,
+
+      muscle:
+        "core",
+
+      target:
+        "Core + Obliques",
+
       cue:
         "Keep the trunk controlled through the movement."
     },
 
 
-    /* FULL BODY */
+    /* =======================================
+       FULL BODY
+       ======================================= */
 
     {
-      match:/burpee|farmer.*carry|farmer.*walk|sled/i,
-      muscle:"fullbody",
-      target:"Full Body",
+      match:
+        /burpee|farmer.*carry|farmer.*walk|sled|thruster|clean|snatch/i,
+
+      muscle:
+        "fullbody",
+
+      target:
+        "Full Body",
+
       cue:
         "Move with control and maintain strong technique."
     }
 
   ];
 
+
+  /* =========================================
+     DEFAULT
+     ========================================= */
 
   const DEFAULT_EXERCISE = {
 
@@ -429,7 +729,8 @@
   function normalise(value) {
 
     return String(
-      value || ""
+      value ||
+      ""
     )
       .replace(
         /\s+/g,
@@ -492,25 +793,35 @@
 
     const labels = {
 
-      chest:"CHEST",
+      chest:
+        "CHEST",
 
-      back:"BACK",
+      back:
+        "BACK",
 
-      shoulders:"SHOULDERS",
+      shoulders:
+        "SHOULDERS",
 
-      biceps:"BICEPS",
+      biceps:
+        "BICEPS",
 
-      triceps:"TRICEPS",
+      triceps:
+        "TRICEPS",
 
-      core:"CORE",
+      core:
+        "CORE",
 
-      quads:"QUADS",
+      quads:
+        "QUADS",
 
-      posterior:"GLUTES",
+      posterior:
+        "GLUTES",
 
-      calves:"CALVES",
+      calves:
+        "CALVES",
 
-      fullbody:"FULL BODY"
+      fullbody:
+        "FULL BODY"
 
     };
 
@@ -520,6 +831,22 @@
         exercise.muscle
       ] ||
       "FULL BODY"
+    );
+
+  }
+
+
+  function versionedAsset(
+    path,
+    retry = 0
+  ) {
+
+    return (
+      path +
+      "?v=" +
+      BUILD +
+      "&asset=" +
+      retry
     );
 
   }
@@ -549,70 +876,34 @@
 
     style.textContent = `
 
-      /* =====================================
-         PREMIUM MUSCLE TARGET CARD
-         ===================================== */
-
       .m10111-target{
         display:grid;
-
-        grid-template-columns:
-          150px
-          minmax(0,1fr);
-
+        grid-template-columns:150px minmax(0,1fr);
         gap:16px;
-
         align-items:center;
-
-        margin:
-          12px
-          0
-          16px;
-
+        margin:12px 0 16px;
         padding:12px;
-
-        border:
-          1px solid
-          #51431c;
-
-        border-radius:
-          18px;
-
+        border:1px solid #51431c;
+        border-radius:18px;
         background:
           linear-gradient(
             145deg,
             #100e08,
             #070707
           );
-
         overflow:hidden;
       }
 
 
-      /* =====================================
-         MASTER ILLUSTRATION
-         ===================================== */
-
       .m10111-image{
         position:relative;
-
         display:grid;
-
         place-items:center;
-
         width:150px;
-
         height:150px;
-
         overflow:hidden;
-
-        border:
-          1px solid
-          #3b3015;
-
-        border-radius:
-          16px;
-
+        border:1px solid #3b3015;
+        border-radius:16px;
         background:
           radial-gradient(
             circle,
@@ -620,206 +911,108 @@
             transparent 58%
           ),
           #050505;
-
         box-shadow:
-          0
-          8px
-          24px
+          0 8px 24px
           rgba(0,0,0,.28);
       }
 
 
       .m10111-image img{
         display:block;
-
         width:100%;
-
         height:100%;
-
         object-fit:cover;
-
         object-position:center;
-
-        border-radius:
-          15px;
+        border-radius:15px;
       }
 
 
-      /* =====================================
-         FALLBACK
-         ===================================== */
-
       .m10111-fallback{
         display:none;
-
         place-items:center;
-
         width:100%;
-
         height:100%;
       }
 
 
       .m10111-ring{
         display:grid;
-
         place-items:center;
-
         width:82px;
-
         height:82px;
-
         padding:7px;
-
-        border:
-          1px solid
-          #896e27;
-
-        border-radius:
-          50%;
-
+        border:1px solid #896e27;
+        border-radius:50%;
         background:
           radial-gradient(
             circle,
             rgba(228,185,54,.18),
             transparent 70%
           );
-
-        color:
-          #e6c75e;
-
+        color:#e6c75e;
         text-align:center;
-
         font-size:9px;
-
         line-height:1.15;
-
         font-weight:950;
-
         letter-spacing:.04em;
       }
 
 
-      /* =====================================
-         COPY
-         ===================================== */
-
       .m10111-copy{
         min-width:0;
-
-        padding-right:
-          8px;
+        padding-right:8px;
       }
 
 
       .m10111-kicker{
-        color:
-          #9a8238;
-
-        font-size:
-          9px;
-
-        font-weight:
-          950;
-
-        letter-spacing:
-          .15em;
-
-        text-transform:
-          uppercase;
+        color:#9a8238;
+        font-size:9px;
+        font-weight:950;
+        letter-spacing:.15em;
+        text-transform:uppercase;
       }
 
 
       .m10111-target-name{
         display:block;
-
-        margin-top:
-          7px;
-
-        color:
-          #f0cf62;
-
-        font-size:
-          18px;
-
-        line-height:
-          1.2;
-
-        font-weight:
-          950;
+        margin-top:7px;
+        color:#f0cf62;
+        font-size:18px;
+        line-height:1.2;
+        font-weight:950;
       }
 
 
       .m10111-note{
         display:block;
-
-        margin-top:
-          7px;
-
-        color:
-          #777;
-
-        font-size:
-          10px;
-
-        line-height:
-          1.4;
+        margin-top:7px;
+        color:#777;
+        font-size:10px;
+        line-height:1.4;
       }
 
-
-      /* =====================================
-         DEMO BUTTON
-         ===================================== */
 
       .m10111-demo-button{
-        border-color:
-          #6b5720
-          !important;
-
-        background:
-          #151107
-          !important;
-
-        color:
-          #f0cf62
-          !important;
-
-        font-weight:
-          950
-          !important;
+        border-color:#6b5720 !important;
+        background:#151107 !important;
+        color:#f0cf62 !important;
+        font-weight:950 !important;
       }
 
-
-      /* =====================================
-         DEMO PLAYER
-         ===================================== */
 
       .m10111-player{
         overflow:hidden;
-
-        margin-top:
-          8px;
-
-        border:
-          1px solid
-          #62501e;
-
-        border-radius:
-          19px;
-
-        background:
-          #070707;
+        margin-top:8px;
+        border:1px solid #62501e;
+        border-radius:19px;
+        background:#070707;
       }
 
 
       .m10111-stage{
         position:relative;
-
-        height:
-          430px;
-
+        height:430px;
         overflow:hidden;
-
         background:
           radial-gradient(
             circle,
@@ -832,17 +1025,11 @@
 
       .m10111-frame{
         position:absolute;
-
         inset:0;
-
         width:100%;
-
         height:100%;
-
         object-fit:contain;
-
         opacity:0;
-
         transition:
           opacity
           .4s
@@ -864,54 +1051,30 @@
 
       .m10111-demo-empty{
         position:absolute;
-
         inset:0;
-
         display:grid;
-
         place-items:center;
-
-        padding:
-          25px;
-
+        padding:25px;
         text-align:center;
       }
 
 
       .m10111-demo-circle{
         display:grid;
-
         place-items:center;
-
-        width:
-          150px;
-
-        height:
-          150px;
-
-        margin:
-          0 auto 18px;
-
-        border:
-          1px solid
-          #725d21;
-
-        border-radius:
-          50%;
-
+        width:150px;
+        height:150px;
+        margin:0 auto 18px;
+        border:1px solid #725d21;
+        border-radius:50%;
         background:
           radial-gradient(
             circle,
             rgba(229,188,61,.20),
             transparent 70%
           );
-
-        color:
-          #e3c259;
-
-        font-size:
-          45px;
-
+        color:#e3c259;
+        font-size:45px;
         transition:
           transform
           .5s
@@ -929,347 +1092,207 @@
 
       .m10111-demo-empty strong{
         display:block;
-
-        color:
-          #f0cf62;
-
-        font-size:
-          14px;
+        color:#f0cf62;
+        font-size:14px;
       }
 
 
       .m10111-demo-empty span{
         display:block;
-
-        margin-top:
-          8px;
-
-        color:
-          #777;
-
-        font-size:
-          11px;
-
-        line-height:
-          1.5;
+        margin-top:8px;
+        color:#777;
+        font-size:11px;
+        line-height:1.5;
       }
 
 
       .m10111-badge{
         position:absolute;
-
         z-index:5;
-
-        top:
-          14px;
-
-        left:
-          14px;
-
-        padding:
-          8px 13px;
-
-        border:
-          1px solid
-          #756024;
-
-        border-radius:
-          999px;
-
-        background:
-          #121007;
-
-        color:
-          #efcc5f;
-
-        font-size:
-          10px;
-
-        font-weight:
-          950;
+        top:14px;
+        left:14px;
+        padding:8px 13px;
+        border:1px solid #756024;
+        border-radius:999px;
+        background:#121007;
+        color:#efcc5f;
+        font-size:10px;
+        font-weight:950;
       }
 
 
       .m10111-controls{
         display:grid;
-
-        grid-template-columns:
-          1fr
-          1fr;
-
-        gap:
-          9px;
-
-        padding:
-          12px;
-
-        border-top:
-          1px solid
-          #221e14;
-
-        background:
-          #0b0a07;
+        grid-template-columns:1fr 1fr;
+        gap:9px;
+        padding:12px;
+        border-top:1px solid #221e14;
+        background:#0b0a07;
       }
 
 
       .m10111-control{
-        min-height:
-          46px;
-
-        border:
-          1px solid
-          #66531f;
-
-        border-radius:
-          12px;
-
-        background:
-          #171307;
-
-        color:
-          #f0cf62;
-
-        font-size:
-          11px;
-
-        font-weight:
-          950;
-
+        min-height:46px;
+        border:1px solid #66531f;
+        border-radius:12px;
+        background:#171307;
+        color:#f0cf62;
+        font-size:11px;
+        font-weight:950;
         cursor:pointer;
       }
 
 
       .m10111-cue{
-        grid-column:
-          1 / -1;
-
-        padding:
-          5px 8px;
-
-        color:
-          #bdbdbd;
-
-        font-size:
-          11px;
-
-        line-height:
-          1.5;
-
+        grid-column:1 / -1;
+        padding:5px 8px;
+        color:#bdbdbd;
+        font-size:11px;
+        line-height:1.5;
         text-align:center;
       }
 
 
-      /* =====================================
-         TABLET
-         ===================================== */
+      /* TABLET */
 
-      @media(
-        max-width:
-        760px
-      ){
+      @media(max-width:760px){
 
         .m10111-target{
           grid-template-columns:
             136px
             minmax(0,1fr);
-
-          gap:
-            14px;
-
-          padding:
-            11px;
+          gap:14px;
+          padding:11px;
         }
 
 
         .m10111-image{
-          width:
-            136px;
-
-          height:
-            136px;
+          width:136px;
+          height:136px;
         }
 
 
         .m10111-target-name{
-          font-size:
-            16px;
+          font-size:16px;
         }
 
       }
 
 
-      /* =====================================
-         MOBILE
-         ===================================== */
+      /* MOBILE */
 
-      @media(
-        max-width:
-        600px
-      ){
+      @media(max-width:600px){
 
         .m10111-target{
           grid-template-columns:
             125px
             minmax(0,1fr);
-
-          gap:
-            12px;
-
-          padding:
-            10px;
-
-          border-radius:
-            16px;
+          gap:12px;
+          padding:10px;
+          border-radius:16px;
         }
 
 
         .m10111-image{
-          width:
-            125px;
-
-          height:
-            125px;
-
-          border-radius:
-            14px;
+          width:125px;
+          height:125px;
+          border-radius:14px;
         }
 
 
         .m10111-image img{
-          border-radius:
-            13px;
+          border-radius:13px;
         }
 
 
         .m10111-kicker{
-          font-size:
-            8px;
-
-          letter-spacing:
-            .12em;
+          font-size:8px;
+          letter-spacing:.12em;
         }
 
 
         .m10111-target-name{
-          font-size:
-            15px;
+          font-size:15px;
         }
 
 
         .m10111-note{
-          font-size:
-            9px;
-
-          line-height:
-            1.35;
+          font-size:9px;
+          line-height:1.35;
         }
 
 
         .m10111-stage{
-          height:
-            370px;
+          height:370px;
         }
 
       }
 
 
-      /* =====================================
-         SMALL PHONE
-         ===================================== */
+      /* SMALL PHONE */
 
-      @media(
-        max-width:
-        420px
-      ){
+      @media(max-width:420px){
 
         .m10111-target{
           grid-template-columns:
             112px
             minmax(0,1fr);
-
-          gap:
-            10px;
-
-          padding:
-            9px;
+          gap:10px;
+          padding:9px;
         }
 
 
         .m10111-image{
-          width:
-            112px;
-
-          height:
-            112px;
-
-          border-radius:
-            13px;
+          width:112px;
+          height:112px;
+          border-radius:13px;
         }
 
 
         .m10111-image img{
-          border-radius:
-            12px;
+          border-radius:12px;
         }
 
 
         .m10111-kicker{
-          font-size:
-            7px;
-
-          letter-spacing:
-            .10em;
+          font-size:7px;
+          letter-spacing:.10em;
         }
 
 
         .m10111-target-name{
-          font-size:
-            14px;
+          font-size:14px;
         }
 
 
         .m10111-note{
-          font-size:
-            8px;
+          font-size:8px;
         }
 
       }
 
 
-      /* =====================================
-         VERY SMALL PHONE
-         ===================================== */
+      /* VERY SMALL PHONE */
 
-      @media(
-        max-width:
-        360px
-      ){
+      @media(max-width:360px){
 
         .m10111-target{
           grid-template-columns:
             104px
             minmax(0,1fr);
-
-          gap:
-            9px;
-
-          padding:
-            8px;
+          gap:9px;
+          padding:8px;
         }
 
 
         .m10111-image{
-          width:
-            104px;
-
-          height:
-            104px;
+          width:104px;
+          height:104px;
         }
 
 
         .m10111-target-name{
-          font-size:
-            13px;
+          font-size:13px;
         }
 
       }
@@ -1366,12 +1389,14 @@
       exercise.target;
 
 
-    img.src =
+    const asset =
       muscleAsset(
         exercise
-      ) +
-      "?v=" +
-      BUILD;
+      );
+
+
+    let retryCount =
+      0;
 
 
     const fallback =
@@ -1405,26 +1430,72 @@
     );
 
 
-    img.addEventListener(
+    function showFallback() {
 
-      "error",
+      img.style.display =
+        "none";
 
+
+      fallback.style.display =
+        "grid";
+
+    }
+
+
+    img.onload =
       () => {
 
         img.style.display =
-          "none";
+          "block";
 
 
         fallback.style.display =
-          "grid";
+          "none";
 
-      },
+      };
 
-      {
-        once:true
-      }
 
-    );
+    img.onerror =
+      () => {
+
+        if (
+          retryCount <
+          1
+        ) {
+
+          retryCount +=
+            1;
+
+
+          setTimeout(
+            () => {
+
+              img.src =
+                versionedAsset(
+                  asset,
+                  retryCount
+                );
+
+            },
+            1000
+          );
+
+
+          return;
+
+        }
+
+
+        showFallback();
+
+      };
+
+
+    img.src =
+      versionedAsset(
+        asset,
+        0
+      );
 
 
     imageWrap.append(
@@ -1504,7 +1575,7 @@
 
 
   /* =========================================
-     REMOVE OLD VISUALS ONLY
+     REMOVE LEGACY VISUALS
      ========================================= */
 
   function removeLegacyVisuals(
@@ -1707,7 +1778,7 @@
 
 
   /* =========================================
-     SPLIT OLD DEMO IMAGE
+     SPLIT DEMO IMAGE
      ========================================= */
 
   function splitImage(
@@ -1762,9 +1833,11 @@
 
       image,
 
-      side === "start"
+      side ===
+      "start"
         ? 0
-        : width - half,
+        : width -
+          half,
 
       0,
 
@@ -1797,9 +1870,13 @@
     return new Promise(
       resolve => {
 
-        if (!exercise.demo) {
+        if (
+          !exercise.demo
+        ) {
 
-          resolve(null);
+          resolve(
+            null
+          );
 
           return;
 
@@ -1833,7 +1910,9 @@
 
             } catch (_) {
 
-              resolve(null);
+              resolve(
+                null
+              );
 
             }
 
@@ -1842,13 +1921,16 @@
 
         source.onerror =
           () =>
-            resolve(null);
+            resolve(
+              null
+            );
 
 
         source.src =
-          exercise.demo +
-          "?v=" +
-          BUILD;
+          versionedAsset(
+            exercise.demo,
+            0
+          );
 
       }
     );
@@ -1908,6 +1990,11 @@
         frames.start;
 
 
+      start.alt =
+        exercise.name +
+        " starting position";
+
+
       const finish =
         new Image();
 
@@ -1918,6 +2005,11 @@
 
       finish.src =
         frames.finish;
+
+
+      finish.alt =
+        exercise.name +
+        " finishing position";
 
 
       stage.append(
@@ -2071,13 +2163,22 @@
 
     function clearTimers() {
 
-      clearInterval(loop);
+      clearInterval(
+        loop
+      );
 
-      clearTimeout(flip);
 
-      loop = null;
+      clearTimeout(
+        flip
+      );
 
-      flip = null;
+
+      loop =
+        null;
+
+
+      flip =
+        null;
 
     }
 
@@ -2122,7 +2223,9 @@
         setTimeout(
           () => {
 
-            if (playing) {
+            if (
+              playing
+            ) {
 
               setPose(
                 "finish"
@@ -2131,7 +2234,6 @@
             }
 
           },
-
           1500
         );
 
@@ -2140,7 +2242,9 @@
 
     function begin() {
 
-      if (playing) {
+      if (
+        playing
+      ) {
 
         pause();
 
@@ -2178,6 +2282,7 @@
 
         pause();
 
+
         setPose(
           "start"
         );
@@ -2201,7 +2306,7 @@
 
 
   /* =========================================
-     UPDATE EXISTING MODAL
+     UPDATE DEMO MODAL
      ========================================= */
 
   async function updateDemoModal(
@@ -2209,11 +2314,15 @@
   ) {
 
     const modal =
-      $("manaV955DemoModal");
+      $(
+        "manaV955DemoModal"
+      );
 
 
     const demo =
-      $("manaV955Demo");
+      $(
+        "manaV955Demo"
+      );
 
 
     if (
@@ -2233,7 +2342,9 @@
 
 
     const title =
-      $("manaV955Title");
+      $(
+        "manaV955Title"
+      );
 
 
     if (title) {
@@ -2245,7 +2356,9 @@
 
 
     const label =
-      $("manaV955MuscleLabel");
+      $(
+        "manaV955MuscleLabel"
+      );
 
 
     if (label) {
@@ -2268,9 +2381,11 @@
 
 
     if (
-      !modal.classList.contains(
-        "open"
-      )
+      !modal
+        .classList
+        .contains(
+          "open"
+        )
     ) {
 
       return;
@@ -2290,7 +2405,7 @@
 
 
   /* =========================================
-     DEMO BUTTON CLICK
+     DEMO CLICKS
      ========================================= */
 
   function bindClicks() {
@@ -2302,17 +2417,20 @@
       event => {
 
         const button =
-          event.target.closest(
-            ".mana-v955-demo-button,.mana-v957-demo-button,.m10111-demo-button"
-          );
+          event
+            .target
+            .closest(
+              ".mana-v955-demo-button,.mana-v957-demo-button,.m10111-demo-button"
+            );
 
 
         if (button) {
 
           const card =
-            button.closest(
-              ".mana-v64-card"
-            );
+            button
+              .closest(
+                ".mana-v64-card"
+              );
 
 
           const name =
@@ -2346,9 +2464,11 @@
 
 
         if (
-          event.target.closest(
-            '[data-v83-tab="program"]'
-          )
+          event
+            .target
+            .closest(
+              '[data-v83-tab="program"]'
+            )
         ) {
 
           scheduleRefresh(
@@ -2370,14 +2490,17 @@
 
   function startObserver() {
 
-    observer?.disconnect();
+    observer
+      ?.disconnect();
 
 
     observer =
       new MutationObserver(
         mutations => {
 
-          if (refreshing) {
+          if (
+            refreshing
+          ) {
 
             return;
 
@@ -2409,7 +2532,8 @@
 
 
               if (
-                node.classList
+                node
+                  .classList
                   ?.contains(
                     "m10111-target"
                   )
@@ -2422,12 +2546,14 @@
 
               if (
 
-                node.matches
+                node
+                  .matches
                   ?.(
                     ".mana-v64-card"
                   ) ||
 
-                node.querySelector
+                node
+                  .querySelector
                   ?.(
                     ".mana-v64-card"
                   )
@@ -2437,6 +2563,7 @@
                 relevant =
                   true;
 
+
                 break;
 
               }
@@ -2444,7 +2571,9 @@
             }
 
 
-            if (relevant) {
+            if (
+              relevant
+            ) {
 
               break;
 
@@ -2453,7 +2582,9 @@
           }
 
 
-          if (relevant) {
+          if (
+            relevant
+          ) {
 
             scheduleRefresh(
               120
@@ -2468,8 +2599,11 @@
     observer.observe(
       document.body,
       {
-        childList:true,
-        subtree:true
+        childList:
+          true,
+
+        subtree:
+          true
       }
     );
 
@@ -2513,34 +2647,37 @@
 
   function exposeAPI() {
 
-    window.MANA_EXERCISE_VISUALS = {
+    window
+      .MANA_EXERCISE_VISUALS = {
 
-      build:
-        BUILD,
+        build:
+          BUILD,
 
-      resolve:
-        resolveExercise,
+        resolve:
+          resolveExercise,
 
-      refresh:
-        scheduleRefresh,
+        refresh:
+          scheduleRefresh,
 
-      openDemo:
-        updateDemoModal,
+        openDemo:
+          updateDemoModal,
 
-      muscleAssets:
-        MUSCLE_ASSETS,
+        muscleAssets:
+          MUSCLE_ASSETS,
 
-      exercises:
-        EXERCISES
+        exercises:
+          EXERCISES
 
-    };
+      };
 
 
-    window.refreshManaExerciseVisuals =
+    window
+      .refreshManaExerciseVisuals =
       scheduleRefresh;
 
 
-    window.MANA_UNIVERSAL_EXERCISE_VISUAL_BUILD =
+    window
+      .MANA_UNIVERSAL_EXERCISE_VISUAL_BUILD =
       BUILD;
 
   }
@@ -2554,13 +2691,18 @@
 
     installStyles();
 
+
     exposeAPI();
+
 
     bindClicks();
 
+
     bindManaEvents();
 
+
     refreshCards();
+
 
     startObserver();
 
@@ -2577,6 +2719,18 @@
     );
 
 
+    /*
+      One extra delayed pass helps when
+      fresh GitHub Pages assets are still
+      arriving immediately after deploy.
+    */
+
+    setTimeout(
+      refreshCards,
+      2200
+    );
+
+
     console.log(
       "Mana Universal Exercise Visuals",
       BUILD
@@ -2585,17 +2739,26 @@
   }
 
 
+  /* =========================================
+     BOOT
+     ========================================= */
+
   if (
     document.readyState ===
     "loading"
   ) {
 
     document.addEventListener(
+
       "DOMContentLoaded",
+
       init,
+
       {
-        once:true
+        once:
+          true
       }
+
     );
 
   } else {
