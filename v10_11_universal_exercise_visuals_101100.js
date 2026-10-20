@@ -1,21 +1,37 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.11.4
-   UNIVERSAL EXERCISE VISUAL SYSTEM
-   ASSET REFRESH + RETRY
+   MANA MOVEMENT TRAINING v10.11.5
+   UNIVERSAL EXERCISE VISUAL + DEMO SYSTEM
 
-   BUILD: 101140
+   BUILD: 101150
 
    PURPOSE
    -----------------------------------------
-   - One premium muscle visual system
-   - Larger premium muscle illustrations
-   - Larger phone / tablet artwork
-   - Fresh image asset versioning
-   - Retry newly deployed muscle images once
-   - One demo layout for every exercise
-   - Shared coach + client exercise visuals
-   - No one-off JS files for each exercise
-   - Keep visuals stable after render
+   - One premium muscle illustration system
+   - One universal exercise demo player
+   - Automatic demo filenames from exercise names
+   - Same system for coach + client
+   - No separate demo JS files per exercise
+   - Fresh asset versioning
+   - Retry newly deployed assets once
+   - Clean fallback if demo image does not exist
+
+   DEMO FILE FORMAT
+   -----------------------------------------
+   Exercise:
+   Biceps Curl
+
+   Automatically looks for:
+   assets/exercises/biceps-curl-demo.png
+
+   Exercise:
+   Romanian Deadlift
+
+   Automatically looks for:
+   assets/exercises/romanian-deadlift-demo.png
+
+   Each demo PNG should contain:
+   START pose on LEFT
+   FINISH pose on RIGHT
    ========================================= */
 
 (() => {
@@ -27,11 +43,11 @@
      ========================================= */
 
   const BUILD =
-    "101140";
+    "101150";
 
 
   const STYLE_ID =
-    "mana-v10114-universal-exercise-visuals-style";
+    "mana-v10115-universal-exercise-style";
 
 
   const ROOT =
@@ -105,586 +121,319 @@
 
   /* =========================================
      EXERCISE DATABASE
+
+     Only target muscle + cue live here now.
+
+     Demo file is generated automatically.
      ========================================= */
 
   const EXERCISES = [
 
-    /* =======================================
-       CHEST
-       ======================================= */
+    /* CHEST */
 
     {
-      match:
-        /^bench press$/i,
-
-      muscle:
-        "chest",
-
-      target:
-        "Chest + Triceps",
-
-      demo:
-        ROOT +
-        "bench-press-demo.png",
-
+      match:/^bench press$/i,
+      muscle:"chest",
+      target:"Chest + Triceps",
       cue:
         "Set your shoulders, lower under control and press strongly through the chest."
     },
 
-
     {
-      match:
-        /incline.*press/i,
-
-      muscle:
-        "chest",
-
-      target:
-        "Upper Chest + Triceps",
-
+      match:/incline.*press/i,
+      muscle:"chest",
+      target:"Upper Chest + Triceps",
       cue:
         "Keep your shoulders set and press smoothly through the upper chest."
     },
 
-
     {
-      match:
-        /chest press/i,
-
-      muscle:
-        "chest",
-
-      target:
-        "Chest + Triceps",
-
+      match:/chest press/i,
+      muscle:"chest",
+      target:"Chest + Triceps",
       cue:
         "Keep your chest lifted and press through a controlled range."
     },
 
-
     {
-      match:
-        /push[\s-]?up/i,
-
-      muscle:
-        "chest",
-
-      target:
-        "Chest + Triceps + Core",
-
+      match:/push[\s-]?up/i,
+      muscle:"chest",
+      target:"Chest + Triceps + Core",
       cue:
         "Keep your body strong and lower the chest under control."
     },
 
-
     {
-      match:
-        /fly|pec deck/i,
-
-      muscle:
-        "chest",
-
-      target:
-        "Chest",
-
+      match:/fly|pec deck/i,
+      muscle:"chest",
+      target:"Chest",
       cue:
         "Keep a soft elbow and bring the arms together using the chest."
     },
 
 
-    /* =======================================
-       BACK
-       ======================================= */
+    /* BACK */
 
     {
-      match:
-        /lat pulldown/i,
-
-      muscle:
-        "back",
-
-      target:
-        "Lats + Upper Back",
-
+      match:/lat pulldown/i,
+      muscle:"back",
+      target:"Lats + Upper Back",
       cue:
         "Keep your chest lifted and drive your elbows toward your sides."
     },
 
-
     {
-      match:
-        /seated.*row/i,
-
-      muscle:
-        "back",
-
-      target:
-        "Mid Back + Lats",
-
+      match:/seated.*row/i,
+      muscle:"back",
+      target:"Mid Back + Lats",
       cue:
         "Stay tall and pull your elbows behind you without swinging."
     },
 
-
     {
-      match:
-        /chest supported.*row/i,
-
-      muscle:
-        "back",
-
-      target:
-        "Upper Back + Lats",
-
+      match:/chest supported.*row/i,
+      muscle:"back",
+      target:"Upper Back + Lats",
       cue:
         "Keep the chest supported and drive the elbows behind you."
     },
 
-
     {
-      match:
-        /dumbbell.*row|single.*arm.*row|one.*arm.*row/i,
-
-      muscle:
-        "back",
-
-      target:
-        "Lats + Mid Back",
-
+      match:/dumbbell.*row|single.*arm.*row|one.*arm.*row/i,
+      muscle:"back",
+      target:"Lats + Mid Back",
       cue:
         "Keep the torso stable and drive the elbow back toward the hip."
     },
 
-
     {
-      match:
-        /barbell.*row|bent.*row/i,
-
-      muscle:
-        "back",
-
-      target:
-        "Back + Lats",
-
+      match:/barbell.*row|bent.*row/i,
+      muscle:"back",
+      target:"Back + Lats",
       cue:
         "Brace your trunk and pull toward the lower ribs."
     },
 
-
     {
-      match:
-        /pull[\s-]?up|chin[\s-]?up/i,
-
-      muscle:
-        "back",
-
-      target:
-        "Lats + Upper Back + Arms",
-
+      match:/pull[\s-]?up|chin[\s-]?up/i,
+      muscle:"back",
+      target:"Lats + Upper Back + Arms",
       cue:
         "Start from a strong shoulder position and pull the chest upward."
     },
 
 
-    /* =======================================
-       SHOULDERS
-       ======================================= */
+    /* SHOULDERS */
 
     {
-      match:
-        /shoulder press|overhead press|military press|arnold press/i,
-
-      muscle:
-        "shoulders",
-
-      target:
-        "Shoulders + Triceps",
-
-      demo:
-        ROOT +
-        "shoulder-press-demo.png",
-
+      match:/shoulder press|overhead press|military press|arnold press/i,
+      muscle:"shoulders",
+      target:"Shoulders + Triceps",
       cue:
         "Brace your core and press overhead with control."
     },
 
-
     {
-      match:
-        /lateral raise|side raise|side lateral/i,
-
-      muscle:
-        "shoulders",
-
-      target:
-        "Shoulders — Lateral Deltoids",
-
-      demo:
-        ROOT +
-        "lateral-raise-demo.png",
-
+      match:/lateral raise|side raise|side lateral/i,
+      muscle:"shoulders",
+      target:"Shoulders — Lateral Deltoids",
       cue:
         "Lift under control to shoulder height and avoid swinging."
     },
 
-
     {
-      match:
-        /front raise/i,
-
-      muscle:
-        "shoulders",
-
-      target:
-        "Front Deltoids",
-
+      match:/front raise/i,
+      muscle:"shoulders",
+      target:"Front Deltoids",
       cue:
         "Lift smoothly without momentum and lower under control."
     },
 
-
     {
-      match:
-        /rear delt|reverse fly|face pull/i,
-
-      muscle:
-        "shoulders",
-
-      target:
-        "Rear Delts + Upper Back",
-
+      match:/rear delt|reverse fly|face pull/i,
+      muscle:"shoulders",
+      target:"Rear Delts + Upper Back",
       cue:
         "Keep the shoulders controlled and move through the rear delts."
     },
 
 
-    /* =======================================
-       BICEPS
-       ======================================= */
+    /* BICEPS */
 
     {
-      match:
-        /bicep|biceps|curl/i,
-
-      muscle:
-        "biceps",
-
-      target:
-        "Biceps",
-
+      match:/bicep|biceps|curl/i,
+      muscle:"biceps",
+      target:"Biceps",
       cue:
         "Keep the upper arm stable and curl without swinging."
     },
 
 
-    /* =======================================
-       TRICEPS
-       ======================================= */
+    /* TRICEPS */
 
     {
-      match:
-        /tricep|triceps|pushdown|pressdown|skull crusher/i,
-
-      muscle:
-        "triceps",
-
-      target:
-        "Triceps",
-
+      match:/tricep|triceps|pushdown|pressdown|skull crusher/i,
+      muscle:"triceps",
+      target:"Triceps",
       cue:
         "Keep the upper arm controlled and extend fully through the elbow."
     },
 
 
-    /* =======================================
-       QUADS
-       ======================================= */
+    /* QUADS */
 
     {
-      match:
-        /^back squat$/i,
-
-      muscle:
-        "quads",
-
-      target:
-        "Quadriceps + Glutes",
-
-      demo:
-        ROOT +
-        "back-squat-demo.png",
-
+      match:/^back squat$/i,
+      muscle:"quads",
+      target:"Quadriceps + Glutes",
       cue:
         "Brace your core, keep your chest strong and drive through your feet."
     },
 
-
     {
-      match:
-        /front squat/i,
-
-      muscle:
-        "quads",
-
-      target:
-        "Quadriceps + Glutes",
-
+      match:/front squat/i,
+      muscle:"quads",
+      target:"Quadriceps + Glutes",
       cue:
         "Keep your elbows high and torso upright."
     },
 
-
     {
-      match:
-        /goblet squat/i,
-
-      muscle:
-        "quads",
-
-      target:
-        "Quadriceps + Glutes",
-
+      match:/goblet squat/i,
+      muscle:"quads",
+      target:"Quadriceps + Glutes",
       cue:
         "Keep the weight close and sit between the hips."
     },
 
-
     {
-      match:
-        /leg press/i,
-
-      muscle:
-        "quads",
-
-      target:
-        "Quadriceps + Glutes",
-
+      match:/leg press/i,
+      muscle:"quads",
+      target:"Quadriceps + Glutes",
       cue:
         "Control the descent and drive through the whole foot."
     },
 
-
     {
-      match:
-        /leg extension/i,
-
-      muscle:
-        "quads",
-
-      target:
-        "Quadriceps",
-
+      match:/leg extension/i,
+      muscle:"quads",
+      target:"Quadriceps",
       cue:
         "Extend smoothly and squeeze the quadriceps at the top."
     },
 
-
     {
-      match:
-        /split squat|bulgarian|lunge|step[\s-]?up/i,
-
-      muscle:
-        "quads",
-
-      target:
-        "Quadriceps + Glutes",
-
+      match:/split squat|bulgarian|lunge|step[\s-]?up/i,
+      muscle:"quads",
+      target:"Quadriceps + Glutes",
       cue:
         "Stay controlled and keep the knee tracking over the foot."
     },
 
 
-    /* =======================================
-       GLUTES + HAMSTRINGS
-       ======================================= */
+    /* GLUTES + HAMSTRINGS */
 
     {
-      match:
-        /romanian deadlift|rdl/i,
-
-      muscle:
-        "posterior",
-
-      target:
-        "Hamstrings + Glutes",
-
+      match:/romanian deadlift|rdl/i,
+      muscle:"posterior",
+      target:"Hamstrings + Glutes",
       cue:
         "Push the hips back while maintaining a strong neutral spine."
     },
 
-
     {
-      match:
-        /^deadlift$/i,
-
-      muscle:
-        "posterior",
-
-      target:
-        "Glutes + Hamstrings + Back",
-
+      match:/^deadlift$/i,
+      muscle:"posterior",
+      target:"Glutes + Hamstrings + Back",
       cue:
         "Brace strongly, keep the weight close and push the floor away."
     },
 
-
     {
-      match:
-        /hip thrust/i,
-
-      muscle:
-        "posterior",
-
-      target:
-        "Glutes",
-
+      match:/hip thrust/i,
+      muscle:"posterior",
+      target:"Glutes",
       cue:
         "Drive through the heels and finish with a strong glute contraction."
     },
 
-
     {
-      match:
-        /glute bridge/i,
-
-      muscle:
-        "posterior",
-
-      target:
-        "Glutes",
-
+      match:/glute bridge/i,
+      muscle:"posterior",
+      target:"Glutes",
       cue:
         "Drive the hips upward using the glutes."
     },
 
-
     {
-      match:
-        /hamstring curl|leg curl/i,
-
-      muscle:
-        "posterior",
-
-      target:
-        "Hamstrings",
-
+      match:/hamstring curl|leg curl/i,
+      muscle:"posterior",
+      target:"Hamstrings",
       cue:
         "Curl under control and squeeze the hamstrings."
     },
 
 
-    /* =======================================
-       CALVES
-       ======================================= */
+    /* CALVES */
 
     {
-      match:
-        /calf raise|calves|calf/i,
-
-      muscle:
-        "calves",
-
-      target:
-        "Calves",
-
+      match:/calf raise|calves|calf/i,
+      muscle:"calves",
+      target:"Calves",
       cue:
         "Use a full controlled range and pause briefly at the top."
     },
 
 
-    /* =======================================
-       CORE
-       ======================================= */
+    /* CORE */
 
     {
-      match:
-        /plank/i,
-
-      muscle:
-        "core",
-
-      target:
-        "Core",
-
+      match:/plank/i,
+      muscle:"core",
+      target:"Core",
       cue:
         "Brace the trunk and keep the hips level."
     },
 
-
     {
-      match:
-        /dead bug/i,
-
-      muscle:
-        "core",
-
-      target:
-        "Core",
-
+      match:/dead bug/i,
+      muscle:"core",
+      target:"Core",
       cue:
         "Keep the lower back controlled while moving opposite arm and leg."
     },
 
-
     {
-      match:
-        /bird dog/i,
-
-      muscle:
-        "core",
-
-      target:
-        "Core + Stability",
-
+      match:/bird dog/i,
+      muscle:"core",
+      target:"Core + Stability",
       cue:
         "Keep the hips square and reach long through opposite arm and leg."
     },
 
-
     {
-      match:
-        /crunch|sit[\s-]?up/i,
-
-      muscle:
-        "core",
-
-      target:
-        "Abdominals",
-
+      match:/crunch|sit[\s-]?up/i,
+      muscle:"core",
+      target:"Abdominals",
       cue:
         "Move through the abdominals rather than pulling through the neck."
     },
 
-
     {
-      match:
-        /russian twist|pallof/i,
-
-      muscle:
-        "core",
-
-      target:
-        "Core + Obliques",
-
+      match:/russian twist|pallof/i,
+      muscle:"core",
+      target:"Core + Obliques",
       cue:
         "Keep the trunk controlled through the movement."
     },
 
 
-    /* =======================================
-       FULL BODY
-       ======================================= */
+    /* FULL BODY */
 
     {
-      match:
-        /burpee|farmer.*carry|farmer.*walk|sled|thruster|clean|snatch/i,
-
-      muscle:
-        "fullbody",
-
-      target:
-        "Full Body",
-
+      match:/burpee|farmer.*carry|farmer.*walk|sled|thruster|clean|snatch/i,
+      muscle:"fullbody",
+      target:"Full Body",
       cue:
         "Move with control and maintain strong technique."
     }
@@ -705,10 +454,7 @@
       "Full Body",
 
     cue:
-      "Move with control and maintain strong technique.",
-
-    demo:
-      null
+      "Move with control and maintain strong technique."
 
   };
 
@@ -741,7 +487,57 @@
   }
 
 
-  function resolveExercise(name) {
+  function slugify(value) {
+
+    return normalise(
+      value
+    )
+      .toLowerCase()
+      .replace(
+        /&/g,
+        "and"
+      )
+      .replace(
+        /[^a-z0-9]+/g,
+        "-"
+      )
+      .replace(
+        /^-+|-+$/g,
+        ""
+      );
+
+  }
+
+
+  function demoAssetFromName(
+    name
+  ) {
+
+    const slug =
+      slugify(
+        name
+      );
+
+
+    if (!slug) {
+
+      return null;
+
+    }
+
+
+    return (
+      ROOT +
+      slug +
+      "-demo.png"
+    );
+
+  }
+
+
+  function resolveExercise(
+    name
+  ) {
 
     const clean =
       normalise(
@@ -758,7 +554,7 @@
       );
 
 
-    return {
+    const exercise = {
 
       ...DEFAULT_EXERCISE,
 
@@ -769,6 +565,15 @@
         "Exercise"
 
     };
+
+
+    exercise.demo =
+      demoAssetFromName(
+        exercise.name
+      );
+
+
+    return exercise;
 
   }
 
@@ -912,8 +717,7 @@
           ),
           #050505;
         box-shadow:
-          0 8px 24px
-          rgba(0,0,0,.28);
+          0 8px 24px rgba(0,0,0,.28);
       }
 
 
@@ -1030,10 +834,7 @@
         height:100%;
         object-fit:contain;
         opacity:0;
-        transition:
-          opacity
-          .4s
-          ease;
+        transition:opacity .4s ease;
       }
 
 
@@ -1075,10 +876,7 @@
           );
         color:#e3c259;
         font-size:45px;
-        transition:
-          transform
-          .5s
-          ease;
+        transition:transform .5s ease;
       }
 
 
@@ -1153,8 +951,6 @@
       }
 
 
-      /* TABLET */
-
       @media(max-width:760px){
 
         .m10111-target{
@@ -1165,12 +961,10 @@
           padding:11px;
         }
 
-
         .m10111-image{
           width:136px;
           height:136px;
         }
-
 
         .m10111-target-name{
           font-size:16px;
@@ -1178,8 +972,6 @@
 
       }
 
-
-      /* MOBILE */
 
       @media(max-width:600px){
 
@@ -1192,35 +984,29 @@
           border-radius:16px;
         }
 
-
         .m10111-image{
           width:125px;
           height:125px;
           border-radius:14px;
         }
 
-
         .m10111-image img{
           border-radius:13px;
         }
-
 
         .m10111-kicker{
           font-size:8px;
           letter-spacing:.12em;
         }
 
-
         .m10111-target-name{
           font-size:15px;
         }
-
 
         .m10111-note{
           font-size:9px;
           line-height:1.35;
         }
-
 
         .m10111-stage{
           height:370px;
@@ -1228,8 +1014,6 @@
 
       }
 
-
-      /* SMALL PHONE */
 
       @media(max-width:420px){
 
@@ -1241,29 +1025,24 @@
           padding:9px;
         }
 
-
         .m10111-image{
           width:112px;
           height:112px;
           border-radius:13px;
         }
 
-
         .m10111-image img{
           border-radius:12px;
         }
-
 
         .m10111-kicker{
           font-size:7px;
           letter-spacing:.10em;
         }
 
-
         .m10111-target-name{
           font-size:14px;
         }
-
 
         .m10111-note{
           font-size:8px;
@@ -1271,8 +1050,6 @@
 
       }
 
-
-      /* VERY SMALL PHONE */
 
       @media(max-width:360px){
 
@@ -1284,12 +1061,10 @@
           padding:8px;
         }
 
-
         .m10111-image{
           width:104px;
           height:104px;
         }
-
 
         .m10111-target-name{
           font-size:13px;
@@ -1779,6 +1554,10 @@
 
   /* =========================================
      SPLIT DEMO IMAGE
+
+     Demo file:
+     LEFT  = START
+     RIGHT = FINISH
      ========================================= */
 
   function splitImage(
@@ -1863,6 +1642,12 @@
   }
 
 
+  /* =========================================
+     LOAD DEMO
+
+     Automatic filename lookup.
+     ========================================= */
+
   function loadDemo(
     exercise
   ) {
@@ -1885,6 +1670,10 @@
 
         const source =
           new Image();
+
+
+        let retryCount =
+          0;
 
 
         source.onload =
@@ -1920,10 +1709,41 @@
 
 
         source.onerror =
-          () =>
+          () => {
+
+            if (
+              retryCount <
+              1
+            ) {
+
+              retryCount +=
+                1;
+
+
+              setTimeout(
+                () => {
+
+                  source.src =
+                    versionedAsset(
+                      exercise.demo,
+                      retryCount
+                    );
+
+                },
+                700
+              );
+
+
+              return;
+
+            }
+
+
             resolve(
               null
             );
+
+          };
 
 
         source.src =
@@ -1964,6 +1784,10 @@
 
     player.dataset.pose =
       "start";
+
+
+    player.dataset.exercise =
+      exercise.name;
 
 
     const stage =
@@ -2038,7 +1862,7 @@
           </div>
 
           <strong>
-            CONTROLLED MOVEMENT
+            DEMO COMING SOON
           </strong>
 
           <span>
@@ -2666,7 +2490,13 @@
           MUSCLE_ASSETS,
 
         exercises:
-          EXERCISES
+          EXERCISES,
+
+        demoAssetFromName:
+          demoAssetFromName,
+
+        slugify:
+          slugify
 
       };
 
@@ -2719,12 +2549,6 @@
     );
 
 
-    /*
-      One extra delayed pass helps when
-      fresh GitHub Pages assets are still
-      arriving immediately after deploy.
-    */
-
     setTimeout(
       refreshCards,
       2200
@@ -2732,7 +2556,7 @@
 
 
     console.log(
-      "Mana Universal Exercise Visuals",
+      "Mana Universal Exercise Visual + Demo System",
       BUILD
     );
 
