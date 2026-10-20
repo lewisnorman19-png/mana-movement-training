@@ -1,37 +1,34 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.11.5
-   UNIVERSAL EXERCISE VISUAL + DEMO SYSTEM
+   MANA MOVEMENT TRAINING v10.11.6
+   UNIVERSAL EXERCISE VISUAL + FORM GUIDE
 
-   BUILD: 101150
+   BUILD: 101160
 
    PURPOSE
    -----------------------------------------
-   - One premium muscle illustration system
-   - One universal exercise demo player
-   - Automatic demo filenames from exercise names
-   - Same system for coach + client
-   - No separate demo JS files per exercise
-   - Fresh asset versioning
-   - Retry newly deployed assets once
-   - Clean fallback if demo image does not exist
+   - One muscle illustration system
+   - One universal Form Guide
+   - Premium START / FINISH exercise demos
+   - Automatic demo filenames
+   - FORM GUIDE opens the premium demo
+   - Key cues + avoid guidance remain
+   - Coach + client share same exercise system
+   - No individual JS file per exercise
 
-   DEMO FILE FORMAT
+   DEMO FILE NAMING
    -----------------------------------------
-   Exercise:
    Biceps Curl
+   -> assets/exercises/biceps-curl-demo.png
 
-   Automatically looks for:
-   assets/exercises/biceps-curl-demo.png
+   Triceps Pressdown
+   -> assets/exercises/triceps-pressdown-demo.png
 
-   Exercise:
    Romanian Deadlift
+   -> assets/exercises/romanian-deadlift-demo.png
 
-   Automatically looks for:
-   assets/exercises/romanian-deadlift-demo.png
-
-   Each demo PNG should contain:
-   START pose on LEFT
-   FINISH pose on RIGHT
+   Demo PNG format:
+   LEFT  = START
+   RIGHT = FINISH
    ========================================= */
 
 (() => {
@@ -43,15 +40,19 @@
      ========================================= */
 
   const BUILD =
-    "101150";
+    "101160";
 
 
   const STYLE_ID =
-    "mana-v10115-universal-exercise-style";
+    "mana-v10116-universal-exercise-style";
 
 
   const ROOT =
     "assets/exercises/";
+
+
+  const GUIDE_ID =
+    "manaV970FormGuide";
 
 
   let refreshTimer =
@@ -71,7 +72,7 @@
 
 
   /* =========================================
-     MASTER MUSCLE IMAGES
+     MASTER MUSCLE ASSETS
      ========================================= */
 
   const MUSCLE_ASSETS = {
@@ -120,11 +121,7 @@
 
 
   /* =========================================
-     EXERCISE DATABASE
-
-     Only target muscle + cue live here now.
-
-     Demo file is generated automatically.
+     EXERCISE TARGET DATABASE
      ========================================= */
 
   const EXERCISES = [
@@ -441,10 +438,6 @@
   ];
 
 
-  /* =========================================
-     DEFAULT
-     ========================================= */
-
   const DEFAULT_EXERCISE = {
 
     muscle:
@@ -598,35 +591,25 @@
 
     const labels = {
 
-      chest:
-        "CHEST",
+      chest:"CHEST",
 
-      back:
-        "BACK",
+      back:"BACK",
 
-      shoulders:
-        "SHOULDERS",
+      shoulders:"SHOULDERS",
 
-      biceps:
-        "BICEPS",
+      biceps:"BICEPS",
 
-      triceps:
-        "TRICEPS",
+      triceps:"TRICEPS",
 
-      core:
-        "CORE",
+      core:"CORE",
 
-      quads:
-        "QUADS",
+      quads:"QUADS",
 
-      posterior:
-        "GLUTES",
+      posterior:"GLUTES",
 
-      calves:
-        "CALVES",
+      calves:"CALVES",
 
-      fullbody:
-        "FULL BODY"
+      fullbody:"FULL BODY"
 
     };
 
@@ -658,6 +641,376 @@
 
 
   /* =========================================
+     FORM GUIDE INFORMATION
+     ========================================= */
+
+  function guideInfo(
+    rawName,
+    exercise
+  ) {
+
+    const name =
+      normalise(
+        rawName
+      )
+      .toLowerCase();
+
+
+    if (
+      name.includes(
+        "squat"
+      ) ||
+      name.includes(
+        "leg press"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Brace your core before each rep.",
+          "Keep the knees tracking over the toes.",
+          "Stay controlled into the bottom position.",
+          "Drive through the whole foot."
+        ],
+
+        avoid:
+          "Avoid allowing the knees to collapse inward."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "lunge"
+      ) ||
+      name.includes(
+        "split squat"
+      ) ||
+      name.includes(
+        "step up"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Keep the working foot firmly planted.",
+          "Stay tall through the torso.",
+          "Lower under control.",
+          "Drive strongly through the working leg."
+        ],
+
+        avoid:
+          "Avoid rushing the movement or losing balance."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "deadlift"
+      ) ||
+      name.includes(
+        "rdl"
+      ) ||
+      name.includes(
+        "romanian"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Brace before you move.",
+          "Push the hips back.",
+          "Keep the weight close to the body.",
+          "Finish tall with the glutes."
+        ],
+
+        avoid:
+          "Avoid rounding through the lower back."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "bench"
+      ) ||
+      name.includes(
+        "chest press"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Set the shoulder blades before pressing.",
+          "Keep the feet planted.",
+          "Lower the weight under control.",
+          "Press smoothly through the chest."
+        ],
+
+        avoid:
+          "Avoid letting the shoulders roll forward."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "shoulder press"
+      ) ||
+      name.includes(
+        "overhead press"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Brace the core.",
+          "Keep the ribs controlled.",
+          "Press directly overhead.",
+          "Lower smoothly to the starting position."
+        ],
+
+        avoid:
+          "Avoid excessive arching through the lower back."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "lateral raise"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Keep a slight bend in the elbows.",
+          "Raise the arms under control.",
+          "Stop around shoulder height.",
+          "Control the lowering phase."
+        ],
+
+        avoid:
+          "Avoid swinging the body to lift the weight."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "pulldown"
+      ) ||
+      name.includes(
+        "pull up"
+      ) ||
+      name.includes(
+        "pull-up"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Keep the chest lifted.",
+          "Set the shoulders before pulling.",
+          "Drive the elbows down.",
+          "Control the return."
+        ],
+
+        avoid:
+          "Avoid pulling behind the neck or using excessive momentum."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "row"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Brace the torso.",
+          "Keep the shoulders down.",
+          "Drive the elbows behind you.",
+          "Control the return."
+        ],
+
+        avoid:
+          "Avoid shrugging or swinging through the torso."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "bicep"
+      ) ||
+      name.includes(
+        "curl"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Keep the elbows close to the body.",
+          "Keep the upper arms still.",
+          "Curl through a comfortable full range.",
+          "Lower the weight under control."
+        ],
+
+        avoid:
+          "Avoid swinging the body or driving the elbows forward."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "tricep"
+      ) ||
+      name.includes(
+        "pressdown"
+      ) ||
+      name.includes(
+        "pushdown"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Keep the elbows close to the body.",
+          "Keep the shoulders relaxed.",
+          "Extend fully through the elbow.",
+          "Control the return."
+        ],
+
+        avoid:
+          "Avoid using the shoulders or torso to move the weight."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "hip thrust"
+      ) ||
+      name.includes(
+        "glute bridge"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Keep the ribs controlled.",
+          "Drive through the heels.",
+          "Lift using the glutes.",
+          "Pause briefly at the top."
+        ],
+
+        avoid:
+          "Avoid overextending through the lower back."
+
+      };
+
+    }
+
+
+    if (
+      name.includes(
+        "calf"
+      )
+    ) {
+
+      return {
+
+        cues:[
+          "Use a full comfortable range.",
+          "Drive through the ball of the foot.",
+          "Pause at the top.",
+          "Lower slowly."
+        ],
+
+        avoid:
+          "Avoid bouncing through the bottom of the movement."
+
+      };
+
+    }
+
+
+    if (
+      exercise.muscle ===
+      "core"
+    ) {
+
+      return {
+
+        cues:[
+          "Brace the trunk.",
+          "Keep your breathing controlled.",
+          "Maintain a strong neutral position.",
+          "Move slowly and deliberately."
+        ],
+
+        avoid:
+          "Avoid losing trunk position as fatigue builds."
+
+      };
+
+    }
+
+
+    return {
+
+      cues:[
+        exercise.cue,
+        "Move through a comfortable range.",
+        "Keep the movement controlled.",
+        "Maintain strong technique throughout."
+      ],
+
+      avoid:
+        "Avoid using momentum or sacrificing technique."
+
+    };
+
+  }
+
+
+  /* =========================================
      STYLES
      ========================================= */
 
@@ -680,6 +1033,10 @@
 
 
     style.textContent = `
+
+      /* =====================================
+         MUSCLE TARGET CARD
+         ===================================== */
 
       .m10111-target{
         display:grid;
@@ -709,15 +1066,10 @@
         overflow:hidden;
         border:1px solid #3b3015;
         border-radius:16px;
-        background:
-          radial-gradient(
-            circle,
-            rgba(220,179,59,.18),
-            transparent 58%
-          ),
-          #050505;
+        background:#050505;
         box-shadow:
-          0 8px 24px rgba(0,0,0,.28);
+          0 8px 24px
+          rgba(0,0,0,.28);
       }
 
 
@@ -744,7 +1096,6 @@
         place-items:center;
         width:82px;
         height:82px;
-        padding:7px;
         border:1px solid #896e27;
         border-radius:50%;
         background:
@@ -754,11 +1105,8 @@
             transparent 70%
           );
         color:#e6c75e;
-        text-align:center;
         font-size:9px;
-        line-height:1.15;
         font-weight:950;
-        letter-spacing:.04em;
       }
 
 
@@ -796,31 +1144,109 @@
       }
 
 
-      .m10111-demo-button{
-        border-color:#6b5720 !important;
-        background:#151107 !important;
-        color:#f0cf62 !important;
-        font-weight:950 !important;
+      /* =====================================
+         UNIVERSAL GUIDE
+         ===================================== */
+
+      .m10116-guide{
+        width:
+          min(
+            760px,
+            calc(100vw - 28px)
+          );
+
+        max-height:
+          calc(100vh - 40px);
+
+        overflow-y:auto;
+
+        border:
+          1px solid
+          #3a3424;
+
+        border-radius:
+          22px;
+
+        background:
+          #080808;
+
+        box-shadow:
+          0 28px 80px
+          rgba(0,0,0,.65);
+
+        padding:
+          22px;
       }
 
 
+      .m10116-head{
+        display:flex;
+        align-items:flex-start;
+        justify-content:space-between;
+        gap:18px;
+        margin-bottom:18px;
+      }
+
+
+      .m10116-kicker{
+        color:#d5b03a;
+        font-size:10px;
+        font-weight:950;
+        letter-spacing:.12em;
+      }
+
+
+      .m10116-title{
+        margin-top:6px;
+        color:#fff;
+        font-size:28px;
+        font-weight:950;
+        line-height:1.05;
+      }
+
+
+      .m10116-subtitle{
+        margin-top:7px;
+        color:#8d8d8d;
+        font-size:11px;
+      }
+
+
+      .m10116-close{
+        flex:0 0 auto;
+        display:grid;
+        place-items:center;
+        width:44px;
+        height:44px;
+        border:1px solid #383838;
+        border-radius:50%;
+        background:#101010;
+        color:#fff;
+        font-size:22px;
+        cursor:pointer;
+      }
+
+
+      /* =====================================
+         PLAYER
+         ===================================== */
+
       .m10111-player{
         overflow:hidden;
-        margin-top:8px;
-        border:1px solid #62501e;
-        border-radius:19px;
-        background:#070707;
+        border:1px solid #5e4c1d;
+        border-radius:18px;
+        background:#050505;
       }
 
 
       .m10111-stage{
         position:relative;
-        height:430px;
+        height:420px;
         overflow:hidden;
         background:
           radial-gradient(
-            circle,
-            rgba(217,178,58,.10),
+            circle at 50% 45%,
+            rgba(217,178,58,.09),
             transparent 55%
           ),
           #050505;
@@ -850,6 +1276,22 @@
       }
 
 
+      .m10111-badge{
+        position:absolute;
+        z-index:5;
+        top:14px;
+        left:14px;
+        padding:8px 13px;
+        border:1px solid #756024;
+        border-radius:999px;
+        background:rgba(18,16,7,.95);
+        color:#efcc5f;
+        font-size:10px;
+        font-weight:950;
+        letter-spacing:.07em;
+      }
+
+
       .m10111-demo-empty{
         position:absolute;
         inset:0;
@@ -875,16 +1317,7 @@
             transparent 70%
           );
         color:#e3c259;
-        font-size:45px;
-        transition:transform .5s ease;
-      }
-
-
-      .m10111-player[data-pose="finish"]
-      .m10111-demo-circle{
-        transform:
-          translateY(-12px)
-          scale(1.05);
+        font-size:44px;
       }
 
 
@@ -901,21 +1334,6 @@
         color:#777;
         font-size:11px;
         line-height:1.5;
-      }
-
-
-      .m10111-badge{
-        position:absolute;
-        z-index:5;
-        top:14px;
-        left:14px;
-        padding:8px 13px;
-        border:1px solid #756024;
-        border-radius:999px;
-        background:#121007;
-        color:#efcc5f;
-        font-size:10px;
-        font-weight:950;
       }
 
 
@@ -942,7 +1360,7 @@
 
 
       .m10111-cue{
-        grid-column:1 / -1;
+        grid-column:1/-1;
         padding:5px 8px;
         color:#bdbdbd;
         font-size:11px;
@@ -951,23 +1369,82 @@
       }
 
 
+      /* =====================================
+         COACHING SECTION
+         ===================================== */
+
+      .m10116-coaching{
+        margin-top:14px;
+        padding:18px;
+        border:1px solid #302a1b;
+        border-radius:16px;
+        background:#0c0b08;
+      }
+
+
+      .m10116-coaching h3{
+        margin:0 0 12px;
+        color:#fff;
+        font-size:16px;
+        font-weight:950;
+      }
+
+
+      .m10116-coaching ul{
+        margin:0;
+        padding-left:20px;
+      }
+
+
+      .m10116-coaching li{
+        margin:7px 0;
+        color:#d1d1d1;
+        font-size:12px;
+        line-height:1.45;
+      }
+
+
+      .m10116-avoid{
+        margin-top:16px;
+        padding-top:14px;
+        border-top:1px solid #29261e;
+        color:#bcbcbc;
+        font-size:12px;
+        line-height:1.5;
+      }
+
+
+      .m10116-avoid strong{
+        color:#e7c655;
+      }
+
+
+      .m10116-loading{
+        display:grid;
+        place-items:center;
+        min-height:360px;
+        color:#8b793d;
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.1em;
+      }
+
+
+      /* =====================================
+         RESPONSIVE MUSCLE CARD
+         ===================================== */
+
       @media(max-width:760px){
 
         .m10111-target{
           grid-template-columns:
             136px
             minmax(0,1fr);
-          gap:14px;
-          padding:11px;
         }
 
         .m10111-image{
           width:136px;
           height:136px;
-        }
-
-        .m10111-target-name{
-          font-size:16px;
         }
 
       }
@@ -981,35 +1458,38 @@
             minmax(0,1fr);
           gap:12px;
           padding:10px;
-          border-radius:16px;
         }
 
         .m10111-image{
           width:125px;
           height:125px;
-          border-radius:14px;
-        }
-
-        .m10111-image img{
-          border-radius:13px;
-        }
-
-        .m10111-kicker{
-          font-size:8px;
-          letter-spacing:.12em;
         }
 
         .m10111-target-name{
           font-size:15px;
         }
 
-        .m10111-note{
-          font-size:9px;
-          line-height:1.35;
+
+        .m10116-guide{
+          width:
+            calc(100vw - 16px);
+
+          max-height:
+            calc(100vh - 16px);
+
+          border-radius:18px;
+
+          padding:15px;
         }
 
+
+        .m10116-title{
+          font-size:24px;
+        }
+
+
         .m10111-stage{
-          height:370px;
+          height:360px;
         }
 
       }
@@ -1028,46 +1508,26 @@
         .m10111-image{
           width:112px;
           height:112px;
-          border-radius:13px;
         }
 
-        .m10111-image img{
-          border-radius:12px;
+
+        .m10116-guide{
+          padding:13px;
         }
 
-        .m10111-kicker{
-          font-size:7px;
-          letter-spacing:.10em;
+
+        .m10111-stage{
+          height:330px;
         }
 
-        .m10111-target-name{
-          font-size:14px;
+
+        .m10111-controls{
+          grid-template-columns:1fr;
         }
 
-        .m10111-note{
-          font-size:8px;
-        }
 
-      }
-
-
-      @media(max-width:360px){
-
-        .m10111-target{
-          grid-template-columns:
-            104px
-            minmax(0,1fr);
-          gap:9px;
-          padding:8px;
-        }
-
-        .m10111-image{
-          width:104px;
-          height:104px;
-        }
-
-        .m10111-target-name{
-          font-size:13px;
+        .m10111-cue{
+          grid-column:1;
         }
 
       }
@@ -1086,7 +1546,9 @@
      CARD NAME
      ========================================= */
 
-  function cardName(card) {
+  function cardName(
+    card
+  ) {
 
     if (!card) {
 
@@ -1097,8 +1559,7 @@
 
     return normalise(
 
-      card
-        .dataset
+      card.dataset
         .exerciseName ||
 
       card
@@ -1121,7 +1582,7 @@
 
 
   /* =========================================
-     CREATE TARGET VISUAL
+     MUSCLE VISUAL
      ========================================= */
 
   function createTarget(
@@ -1205,24 +1666,11 @@
     );
 
 
-    function showFallback() {
-
-      img.style.display =
-        "none";
-
-
-      fallback.style.display =
-        "grid";
-
-    }
-
-
     img.onload =
       () => {
 
         img.style.display =
           "block";
-
 
         fallback.style.display =
           "none";
@@ -1238,8 +1686,7 @@
           1
         ) {
 
-          retryCount +=
-            1;
+          retryCount += 1;
 
 
           setTimeout(
@@ -1252,7 +1699,7 @@
                 );
 
             },
-            1000
+            800
           );
 
 
@@ -1261,7 +1708,12 @@
         }
 
 
-        showFallback();
+        img.style.display =
+          "none";
+
+
+        fallback.style.display =
+          "grid";
 
       };
 
@@ -1289,53 +1741,27 @@
       "m10111-copy";
 
 
-    const kicker =
-      document.createElement(
-        "span"
-      );
+    copy.innerHTML = `
 
+      <span
+        class="m10111-kicker"
+      >
+        PRIMARY TARGET
+      </span>
 
-    kicker.className =
-      "m10111-kicker";
+      <strong
+        class="m10111-target-name"
+      >
+        ${exercise.target}
+      </strong>
 
+      <span
+        class="m10111-note"
+      >
+        Mana Movement muscle focus
+      </span>
 
-    kicker.textContent =
-      "PRIMARY TARGET";
-
-
-    const target =
-      document.createElement(
-        "strong"
-      );
-
-
-    target.className =
-      "m10111-target-name";
-
-
-    target.textContent =
-      exercise.target;
-
-
-    const note =
-      document.createElement(
-        "span"
-      );
-
-
-    note.className =
-      "m10111-note";
-
-
-    note.textContent =
-      "Mana Movement muscle focus";
-
-
-    copy.append(
-      kicker,
-      target,
-      note
-    );
+    `;
 
 
     block.append(
@@ -1389,7 +1815,7 @@
 
 
   /* =========================================
-     UPGRADE ONE CARD
+     UPGRADE WORKOUT CARD
      ========================================= */
 
   function upgradeCard(
@@ -1468,42 +1894,21 @@
     );
 
 
-    const button =
-      card.querySelector(
-        ".mana-v955-demo-button,.mana-v957-demo-button"
-      );
-
-
-    if (button) {
-
-      button.classList.add(
-        "m10111-demo-button"
-      );
-
-
-      button.textContent =
-        "▶ VIEW EXERCISE DEMO";
-
-
-      button.dataset.manaExercise =
-        exercise.name;
-
-    }
-
-
-    card.dataset.manaV10111 =
+    card.dataset.manaV10116 =
       "1";
 
   }
 
 
   /* =========================================
-     CARD REFRESH
+     REFRESH CARDS
      ========================================= */
 
   function refreshCards() {
 
-    if (refreshing) {
+    if (
+      refreshing
+    ) {
 
       return;
 
@@ -1553,11 +1958,7 @@
 
 
   /* =========================================
-     SPLIT DEMO IMAGE
-
-     Demo file:
-     LEFT  = START
-     RIGHT = FINISH
+     SPLIT START / FINISH PNG
      ========================================= */
 
   function splitImage(
@@ -1612,11 +2013,9 @@
 
       image,
 
-      side ===
-      "start"
+      side === "start"
         ? 0
-        : width -
-          half,
+        : width - half,
 
       0,
 
@@ -1644,8 +2043,6 @@
 
   /* =========================================
      LOAD DEMO
-
-     Automatic filename lookup.
      ========================================= */
 
   function loadDemo(
@@ -1672,7 +2069,7 @@
           new Image();
 
 
-        let retryCount =
+        let retry =
           0;
 
 
@@ -1712,11 +2109,11 @@
           () => {
 
             if (
-              retryCount <
+              retry <
               1
             ) {
 
-              retryCount +=
+              retry +=
                 1;
 
 
@@ -1726,11 +2123,11 @@
                   source.src =
                     versionedAsset(
                       exercise.demo,
-                      retryCount
+                      retry
                     );
 
                 },
-                700
+                650
               );
 
 
@@ -1759,7 +2156,7 @@
 
 
   /* =========================================
-     DEMO PLAYER
+     PREMIUM PLAYER
      ========================================= */
 
   async function createPlayer(
@@ -1784,10 +2181,6 @@
 
     player.dataset.pose =
       "start";
-
-
-    player.dataset.exercise =
-      exercise.name;
 
 
     const stage =
@@ -1816,7 +2209,7 @@
 
       start.alt =
         exercise.name +
-        " starting position";
+        " start position";
 
 
       const finish =
@@ -1833,7 +2226,7 @@
 
       finish.alt =
         exercise.name +
-        " finishing position";
+        " finish position";
 
 
       stage.append(
@@ -1857,7 +2250,9 @@
 
         <div>
 
-          <div class="m10111-demo-circle">
+          <div
+            class="m10111-demo-circle"
+          >
             ↕
           </div>
 
@@ -2130,33 +2525,93 @@
 
 
   /* =========================================
-     UPDATE DEMO MODAL
+     GUIDE MODAL
      ========================================= */
 
-  async function updateDemoModal(
+  function ensureGuideModal() {
+
+    let modal =
+      $(
+        GUIDE_ID
+      );
+
+
+    if (modal) {
+
+      return modal;
+
+    }
+
+
+    modal =
+      document.createElement(
+        "div"
+      );
+
+
+    modal.id =
+      GUIDE_ID;
+
+
+    document.body.appendChild(
+      modal
+    );
+
+
+    modal.addEventListener(
+      "click",
+      event => {
+
+        if (
+          event.target ===
+          modal
+        ) {
+
+          closeUniversalGuide();
+
+        }
+
+      }
+    );
+
+
+    return modal;
+
+  }
+
+
+  function closeUniversalGuide() {
+
+    activePlayer
+      ?.pauseDemo
+      ?.();
+
+
+    activePlayer =
+      null;
+
+
+    $(
+      GUIDE_ID
+    )
+      ?.classList
+      .remove(
+        "open"
+      );
+
+
+    document.body.style.overflow =
+      "";
+
+  }
+
+
+  async function openUniversalGuide(
     name
   ) {
 
     const modal =
-      $(
-        "manaV955DemoModal"
-      );
-
-
-    const demo =
-      $(
-        "manaV955Demo"
-      );
-
-
-    if (
-      !modal ||
-      !demo
-    ) {
-
-      return;
-
-    }
+      ensureGuideModal();
 
 
     const exercise =
@@ -2165,37 +2620,123 @@
       );
 
 
-    const title =
-      $(
-        "manaV955Title"
+    const info =
+      guideInfo(
+        name,
+        exercise
       );
 
 
-    if (title) {
+    modal.innerHTML = `
 
-      title.textContent =
-        exercise.name;
+      <div
+        class="m10116-guide"
+      >
 
-    }
+        <div
+          class="m10116-head"
+        >
+
+          <div>
+
+            <div
+              class="m10116-kicker"
+            >
+              FORM GUIDE
+            </div>
+
+            <div
+              class="m10116-title"
+            >
+              ${exercise.name}
+            </div>
+
+            <div
+              class="m10116-subtitle"
+            >
+              ${exercise.target}
+            </div>
+
+          </div>
 
 
-    const label =
-      $(
-        "manaV955MuscleLabel"
-      );
+          <button
+            type="button"
+            class="m10116-close"
+            id="manaV10116GuideClose"
+            aria-label="Close form guide"
+          >
+            ×
+          </button>
+
+        </div>
 
 
-    if (label) {
+        <div
+          id="manaV10116Player"
+          class="m10116-loading"
+        >
+          LOADING DEMO...
+        </div>
 
-      label.textContent =
-        exercise.target;
 
-    }
+        <div
+          class="m10116-coaching"
+        >
+
+          <h3>
+            Key cues
+          </h3>
 
 
-    activePlayer
-      ?.pauseDemo
-      ?.();
+          <ul>
+
+            ${info.cues
+              .map(
+                cue => `
+                  <li>
+                    ${cue}
+                  </li>
+                `
+              )
+              .join("")}
+
+          </ul>
+
+
+          <div
+            class="m10116-avoid"
+          >
+
+            <strong>
+              Avoid:
+            </strong>
+
+            ${info.avoid}
+
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+
+
+    modal.classList.add(
+      "open"
+    );
+
+
+    document.body.style.overflow =
+      "hidden";
+
+
+    $(
+      "manaV10116GuideClose"
+    )
+      .onclick =
+        closeUniversalGuide;
 
 
     const player =
@@ -2205,11 +2746,9 @@
 
 
     if (
-      !modal
-        .classList
-        .contains(
-          "open"
-        )
+      !modal.classList.contains(
+        "open"
+      )
     ) {
 
       return;
@@ -2217,7 +2756,20 @@
     }
 
 
-    demo.replaceChildren(
+    const mount =
+      $(
+        "manaV10116Player"
+      );
+
+
+    if (!mount) {
+
+      return;
+
+    }
+
+
+    mount.replaceWith(
       player
     );
 
@@ -2229,10 +2781,10 @@
 
 
   /* =========================================
-     DEMO CLICKS
+     INTERCEPT OLD FORM GUIDE BUTTON
      ========================================= */
 
-  function bindClicks() {
+  function bindUniversalGuide() {
 
     document.addEventListener(
 
@@ -2244,64 +2796,55 @@
           event
             .target
             .closest(
-              ".mana-v955-demo-button,.mana-v957-demo-button,.m10111-demo-button"
+              "[data-v970-guide]"
             );
 
 
-        if (button) {
+        if (!button) {
 
-          const card =
-            button
-              .closest(
-                ".mana-v64-card"
-              );
-
-
-          const name =
-            cardName(
-              card
-            );
-
-
-          if (name) {
-
-            setTimeout(
-              () =>
-                updateDemoModal(
-                  name
-                ),
-              120
-            );
-
-
-            setTimeout(
-              () =>
-                updateDemoModal(
-                  name
-                ),
-              350
-            );
-
-          }
+          return;
 
         }
 
 
-        if (
-          event
-            .target
-            .closest(
-              '[data-v83-tab="program"]'
-            )
-        ) {
+        /*
+          Stop old v9.70 stick-figure
+          Form Guide from opening.
+        */
 
-          scheduleRefresh(
-            180
+        event.preventDefault();
+
+        event.stopPropagation();
+
+        event.stopImmediatePropagation();
+
+
+        const card =
+          button.closest(
+            ".mana-v64-card"
           );
 
+
+        const name =
+          cardName(
+            card
+          );
+
+
+        if (!name) {
+
+          return;
+
         }
 
-      }
+
+        openUniversalGuide(
+          name
+        );
+
+      },
+
+      true
 
     );
 
@@ -2309,7 +2852,7 @@
 
 
   /* =========================================
-     STABLE OBSERVER
+     OBSERVER
      ========================================= */
 
   function startObserver() {
@@ -2370,14 +2913,12 @@
 
               if (
 
-                node
-                  .matches
+                node.matches
                   ?.(
                     ".mana-v64-card"
                   ) ||
 
-                node
-                  .querySelector
+                node.querySelector
                   ?.(
                     ".mana-v64-card"
                   )
@@ -2386,7 +2927,6 @@
 
                 relevant =
                   true;
-
 
                 break;
 
@@ -2423,11 +2963,8 @@
     observer.observe(
       document.body,
       {
-        childList:
-          true,
-
-        subtree:
-          true
+        childList:true,
+        subtree:true
       }
     );
 
@@ -2471,39 +3008,43 @@
 
   function exposeAPI() {
 
-    window
-      .MANA_EXERCISE_VISUALS = {
+    window.MANA_EXERCISE_VISUALS = {
 
-        build:
-          BUILD,
+      build:
+        BUILD,
 
-        resolve:
-          resolveExercise,
+      resolve:
+        resolveExercise,
 
-        refresh:
-          scheduleRefresh,
+      refresh:
+        scheduleRefresh,
 
-        openDemo:
-          updateDemoModal,
+      openDemo:
+        openUniversalGuide,
 
-        muscleAssets:
-          MUSCLE_ASSETS,
+      muscleAssets:
+        MUSCLE_ASSETS,
 
-        exercises:
-          EXERCISES,
+      exercises:
+        EXERCISES,
 
-        demoAssetFromName:
-          demoAssetFromName,
+      demoAssetFromName:
+        demoAssetFromName,
 
-        slugify:
-          slugify
+      slugify:
+        slugify
 
-      };
+    };
 
 
     window
       .refreshManaExerciseVisuals =
       scheduleRefresh;
+
+
+    window
+      .openManaExerciseGuide =
+      openUniversalGuide;
 
 
     window
@@ -2525,7 +3066,7 @@
     exposeAPI();
 
 
-    bindClicks();
+    bindUniversalGuide();
 
 
     bindManaEvents();
@@ -2556,7 +3097,7 @@
 
 
     console.log(
-      "Mana Universal Exercise Visual + Demo System",
+      "Mana Universal Form Guide",
       BUILD
     );
 
@@ -2579,8 +3120,7 @@
       init,
 
       {
-        once:
-          true
+        once:true
       }
 
     );
