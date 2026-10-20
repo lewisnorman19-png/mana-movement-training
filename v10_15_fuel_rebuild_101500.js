@@ -1,8 +1,8 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.15.0
-   PREMIUM FUEL REBUILD
+   MANA MOVEMENT TRAINING v10.15.1
+   PREMIUM FUEL — SIZE + MOBILE POLISH
 
-   BUILD: 101500
+   BUILD: 101510
 
    PAGE ORDER
    1. Add a Meal
@@ -10,21 +10,20 @@
    3. Daily Targets
 
    LOGIC
-   - Calories + Protein come from logged meals
-   - Water is manual
-   - Recovery is manual
-   - Logged meals remain visual
-   - Meal options are visual
-   - Owns Fuel rendering for Mana Strength + Mana 28
-   - Hides legacy Fuel renderers to prevent flicker
+   - Calories + Protein = automatic from meals
+   - Water = manual
+   - Recovery = manual
+   - Selected meals remain visual
+   - Premium meal option modal
+   - Strength + Mana 28
    ========================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "101500";
+  const BUILD = "101510";
   const ROOT_ID = "manaV1015Fuel";
-  const STYLE_ID = "mana-v1015-fuel-style";
+  const STYLE_ID = "mana-v10151-fuel-style";
 
   const FUEL_KEY = "mana-fuel-v571";
   const TARGET_KEY = "mana-fuel-v58-targets";
@@ -38,7 +37,7 @@
 
 
   /* =========================================
-     MEAL CATEGORIES
+     CATEGORY DATA
      ========================================= */
 
   const CATEGORY = {
@@ -231,344 +230,185 @@
      ========================================= */
 
   function asset(file) {
-
-    return (
-      ASSET_ROOT +
-      file +
-      "?v=" +
-      BUILD
-    );
-
+    return ASSET_ROOT + file + "?v=" + BUILD;
   }
 
 
-  function safeJson(
-    raw,
-    fallback
-  ) {
-
+  function safeJson(raw, fallback = {}) {
     try {
-
-      return JSON.parse(
-        raw
-      );
-
+      return JSON.parse(raw);
     } catch (_) {
-
       return fallback;
-
     }
-
   }
 
 
   function esc(value) {
-
-    return String(
-      value ?? ""
-    )
-      .replaceAll(
-        "&",
-        "&amp;"
-      )
-      .replaceAll(
-        "<",
-        "&lt;"
-      )
-      .replaceAll(
-        ">",
-        "&gt;"
-      )
-      .replaceAll(
-        '"',
-        "&quot;"
-      );
-
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
   }
 
 
-  function clamp(
-    value,
-    min,
-    max
-  ) {
-
+  function clamp(value, min, max) {
     return Math.max(
       min,
       Math.min(
         max,
-        value
+        Number(value) || 0
       )
     );
-
   }
 
 
   function todayKey() {
-
-    const date =
-      new Date();
-
+    const d = new Date();
 
     return [
-
-      date.getFullYear(),
-
-      String(
-        date.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      ),
-
-      String(
-        date.getDate()
-      ).padStart(
-        2,
-        "0"
-      )
-
+      d.getFullYear(),
+      String(d.getMonth() + 1).padStart(2, "0"),
+      String(d.getDate()).padStart(2, "0")
     ].join("-");
-
   }
 
 
   /* =========================================
-     SCREEN STATE
+     ACTIVE FUEL SCREEN
      ========================================= */
 
   function programName() {
-
     return String(
-
       document
-        .getElementById(
-          "manaV83Title"
-        )
-        ?.textContent ||
-
-      ""
-
+        .getElementById("manaV83Title")
+        ?.textContent || ""
     )
       .trim()
       .toUpperCase();
-
   }
 
 
   function fuelOpen() {
-
     const shell =
       document.getElementById(
         "manaV83ProgramShell"
       );
-
 
     const tab =
       document.querySelector(
         '#manaV83Tabs .mana-v83-tab.active[data-v83-tab="fuel"]'
       );
 
-
     const title =
       programName();
 
-
     return Boolean(
-
-      shell
-        ?.classList
-        .contains(
-          "open"
-        ) &&
-
+      shell?.classList.contains("open") &&
       tab &&
-
       (
-        title ===
-          "MANA STRENGTH" ||
-
-        title ===
-          "MANA 28"
+        title === "MANA STRENGTH" ||
+        title === "MANA 28"
       )
-
     );
-
   }
 
 
   /* =========================================
-     FUEL STORAGE
+     STORAGE
      ========================================= */
 
   function loadFuel() {
-
     const value =
       safeJson(
-
-        localStorage
-          .getItem(
-            FUEL_KEY
-          ) || "{}",
-
-        {}
-
+        localStorage.getItem(FUEL_KEY) || "{}"
       );
-
 
     return (
       value &&
-      typeof value ===
-        "object"
+      typeof value === "object"
     )
       ? value
       : {};
-
   }
 
 
-  function saveFuel(
-    store
-  ) {
-
-    localStorage
-      .setItem(
-
-        FUEL_KEY,
-
-        JSON.stringify(
-          store
-        )
-
-      );
-
+  function saveFuel(store) {
+    localStorage.setItem(
+      FUEL_KEY,
+      JSON.stringify(store)
+    );
 
     window.dispatchEvent(
-
       new CustomEvent(
         "mana:fuel-updated"
       )
-
     );
-
   }
 
 
   function todayData() {
-
     const store =
       loadFuel();
-
 
     const key =
       todayKey();
 
-
     const day =
-
       store[key] &&
-      typeof store[key] ===
-        "object"
-
+      typeof store[key] === "object"
         ? store[key]
-
         : {
-
-            meals: {
-
-              Breakfast: [],
-
-              Lunch: [],
-
-              Dinner: [],
-
-              Snacks: []
-
-            },
-
+            meals: {},
             water: 0
-
           };
 
-
     day.meals =
-
       day.meals &&
-      typeof day.meals ===
-        "object"
-
+      typeof day.meals === "object"
         ? day.meals
-
         : {};
 
-
     [
-
       "Breakfast",
-
       "Lunch",
-
       "Dinner",
-
       "Snacks"
-
     ].forEach(
-
-      mealKey => {
+      meal => {
 
         if (
           !Array.isArray(
-            day.meals[
-              mealKey
-            ]
+            day.meals[meal]
           )
         ) {
 
-          day.meals[
-            mealKey
-          ] = [];
+          day.meals[meal] = [];
 
         }
 
       }
-
     );
-
 
     day.water =
       Math.max(
-
         0,
-
-        Number(
-          day.water
-        ) || 0
-
+        Number(day.water) || 0
       );
 
-
     return day;
-
   }
 
 
-  function writeToday(
-    day
-  ) {
-
+  function writeToday(day) {
     const store =
       loadFuel();
-
 
     store[
       todayKey()
     ] = day;
 
-
-    saveFuel(
-      store
-    );
-
+    saveFuel(store);
   }
 
 
@@ -577,111 +417,73 @@
      ========================================= */
 
   function loadTargets() {
-
     const data =
       safeJson(
-
-        localStorage
-          .getItem(
-            TARGET_KEY
-          ) || "{}",
-
-        {}
-
+        localStorage.getItem(
+          TARGET_KEY
+        ) || "{}"
       );
-
 
     return {
 
       calories:
         Math.max(
           0,
-          Number(
-            data.calories
-          ) || 2050
+          Number(data.calories) || 2050
         ),
 
       protein:
         Math.max(
           0,
-          Number(
-            data.protein
-          ) || 120
+          Number(data.protein) || 120
         ),
 
       water:
         Math.max(
           0,
-          Number(
-            data.water
-          ) || 2300
+          Number(data.water) || 2300
         )
 
     };
-
   }
 
 
   function totals() {
-
     const day =
       todayData();
 
-
     const result = {
-
       calories: 0,
-
       protein: 0,
-
-      water:
-        day.water
-
+      water: day.water
     };
 
-
     Object
-      .values(
-        day.meals
-      )
+      .values(day.meals)
       .forEach(
-
         items => {
 
-          (
-            items ||
-            []
-          )
+          (items || [])
             .forEach(
-
               item => {
 
                 result.calories +=
-
                   Number(
-                    item
-                      ?.calories
+                    item?.calories
                   ) || 0;
 
-
                 result.protein +=
-
                   Number(
-                    item
-                      ?.protein
+                    item?.protein
                   ) || 0;
 
               }
-
             );
 
         }
-
       );
 
-
     return result;
-
   }
 
 
@@ -690,61 +492,36 @@
      ========================================= */
 
   function recoveryScore() {
-
     const store =
       safeJson(
-
-        localStorage
-          .getItem(
-            DAILY_KEY
-          ) || "{}",
-
-        {}
-
+        localStorage.getItem(
+          DAILY_KEY
+        ) || "{}"
       );
 
-
     const day =
-      store[
-        todayKey()
-      ] || {};
-
+      store[todayKey()] || {};
 
     if (
       Number.isFinite(
-        Number(
-          day.recoveryScore
-        )
+        Number(day.recoveryScore)
       )
     ) {
 
       return clamp(
-
-        Number(
-          day.recoveryScore
-        ),
-
+        day.recoveryScore,
         0,
-
         10
-
       );
 
     }
 
-
     const raw =
       String(
-
         day.recoveryLevel ||
-
         day.recovery ||
-
         ""
-
-      )
-        .toLowerCase();
-
+      ).toLowerCase();
 
     if (
       raw === "good" ||
@@ -755,84 +532,53 @@
 
     }
 
-
     if (
-      raw ===
-      "moderate"
+      raw === "moderate"
     ) {
 
       return 5;
 
     }
 
-
     if (
-      raw ===
-        "needs-attention" ||
-
-      raw ===
-        "low"
+      raw === "needs-attention" ||
+      raw === "low"
     ) {
 
       return 3;
 
     }
 
-
     return 0;
-
   }
 
 
-  function saveRecoveryScore(
-    score
-  ) {
-
+  function saveRecoveryScore(score) {
     const store =
       safeJson(
-
-        localStorage
-          .getItem(
-            DAILY_KEY
-          ) || "{}",
-
-        {}
-
+        localStorage.getItem(
+          DAILY_KEY
+        ) || "{}"
       );
-
 
     const key =
       todayKey();
 
-
     const day =
-
       store[key] &&
-      typeof store[key] ===
-        "object"
-
+      typeof store[key] === "object"
         ? store[key]
-
         : {};
-
 
     const value =
       clamp(
-
-        Number(
-          score
-        ) || 0,
-
+        score,
         0,
-
         10
-
       );
-
 
     day.recoveryScore =
       value;
-
 
     if (
       value >= 7
@@ -874,61 +620,37 @@
 
     }
 
-
     store[key] =
       day;
 
-
-    localStorage
-      .setItem(
-
-        DAILY_KEY,
-
-        JSON.stringify(
-          store
-        )
-
-      );
-
+    localStorage.setItem(
+      DAILY_KEY,
+      JSON.stringify(store)
+    );
 
     window.dispatchEvent(
-
       new CustomEvent(
         "mana:recovery-updated"
       )
-
     );
-
   }
 
 
-  function pct(
-    value,
-    target
-  ) {
-
+  function percent(value, target) {
     if (!target) {
-
       return 0;
-
     }
 
-
     return clamp(
-
       Math.round(
         (
           Number(value) /
           Number(target)
         ) * 100
       ),
-
       0,
-
       100
-
     );
-
   }
 
 
@@ -936,22 +658,14 @@
      TARGET ICONS
      ========================================= */
 
-  function iconSvg(
-    type
-  ) {
+  function iconSvg(type) {
 
     if (
-      type ===
-      "calories"
+      type === "calories"
     ) {
 
       return `
-
-        <svg
-          viewBox="0 0 48 48"
-          aria-hidden="true"
-        >
-
+        <svg viewBox="0 0 48 48">
           <path
             fill="currentColor"
             d="
@@ -965,25 +679,18 @@
               -1-8 5-11 4-17Z
             "
           />
-
         </svg>
-
       `;
 
     }
 
 
     if (
-      type ===
-      "protein"
+      type === "protein"
     ) {
 
       return `
-
-        <svg
-          viewBox="0 0 48 48"
-          aria-hidden="true"
-        >
+        <svg viewBox="0 0 48 48">
 
           <rect
             x="17"
@@ -1031,24 +738,17 @@
           />
 
         </svg>
-
       `;
 
     }
 
 
     if (
-      type ===
-      "water"
+      type === "water"
     ) {
 
       return `
-
-        <svg
-          viewBox="0 0 48 48"
-          aria-hidden="true"
-        >
-
+        <svg viewBox="0 0 48 48">
           <path
             fill="currentColor"
             d="
@@ -1058,21 +758,14 @@
               C38 20 24 4 24 4Z
             "
           />
-
         </svg>
-
       `;
 
     }
 
 
     return `
-
-      <svg
-        viewBox="0 0 48 48"
-        aria-hidden="true"
-      >
-
+      <svg viewBox="0 0 48 48">
         <path
           fill="currentColor"
           d="
@@ -1081,9 +774,7 @@
             a17 17 0 1 0 15 26Z
           "
         />
-
       </svg>
-
     `;
 
   }
@@ -1094,335 +785,158 @@
      ========================================= */
 
   function installStyles() {
-
     document
       .getElementById(
         STYLE_ID
       )
       ?.remove();
 
-
     const style =
       document.createElement(
         "style"
       );
 
-
     style.id =
       STYLE_ID;
 
-
     style.textContent = `
 
-      /*
-        Hide legacy Fuel outputs.
-
-        This is the important piece that
-        prevents the old Fuel page from
-        flashing before this version loads.
-      */
-
-      #manaV83Content
-      > .mana-v897-root,
-
-      #manaV83Content
-      > #manaV980SharedFuel{
-
-        display:
-          none
-          !important;
-
-      }
-
-
       #${ROOT_ID}{
-
-        display:
-          grid;
-
-        gap:
-          16px;
-
-        width:
-          100%;
-
-        color:
-          #f6f6f6;
-
+        display:grid;
+        gap:14px;
+        width:100%;
+        color:#f6f6f6;
       }
-
 
       #${ROOT_ID} *{
-
-        box-sizing:
-          border-box;
-
+        box-sizing:border-box;
       }
 
 
-      /* HERO */
+      /* =====================================
+         HERO
+         ===================================== */
 
       .m1015-hero{
-
-        padding:
-          2px
-          2px
-          4px;
-
+        padding:0 2px 3px;
       }
-
 
       .m1015-kicker{
-
-        color:
-          #f3d875;
-
-        font-size:
-          10px;
-
-        font-weight:
-          950;
-
-        letter-spacing:
-          .14em;
-
-        text-transform:
-          uppercase;
-
+        color:#f3d875;
+        font-size:9px;
+        font-weight:950;
+        letter-spacing:.14em;
+        text-transform:uppercase;
       }
-
 
       .m1015-hero h2{
-
-        margin:
-          5px
-          0
-          4px;
-
-        font-size:
-          27px;
-
-        line-height:
-          1.05;
-
+        margin:4px 0 4px;
+        font-size:25px;
+        line-height:1.05;
       }
-
 
       .m1015-hero p,
       .m1015-section-head p{
-
-        margin:
-          0;
-
-        color:
-          #949494;
-
-        font-size:
-          12px;
-
-        line-height:
-          1.45;
-
+        margin:0;
+        color:#919191;
+        font-size:11px;
+        line-height:1.4;
       }
 
 
-      /* MAIN CARDS */
+      /* =====================================
+         SECTION
+         ===================================== */
 
       .m1015-card{
-
-        border:
-          1px solid
-          #2d2d2d;
-
-        border-radius:
-          22px;
-
+        border:1px solid #2d2d2d;
+        border-radius:20px;
         background:
           linear-gradient(
             145deg,
             #11110f,
             #090909
           );
-
-        box-shadow:
-          0 16px 34px
-          rgba(0,0,0,.2);
-
       }
-
 
       .m1015-section{
-
-        padding:
-          17px;
-
+        padding:15px;
       }
-
 
       .m1015-section-head{
-
-        margin-bottom:
-          13px;
-
+        margin-bottom:11px;
       }
 
-
       .m1015-section-head h3{
-
-        margin:
-          0 0 3px;
-
-        font-size:
-          18px;
-
+        margin:0 0 3px;
+        font-size:17px;
       }
 
 
       /* =====================================
-         ADD A MEAL
+         ADD A MEAL — DESKTOP
          ===================================== */
 
       .m1015-category-grid{
-
-        display:
-          grid;
-
-        grid-template-columns:
-          1fr 1fr;
-
-        gap:
-          10px;
-
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:9px;
       }
-
 
       .m1015-category{
-
-        position:
-          relative;
-
-        min-height:
-          168px;
-
-        overflow:
-          hidden;
-
-        padding:
-          0;
-
-        border:
-          1px solid
+        position:relative;
+        min-height:138px;
+        overflow:hidden;
+        padding:0;
+        border:1px solid
           rgba(219,174,56,.48);
-
-        border-radius:
-          18px;
-
-        background:
-          #090909;
-
-        color:
-          #fff;
-
-        text-align:
-          left;
-
-        cursor:
-          pointer;
-
+        border-radius:16px;
+        background:#090909;
+        color:#fff;
+        text-align:left;
+        cursor:pointer;
       }
-
 
       .m1015-category img{
-
-        display:
-          block;
-
-        width:
-          100%;
-
-        height:
-          104px;
-
-        object-fit:
-          cover;
-
-        object-position:
-          center;
-
+        display:block;
+        width:100%;
+        height:82px;
+        object-fit:cover;
+        object-position:center;
       }
-
 
       .m1015-category-copy{
-
-        position:
-          relative;
-
-        display:
-          block;
-
-        min-height:
-          62px;
-
+        position:relative;
+        display:block;
+        min-height:54px;
         padding:
-          10px
-          38px
-          10px
-          12px;
-
+          8px
+          34px
+          8px
+          10px;
       }
-
 
       .m1015-category-copy strong{
-
-        display:
-          block;
-
-        color:
-          #f3d875;
-
-        font-size:
-          15px;
-
+        display:block;
+        color:#f3d875;
+        font-size:14px;
+        line-height:1.15;
       }
-
 
       .m1015-category-copy small{
-
-        display:
-          block;
-
-        margin-top:
-          3px;
-
-        color:
-          #8f8f8f;
-
-        font-size:
-          10px;
-
+        display:block;
+        margin-top:3px;
+        color:#888;
+        font-size:9px;
       }
 
-
       .m1015-category-arrow{
-
-        position:
-          absolute;
-
-        right:
-          12px;
-
-        bottom:
-          20px;
-
-        color:
-          #f3d875;
-
-        font-size:
-          24px;
-
-        line-height:
-          1;
-
+        position:absolute;
+        right:11px;
+        bottom:17px;
+        color:#f3d875;
+        font-size:22px;
+        line-height:1;
       }
 
 
@@ -1431,892 +945,381 @@
          ===================================== */
 
       .m1015-today-list{
-
-        display:
-          grid;
-
-        gap:
-          10px;
-
+        display:grid;
+        gap:9px;
       }
-
 
       .m1015-empty{
-
-        display:
-          grid;
-
-        place-items:
-          center;
-
-        min-height:
-          170px;
-
-        padding:
-          22px;
-
-        border:
-          1px dashed
-          #323232;
-
-        border-radius:
-          17px;
-
-        color:
-          #7f7f7f;
-
-        text-align:
-          center;
-
+        display:grid;
+        place-items:center;
+        min-height:130px;
+        padding:20px;
+        border:1px dashed #323232;
+        border-radius:16px;
+        color:#777;
+        text-align:center;
       }
-
 
       .m1015-empty strong{
-
-        display:
-          block;
-
-        margin-top:
-          8px;
-
-        color:
-          #cfcfcf;
-
+        display:block;
+        margin-top:7px;
+        color:#ccc;
       }
-
 
       .m1015-empty-icon{
-
-        font-size:
-          34px;
-
-        opacity:
-          .6;
-
+        font-size:30px;
+        opacity:.55;
       }
-
 
       .m1015-logged{
-
-        display:
-          grid;
-
+        display:grid;
         grid-template-columns:
-          132px
+          118px
           minmax(0,1fr)
-          36px;
-
-        gap:
-          13px;
-
-        align-items:
-          center;
-
-        min-height:
-          124px;
-
-        padding:
-          10px;
-
-        border:
-          1px solid
-          #303030;
-
-        border-radius:
-          18px;
-
-        background:
-          #0d0d0d;
-
+          34px;
+        gap:11px;
+        align-items:center;
+        min-height:108px;
+        padding:9px;
+        border:1px solid #303030;
+        border-radius:16px;
+        background:#0d0d0d;
       }
-
 
       .m1015-logged img{
-
-        width:
-          132px;
-
-        height:
-          104px;
-
-        object-fit:
-          cover;
-
-        border:
-          1px solid
+        width:118px;
+        height:90px;
+        object-fit:cover;
+        border:1px solid
           rgba(219,174,56,.35);
-
-        border-radius:
-          14px;
-
+        border-radius:13px;
       }
-
 
       .m1015-logged-meta{
-
-        min-width:
-          0;
-
+        min-width:0;
       }
-
 
       .m1015-meal-chip{
-
-        display:
-          inline-flex;
-
-        margin-bottom:
-          4px;
-
-        padding:
-          4px 7px;
-
-        border-radius:
-          999px;
-
-        background:
-          #f3d875;
-
-        color:
-          #111;
-
-        font-size:
-          8px;
-
-        font-weight:
-          950;
-
-        letter-spacing:
-          .05em;
-
-        text-transform:
-          uppercase;
-
+        display:inline-flex;
+        margin-bottom:4px;
+        padding:3px 6px;
+        border-radius:999px;
+        background:#f3d875;
+        color:#111;
+        font-size:7px;
+        font-weight:950;
+        text-transform:uppercase;
       }
-
 
       .m1015-logged h4{
-
-        margin:
-          0;
-
-        font-size:
-          15px;
-
-        line-height:
-          1.2;
-
+        margin:0;
+        font-size:14px;
+        line-height:1.2;
       }
-
 
       .m1015-logged p{
-
-        margin:
-          4px 0 7px;
-
-        color:
-          #8c8c8c;
-
-        font-size:
-          10px;
-
-        line-height:
-          1.35;
-
+        margin:3px 0 6px;
+        color:#878787;
+        font-size:9px;
+        line-height:1.35;
       }
-
 
       .m1015-macros{
-
-        display:
-          flex;
-
-        flex-wrap:
-          wrap;
-
-        gap:
-          7px;
-
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px;
       }
-
 
       .m1015-macro{
-
-        padding:
-          5px 7px;
-
-        border:
-          1px solid
-          #38311d;
-
-        border-radius:
-          8px;
-
-        color:
-          #f3d875;
-
-        font-size:
-          10px;
-
-        font-weight:
-          900;
-
+        padding:4px 6px;
+        border:1px solid #38311d;
+        border-radius:7px;
+        color:#f3d875;
+        font-size:9px;
+        font-weight:900;
       }
 
-
       .m1015-remove{
-
-        width:
-          34px;
-
-        height:
-          34px;
-
-        border:
-          1px solid
-          #3a2525;
-
-        border-radius:
-          10px;
-
-        background:
-          #171010;
-
-        color:
-          #ff7777;
-
-        font-size:
-          17px;
-
-        cursor:
-          pointer;
-
+        width:32px;
+        height:32px;
+        border:1px solid #3a2525;
+        border-radius:9px;
+        background:#171010;
+        color:#ff7777;
+        font-size:16px;
       }
 
 
       /* =====================================
-         DAILY TARGETS
+         TARGETS
          ===================================== */
 
       .m1015-target-grid{
-
-        display:
-          grid;
-
-        grid-template-columns:
-          1fr 1fr;
-
-        gap:
-          10px;
-
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:9px;
       }
-
 
       .m1015-target{
-
-        padding:
-          13px;
-
-        border:
-          1px solid
-          #36311f;
-
-        border-radius:
-          17px;
-
-        background:
-          #0c0c0b;
-
+        padding:11px;
+        border:1px solid #36311f;
+        border-radius:15px;
+        background:#0c0c0b;
       }
-
 
       .m1015-target-top{
-
-        display:
-          flex;
-
-        gap:
-          10px;
-
-        align-items:
-          center;
-
+        display:flex;
+        gap:8px;
+        align-items:center;
       }
-
 
       .m1015-target-icon{
-
-        display:
-          grid;
-
-        place-items:
-          center;
-
-        width:
-          40px;
-
-        height:
-          40px;
-
-        flex:
-          0 0 40px;
-
-        border-radius:
-          12px;
-
-        background:
-          #151515;
-
+        display:grid;
+        place-items:center;
+        width:36px;
+        height:36px;
+        flex:0 0 36px;
+        border-radius:11px;
+        background:#151515;
       }
-
 
       .m1015-target-icon svg{
-
-        width:
-          28px;
-
-        height:
-          28px;
-
+        width:25px;
+        height:25px;
       }
-
 
       .m1015-target.calories
       .m1015-target-icon{
-
-        color:
-          #ff9848;
-
+        color:#ff9848;
       }
-
 
       .m1015-target.protein
       .m1015-target-icon{
-
-        color:
-          #f3d875;
-
+        color:#f3d875;
       }
-
 
       .m1015-target.water
       .m1015-target-icon{
-
-        color:
-          #42b8ff;
-
+        color:#42b8ff;
       }
-
 
       .m1015-target.recovery
       .m1015-target-icon{
-
-        color:
-          #a77bff;
-
+        color:#a77bff;
       }
-
 
       .m1015-target-label{
-
-        color:
-          #9a9a9a;
-
-        font-size:
-          9px;
-
-        font-weight:
-          800;
-
-        letter-spacing:
-          .05em;
-
-        text-transform:
-          uppercase;
-
+        color:#999;
+        font-size:8px;
+        font-weight:800;
+        text-transform:uppercase;
       }
-
 
       .m1015-target-value{
-
-        margin-top:
-          2px;
-
-        font-size:
-          17px;
-
-        font-weight:
-          950;
-
+        margin-top:2px;
+        font-size:15px;
+        font-weight:950;
       }
-
 
       .m1015-bar{
-
-        height:
-          7px;
-
-        margin-top:
-          11px;
-
-        overflow:
-          hidden;
-
-        border-radius:
-          999px;
-
-        background:
-          #252525;
-
+        height:6px;
+        margin-top:9px;
+        overflow:hidden;
+        border-radius:999px;
+        background:#252525;
       }
 
-
       .m1015-bar span{
-
-        display:
-          block;
-
-        height:
-          100%;
-
-        border-radius:
-          inherit;
-
+        display:block;
+        height:100%;
+        border-radius:inherit;
         background:
           linear-gradient(
             90deg,
             #bd8c25,
             #f3d875
           );
-
       }
-
 
       .m1015-target.water
       .m1015-bar span{
-
         background:
           linear-gradient(
             90deg,
             #178fe3,
             #5bc4ff
           );
-
       }
-
 
       .m1015-target.recovery
       .m1015-bar span{
-
         background:
           linear-gradient(
             90deg,
             #764fd6,
             #ae83ff
           );
-
       }
-
 
       .m1015-control-row{
-
-        display:
-          flex;
-
-        gap:
-          6px;
-
-        margin-top:
-          10px;
-
+        display:flex;
+        gap:5px;
+        margin-top:8px;
       }
 
-
       .m1015-control-row button{
-
-        flex:
-          1;
-
-        min-height:
-          32px;
-
-        padding:
-          6px;
-
-        border:
-          1px solid
-          #363636;
-
-        border-radius:
-          9px;
-
-        background:
-          #131313;
-
-        color:
-          #f3d875;
-
-        font-size:
-          10px;
-
-        font-weight:
-          900;
-
-        cursor:
-          pointer;
-
+        flex:1;
+        min-height:29px;
+        padding:5px;
+        border:1px solid #363636;
+        border-radius:8px;
+        background:#131313;
+        color:#f3d875;
+        font-size:9px;
+        font-weight:900;
       }
 
 
       /* =====================================
-         MEAL OPTIONS MODAL
+         MODAL
          ===================================== */
 
       .m1015-modal-backdrop{
-
-        position:
-          fixed;
-
-        inset:
-          0;
-
-        z-index:
-          22000;
-
-        display:
-          flex;
-
-        align-items:
-          flex-end;
-
-        justify-content:
-          center;
-
-        padding:
-          16px;
-
-        background:
-          rgba(0,0,0,.82);
-
-        backdrop-filter:
-          blur(8px);
-
+        position:fixed;
+        inset:0;
+        z-index:22000;
+        display:flex;
+        align-items:flex-end;
+        justify-content:center;
+        padding:14px;
+        background:rgba(0,0,0,.84);
+        backdrop-filter:blur(8px);
       }
-
 
       .m1015-modal{
-
-        width:
-          min(680px,100%);
-
-        max-height:
-          calc(100dvh - 40px);
-
-        overflow:
-          auto;
-
-        padding:
-          18px;
-
-        border:
-          1px solid
+        width:min(650px,100%);
+        max-height:calc(100dvh - 30px);
+        overflow:auto;
+        padding:16px;
+        border:1px solid
           rgba(219,174,56,.42);
-
-        border-radius:
-          24px;
-
-        background:
-          #0b0b0b;
-
-        box-shadow:
-          0 28px 80px
-          rgba(0,0,0,.65);
-
+        border-radius:22px;
+        background:#0b0b0b;
       }
-
 
       .m1015-modal-head{
-
-        display:
-          flex;
-
-        align-items:
-          flex-start;
-
-        justify-content:
-          space-between;
-
-        gap:
-          14px;
-
-        margin-bottom:
-          14px;
-
+        display:flex;
+        justify-content:space-between;
+        gap:12px;
+        margin-bottom:12px;
       }
-
 
       .m1015-modal-head h3{
-
-        margin:
-          3px 0 2px;
-
-        font-size:
-          24px;
-
+        margin:3px 0 2px;
+        font-size:22px;
       }
-
 
       .m1015-close{
-
-        width:
-          38px;
-
-        height:
-          38px;
-
-        flex:
-          0 0 38px;
-
-        border:
-          1px solid
-          #353535;
-
-        border-radius:
-          50%;
-
-        background:
-          #151515;
-
-        color:
-          #fff;
-
-        font-size:
-          20px;
-
+        width:36px;
+        height:36px;
+        border:1px solid #353535;
+        border-radius:50%;
+        background:#151515;
+        color:#fff;
+        font-size:19px;
       }
-
 
       .m1015-options{
-
-        display:
-          grid;
-
-        gap:
-          10px;
-
+        display:grid;
+        gap:9px;
       }
-
 
       .m1015-option{
-
-        display:
-          grid;
-
+        display:grid;
         grid-template-columns:
-          108px
+          96px
           minmax(0,1fr)
           auto;
-
-        gap:
-          12px;
-
-        align-items:
-          center;
-
-        min-height:
-          106px;
-
-        padding:
-          8px
-          10px
-          8px
-          8px;
-
-        border:
-          1px solid
-          #303030;
-
-        border-radius:
-          16px;
-
-        background:
-          #10100f;
-
+        gap:10px;
+        align-items:center;
+        min-height:94px;
+        padding:7px 9px 7px 7px;
+        border:1px solid #303030;
+        border-radius:15px;
+        background:#10100f;
       }
-
 
       .m1015-option img{
-
-        width:
-          108px;
-
-        height:
-          90px;
-
-        object-fit:
-          cover;
-
-        border-radius:
-          12px;
-
+        width:96px;
+        height:78px;
+        object-fit:cover;
+        border-radius:11px;
       }
-
 
       .m1015-option h4{
-
-        margin:
-          0;
-
-        font-size:
-          14px;
-
+        margin:0;
+        font-size:13px;
       }
-
 
       .m1015-option p{
-
-        margin:
-          4px 0 7px;
-
-        color:
-          #8d8d8d;
-
-        font-size:
-          10px;
-
-        line-height:
-          1.35;
-
+        margin:3px 0 6px;
+        color:#888;
+        font-size:9px;
+        line-height:1.3;
       }
-
 
       .m1015-option-macros{
-
-        color:
-          #f3d875;
-
-        font-size:
-          10px;
-
-        font-weight:
-          900;
-
+        color:#f3d875;
+        font-size:9px;
+        font-weight:900;
       }
-
 
       .m1015-add{
-
-        min-width:
-          58px;
-
-        height:
-          38px;
-
-        padding:
-          0 12px;
-
-        border:
-          0;
-
-        border-radius:
-          999px;
-
-        background:
-          #f3d875;
-
-        color:
-          #111;
-
-        font-size:
-          11px;
-
-        font-weight:
-          950;
-
-        cursor:
-          pointer;
-
+        min-width:54px;
+        height:35px;
+        padding:0 10px;
+        border:0;
+        border-radius:999px;
+        background:#f3d875;
+        color:#111;
+        font-size:10px;
+        font-weight:950;
       }
-
-
-      /* CUSTOM MEAL */
 
       .m1015-custom{
-
-        margin-top:
-          12px;
-
-        padding:
-          13px;
-
-        border:
-          1px solid
-          #303030;
-
-        border-radius:
-          16px;
-
-        background:
-          #0f0f0f;
-
+        margin-top:10px;
+        padding:11px;
+        border:1px solid #303030;
+        border-radius:14px;
+        background:#0f0f0f;
       }
-
 
       .m1015-custom h4{
-
-        margin:
-          0 0 9px;
-
+        margin:0 0 8px;
       }
-
 
       .m1015-custom-grid{
-
-        display:
-          grid;
-
+        display:grid;
         grid-template-columns:
-          1.4fr .7fr .7fr;
-
-        gap:
-          8px;
-
+          1.4fr
+          .7fr
+          .7fr;
+        gap:7px;
       }
-
 
       .m1015-custom input{
-
-        width:
-          100%;
-
-        min-height:
-          40px;
-
-        padding:
-          9px 10px;
-
-        border:
-          1px solid
-          #333;
-
-        border-radius:
-          10px;
-
-        background:
-          #080808;
-
-        color:
-          #fff;
-
+        width:100%;
+        min-height:38px;
+        padding:8px 9px;
+        border:1px solid #333;
+        border-radius:9px;
+        background:#080808;
+        color:#fff;
       }
-
 
       .m1015-custom
       .m1015-add{
-
-        margin-top:
-          9px;
-
+        margin-top:8px;
       }
 
 
@@ -2324,348 +1327,238 @@
          PHONE
          ===================================== */
 
-      @media(
-        max-width:600px
-      ){
+      @media(max-width:600px){
+
+        #${ROOT_ID}{
+          gap:12px;
+        }
+
+        .m1015-hero h2{
+          font-size:23px;
+        }
 
         .m1015-section{
-
-          padding:
-            14px;
-
+          padding:13px;
         }
 
+
+        /*
+          PHONE:
+          single-column horizontal category cards
+        */
+
+        .m1015-category-grid{
+          grid-template-columns:1fr;
+          gap:8px;
+        }
 
         .m1015-category{
-
-          min-height:
-            154px;
-
+          display:grid;
+          grid-template-columns:
+            118px
+            minmax(0,1fr);
+          min-height:102px;
         }
-
 
         .m1015-category img{
-
-          height:
-            94px;
-
+          width:118px;
+          height:100%;
+          min-height:100px;
+          object-fit:cover;
         }
-
 
         .m1015-category-copy{
-
-          min-height:
-            58px;
-
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
+          min-height:100px;
           padding:
-            9px
-            34px
-            9px
-            10px;
-
+            12px
+            38px
+            12px
+            13px;
         }
 
+        .m1015-category-copy strong{
+          font-size:15px;
+        }
+
+        .m1015-category-copy small{
+          margin-top:4px;
+          font-size:10px;
+        }
+
+        .m1015-category-arrow{
+          right:13px;
+          bottom:auto;
+          top:50%;
+          transform:translateY(-50%);
+        }
+
+
+        /* LOGGED */
 
         .m1015-logged{
-
           grid-template-columns:
-            104px
+            102px
             minmax(0,1fr)
-            34px;
-
-          gap:
-            10px;
-
-          min-height:
-            110px;
-
+            32px;
+          gap:9px;
+          min-height:100px;
+          padding:8px;
         }
-
 
         .m1015-logged img{
-
-          width:
-            104px;
-
-          height:
-            90px;
-
+          width:102px;
+          height:84px;
         }
 
+
+        /* TARGETS */
 
         .m1015-target{
-
-          padding:
-            11px;
-
+          padding:10px;
         }
-
 
         .m1015-target-icon{
-
-          width:
-            35px;
-
-          height:
-            35px;
-
-          flex-basis:
-            35px;
-
+          width:33px;
+          height:33px;
+          flex-basis:33px;
         }
-
 
         .m1015-target-icon svg{
-
-          width:
-            24px;
-
-          height:
-            24px;
-
+          width:22px;
+          height:22px;
         }
-
 
         .m1015-target-value{
-
-          font-size:
-            15px;
-
+          font-size:14px;
         }
 
+
+        /* MODAL */
 
         .m1015-modal-backdrop{
-
-          padding:
-            10px;
-
+          padding:8px;
         }
-
 
         .m1015-modal{
-
-          padding:
-            15px;
-
-          border-radius:
-            22px;
-
+          padding:13px;
+          border-radius:20px;
         }
-
 
         .m1015-option{
-
           grid-template-columns:
-            88px
+            84px
             minmax(0,1fr)
             auto;
-
-          gap:
-            9px;
-
+          gap:8px;
         }
-
 
         .m1015-option img{
-
-          width:
-            88px;
-
-          height:
-            78px;
-
+          width:84px;
+          height:70px;
         }
-
 
         .m1015-custom-grid{
-
-          grid-template-columns:
-            1fr 1fr;
-
+          grid-template-columns:1fr 1fr;
         }
-
 
         .m1015-custom-grid
         input:first-child{
-
-          grid-column:
-            1 / -1;
-
+          grid-column:1 / -1;
         }
 
       }
 
 
-      @media(
-        max-width:390px
-      ){
-
-        .m1015-category-grid{
-
-          gap:
-            8px;
-
-        }
-
+      @media(max-width:390px){
 
         .m1015-category{
-
-          min-height:
-            145px;
-
+          grid-template-columns:
+            106px
+            minmax(0,1fr);
         }
-
 
         .m1015-category img{
-
-          height:
-            88px;
-
+          width:106px;
         }
 
-
-        .m1015-category-copy strong{
-
-          font-size:
-            13px;
-
+        .m1015-category-copy{
+          padding-left:11px;
         }
-
 
         .m1015-logged{
-
           grid-template-columns:
-            92px
+            88px
             minmax(0,1fr)
-            32px;
-
-          padding:
-            8px;
-
+            30px;
         }
-
 
         .m1015-logged img{
-
-          width:
-            92px;
-
-          height:
-            82px;
-
+          width:88px;
+          height:76px;
         }
-
 
         .m1015-target-grid{
-
-          gap:
-            8px;
-
+          gap:7px;
         }
-
 
         .m1015-target{
-
-          padding:
-            9px;
-
+          padding:8px;
         }
-
 
         .m1015-target-top{
-
-          gap:
-            7px;
-
+          gap:6px;
         }
-
 
         .m1015-target-value{
-
-          font-size:
-            14px;
-
+          font-size:13px;
         }
-
 
         .m1015-control-row{
-
-          gap:
-            4px;
-
+          gap:3px;
         }
-
 
         .m1015-control-row button{
-
-          font-size:
-            9px;
-
+          font-size:8px;
         }
-
 
         .m1015-option{
-
           grid-template-columns:
-            76px
+            72px
             minmax(0,1fr);
-
-          padding:
-            8px;
-
         }
-
 
         .m1015-option img{
-
-          width:
-            76px;
-
-          height:
-            70px;
-
+          width:72px;
+          height:66px;
         }
 
-
+        .m1015-option
         .m1015-add{
-
-          grid-column:
-            1 / -1;
-
-          width:
-            100%;
-
-          height:
-            36px;
-
+          grid-column:1 / -1;
+          width:100%;
         }
 
       }
 
     `;
 
-
     document.head
       .appendChild(
         style
       );
-
   }
 
 
   /* =========================================
-     ADD A MEAL
+     CATEGORY CARD
      ========================================= */
 
-  function mealCategoryHtml(
-    key
-  ) {
-
+  function mealCategoryHtml(key) {
     const item =
-      CATEGORY[
-        key
-      ];
-
+      CATEGORY[key];
 
     return `
 
@@ -2676,9 +1569,7 @@
       >
 
         <img
-          src="${asset(
-            item.image
-          )}"
+          src="${asset(item.image)}"
           alt=""
           aria-hidden="true"
         >
@@ -2688,15 +1579,11 @@
         >
 
           <strong>
-            ${esc(
-              item.label
-            )}
+            ${esc(item.label)}
           </strong>
 
           <small>
-            ${esc(
-              item.sub
-            )}
+            ${esc(item.sub)}
           </small>
 
         </span>
@@ -2710,7 +1597,6 @@
       </button>
 
     `;
-
   }
 
 
@@ -2719,149 +1605,112 @@
      ========================================= */
 
   function loggedMealsHtml() {
-
     const day =
       todayData();
 
-
-    const cards =
-      [];
-
+    const cards = [];
 
     [
-
       "Breakfast",
-
       "Lunch",
-
       "Dinner",
-
       "Snacks"
-
     ].forEach(
-
       mealKey => {
 
         (
-          day.meals[
-            mealKey
-          ] ||
+          day.meals[mealKey] ||
           []
-        )
-          .forEach(
+        ).forEach(
+          (item, index) => {
 
-            (
-              item,
-              index
-            ) => {
+            const image =
+              item.image ||
+              CATEGORY[mealKey].image;
 
-              const image =
+            cards.push(`
 
-                item.image ||
+              <article
+                class="m1015-logged"
+              >
 
-                CATEGORY[
-                  mealKey
-                ].image;
-
-
-              cards.push(`
-
-                <article
-                  class="m1015-logged"
+                <img
+                  src="${asset(image)}"
+                  alt=""
                 >
 
-                  <img
-                    src="${asset(
-                      image
-                    )}"
-                    alt=""
-                  >
+                <div
+                  class="m1015-logged-meta"
+                >
 
+                  <span
+                    class="m1015-meal-chip"
+                  >
+                    ${esc(
+                      CATEGORY[mealKey].label
+                    )}
+                  </span>
+
+                  <h4>
+                    ${esc(
+                      item.name ||
+                      CATEGORY[mealKey].label
+                    )}
+                  </h4>
+
+                  <p>
+                    ${esc(
+                      item.detail ||
+                      "Logged meal"
+                    )}
+                  </p>
 
                   <div
-                    class="m1015-logged-meta"
+                    class="m1015-macros"
                   >
 
                     <span
-                      class="m1015-meal-chip"
+                      class="m1015-macro"
                     >
-                      ${esc(
-                        CATEGORY[
-                          mealKey
-                        ].label
-                      )}
+                      ${
+                        Number(
+                          item.calories
+                        ) || 0
+                      } cal
                     </span>
 
-
-                    <h4>
-                      ${esc(
-                        item.name ||
-                        CATEGORY[
-                          mealKey
-                        ].label
-                      )}
-                    </h4>
-
-
-                    <p>
-                      ${esc(
-                        item.detail ||
-                        "Logged meal"
-                      )}
-                    </p>
-
-
-                    <div
-                      class="m1015-macros"
+                    <span
+                      class="m1015-macro"
                     >
-
-                      <span
-                        class="m1015-macro"
-                      >
-                        ${
-                          Number(
-                            item.calories
-                          ) || 0
-                        } cal
-                      </span>
-
-
-                      <span
-                        class="m1015-macro"
-                      >
-                        ${
-                          Number(
-                            item.protein
-                          ) || 0
-                        }g protein
-                      </span>
-
-                    </div>
+                      ${
+                        Number(
+                          item.protein
+                        ) || 0
+                      }g protein
+                    </span>
 
                   </div>
 
+                </div>
 
-                  <button
-                    type="button"
-                    class="m1015-remove"
-                    data-m1015-remove="${mealKey}:${index}"
-                    aria-label="Remove meal"
-                  >
-                    ×
-                  </button>
+                <button
+                  type="button"
+                  class="m1015-remove"
+                  data-m1015-remove="${mealKey}:${index}"
+                  aria-label="Remove meal"
+                >
+                  ×
+                </button>
 
-                </article>
+              </article>
 
-              `);
+            `);
 
-            }
-
-          );
+          }
+        );
 
       }
-
     );
-
 
     if (
       !cards.length
@@ -2897,7 +1746,6 @@
 
     }
 
-
     return `
 
       <div
@@ -2907,12 +1755,11 @@
       </div>
 
     `;
-
   }
 
 
   /* =========================================
-     TARGET TILE
+     TARGET CARD
      ========================================= */
 
   function targetTile(
@@ -2920,16 +1767,15 @@
     label,
     value,
     target,
-    suffix,
+    suffix = "",
     controls = ""
   ) {
 
     const percentage =
-      pct(
+      percent(
         value,
         target
       );
-
 
     return `
 
@@ -2947,7 +1793,6 @@
             ${iconSvg(type)}
           </div>
 
-
           <div>
 
             <div
@@ -2955,7 +1800,6 @@
             >
               ${esc(label)}
             </div>
-
 
             <div
               class="m1015-target-value"
@@ -2967,7 +1811,7 @@
               <span
                 style="
                   color:#777;
-                  font-size:10px;
+                  font-size:9px;
                   font-weight:700
                 "
               >
@@ -2981,42 +1825,33 @@
 
         </div>
 
-
         <div
           class="m1015-bar"
         >
-
           <span
             style="
               width:${percentage}%
             "
           ></span>
-
         </div>
-
 
         ${controls}
 
       </div>
 
     `;
-
   }
 
 
   function targetsHtml() {
-
     const current =
       totals();
-
 
     const target =
       loadTargets();
 
-
     const recovery =
       recoveryScore();
-
 
     return `
 
@@ -3028,10 +1863,8 @@
           "calories",
           "Calories",
           current.calories,
-          target.calories,
-          ""
+          target.calories
         )}
-
 
         ${targetTile(
           "protein",
@@ -3041,21 +1874,13 @@
           "g"
         )}
 
-
         ${targetTile(
-
           "water",
-
           "Water",
-
           current.water,
-
           target.water,
-
           "ml",
-
           `
-
             <div
               class="m1015-control-row"
             >
@@ -3067,14 +1892,12 @@
                 −250
               </button>
 
-
               <button
                 type="button"
                 data-m1015-water="250"
               >
                 +250
               </button>
-
 
               <button
                 type="button"
@@ -3084,26 +1907,16 @@
               </button>
 
             </div>
-
           `
-
         )}
 
-
         ${targetTile(
-
           "recovery",
-
           "Recovery",
-
           recovery,
-
           10,
-
           "",
-
           `
-
             <div
               class="m1015-control-row"
             >
@@ -3115,7 +1928,6 @@
                 −
               </button>
 
-
               <button
                 type="button"
                 data-m1015-recovery="1"
@@ -3124,15 +1936,12 @@
               </button>
 
             </div>
-
           `
-
         )}
 
       </div>
 
     `;
-
   }
 
 
@@ -3155,44 +1964,30 @@
         <img
           src="${asset(
             item.image ||
-            CATEGORY[
-              mealKey
-            ].image
+            CATEGORY[mealKey].image
           )}"
           alt=""
         >
 
-
         <div>
 
           <h4>
-            ${esc(
-              item.name
-            )}
+            ${esc(item.name)}
           </h4>
 
-
           <p>
-            ${esc(
-              item.detail
-            )}
+            ${esc(item.detail)}
           </p>
-
 
           <div
             class="m1015-option-macros"
           >
-
             ${item.calories} cal
-
             •
-
             ${item.protein}g protein
-
           </div>
 
         </div>
-
 
         <button
           type="button"
@@ -3205,33 +2000,26 @@
       </article>
 
     `;
-
   }
 
 
   /* =========================================
-     MEAL OPTIONS MODAL
+     MODAL
      ========================================= */
 
   function modalHtml() {
 
     if (
       !openMeal ||
-      !MEAL_OPTIONS[
-        openMeal
-      ]
+      !MEAL_OPTIONS[openMeal]
     ) {
 
       return "";
 
     }
 
-
     const config =
-      CATEGORY[
-        openMeal
-      ];
-
+      CATEGORY[openMeal];
 
     return `
 
@@ -3258,26 +2046,21 @@
                 MANA FUEL
               </div>
 
-
               <h3>
-                ${esc(
-                  config.label
-                )}
+                ${esc(config.label)}
               </h3>
-
 
               <p
                 style="
                   margin:0;
                   color:#8f8f8f;
-                  font-size:11px
+                  font-size:10px
                 "
               >
                 Choose a meal to add to today.
               </p>
 
             </div>
-
 
             <button
               type="button"
@@ -3290,20 +2073,14 @@
 
           </div>
 
-
           <div
             class="m1015-options"
           >
 
             ${
-              MEAL_OPTIONS[
-                openMeal
-              ]
+              MEAL_OPTIONS[openMeal]
                 .map(
-                  (
-                    item,
-                    index
-                  ) =>
+                  (item, index) =>
                     optionHtml(
                       openMeal,
                       item,
@@ -3315,7 +2092,6 @@
 
           </div>
 
-
           <div
             class="m1015-custom"
           >
@@ -3323,7 +2099,6 @@
             <h4>
               Add your own
             </h4>
-
 
             <div
               class="m1015-custom-grid"
@@ -3335,14 +2110,12 @@
                 placeholder="Meal name"
               >
 
-
               <input
                 id="m1015CustomCalories"
                 type="number"
                 min="0"
                 placeholder="Calories"
               >
-
 
               <input
                 id="m1015CustomProtein"
@@ -3352,7 +2125,6 @@
               >
 
             </div>
-
 
             <button
               type="button"
@@ -3369,12 +2141,11 @@
       </div>
 
     `;
-
   }
 
 
   /* =========================================
-     FULL PAGE
+     PAGE
      ========================================= */
 
   function pageHtml() {
@@ -3395,22 +2166,18 @@
             MANA FUEL
           </div>
 
-
           <h2>
             Fuel with purpose
           </h2>
 
-
           <p>
-            Choose your meals, see what
-            you have logged, then check
-            where you sit for the day.
+            Choose your meals, see what you've
+            logged, then check where you sit
+            for the day.
           </p>
 
         </header>
 
-
-        <!-- ADD A MEAL -->
 
         <section
           class="
@@ -3428,39 +2195,25 @@
             </h3>
 
             <p>
-              Choose a meal category
-              to see your options.
+              Choose a meal category to see
+              your options.
             </p>
 
           </div>
-
 
           <div
             class="m1015-category-grid"
           >
 
-            ${mealCategoryHtml(
-              "Breakfast"
-            )}
-
-            ${mealCategoryHtml(
-              "Lunch"
-            )}
-
-            ${mealCategoryHtml(
-              "Dinner"
-            )}
-
-            ${mealCategoryHtml(
-              "Snacks"
-            )}
+            ${mealCategoryHtml("Breakfast")}
+            ${mealCategoryHtml("Lunch")}
+            ${mealCategoryHtml("Dinner")}
+            ${mealCategoryHtml("Snacks")}
 
           </div>
 
         </section>
 
-
-        <!-- TODAY'S MEALS -->
 
         <section
           class="
@@ -3478,19 +2231,16 @@
             </h3>
 
             <p>
-              Your selected meals stay
-              here so your day remains visual.
+              Your selected meals stay visible
+              throughout the day.
             </p>
 
           </div>
-
 
           ${loggedMealsHtml()}
 
         </section>
 
-
-        <!-- DAILY TARGETS -->
 
         <section
           class="
@@ -3508,25 +2258,21 @@
             </h3>
 
             <p>
-              Calories and protein update
-              from meals. Water and recovery
-              are manual.
+              Calories and protein update from
+              meals. Water and recovery are manual.
             </p>
 
           </div>
 
-
           ${targetsHtml()}
 
         </section>
-
 
         ${modalHtml()}
 
       </div>
 
     `;
-
   }
 
 
@@ -3544,40 +2290,29 @@
 
     }
 
-
     const holder =
       document.getElementById(
         "manaV83Content"
       );
 
-
     if (!holder) {
-
       return false;
-
     }
 
-
     installStyles();
-
 
     holder.innerHTML =
       pageHtml();
 
-
     return true;
-
   }
 
 
-  function scheduleRender(
-    delay = 0
-  ) {
+  function scheduleRender(delay = 0) {
 
     clearTimeout(
       renderTimer
     );
-
 
     renderTimer =
       setTimeout(
@@ -3594,12 +2329,11 @@
         },
         delay
       );
-
   }
 
 
   /* =========================================
-     ADD MEAL
+     ACTIONS
      ========================================= */
 
   function addMeal(
@@ -3614,17 +2348,12 @@
         index
       ];
 
-
     if (!item) {
-
       return;
-
     }
-
 
     const day =
       todayData();
-
 
     day.meals[
       mealKey
@@ -3634,12 +2363,7 @@
 
       id:
         "m1015-" +
-        Date.now() +
-        "-" +
-        Math
-          .random()
-          .toString(36)
-          .slice(2,7),
+        Date.now(),
 
       addedAt:
         new Date()
@@ -3650,24 +2374,13 @@
 
     });
 
+    writeToday(day);
 
-    writeToday(
-      day
-    );
-
-
-    openMeal =
-      "";
-
+    openMeal = "";
 
     render();
-
   }
 
-
-  /* =========================================
-     CUSTOM MEAL
-     ========================================= */
 
   function addCustomMeal(
     mealKey
@@ -3681,42 +2394,29 @@
         ?.value
         ?.trim();
 
-
     const calories =
       Math.max(
-
         0,
-
         Number(
-
           document
             .getElementById(
               "m1015CustomCalories"
             )
             ?.value
-
         ) || 0
-
       );
-
 
     const protein =
       Math.max(
-
         0,
-
         Number(
-
           document
             .getElementById(
               "m1015CustomProtein"
             )
             ?.value
-
         ) || 0
-
       );
-
 
     if (
       !name ||
@@ -3730,10 +2430,8 @@
 
     }
 
-
     const day =
       todayData();
-
 
     day.meals[
       mealKey
@@ -3762,28 +2460,17 @@
           .toISOString(),
 
       source:
-        "mana-v1015-fuel-custom"
+        "mana-v1015-custom"
 
     });
 
+    writeToday(day);
 
-    writeToday(
-      day
-    );
-
-
-    openMeal =
-      "";
-
+    openMeal = "";
 
     render();
-
   }
 
-
-  /* =========================================
-     REMOVE MEAL
-     ========================================= */
 
   function removeMeal(
     mealKey,
@@ -3792,7 +2479,6 @@
 
     const day =
       todayData();
-
 
     if (
       !Array.isArray(
@@ -3806,7 +2492,6 @@
 
     }
 
-
     day.meals[
       mealKey
     ].splice(
@@ -3814,88 +2499,50 @@
       1
     );
 
-
-    writeToday(
-      day
-    );
-
+    writeToday(day);
 
     render();
-
   }
 
 
-  /* =========================================
-     WATER
-     ========================================= */
-
-  function changeWater(
-    delta
-  ) {
+  function changeWater(delta) {
 
     const day =
       todayData();
 
-
     day.water =
       Math.max(
-
         0,
-
         (
-          Number(
-            day.water
-          ) || 0
+          Number(day.water) || 0
         ) +
-
-        Number(
-          delta || 0
-        )
-
+        Number(delta || 0)
       );
 
-
-    writeToday(
-      day
-    );
-
+    writeToday(day);
 
     render();
-
   }
 
-
-  /* =========================================
-     RECOVERY
-     ========================================= */
 
   function changeRecovery(
     delta
   ) {
 
     saveRecoveryScore(
-
       recoveryScore() +
-
-      Number(
-        delta || 0
-      )
-
+      Number(delta || 0)
     );
 
-
     render();
-
   }
 
 
   /* =========================================
-     CLICK EVENTS
+     CLICK HANDLER
      ========================================= */
 
-  function handleClick(
-    event
-  ) {
+  function handleClick(event) {
 
     if (
       !fuelOpen()
@@ -3911,18 +2558,15 @@
         "[data-m1015-open]"
       );
 
-
     if (open) {
 
       openMeal =
         open.dataset
           .m1015Open;
 
-
       render();
 
       return;
-
     }
 
 
@@ -3932,14 +2576,11 @@
       )
     ) {
 
-      openMeal =
-        "";
-
+      openMeal = "";
 
       render();
 
       return;
-
     }
 
 
@@ -3948,21 +2589,16 @@
         "[data-m1015-backdrop]"
       );
 
-
     if (
       backdrop &&
-      event.target ===
-        backdrop
+      event.target === backdrop
     ) {
 
-      openMeal =
-        "";
-
+      openMeal = "";
 
       render();
 
       return;
-
     }
 
 
@@ -3970,7 +2606,6 @@
       event.target.closest(
         "[data-m1015-add]"
       );
-
 
     if (add) {
 
@@ -3982,15 +2617,12 @@
           .m1015Add
           .split(":");
 
-
       addMeal(
         mealKey,
         Number(index)
       );
 
-
       return;
-
     }
 
 
@@ -3999,19 +2631,14 @@
         "[data-m1015-custom]"
       );
 
-
     if (custom) {
 
       addCustomMeal(
-
         custom.dataset
           .m1015Custom
-
       );
 
-
       return;
-
     }
 
 
@@ -4019,7 +2646,6 @@
       event.target.closest(
         "[data-m1015-remove]"
       );
-
 
     if (remove) {
 
@@ -4031,15 +2657,12 @@
           .m1015Remove
           .split(":");
 
-
       removeMeal(
         mealKey,
         Number(index)
       );
 
-
       return;
-
     }
 
 
@@ -4048,21 +2671,16 @@
         "[data-m1015-water]"
       );
 
-
     if (water) {
 
       changeWater(
-
         Number(
           water.dataset
             .m1015Water
         ) || 0
-
       );
 
-
       return;
-
     }
 
 
@@ -4071,33 +2689,21 @@
         "[data-m1015-recovery]"
       );
 
-
     if (recovery) {
 
       changeRecovery(
-
         Number(
           recovery.dataset
             .m1015Recovery
         ) || 0
-
       );
 
     }
-
   }
 
 
   /* =========================================
-     FUEL CONTENT GUARD
-
-     If an older Fuel renderer tries to
-     repaint the page, immediately restore
-     v10.15.
-
-     The old page stays hidden by CSS,
-     so the user should not see the old
-     page flash first.
+     CONTENT GUARD
      ========================================= */
 
   function connectObserver() {
@@ -4105,19 +2711,14 @@
     observer
       ?.disconnect();
 
-
     const holder =
       document.getElementById(
         "manaV83Content"
       );
 
-
     if (!holder) {
-
       return;
-
     }
-
 
     observer =
       new MutationObserver(
@@ -4131,7 +2732,6 @@
 
           }
 
-
           if (
             !document
               .getElementById(
@@ -4139,29 +2739,20 @@
               )
           ) {
 
-            scheduleRender(
-              0
-            );
+            scheduleRender(0);
 
           }
 
         }
       );
 
-
     observer.observe(
       holder,
       {
-
-        childList:
-          true,
-
-        subtree:
-          false
-
+        childList:true,
+        subtree:false
       }
     );
-
   }
 
 
@@ -4177,16 +2768,8 @@
     );
 
 
-    /*
-      Capture the Fuel-tab click before
-      older modules finish their delayed
-      paint.
-    */
-
     document.addEventListener(
-
       "click",
-
       event => {
 
         if (
@@ -4209,22 +2792,15 @@
         }
 
       },
-
       true
-
     );
 
 
     window.addEventListener(
-
       "mana:program-tab-change",
-
       () => {
 
-        scheduleRender(
-          0
-        );
-
+        scheduleRender(0);
 
         setTimeout(
           connectObserver,
@@ -4232,91 +2808,68 @@
         );
 
       }
-
     );
 
 
     window.addEventListener(
-
       "mana:fuel-updated",
-
       () => {
 
         if (
           fuelOpen() &&
-          document
-            .getElementById(
-              ROOT_ID
-            )
+          document.getElementById(
+            ROOT_ID
+          )
         ) {
 
-          scheduleRender(
-            0
-          );
+          scheduleRender(0);
 
         }
 
       }
-
     );
 
 
     window.addEventListener(
-
       "mana:recovery-updated",
-
       () => {
 
         if (
           fuelOpen() &&
-          document
-            .getElementById(
-              ROOT_ID
-            )
+          document.getElementById(
+            ROOT_ID
+          )
         ) {
 
-          scheduleRender(
-            0
-          );
+          scheduleRender(0);
 
         }
 
       }
-
     );
 
 
     window.addEventListener(
-
       "storage",
-
       event => {
 
         if (
           fuelOpen() &&
           [
-
             FUEL_KEY,
-
             TARGET_KEY,
-
             DAILY_KEY
-
           ].includes(
             event.key
           )
         ) {
 
-          scheduleRender(
-            0
-          );
+          scheduleRender(0);
 
         }
 
       }
-
     );
-
   }
 
 
@@ -4326,30 +2879,20 @@
 
   function expose() {
 
-    window
-      .renderManaStrengthFuel =
+    window.renderManaStrengthFuel =
       render;
 
-
-    window
-      .renderManaSharedFuel =
+    window.renderManaSharedFuel =
       render;
 
-
-    window
-      .refreshManaSharedFuel =
+    window.refreshManaSharedFuel =
       render;
 
-
-    window
-      .refreshManaPremiumFuel =
+    window.refreshManaPremiumFuel =
       render;
 
-
-    window
-      .MANA_PREMIUM_FUEL_BUILD =
+    window.MANA_PREMIUM_FUEL_BUILD =
       BUILD;
-
   }
 
 
@@ -4367,7 +2910,6 @@
 
     connectObserver();
 
-
     if (
       fuelOpen()
     ) {
@@ -4376,18 +2918,12 @@
 
     }
 
-
     console.log(
       "Mana Premium Fuel",
       BUILD
     );
-
   }
 
-
-  /* =========================================
-     BOOT
-     ========================================= */
 
   if (
     document.readyState ===
@@ -4395,15 +2931,11 @@
   ) {
 
     document.addEventListener(
-
       "DOMContentLoaded",
-
       init,
-
       {
         once:true
       }
-
     );
 
   } else {
