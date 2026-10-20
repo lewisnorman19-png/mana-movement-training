@@ -1,28 +1,31 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.12.1
-   DEMO UI POLISH + FORM GUIDE BRIDGE
+   MANA MOVEMENT TRAINING v10.12.2
+   LEAN DEMO UI BRIDGE
 
-   BUILD: 101210
+   BUILD: 101220
 
    PURPOSE
    -----------------------------------------
    - Rename FORM GUIDE to DEMO
-   - Remove redundant HOW TO PERFORM button
-   - Keep premium universal Demo opening
-   - Increase workout illustration size on phone
-   - Keep desktop layout unchanged
+   - Hide redundant HOW TO PERFORM button
+   - Open premium Demo once only
+   - Larger phone muscle artwork
+   - NO page-wide MutationObserver
+   - NO repeated DOM refresh loop
+   - NO double Demo loading
    ========================================= */
 
 (() => {
   "use strict";
 
-
   const BUILD =
-    "101210";
-
+    "101220";
 
   const STYLE_ID =
-    "mana-v10121-demo-ui-polish-style";
+    "mana-v10122-demo-ui-polish-style";
+
+  let refreshTimer =
+    null;
 
 
   /* =========================================
@@ -34,8 +37,7 @@
   ) {
 
     return String(
-      value ||
-      ""
+      value || ""
     )
       .replace(
         /\s+/g,
@@ -59,8 +61,7 @@
 
     return normalise(
 
-      card
-        .dataset
+      card.dataset
         .exerciseName ||
 
       card
@@ -83,7 +84,11 @@
 
 
   /* =========================================
-     UI STYLES
+     STYLES
+
+     IMPORTANT:
+     Hide old button with CSS.
+     Do NOT continually remove it from DOM.
      ========================================= */
 
   function installStyles() {
@@ -107,14 +112,7 @@
 
     style.textContent = `
 
-      /* =====================================
-         REMOVE REDUNDANT OLD DEMO BUTTON
-
-         This is the old:
-         HOW TO PERFORM / VISUAL DEMO button.
-
-         DEMO now handles this job.
-         ===================================== */
+      /* OLD REDUNDANT HOW TO PERFORM */
 
       .mana-v955-demo-button,
       .mana-v957-demo-button{
@@ -123,64 +121,54 @@
 
 
       /* =====================================
-         MOBILE MUSCLE VISUAL
-
-         Give the artwork more presence now
-         that the redundant button is gone.
+         PHONE MUSCLE ARTWORK
          ===================================== */
 
       @media(max-width:600px){
 
         .m10111-target{
-
           grid-template-columns:
-            150px
+            148px
             minmax(0,1fr)
             !important;
 
           gap:
-            12px
+            11px
             !important;
 
           padding:
-            11px
+            10px
             !important;
 
           align-items:
             center
             !important;
-
         }
 
 
         .m10111-image{
-
           width:
-            150px
+            148px
             !important;
 
           height:
-            150px
+            148px
             !important;
 
           border-radius:
             15px
             !important;
-
         }
 
 
         .m10111-image img{
-
           border-radius:
             14px
             !important;
-
         }
 
 
         .m10111-target-name{
-
           font-size:
             15px
             !important;
@@ -188,12 +176,10 @@
           line-height:
             1.15
             !important;
-
         }
 
 
         .m10111-kicker{
-
           font-size:
             8px
             !important;
@@ -201,31 +187,23 @@
           letter-spacing:
             .10em
             !important;
-
         }
 
 
         .m10111-note{
-
           font-size:
             9px
             !important;
-
         }
 
       }
 
 
-      /* =====================================
-         SMALL PHONE
-         ===================================== */
-
       @media(max-width:420px){
 
         .m10111-target{
-
           grid-template-columns:
-            136px
+            132px
             minmax(0,1fr)
             !important;
 
@@ -236,78 +214,61 @@
           padding:
             9px
             !important;
-
         }
 
 
         .m10111-image{
-
           width:
-            136px
+            132px
             !important;
 
           height:
-            136px
+            132px
             !important;
-
         }
 
 
         .m10111-target-name{
-
           font-size:
             14px
             !important;
-
         }
 
 
         .m10111-kicker{
-
           font-size:
             7px
             !important;
-
         }
 
 
         .m10111-note{
-
           font-size:
             8px
             !important;
-
         }
 
       }
 
 
-      /* =====================================
-         VERY SMALL PHONE
-         ===================================== */
-
       @media(max-width:360px){
 
         .m10111-target{
-
           grid-template-columns:
-            124px
+            120px
             minmax(0,1fr)
             !important;
-
         }
 
 
         .m10111-image{
-
           width:
-            124px
+            120px
             !important;
 
           height:
-            124px
+            120px
             !important;
-
         }
 
       }
@@ -326,9 +287,11 @@
 
   /* =========================================
      RENAME FORM GUIDE -> DEMO
+
+     This only touches the actual buttons.
      ========================================= */
 
-  function renameGuideButtons() {
+  function renameDemoButtons() {
 
     document
       .querySelectorAll(
@@ -337,8 +300,17 @@
       .forEach(
         button => {
 
-          button.textContent =
-            "DEMO";
+          if (
+            button.textContent
+              .trim() !==
+            "DEMO"
+          ) {
+
+            button.textContent =
+              "DEMO";
+
+          }
+
 
           button.setAttribute(
             "aria-label",
@@ -352,24 +324,24 @@
 
 
   /* =========================================
-     REMOVE OLD HOW TO PERFORM BUTTONS
+     LIGHT REFRESH
+
+     One timer only.
      ========================================= */
 
-  function removeOldDemoButtons() {
+  function scheduleRefresh(
+    delay = 120
+  ) {
 
-    document
-      .querySelectorAll(
-        [
-          ".mana-v955-demo-button",
-          ".mana-v957-demo-button"
-        ].join(",")
-      )
-      .forEach(
-        button => {
+    clearTimeout(
+      refreshTimer
+    );
 
-          button.remove();
 
-        }
+    refreshTimer =
+      setTimeout(
+        renameDemoButtons,
+        delay
       );
 
   }
@@ -377,6 +349,8 @@
 
   /* =========================================
      OPEN PREMIUM DEMO
+
+     ONE call only.
      ========================================= */
 
   function openPremiumDemo(
@@ -429,11 +403,14 @@
   /* =========================================
      DEMO BUTTON BRIDGE
 
-     Ensures the old FORM GUIDE button now
-     opens our premium universal Demo.
+     Let v9.70 perform its normal click once,
+     then replace that guide once.
+
+     No second safety-open.
+     No mutation watcher.
      ========================================= */
 
-  function bindDemoButton() {
+  function bindDemoBridge() {
 
     document.addEventListener(
 
@@ -477,9 +454,10 @@
 
 
         /*
-          Let the old handler complete first,
-          then replace its modal with our
-          premium Demo.
+          Old guide opens synchronously.
+
+          Replace it once on the next
+          browser task.
         */
 
         setTimeout(
@@ -490,118 +468,11 @@
             );
 
           },
-          0
-        );
-
-
-        setTimeout(
-          () => {
-
-            openPremiumDemo(
-              name
-            );
-
-          },
-          120
+          10
         );
 
       }
 
-    );
-
-  }
-
-
-  /* =========================================
-     REFRESH UI
-     ========================================= */
-
-  function refreshUI() {
-
-    renameGuideButtons();
-
-    removeOldDemoButtons();
-
-  }
-
-
-  function scheduleRefresh() {
-
-    [
-      80,
-      250,
-      600,
-      1200
-    ]
-      .forEach(
-        delay => {
-
-          setTimeout(
-            refreshUI,
-            delay
-          );
-
-        }
-      );
-
-  }
-
-
-  /* =========================================
-     WATCH DYNAMIC WORKOUT CARDS
-     ========================================= */
-
-  function watchWorkout() {
-
-    const observer =
-      new MutationObserver(
-        mutations => {
-
-          let relevant =
-            false;
-
-
-          for (
-            const mutation
-            of mutations
-          ) {
-
-            if (
-              mutation.addedNodes
-                .length
-            ) {
-
-              relevant =
-                true;
-
-              break;
-
-            }
-
-          }
-
-
-          if (relevant) {
-
-            scheduleRefresh();
-
-          }
-
-        }
-      );
-
-
-    observer.observe(
-      document.body,
-      {
-
-        childList:
-          true,
-
-        subtree:
-          true
-
-      }
     );
 
   }
@@ -609,19 +480,28 @@
 
   /* =========================================
      EVENTS
+
+     Refresh only when workout navigation
+     genuinely changes.
      ========================================= */
 
   function bindEvents() {
 
     window.addEventListener(
-      "mana:workout-progress-change",
-      scheduleRefresh
+      "mana:program-tab-change",
+      () =>
+        scheduleRefresh(
+          120
+        )
     );
 
 
     window.addEventListener(
-      "mana:program-tab-change",
-      scheduleRefresh
+      "mana:strength-synced",
+      () =>
+        scheduleRefresh(
+          120
+        )
     );
 
 
@@ -632,16 +512,24 @@
       event => {
 
         if (
+
           event.target.closest(
             ".mana-v85-start"
           ) ||
 
           event.target.closest(
             "[data-v85-day]"
+          ) ||
+
+          event.target.closest(
+            '[data-v83-tab="program"]'
           )
+
         ) {
 
-          scheduleRefresh();
+          scheduleRefresh(
+            180
+          );
 
         }
 
@@ -653,7 +541,7 @@
 
 
   /* =========================================
-     PUBLIC BUILD MARKER
+     PUBLIC BUILD
      ========================================= */
 
   function exposeBuild() {
@@ -675,17 +563,33 @@
 
     exposeBuild();
 
-    bindDemoButton();
+    bindDemoBridge();
 
     bindEvents();
 
-    watchWorkout();
 
-    scheduleRefresh();
+    renameDemoButtons();
+
+
+    /*
+      Two small startup passes only.
+      No continuous observer.
+    */
+
+    setTimeout(
+      renameDemoButtons,
+      400
+    );
+
+
+    setTimeout(
+      renameDemoButtons,
+      1000
+    );
 
 
     console.log(
-      "Mana Demo UI Polish",
+      "Mana Lean Demo UI",
       BUILD
     );
 
@@ -702,11 +606,15 @@
   ) {
 
     document.addEventListener(
+
       "DOMContentLoaded",
+
       init,
+
       {
         once:true
       }
+
     );
 
   } else {
