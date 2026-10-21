@@ -1,22 +1,18 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.20.0
+   MANA MOVEMENT TRAINING v10.20.1
    FUEL — INDIVIDUAL MEAL ILLUSTRATIONS
 
-   BUILD: 102000
+   BUILD: 102010
 
-   APPLIES TO
+   HOTFIX
    -----------------------------------------
-   - MANA STRENGTH
-   - MANA 28
-
-   PURPOSE
-   -----------------------------------------
-   - Individual art for every meal option
-   - Same art follows meal into Today's Meals
-   - Premium larger meal artwork
-   - Safe fallback to existing category art
+   - Removes aggressive nested DOM observer
+   - Stops mobile refresh storms / lock-ups
+   - Keeps all 16 individual meal artworks
+   - Keeps Mana Strength + Mana 28 support
+   - Keeps artwork in Today's Meals
+   - Keeps safe category fallbacks
    - No Fuel engine changes
-   - No calorie / protein changes
    ========================================= */
 
 (() => {
@@ -28,7 +24,7 @@
      ========================================= */
 
   const BUILD =
-    "102000";
+    "102010";
 
 
   const STYLE_ID =
@@ -43,7 +39,7 @@
     null;
 
 
-  let observer =
+  let holderObserver =
     null;
 
 
@@ -177,8 +173,6 @@
 
   /* =========================================
      INDIVIDUAL MEAL ART
-
-     These exact files will live in /ui/
      ========================================= */
 
   const MEAL_ART = {
@@ -343,10 +337,15 @@
 
   function installStyles() {
 
-    $(
-      STYLE_ID
-    )
-      ?.remove();
+    if (
+      $(
+        STYLE_ID
+      )
+    ) {
+
+      return;
+
+    }
 
 
     const style =
@@ -541,19 +540,11 @@
       }
 
 
-      /* =====================================
-         OPTION IMAGE LOAD
-         ===================================== */
-
       #manaV1015Fuel
       img.m1020-meal-art{
 
         opacity:
           1;
-
-        transition:
-          opacity
-          .2s ease;
 
       }
 
@@ -743,15 +734,6 @@
 
   function decorateMealOptions() {
 
-    if (
-      !fuelOpen()
-    ) {
-
-      return;
-
-    }
-
-
     document
       .querySelectorAll(
         "#manaV1015Fuel .m1015-option"
@@ -786,15 +768,14 @@
           }
 
 
-          const image =
+          applyImage(
+
             card.querySelector(
               "img"
-            );
+            ),
 
-
-          applyImage(
-            image,
             config
+
           );
 
         }
@@ -836,15 +817,6 @@
 
   function decorateLoggedMeals() {
 
-    if (
-      !fuelOpen()
-    ) {
-
-      return;
-
-    }
-
-
     document
       .querySelectorAll(
         "#manaV1015Fuel .m1015-logged"
@@ -874,28 +846,9 @@
             !known
           ) {
 
-            /*
-              Custom meals continue using
-              existing category art.
-            */
-
             return;
 
           }
-
-
-          const config = {
-
-            file:
-              known.file,
-
-            fallback:
-              known.fallback ||
-              loggedFallback(
-                card
-              )
-
-          };
 
 
           applyImage(
@@ -904,7 +857,16 @@
               ":scope > img"
             ),
 
-            config
+            {
+              file:
+                known.file,
+
+              fallback:
+                known.fallback ||
+                loggedFallback(
+                  card
+                )
+            }
 
           );
 
@@ -915,19 +877,10 @@
 
 
   /* =========================================
-     PROGRAM BADGE
+     FUEL HEADER
      ========================================= */
 
   function decorateFuelHeader() {
-
-    if (
-      !fuelOpen()
-    ) {
-
-      return;
-
-    }
-
 
     const root =
       $(
@@ -951,11 +904,6 @@
     }
 
 
-    /*
-      Same Fuel system in both programs,
-      but keep program identity visible.
-    */
-
     const title =
       programName();
 
@@ -972,7 +920,11 @@
 
 
   /* =========================================
-     REFRESH
+     SAFE REFRESH
+
+     IMPORTANT:
+     One refresh only.
+     No stacked mobile refresh chain.
      ========================================= */
 
   function refresh() {
@@ -998,7 +950,7 @@
 
 
   function scheduleRefresh(
-    delay = 30
+    delay = 40
   ) {
 
     clearTimeout(
@@ -1012,33 +964,21 @@
         delay
       );
 
-
-    [
-      100,
-      240,
-      500
-    ]
-      .forEach(
-        wait => {
-
-          setTimeout(
-            refresh,
-            wait
-          );
-
-        }
-      );
-
   }
 
 
   /* =========================================
-     OBSERVER
+     SAFE HOLDER OBSERVER
+
+     ONLY watches direct replacement of the
+     main Fuel screen.
+
+     It does NOT watch every meal-card mutation.
      ========================================= */
 
   function attachObserver() {
 
-    observer
+    holderObserver
       ?.disconnect();
 
 
@@ -1057,7 +997,7 @@
     }
 
 
-    observer =
+    holderObserver =
       new MutationObserver(
         () => {
 
@@ -1066,7 +1006,7 @@
           ) {
 
             scheduleRefresh(
-              25
+              50
             );
 
           }
@@ -1075,14 +1015,14 @@
       );
 
 
-    observer.observe(
+    holderObserver.observe(
       holder,
       {
         childList:
           true,
 
         subtree:
-          true
+          false
       }
     );
 
@@ -1099,6 +1039,10 @@
       "click",
       event => {
 
+        /*
+          Open Fuel.
+        */
+
         if (
           event.target.closest(
             '#manaV83Tabs [data-v83-tab="fuel"]'
@@ -1106,11 +1050,22 @@
         ) {
 
           scheduleRefresh(
-            120
+            140
           );
+
+
+          return;
 
         }
 
+
+        /*
+          Open Breakfast / Lunch /
+          Dinner / Snacks.
+
+          v10.15 renders first.
+          Then we decorate artwork once.
+        */
 
         if (
           event.target.closest(
@@ -1119,11 +1074,21 @@
         ) {
 
           scheduleRefresh(
-            60
+            90
           );
+
+
+          return;
 
         }
 
+
+        /*
+          ADD meal.
+
+          Allow v10.15 to save and render,
+          then decorate Today's Meals.
+        */
 
         if (
           event.target.closest(
@@ -1132,7 +1097,27 @@
         ) {
 
           scheduleRefresh(
-            80
+            100
+          );
+
+
+          return;
+
+        }
+
+
+        /*
+          Remove meal.
+        */
+
+        if (
+          event.target.closest(
+            "[data-m1015-remove]"
+          )
+        ) {
+
+          scheduleRefresh(
+            100
           );
 
         }
@@ -1142,26 +1127,48 @@
     );
 
 
-    [
+    /*
+      v10.15 already emits this after
+      Fuel data changes.
+
+      This is the safest primary refresh
+      signal for meal artwork.
+    */
+
+    window.addEventListener(
       "mana:fuel-updated",
-      "mana:program-tab-change"
-    ]
-      .forEach(
-        eventName => {
+      () => {
 
-          window.addEventListener(
-            eventName,
-            () => {
+        if (
+          fuelOpen()
+        ) {
 
-              scheduleRefresh(
-                80
-              );
-
-            }
+          scheduleRefresh(
+            80
           );
 
         }
-      );
+
+      }
+    );
+
+
+    window.addEventListener(
+      "mana:program-tab-change",
+      () => {
+
+        if (
+          fuelOpen()
+        ) {
+
+          scheduleRefresh(
+            100
+          );
+
+        }
+
+      }
+    );
 
 
     window.addEventListener(
@@ -1217,26 +1224,16 @@
     attachObserver();
 
 
-    [
-      500,
-      1000,
-      1600
-    ]
-      .forEach(
-        delay => {
-
-          setTimeout(
-            refresh,
-            delay
-          );
-
-        }
-      );
+    setTimeout(
+      refresh,
+      600
+    );
 
 
     console.log(
       "Mana Fuel Meal Illustrations",
-      BUILD
+      BUILD,
+      "mobile-safe"
     );
 
   }
