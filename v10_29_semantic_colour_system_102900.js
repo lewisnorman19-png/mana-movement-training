@@ -2,8 +2,8 @@
 /* ===========================================
    MANA MOVEMENT TRAINING
    STABLE PREMIUM VISUAL SYSTEM
-   VERSION 10.29.5
-   BUILD 102950
+   VERSION 10.29.6
+   BUILD 102960
 
    OVERVIEW:
    Keep existing card colours.
@@ -28,7 +28,7 @@
 (() => {
   "use strict";
 
-  const BUILD = "102950";
+  const BUILD = "102960";
 
   const STYLE_ID =
     "mana-v1029-semantic-colour-system";
@@ -202,15 +202,15 @@
        MAIN SECTION HEADING COLOUR
        ======================================= */
 
-    #manaV83Content .mana102950-heading {
+    #manaV83Content .mana102960-heading {
       color:
         var(--mana-heading-colour) !important;
     }
 
     #manaV83Content
-    .mana102950-heading svg,
+    .mana102960-heading svg,
     #manaV83Content
-    .mana102950-heading i {
+    .mana102960-heading i {
       color:
         var(--mana-heading-colour) !important;
       stroke: currentColor !important;
@@ -278,14 +278,23 @@
         min-width: 0 !important;
       }
 
+      /* Keep the actual overview containers intact.
+         Only their card grids become three columns. */
+
       #manaV964Launchpad,
       .mana-v978-launchpad {
+        display: block !important;
         max-width: none !important;
         width: 100% !important;
+      }
+
+      #manaV964Launchpad .mana-v964-grid,
+      .mana-v978-grid {
         display: grid !important;
         grid-template-columns:
           repeat(3,minmax(0,1fr)) !important;
         gap: 16px !important;
+        width: 100% !important;
       }
 
       #manaV964Launchpad .mana-v964-launch,
@@ -396,11 +405,11 @@
     );
 
     const previous = content.querySelectorAll(
-      ".mana102950-heading"
+      ".mana102960-heading"
     );
 
     previous.forEach(node => {
-      node.classList.remove("mana102950-heading");
+      node.classList.remove("mana102960-heading");
     });
 
     if (!colour) return;
@@ -424,7 +433,7 @@
         expression.test(label)
       ) {
         node.classList.add(
-          "mana102950-heading"
+          "mana102960-heading"
         );
         break;
       }
