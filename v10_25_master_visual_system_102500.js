@@ -1,10 +1,10 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.25
+   MANA MOVEMENT TRAINING v10.25.2
    MASTER PREMIUM VISUAL SYSTEM
 
-   BUILD: 102500
+   BUILD: 102520
 
-   CORE COLOUR SEQUENCE
+   GLOBAL SEQUENCE
    -----------------------------------------
    1 = GREEN
    2 = BLUE
@@ -18,30 +18,20 @@
    MANA LYFE     = BLUE
    MANA 28       = YELLOW
 
-   PROGRAM FUNCTION COLOURS
+   FUNCTION NAV
    -----------------------------------------
    WORKOUTS = GREEN
    FUEL / RECLAIM = BLUE
    PROGRESS = YELLOW
    LEARNING = PURPLE
 
-   WORKOUT SEQUENCE
-   -----------------------------------------
-   Workout 1 = Green
-   Workout 2 = Blue
-   Workout 3 = Yellow
-   Workout 4 = Purple
-   Workout 5 = Orange
-   then repeat
-
    IMPORTANT
    -----------------------------------------
-   - Original Mana text colours remain
-   - Dark premium background remains
-   - NO solid coloured selected cards
-   - Colour = outline / accent / icon / glow
-   - No MutationObserver
-   - No render loops
+   - Original Mana text colours stay
+   - Colour is used in outlines / icons / glow
+   - No solid selected colour fills
+   - No permanent MutationObserver
+   - No continuous render loop
    ========================================= */
 
 (() => {
@@ -49,49 +39,24 @@
 
 
   const BUILD =
-    "102500";
+    "102520";
 
 
   const STYLE_ID =
-    "mana-v1025-master-visual-system";
+    "mana-v10252-master-visual-system";
 
 
   const COLOURS = {
 
-    green:{
-      main:"#55d98b",
-      soft:"rgba(85,217,139,.52)",
-      glow:"rgba(85,217,139,.11)",
-      bg:"#101713"
-    },
+    green:"#55d98b",
 
-    blue:{
-      main:"#55a8de",
-      soft:"rgba(85,168,222,.52)",
-      glow:"rgba(85,168,222,.11)",
-      bg:"#10161a"
-    },
+    blue:"#55a8de",
 
-    yellow:{
-      main:"#e0bb51",
-      soft:"rgba(224,187,81,.55)",
-      glow:"rgba(224,187,81,.11)",
-      bg:"#17150d"
-    },
+    yellow:"#e0bb51",
 
-    purple:{
-      main:"#a681dc",
-      soft:"rgba(166,129,220,.52)",
-      glow:"rgba(166,129,220,.11)",
-      bg:"#15111a"
-    },
+    purple:"#a681dc",
 
-    orange:{
-      main:"#e98a54",
-      soft:"rgba(233,138,84,.52)",
-      glow:"rgba(233,138,84,.11)",
-      bg:"#19120e"
-    }
+    orange:"#e98a54"
 
   };
 
@@ -115,10 +80,7 @@
 
     strength:`
 
-      <svg
-        viewBox="0 0 90 90"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 90 90" aria-hidden="true">
 
         <line
           x1="25"
@@ -131,37 +93,37 @@
         />
 
         <rect
-          x="15"
-          y="31"
+          x="14"
+          y="30"
           width="8"
-          height="28"
+          height="30"
           rx="3"
           fill="currentColor"
         />
 
         <rect
-          x="25"
+          x="24"
           y="35"
-          width="6"
+          width="7"
           height="20"
-          rx="2"
+          rx="3"
           fill="currentColor"
         />
 
         <rect
           x="59"
           y="35"
-          width="6"
+          width="7"
           height="20"
-          rx="2"
+          rx="3"
           fill="currentColor"
         />
 
         <rect
-          x="67"
-          y="31"
+          x="68"
+          y="30"
           width="8"
-          height="28"
+          height="30"
           rx="3"
           fill="currentColor"
         />
@@ -173,15 +135,12 @@
 
     lyfe:`
 
-      <svg
-        viewBox="0 0 90 90"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 90 90" aria-hidden="true">
 
         <path
           d="
-            M45 72
-            C45 56 48 45 58 34
+            M45 73
+            C45 56 49 44 59 33
           "
           fill="none"
           stroke="currentColor"
@@ -191,9 +150,9 @@
 
         <path
           d="
-            M56 36
-            C63 22 76 21 82 26
-            C79 39 69 46 57 44
+            M57 35
+            C64 21 77 20 83 26
+            C79 40 69 47 57 44
           "
           fill="none"
           stroke="currentColor"
@@ -204,8 +163,8 @@
         <path
           d="
             M42 49
-            C36 36 24 33 15 38
-            C19 51 29 58 43 56
+            C35 36 24 33 15 38
+            C19 52 29 58 43 56
           "
           fill="none"
           stroke="currentColor"
@@ -220,10 +179,7 @@
 
     mana28:`
 
-      <svg
-        viewBox="0 0 90 90"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 90 90" aria-hidden="true">
 
         <circle
           cx="45"
@@ -266,7 +222,7 @@
 
 
   /* =========================================
-     STYLES
+     STYLE INSTALL
      ========================================= */
 
   function installStyles() {
@@ -291,32 +247,29 @@
     style.textContent = `
 
 
-      /* =====================================
-         GLOBAL COLOUR VARIABLES
-         ===================================== */
-
       :root{
 
         --m25-green:
-          ${COLOURS.green.main};
+          ${COLOURS.green};
 
         --m25-blue:
-          ${COLOURS.blue.main};
+          ${COLOURS.blue};
 
         --m25-yellow:
-          ${COLOURS.yellow.main};
+          ${COLOURS.yellow};
 
         --m25-purple:
-          ${COLOURS.purple.main};
+          ${COLOURS.purple};
 
         --m25-orange:
-          ${COLOURS.orange.main};
+          ${COLOURS.orange};
 
       }
 
 
       /* =====================================
-         ORIGINAL MANA TYPOGRAPHY COLOURS
+         HOME TYPOGRAPHY
+         KEEP ORIGINAL COLOURS
          ===================================== */
 
       #manaV80Home
@@ -374,7 +327,7 @@
 
 
       /* =====================================
-         HOME — COMMON CARD
+         HOME CARDS
          ===================================== */
 
       #manaV80Home
@@ -405,13 +358,8 @@
       }
 
 
-      /* Kill old solid yellow active state */
-
       #manaV80Home
       .mana-v8013-program.current{
-
-        border-width:
-          1px !important;
 
         background:
           linear-gradient(
@@ -422,6 +370,9 @@
 
         color:
           #fff !important;
+
+        border-width:
+          1px !important;
 
       }
 
@@ -445,8 +396,116 @@
       }
 
 
+      /* Strength = GREEN */
+
+      #manaV80Home
+      [data-program="strength"]{
+
+        border-color:
+          rgba(
+            85,
+            217,
+            139,
+            .68
+          ) !important;
+
+        background:
+
+          radial-gradient(
+            circle at top right,
+            rgba(
+              85,
+              217,
+              139,
+              .11
+            ),
+            transparent
+            46%
+          ),
+
+          linear-gradient(
+            145deg,
+            #101713,
+            #090909
+          ) !important;
+
+      }
+
+
+      /* Lyfe = BLUE */
+
+      #manaV80Home
+      [data-program="life"]{
+
+        border-color:
+          rgba(
+            85,
+            168,
+            222,
+            .68
+          ) !important;
+
+        background:
+
+          radial-gradient(
+            circle at top right,
+            rgba(
+              85,
+              168,
+              222,
+              .11
+            ),
+            transparent
+            46%
+          ),
+
+          linear-gradient(
+            145deg,
+            #10161a,
+            #090909
+          ) !important;
+
+      }
+
+
+      /* Mana28 = YELLOW */
+
+      #manaV80Home
+      [data-program="mana28"]{
+
+        border-color:
+          rgba(
+            224,
+            187,
+            81,
+            .72
+          ) !important;
+
+        background:
+
+          radial-gradient(
+            circle at top right,
+            rgba(
+              224,
+              187,
+              81,
+              .12
+            ),
+            transparent
+            46%
+          ),
+
+          linear-gradient(
+            145deg,
+            #17150d,
+            #090909
+          ) !important;
+
+      }
+
+
       /* =====================================
-         HOME — SMALL PROGRAM ICON
+         HOME ICONS
          ===================================== */
 
       #manaV80Home
@@ -459,13 +518,15 @@
           2 !important;
 
         right:
-          22px !important;
+          20px !important;
 
         top:
           50% !important;
 
         transform:
-          translateY(-50%) !important;
+          translateY(
+            -50%
+          ) !important;
 
         display:
           grid !important;
@@ -474,28 +535,25 @@
           center !important;
 
         width:
-          82px !important;
+          78px !important;
 
         height:
-          82px !important;
+          78px !important;
 
         border:
           1px solid
           currentColor !important;
 
         border-radius:
-          24px !important;
+          22px !important;
 
         background:
           rgba(
-            6,
-            6,
-            6,
-            .72
+            7,
+            7,
+            7,
+            .74
           ) !important;
-
-        opacity:
-          .90 !important;
 
         pointer-events:
           none !important;
@@ -507,10 +565,46 @@
       .m1025-home-icon svg{
 
         width:
-          58px !important;
+          54px !important;
 
         height:
-          58px !important;
+          54px !important;
+
+      }
+
+
+      #manaV80Home
+      [data-program="strength"]
+      .m1025-home-icon{
+
+        color:
+          var(
+            --m25-green
+          ) !important;
+
+      }
+
+
+      #manaV80Home
+      [data-program="life"]
+      .m1025-home-icon{
+
+        color:
+          var(
+            --m25-blue
+          ) !important;
+
+      }
+
+
+      #manaV80Home
+      [data-program="mana28"]
+      .m1025-home-icon{
+
+        color:
+          var(
+            --m25-yellow
+          ) !important;
 
       }
 
@@ -538,192 +632,8 @@
 
 
       /* =====================================
-         HOME — STRENGTH GREEN
-         ===================================== */
-
-      #manaV80Home
-      [data-program="strength"]{
-
-        border-color:
-          rgba(
-            85,
-            217,
-            139,
-            .60
-          ) !important;
-
-        background:
-
-          radial-gradient(
-            circle at top right,
-            rgba(
-              85,
-              217,
-              139,
-              .10
-            ),
-            transparent
-            46%
-          ),
-
-          linear-gradient(
-            145deg,
-            #101713,
-            #090909
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="strength"]
-      .m1025-home-icon{
-
-        color:
-          var(
-            --m25-green
-          ) !important;
-
-        box-shadow:
-          0
-          0
-          24px
-          rgba(
-            85,
-            217,
-            139,
-            .11
-          ) !important;
-
-      }
-
-
-      /* =====================================
-         HOME — LYFE BLUE
-         ===================================== */
-
-      #manaV80Home
-      [data-program="life"]{
-
-        border-color:
-          rgba(
-            85,
-            168,
-            222,
-            .60
-          ) !important;
-
-        background:
-
-          radial-gradient(
-            circle at top right,
-            rgba(
-              85,
-              168,
-              222,
-              .10
-            ),
-            transparent
-            46%
-          ),
-
-          linear-gradient(
-            145deg,
-            #10161a,
-            #090909
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="life"]
-      .m1025-home-icon{
-
-        color:
-          var(
-            --m25-blue
-          ) !important;
-
-        box-shadow:
-          0
-          0
-          24px
-          rgba(
-            85,
-            168,
-            222,
-            .11
-          ) !important;
-
-      }
-
-
-      /* =====================================
-         HOME — MANA 28 YELLOW
-         ===================================== */
-
-      #manaV80Home
-      [data-program="mana28"]{
-
-        border-color:
-          rgba(
-            224,
-            187,
-            81,
-            .64
-          ) !important;
-
-        background:
-
-          radial-gradient(
-            circle at top right,
-            rgba(
-              224,
-              187,
-              81,
-              .11
-            ),
-            transparent
-            46%
-          ),
-
-          linear-gradient(
-            145deg,
-            #17150d,
-            #090909
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="mana28"]
-      .m1025-home-icon{
-
-        color:
-          var(
-            --m25-yellow
-          ) !important;
-
-        box-shadow:
-          0
-          0
-          24px
-          rgba(
-            224,
-            187,
-            81,
-            .12
-          ) !important;
-
-      }
-
-
-      /* =====================================
-         HOME — ACTIVE
-
-         STRONGER OUTLINE ONLY
+         HOME ACTIVE
+         OUTLINE ONLY
          ===================================== */
 
       #manaV80Home
@@ -822,8 +732,6 @@
       }
 
 
-      /* Kill old large top selected bar */
-
       #manaV80Home
       .mana-v8013-program.current::before{
 
@@ -837,10 +745,10 @@
           0 !important;
 
         left:
-          24px !important;
+          20px !important;
 
         right:
-          24px !important;
+          20px !important;
 
         width:
           auto !important;
@@ -902,20 +810,18 @@
       }
 
 
-      /* Active badge stays Mana gold */
-
       #manaV80Home
       .mana-v8013-current-badge{
 
         background:
           #111 !important;
 
+        color:
+          #f3d875 !important;
+
         border:
           1px solid
           #67551d !important;
-
-        color:
-          #f3d875 !important;
 
         box-shadow:
           none !important;
@@ -924,12 +830,12 @@
 
 
       /* =====================================
-         STRENGTH SETUP OPTIONS
-
-         GREEN → BLUE → YELLOW → PURPLE
+         MANA STRENGTH OPTIONS
+         IMPORTANT:
+         TARGET ACTUAL OPTION GROUPS
          ===================================== */
 
-      #manaStrengthModal
+      .mana-strength-options
       .mana-strength-option{
 
         position:
@@ -942,16 +848,21 @@
           #101010 !important;
 
         color:
-          #e8e8e8 !important;
+          #e9e9e9 !important;
 
-        border-width:
-          1px !important;
+        border:
+          1px solid
+          #333 !important;
+
+        box-shadow:
+          none !important;
 
       }
 
 
-      #manaStrengthModal
-      [data-strength-group]
+      /* 1 GREEN */
+
+      .mana-strength-options
       .mana-strength-option:nth-child(1){
 
         border-color:
@@ -959,14 +870,15 @@
             85,
             217,
             139,
-            .55
+            .68
           ) !important;
 
       }
 
 
-      #manaStrengthModal
-      [data-strength-group]
+      /* 2 BLUE */
+
+      .mana-strength-options
       .mana-strength-option:nth-child(2){
 
         border-color:
@@ -974,14 +886,15 @@
             85,
             168,
             222,
-            .55
+            .68
           ) !important;
 
       }
 
 
-      #manaStrengthModal
-      [data-strength-group]
+      /* 3 YELLOW */
+
+      .mana-strength-options
       .mana-strength-option:nth-child(3){
 
         border-color:
@@ -989,14 +902,15 @@
             224,
             187,
             81,
-            .58
+            .70
           ) !important;
 
       }
 
 
-      #manaStrengthModal
-      [data-strength-group]
+      /* 4 PURPLE */
+
+      .mana-strength-options
       .mana-strength-option:nth-child(4){
 
         border-color:
@@ -1004,14 +918,15 @@
             166,
             129,
             220,
-            .55
+            .68
           ) !important;
 
       }
 
 
-      #manaStrengthModal
-      [data-strength-group]
+      /* 5 ORANGE */
+
+      .mana-strength-options
       .mana-strength-option:nth-child(5){
 
         border-color:
@@ -1019,84 +934,186 @@
             233,
             138,
             84,
-            .55
+            .68
           ) !important;
 
       }
 
 
-      #manaStrengthModal
-      [data-strength-group]
+      /* active remains DARK */
+
+      .mana-strength-options
       .mana-strength-option.active{
 
         background:
-          #111 !important;
+          #121212 !important;
 
         color:
           #fff !important;
+
+        transform:
+          translateY(
+            -1px
+          ) !important;
+
+      }
+
+
+      .mana-strength-options
+      .mana-strength-option:nth-child(1).active{
+
+        border-color:
+          var(
+            --m25-green
+          ) !important;
 
         box-shadow:
           0
           0
           0
           1px
-          currentColor,
-          0
-          8px
-          22px
           rgba(
-            0,
-            0,
-            0,
-            .30
+            85,
+            217,
+            139,
+            .18
+          ),
+          0
+          7px
+          20px
+          rgba(
+            85,
+            217,
+            139,
+            .12
           ) !important;
 
       }
 
 
-      #manaStrengthModal
-      [data-strength-group]
-      .mana-strength-option:nth-child(1).active{
-
-        color:
-          var(
-            --m25-green
-          ) !important;
-
-      }
-
-
-      #manaStrengthModal
-      [data-strength-group]
+      .mana-strength-options
       .mana-strength-option:nth-child(2).active{
 
-        color:
+        border-color:
           var(
             --m25-blue
           ) !important;
 
-      }
-
-
-      #manaStrengthModal
-      [data-strength-group]
-      .mana-strength-option:nth-child(3).active{
-
-        color:
-          var(
-            --m25-yellow
+        box-shadow:
+          0
+          0
+          0
+          1px
+          rgba(
+            85,
+            168,
+            222,
+            .18
+          ),
+          0
+          7px
+          20px
+          rgba(
+            85,
+            168,
+            222,
+            .12
           ) !important;
 
       }
 
 
-      #manaStrengthModal
-      [data-strength-group]
+      .mana-strength-options
+      .mana-strength-option:nth-child(3).active{
+
+        border-color:
+          var(
+            --m25-yellow
+          ) !important;
+
+        box-shadow:
+          0
+          0
+          0
+          1px
+          rgba(
+            224,
+            187,
+            81,
+            .18
+          ),
+          0
+          7px
+          20px
+          rgba(
+            224,
+            187,
+            81,
+            .12
+          ) !important;
+
+      }
+
+
+      .mana-strength-options
       .mana-strength-option:nth-child(4).active{
 
-        color:
+        border-color:
           var(
             --m25-purple
+          ) !important;
+
+        box-shadow:
+          0
+          0
+          0
+          1px
+          rgba(
+            166,
+            129,
+            220,
+            .18
+          ),
+          0
+          7px
+          20px
+          rgba(
+            166,
+            129,
+            220,
+            .12
+          ) !important;
+
+      }
+
+
+      .mana-strength-options
+      .mana-strength-option:nth-child(5).active{
+
+        border-color:
+          var(
+            --m25-orange
+          ) !important;
+
+        box-shadow:
+          0
+          0
+          0
+          1px
+          rgba(
+            233,
+            138,
+            84,
+            .18
+          ),
+          0
+          7px
+          20px
+          rgba(
+            233,
+            138,
+            84,
+            .12
           ) !important;
 
       }
@@ -1104,7 +1121,7 @@
 
       /* =====================================
          OVERVIEW CARDS
-         ALL PROGRAMS
+         GLOBAL POSITION SEQUENCE
          ===================================== */
 
       #manaV964Launchpad
@@ -1120,74 +1137,16 @@
             #090909
           ) !important;
 
-        color:
-          #fff !important;
-
         border-width:
           1px !important;
 
       }
 
 
-      /* Strength overview sequence */
+      /* 1 GREEN */
 
       #manaV964Launchpad
-      .mana-v964-launch:nth-child(1){
-
-        border-color:
-          rgba(
-            85,
-            217,
-            139,
-            .56
-          ) !important;
-
-      }
-
-
-      #manaV964Launchpad
-      .mana-v964-launch:nth-child(2){
-
-        border-color:
-          rgba(
-            85,
-            168,
-            222,
-            .56
-          ) !important;
-
-      }
-
-
-      #manaV964Launchpad
-      .mana-v964-launch:nth-child(3){
-
-        border-color:
-          rgba(
-            224,
-            187,
-            81,
-            .60
-          ) !important;
-
-      }
-
-
-      #manaV964Launchpad
-      .mana-v964-launch:nth-child(4){
-
-        border-color:
-          rgba(
-            166,
-            129,
-            220,
-            .56
-          ) !important;
-
-      }
-
-
-      /* Mana28 / Lyfe overview sequence */
+      .mana-v964-launch:nth-child(1),
 
       .mana-v978-launchpad
       .mana-v978-launch:nth-child(1){
@@ -1197,11 +1156,16 @@
             85,
             217,
             139,
-            .56
+            .68
           ) !important;
 
       }
 
+
+      /* 2 BLUE */
+
+      #manaV964Launchpad
+      .mana-v964-launch:nth-child(2),
 
       .mana-v978-launchpad
       .mana-v978-launch:nth-child(2){
@@ -1211,11 +1175,16 @@
             85,
             168,
             222,
-            .56
+            .68
           ) !important;
 
       }
 
+
+      /* 3 YELLOW */
+
+      #manaV964Launchpad
+      .mana-v964-launch:nth-child(3),
 
       .mana-v978-launchpad
       .mana-v978-launch:nth-child(3){
@@ -1225,11 +1194,16 @@
             224,
             187,
             81,
-            .60
+            .70
           ) !important;
 
       }
 
+
+      /* 4 PURPLE */
+
+      #manaV964Launchpad
+      .mana-v964-launch:nth-child(4),
 
       .mana-v978-launchpad
       .mana-v978-launch:nth-child(4){
@@ -1239,11 +1213,16 @@
             166,
             129,
             220,
-            .56
+            .68
           ) !important;
 
       }
 
+
+      /* 5 ORANGE */
+
+      #manaV964Launchpad
+      .mana-v964-launch:nth-child(5),
 
       .mana-v978-launchpad
       .mana-v978-launch:nth-child(5){
@@ -1253,40 +1232,14 @@
             233,
             138,
             84,
-            .56
+            .68
           ) !important;
 
       }
 
 
-      /* Keep overview text normal */
-
-      #manaV964Launchpad
-      .mana-v964-title,
-
-      .mana-v978-launchpad
-      .mana-v978-title{
-
-        color:
-          #fff !important;
-
-      }
-
-
-      #manaV964Launchpad
-      .mana-v964-text,
-
-      .mana-v978-launchpad
-      .mana-v978-text{
-
-        color:
-          #999 !important;
-
-      }
-
-
       /* =====================================
-         OVERVIEW ICON COLOURS
+         OVERVIEW ICON FRAMES
          ===================================== */
 
       #manaV964Launchpad
@@ -1298,22 +1251,8 @@
       .mana-v978-icon{
 
         border-color:
-          rgba(
-            85,
-            217,
-            139,
-            .60
-          ) !important;
-
-        box-shadow:
-          0
-          0
-          18px
-          rgba(
-            85,
-            217,
-            139,
-            .10
+          var(
+            --m25-green
           ) !important;
 
       }
@@ -1328,22 +1267,8 @@
       .mana-v978-icon{
 
         border-color:
-          rgba(
-            85,
-            168,
-            222,
-            .60
-          ) !important;
-
-        box-shadow:
-          0
-          0
-          18px
-          rgba(
-            85,
-            168,
-            222,
-            .10
+          var(
+            --m25-blue
           ) !important;
 
       }
@@ -1358,22 +1283,8 @@
       .mana-v978-icon{
 
         border-color:
-          rgba(
-            224,
-            187,
-            81,
-            .62
-          ) !important;
-
-        box-shadow:
-          0
-          0
-          18px
-          rgba(
-            224,
-            187,
-            81,
-            .10
+          var(
+            --m25-yellow
           ) !important;
 
       }
@@ -1388,43 +1299,29 @@
       .mana-v978-icon{
 
         border-color:
-          rgba(
-            166,
-            129,
-            220,
-            .60
-          ) !important;
-
-        box-shadow:
-          0
-          0
-          18px
-          rgba(
-            166,
-            129,
-            220,
-            .10
+          var(
+            --m25-purple
           ) !important;
 
       }
 
 
       /* =====================================
-         STRENGTH WORKOUT CARDS
+         STRENGTH WORKOUT BANNERS
          ===================================== */
 
       #manaV83Content
       .mana-v85-day{
 
+        border-width:
+          1px !important;
+
         background:
           linear-gradient(
             145deg,
             #131313,
             #090909
           ) !important;
-
-        border-width:
-          1px !important;
 
       }
 
@@ -1435,11 +1332,8 @@
       ]{
 
         border-color:
-          rgba(
-            85,
-            217,
-            139,
-            .60
+          var(
+            --m25-green
           ) !important;
 
       }
@@ -1451,11 +1345,8 @@
       ]{
 
         border-color:
-          rgba(
-            85,
-            168,
-            222,
-            .60
+          var(
+            --m25-blue
           ) !important;
 
       }
@@ -1467,11 +1358,8 @@
       ]{
 
         border-color:
-          rgba(
-            224,
-            187,
-            81,
-            .62
+          var(
+            --m25-yellow
           ) !important;
 
       }
@@ -1483,11 +1371,8 @@
       ]{
 
         border-color:
-          rgba(
-            166,
-            129,
-            220,
-            .60
+          var(
+            --m25-purple
           ) !important;
 
       }
@@ -1499,23 +1384,23 @@
       ]{
 
         border-color:
-          rgba(
-            233,
-            138,
-            84,
-            .60
+          var(
+            --m25-orange
           ) !important;
 
       }
 
 
       /* =====================================
-         MANA 28 + LYFE WORKOUT CARDS
+         MANA 28 / LYFE WORKOUT BANNERS
          ===================================== */
 
       #manaV83Content
       .mana-v980-day{
 
+        border-width:
+          1px !important;
+
         background:
           linear-gradient(
             145deg,
@@ -1523,9 +1408,6 @@
             #090909
           ) !important;
 
-        border-width:
-          1px !important;
-
       }
 
 
@@ -1535,94 +1417,6 @@
       ]{
 
         border-color:
-          rgba(
-            85,
-            217,
-            139,
-            .60
-          ) !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v980-day[
-        data-m1025-tone="blue"
-      ]{
-
-        border-color:
-          rgba(
-            85,
-            168,
-            222,
-            .60
-          ) !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v980-day[
-        data-m1025-tone="yellow"
-      ]{
-
-        border-color:
-          rgba(
-            224,
-            187,
-            81,
-            .62
-          ) !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v980-day[
-        data-m1025-tone="purple"
-      ]{
-
-        border-color:
-          rgba(
-            166,
-            129,
-            220,
-            .60
-          ) !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v980-day[
-        data-m1025-tone="orange"
-      ]{
-
-        border-color:
-          rgba(
-            233,
-            138,
-            84,
-            .60
-          ) !important;
-
-      }
-
-
-      /* Coloured workout number/icon */
-
-      #manaV83Content
-      .mana-v980-day[
-        data-m1025-tone="green"
-      ]
-      .mana-v980-number{
-
-        border-color:
-          var(
-            --m25-green
-          ) !important;
-
-        color:
           var(
             --m25-green
           ) !important;
@@ -1633,15 +1427,9 @@
       #manaV83Content
       .mana-v980-day[
         data-m1025-tone="blue"
-      ]
-      .mana-v980-number{
+      ]{
 
         border-color:
-          var(
-            --m25-blue
-          ) !important;
-
-        color:
           var(
             --m25-blue
           ) !important;
@@ -1652,15 +1440,9 @@
       #manaV83Content
       .mana-v980-day[
         data-m1025-tone="yellow"
-      ]
-      .mana-v980-number{
+      ]{
 
         border-color:
-          var(
-            --m25-yellow
-          ) !important;
-
-        color:
           var(
             --m25-yellow
           ) !important;
@@ -1671,15 +1453,9 @@
       #manaV83Content
       .mana-v980-day[
         data-m1025-tone="purple"
-      ]
-      .mana-v980-number{
+      ]{
 
         border-color:
-          var(
-            --m25-purple
-          ) !important;
-
-        color:
           var(
             --m25-purple
           ) !important;
@@ -1690,15 +1466,106 @@
       #manaV83Content
       .mana-v980-day[
         data-m1025-tone="orange"
-      ]
-      .mana-v980-number{
+      ]{
 
         border-color:
           var(
             --m25-orange
           ) !important;
 
+      }
+
+
+      /* numbers */
+
+      #manaV83Content
+      .mana-v980-day[
+        data-m1025-tone="green"
+      ]
+      .mana-v980-number{
+
         color:
+          var(
+            --m25-green
+          ) !important;
+
+        border-color:
+          var(
+            --m25-green
+          ) !important;
+
+      }
+
+
+      #manaV83Content
+      .mana-v980-day[
+        data-m1025-tone="blue"
+      ]
+      .mana-v980-number{
+
+        color:
+          var(
+            --m25-blue
+          ) !important;
+
+        border-color:
+          var(
+            --m25-blue
+          ) !important;
+
+      }
+
+
+      #manaV83Content
+      .mana-v980-day[
+        data-m1025-tone="yellow"
+      ]
+      .mana-v980-number{
+
+        color:
+          var(
+            --m25-yellow
+          ) !important;
+
+        border-color:
+          var(
+            --m25-yellow
+          ) !important;
+
+      }
+
+
+      #manaV83Content
+      .mana-v980-day[
+        data-m1025-tone="purple"
+      ]
+      .mana-v980-number{
+
+        color:
+          var(
+            --m25-purple
+          ) !important;
+
+        border-color:
+          var(
+            --m25-purple
+          ) !important;
+
+      }
+
+
+      #manaV83Content
+      .mana-v980-day[
+        data-m1025-tone="orange"
+      ]
+      .mana-v980-number{
+
+        color:
+          var(
+            --m25-orange
+          ) !important;
+
+        border-color:
           var(
             --m25-orange
           ) !important;
@@ -1707,13 +1574,8 @@
 
 
       /* =====================================
-         BOTTOM PROGRAM TABS
-
-         OVERVIEW = neutral
-         WORKOUTS = GREEN
-         FUEL/RECLAIM = BLUE
-         PROGRESS = YELLOW
-         LEARNING = PURPLE
+         BOTTOM TABS
+         FIXED FUNCTION MAPPING
          ===================================== */
 
       #manaV83Tabs
@@ -1728,17 +1590,15 @@
       }
 
 
-      #manaV83Tabs
-      .mana-v83-tab[
-        data-v83-tab="program"
-      ],
+      /* WORKOUT = GREEN */
 
       #manaV83Tabs
-      .mana-v83-tab[
-        data-v83-tab="routine"
-      ]{
+      [data-v83-tab="program"],
 
-        --m25-tab-colour:
+      #manaV83Tabs
+      [data-v83-tab="routine"]{
+
+        --m25-tab:
           var(
             --m25-green
           );
@@ -1746,17 +1606,15 @@
       }
 
 
-      #manaV83Tabs
-      .mana-v83-tab[
-        data-v83-tab="fuel"
-      ],
+      /* FUEL / RECLAIM = BLUE */
 
       #manaV83Tabs
-      .mana-v83-tab[
-        data-v83-tab="reclaim"
-      ]{
+      [data-v83-tab="fuel"],
 
-        --m25-tab-colour:
+      #manaV83Tabs
+      [data-v83-tab="reclaim"]{
+
+        --m25-tab:
           var(
             --m25-blue
           );
@@ -1764,12 +1622,12 @@
       }
 
 
-      #manaV83Tabs
-      .mana-v83-tab[
-        data-v83-tab="progress"
-      ]{
+      /* PROGRESS = YELLOW */
 
-        --m25-tab-colour:
+      #manaV83Tabs
+      [data-v83-tab="progress"]{
+
+        --m25-tab:
           var(
             --m25-yellow
           );
@@ -1777,12 +1635,12 @@
       }
 
 
-      #manaV83Tabs
-      .mana-v83-tab[
-        data-v83-tab="learn"
-      ]{
+      /* LEARN = PURPLE */
 
-        --m25-tab-colour:
+      #manaV83Tabs
+      [data-v83-tab="learn"]{
+
+        --m25-tab:
           var(
             --m25-purple
           );
@@ -1797,7 +1655,7 @@
 
         color:
           var(
-            --m25-tab-colour
+            --m25-tab
           ) !important;
 
         background:
@@ -1815,16 +1673,7 @@
           0
           1px
           var(
-            --m25-tab-colour
-          ),
-          0
-          0
-          20px
-          rgba(
-            0,
-            0,
-            0,
-            .15
+            --m25-tab
           ) !important;
 
       }
@@ -1837,7 +1686,7 @@
 
         background:
           var(
-            --m25-tab-colour
+            --m25-tab
           ) !important;
 
       }
@@ -1857,7 +1706,7 @@
             0
             8px
             var(
-              --m25-tab-colour
+              --m25-tab
             )
           ) !important;
 
@@ -1865,21 +1714,12 @@
 
 
       /* =====================================
-         FUNCTION PAGE IDENTITY
-
-         WORKOUT = GREEN
-         FUEL = BLUE
          PROGRESS = YELLOW
-         LEARNING = PURPLE
          ===================================== */
 
-      #manaV83Content
-      #manaV993StrengthProgress,
+      #manaV993StrengthProgress{
 
-      #manaV83Content
-      .mana-v981-root{
-
-        --m25-page-accent:
+        --m25-section:
           var(
             --m25-yellow
           );
@@ -1887,37 +1727,31 @@
       }
 
 
-      #manaV83Content
       #manaV993StrengthProgress
-      h2,
+      .mana-v993-period.active,
 
-      #manaV83Content
-      .mana-v981-root h2{
+      #manaV993StrengthProgress
+      .mana-v993-detail-btn.active{
 
-        text-shadow:
-          0
-          0
-          22px
-          rgba(
-            224,
-            187,
-            81,
-            .08
-          );
-
-      }
-
-
-      #manaV83Content
-      .mana-v985-learn{
-
-        --m25-page-accent:
+        border-color:
           var(
-            --m25-purple
-          );
+            --m25-yellow
+          ) !important;
+
+        color:
+          var(
+            --m25-yellow
+          ) !important;
+
+        background:
+          #111 !important;
 
       }
 
+
+      /* =====================================
+         LEARNING = PURPLE
+         ===================================== */
 
       #manaV83Content
       .mana-v985-head{
@@ -1959,6 +1793,20 @@
       }
 
 
+      #manaV83Content
+      .mana-v985-learn-card{
+
+        border-color:
+          rgba(
+            166,
+            129,
+            220,
+            .42
+          ) !important;
+
+      }
+
+
       /* =====================================
          PHONE
          ===================================== */
@@ -1970,16 +1818,16 @@
         .m1025-home-icon{
 
           right:
-            10px !important;
+            9px !important;
 
           width:
-            68px !important;
+            67px !important;
 
           height:
-            68px !important;
+            67px !important;
 
           border-radius:
-            19px !important;
+            18px !important;
 
         }
 
@@ -1988,10 +1836,10 @@
         .m1025-home-icon svg{
 
           width:
-            48px !important;
+            47px !important;
 
           height:
-            48px !important;
+            47px !important;
 
         }
 
@@ -2005,19 +1853,7 @@
         }
 
 
-        #manaV80Home
-        .mana-v8013-program.current::before{
-
-          left:
-            16px !important;
-
-          right:
-            16px !important;
-
-        }
-
-
-        #manaStrengthModal
+        .mana-strength-options
         .mana-strength-option{
 
           min-height:
@@ -2035,13 +1871,13 @@
         .m1025-home-icon{
 
           right:
-            7px !important;
+            6px !important;
 
           width:
-            61px !important;
+            60px !important;
 
           height:
-            61px !important;
+            60px !important;
 
         }
 
@@ -2050,10 +1886,10 @@
         .m1025-home-icon svg{
 
           width:
-            43px !important;
+            42px !important;
 
           height:
-            43px !important;
+            42px !important;
 
         }
 
@@ -2071,19 +1907,23 @@
 
 
   /* =========================================
-     HOME
+     HOME ICON
      ========================================= */
 
-  function homeIcon(
+  function addHomeIcon(
     card,
     type
   ) {
 
     if (
       !card ||
-      !HOME_ICONS[type]
+      !HOME_ICONS[
+        type
+      ]
     ) {
+
       return;
+
     }
 
 
@@ -2113,10 +1953,16 @@
 
 
     icon.innerHTML =
-      HOME_ICONS[type];
+      HOME_ICONS[
+        type
+      ];
 
   }
 
+
+  /* =========================================
+     HOME
+     ========================================= */
 
   function decorateHome() {
 
@@ -2127,7 +1973,9 @@
 
 
     if (!home) {
+
       return;
+
     }
 
 
@@ -2150,58 +1998,53 @@
 
 
     /*
-      HOME ORDER
-      1. MANA STRENGTH
-      2. MANA LYFE
-      3. MANA 28
+      ORDER
+      STRENGTH
+      LYFE
+      MANA28
     */
 
-    const select =
-      home.querySelector(
-        ".mana-v8013-select"
-      );
-
-
     if (
-      select &&
       strength &&
       lyfe &&
       mana28
     ) {
 
-      select.insertAdjacentElement(
-        "afterend",
-        mana28
-      );
+      const parent =
+        strength.parentElement;
 
 
-      select.insertAdjacentElement(
-        "afterend",
-        lyfe
-      );
+      if (parent) {
+
+        parent.insertBefore(
+          strength,
+          lyfe
+        );
 
 
-      select.insertAdjacentElement(
-        "afterend",
-        strength
-      );
+        parent.insertBefore(
+          lyfe,
+          mana28
+        );
+
+      }
 
     }
 
 
-    homeIcon(
+    addHomeIcon(
       strength,
       "strength"
     );
 
 
-    homeIcon(
+    addHomeIcon(
       lyfe,
       "lyfe"
     );
 
 
-    homeIcon(
+    addHomeIcon(
       mana28,
       "mana28"
     );
@@ -2210,48 +2053,37 @@
 
 
   /* =========================================
-     WORKOUT COLOUR SEQUENCE
+     STRENGTH OPTIONS
      ========================================= */
 
-  function colourWorkoutCards() {
+  function decorateStrengthOptions() {
 
     document
       .querySelectorAll(
-        "#manaV83Content .mana-v85-day"
+        ".mana-strength-options"
       )
       .forEach(
-        (
-          card,
-          index
-        ) => {
+        group => {
 
-          card.dataset
-            .m1025Tone =
-            SEQUENCE[
-              index %
-              SEQUENCE.length
-            ];
+          group
+            .querySelectorAll(
+              ".mana-strength-option"
+            )
+            .forEach(
+              (
+                option,
+                index
+              ) => {
 
-        }
-      );
+                option.dataset
+                  .m1025Tone =
+                  SEQUENCE[
+                    index %
+                    SEQUENCE.length
+                  ];
 
-
-    document
-      .querySelectorAll(
-        "#manaV83Content .mana-v980-day"
-      )
-      .forEach(
-        (
-          card,
-          index
-        ) => {
-
-          card.dataset
-            .m1025Tone =
-            SEQUENCE[
-              index %
-              SEQUENCE.length
-            ];
+              }
+            );
 
         }
       );
@@ -2260,10 +2092,10 @@
 
 
   /* =========================================
-     OVERVIEW CARD SEQUENCE
+     OVERVIEWS
      ========================================= */
 
-  function colourOverviewCards() {
+  function decorateOverviews() {
 
     document
       .querySelectorAll(
@@ -2310,37 +2142,48 @@
 
 
   /* =========================================
-     STRENGTH OPTIONS
+     WORKOUTS
      ========================================= */
 
-  function colourStrengthOptions() {
+  function decorateWorkouts() {
 
     document
       .querySelectorAll(
-        "#manaStrengthModal [data-strength-group]"
+        "#manaV83Content .mana-v85-day"
       )
       .forEach(
-        group => {
+        (
+          card,
+          index
+        ) => {
 
-          group
-            .querySelectorAll(
-              ".mana-strength-option"
-            )
-            .forEach(
-              (
-                option,
-                index
-              ) => {
+          card.dataset
+            .m1025Tone =
+            SEQUENCE[
+              index %
+              SEQUENCE.length
+            ];
 
-                option.dataset
-                  .m1025Tone =
-                  SEQUENCE[
-                    index %
-                    SEQUENCE.length
-                  ];
+        }
+      );
 
-              }
-            );
+
+    document
+      .querySelectorAll(
+        "#manaV83Content .mana-v980-day"
+      )
+      .forEach(
+        (
+          card,
+          index
+        ) => {
+
+          card.dataset
+            .m1025Tone =
+            SEQUENCE[
+              index %
+              SEQUENCE.length
+            ];
 
         }
       );
@@ -2356,11 +2199,48 @@
 
     decorateHome();
 
-    colourStrengthOptions();
+    decorateStrengthOptions();
 
-    colourOverviewCards();
+    decorateOverviews();
 
-    colourWorkoutCards();
+    decorateWorkouts();
+
+  }
+
+
+  /* =========================================
+     SHORT SETTLE REFRESH
+     ========================================= */
+
+  function settleRefresh() {
+
+    refresh();
+
+
+    /*
+      Existing app screens sometimes rebuild
+      immediately after navigation.
+
+      These are short one-off refreshes only.
+      No continuous timer.
+    */
+
+    [
+      60,
+      180,
+      420,
+      850
+    ]
+      .forEach(
+        delay => {
+
+          setTimeout(
+            refresh,
+            delay
+          );
+
+        }
+      );
 
   }
 
@@ -2373,13 +2253,8 @@
 
     installStyles();
 
-    refresh();
+    settleRefresh();
 
-
-    /*
-      Refresh only when existing app events
-      tell us the screen has changed.
-    */
 
     [
       "mana:program-tab-change",
@@ -2393,13 +2268,7 @@
 
           document.addEventListener(
             eventName,
-            () => {
-
-              requestAnimationFrame(
-                refresh
-              );
-
-            }
+            settleRefresh
           );
 
         }
@@ -2407,9 +2276,7 @@
 
 
     /*
-      Home/program shells can be opened by
-      normal click handlers without firing
-      every event immediately.
+      Selection/navigation interactions
     */
 
     document.addEventListener(
@@ -2419,29 +2286,54 @@
         const target =
           event.target.closest(
             `
+              .mana-strength-option,
               [data-program],
               [data-v83-tab],
-              .mana-strength-option,
               [data-v964-launch],
-              [data-v978-tab]
+              [data-v978-tab],
+              .mana-v85-day,
+              .mana-v980-day
             `
           );
 
 
         if (!target) {
+
           return;
+
         }
 
 
         requestAnimationFrame(
-          () => {
-
-            requestAnimationFrame(
-              refresh
-            );
-
-          }
+          settleRefresh
         );
+
+      }
+    );
+
+
+    /*
+      App / browser return
+    */
+
+    window.addEventListener(
+      "pageshow",
+      settleRefresh
+    );
+
+
+    document.addEventListener(
+      "visibilitychange",
+      () => {
+
+        if (
+          document.visibilityState ===
+          "visible"
+        ) {
+
+          settleRefresh();
+
+        }
 
       }
     );
@@ -2449,7 +2341,7 @@
 
     window
       .refreshManaMasterVisualSystem =
-        refresh;
+        settleRefresh;
 
 
     window
