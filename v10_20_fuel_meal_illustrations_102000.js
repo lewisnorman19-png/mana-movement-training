@@ -1,18 +1,34 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.20.1
-   FUEL — INDIVIDUAL MEAL ILLUSTRATIONS
+   MANA MOVEMENT TRAINING v10.20.2
+   FUEL — OPTIMISED MEAL ILLUSTRATIONS
 
-   BUILD: 102010
+   BUILD: 102020
 
-   HOTFIX
+   APPLIES TO
    -----------------------------------------
-   - Removes aggressive nested DOM observer
-   - Stops mobile refresh storms / lock-ups
-   - Keeps all 16 individual meal artworks
-   - Keeps Mana Strength + Mana 28 support
-   - Keeps artwork in Today's Meals
-   - Keeps safe category fallbacks
-   - No Fuel engine changes
+   - MANA STRENGTH
+   - MANA 28
+
+   PURPOSE
+   -----------------------------------------
+   1. Smaller meal illustrations
+   2. Faster mobile Fuel performance
+   3. NO MutationObserver
+   4. Event-driven artwork refresh only
+   5. Keep all 16 meal artworks
+   6. Keep Today's Meals artwork
+   7. Keep existing Fuel engine untouched
+
+   DISPLAY
+   -----------------------------------------
+   Desktop:
+   - 88 x 70 meal artwork
+
+   Mobile:
+   - 74 x 60 meal artwork
+
+   Small phones:
+   - 68 x 56 meal artwork
    ========================================= */
 
 (() => {
@@ -24,11 +40,11 @@
      ========================================= */
 
   const BUILD =
-    "102010";
+    "102020";
 
 
   const STYLE_ID =
-    "mana-v1020-fuel-meal-art-style";
+    "mana-v10202-fuel-meal-art-style";
 
 
   const ASSET_ROOT =
@@ -36,10 +52,6 @@
 
 
   let refreshTimer =
-    null;
-
-
-  let holderObserver =
     null;
 
 
@@ -82,17 +94,19 @@
 
 
   /* =========================================
-     ACTIVE PROGRAM
+     CURRENT PROGRAM
      ========================================= */
 
   function programName() {
 
     return String(
+
       $(
         "manaV83Title"
       )
         ?.textContent ||
       ""
+
     )
       .trim()
       .toUpperCase();
@@ -108,9 +122,13 @@
       );
 
 
-    const activeFuel =
+    const fuelTab =
       document.querySelector(
-        '#manaV83Tabs .mana-v83-tab.active[data-v83-tab="fuel"]'
+
+        '#manaV83Tabs ' +
+        '.mana-v83-tab.active' +
+        '[data-v83-tab="fuel"]'
+
       );
 
 
@@ -128,7 +146,7 @@
 
       &&
 
-      activeFuel
+      fuelTab
 
       &&
 
@@ -148,7 +166,7 @@
 
 
   /* =========================================
-     CATEGORY FALLBACKS
+     FALLBACK ART
      ========================================= */
 
   const CATEGORY_FALLBACK = {
@@ -177,155 +195,188 @@
 
   const MEAL_ART = {
 
+
     /* BREAKFAST */
 
     "eggs + toast":{
+
       file:
         "meal-eggs-toast.png",
 
       fallback:
         "fuel-breakfast.png"
+
     },
 
 
     "greek yoghurt bowl":{
+
       file:
         "meal-greek-yoghurt-bowl.png",
 
       fallback:
         "fuel-breakfast.png"
+
     },
 
 
     "protein oats":{
+
       file:
         "meal-protein-oats.png",
 
       fallback:
         "fuel-breakfast.png"
+
     },
 
 
     "breakfast wrap":{
+
       file:
         "meal-breakfast-wrap.png",
 
       fallback:
         "fuel-breakfast.png"
+
     },
 
 
     /* LUNCH */
 
     "chicken rice bowl":{
+
       file:
         "meal-chicken-rice-bowl.png",
 
       fallback:
         "fuel-lunch.png"
+
     },
 
 
     "tuna wrap":{
+
       file:
         "meal-tuna-wrap.png",
 
       fallback:
         "fuel-lunch.png"
+
     },
 
 
     "beef + sweet potato":{
+
       file:
         "meal-beef-sweet-potato.png",
 
       fallback:
         "fuel-lunch.png"
+
     },
 
 
     "chicken salad":{
+
       file:
         "meal-chicken-salad.png",
 
       fallback:
         "fuel-lunch.png"
+
     },
 
 
     /* DINNER */
 
     "lean beef + rice":{
+
       file:
         "meal-lean-beef-rice.png",
 
       fallback:
         "fuel-dinner.png"
+
     },
 
 
     "chicken + potato":{
+
       file:
         "meal-chicken-potato.png",
 
       fallback:
         "fuel-dinner.png"
+
     },
 
 
     "salmon + rice":{
+
       file:
         "meal-salmon-rice.png",
 
       fallback:
         "fuel-dinner.png"
+
     },
 
 
     "high-protein pasta":{
+
       file:
         "meal-high-protein-pasta.png",
 
       fallback:
         "fuel-dinner.png"
+
     },
 
 
     /* SNACKS */
 
     "protein shake":{
+
       file:
         "meal-protein-shake.png",
 
       fallback:
         "fuel-snack.png"
+
     },
 
 
     "yoghurt + fruit":{
+
       file:
         "meal-yoghurt-fruit.png",
 
       fallback:
         "fuel-snack.png"
+
     },
 
 
     "tuna + crackers":{
+
       file:
         "meal-tuna-crackers.png",
 
       fallback:
         "fuel-snack.png"
+
     },
 
 
     "cottage cheese bowl":{
+
       file:
         "meal-cottage-cheese-bowl.png",
 
       fallback:
         "fuel-snack.png"
+
     }
 
   };
@@ -337,15 +388,10 @@
 
   function installStyles() {
 
-    if (
-      $(
-        STYLE_ID
-      )
-    ) {
-
-      return;
-
-    }
+    $(
+      STYLE_ID
+    )
+      ?.remove();
 
 
     const style =
@@ -361,14 +407,14 @@
     style.textContent = `
 
       /* =====================================
-         MEAL OPTION ART
+         DESKTOP MEAL OPTIONS
          ===================================== */
 
       #manaV1015Fuel
       .m1015-option{
 
         grid-template-columns:
-          118px
+          88px
           minmax(
             0,
             1fr
@@ -376,32 +422,28 @@
           auto
           !important;
 
+        gap:
+          11px !important;
+
         min-height:
-          108px !important;
+          86px !important;
 
         padding:
-          8px
+          7px
           10px
-          8px
-          8px !important;
+          7px
+          7px
+          !important;
 
-        border-color:
-          #353128 !important;
+        border:
+          1px solid
+          #302d26 !important;
+
+        border-radius:
+          14px !important;
 
         background:
-
-          radial-gradient(
-            circle at left center,
-            rgba(
-              243,
-              216,
-              117,
-              .045
-            ),
-            transparent 36%
-          ),
-
-          #10100f !important;
+          #0f0f0e !important;
 
       }
 
@@ -409,20 +451,23 @@
       #manaV1015Fuel
       .m1015-option img{
 
+        display:
+          block !important;
+
         width:
-          118px !important;
+          88px !important;
 
         height:
-          92px !important;
+          70px !important;
+
+        min-width:
+          88px !important;
 
         object-fit:
           cover !important;
 
         object-position:
-          center !important;
-
-        border-radius:
-          13px !important;
+          center center !important;
 
         border:
           1px solid
@@ -430,22 +475,17 @@
             243,
             216,
             117,
-            .16
-          );
+            .13
+          ) !important;
+
+        border-radius:
+          11px !important;
 
         background:
-          #080808;
+          #080808 !important;
 
         box-shadow:
-          0
-          8px
-          20px
-          rgba(
-            0,
-            0,
-            0,
-            .22
-          );
+          none !important;
 
       }
 
@@ -453,8 +493,11 @@
       #manaV1015Fuel
       .m1015-option h4{
 
+        margin:
+          0 !important;
+
         font-size:
-          14px !important;
+          13px !important;
 
         line-height:
           1.2 !important;
@@ -465,8 +508,17 @@
       #manaV1015Fuel
       .m1015-option p{
 
+        margin:
+          4px
+          0
+          6px
+          !important;
+
+        color:
+          #929292 !important;
+
         font-size:
-          10px !important;
+          9px !important;
 
         line-height:
           1.35 !important;
@@ -477,8 +529,41 @@
       #manaV1015Fuel
       .m1015-option-macros{
 
+        color:
+          #f3d875 !important;
+
         font-size:
-          10px !important;
+          9px !important;
+
+        line-height:
+          1.25 !important;
+
+      }
+
+
+      /* =====================================
+         ADD BUTTON
+         ===================================== */
+
+      #manaV1015Fuel
+      .m1015-option
+      .m1015-add{
+
+        min-width:
+          54px !important;
+
+        min-height:
+          36px !important;
+
+        padding:
+          0
+          11px !important;
+
+        border-radius:
+          999px !important;
+
+        font-size:
+          9px !important;
 
       }
 
@@ -491,26 +576,7 @@
       .m1015-logged{
 
         border-color:
-          #343027 !important;
-
-        background:
-
-          radial-gradient(
-            circle at top left,
-            rgba(
-              243,
-              216,
-              117,
-              .045
-            ),
-            transparent 42%
-          ),
-
-          linear-gradient(
-            145deg,
-            #12110d,
-            #090909
-          ) !important;
+          #302d26 !important;
 
       }
 
@@ -523,7 +589,7 @@
           cover !important;
 
         object-position:
-          center !important;
+          center center !important;
 
         border:
           1px solid
@@ -531,26 +597,30 @@
             243,
             216,
             117,
-            .14
-          );
+            .12
+          ) !important;
 
         background:
-          #080808;
-
-      }
-
-
-      #manaV1015Fuel
-      img.m1020-meal-art{
-
-        opacity:
-          1;
+          #080808 !important;
 
       }
 
 
       /* =====================================
-         MOBILE
+         ARTWORK
+         ===================================== */
+
+      #manaV1015Fuel
+      img.m10202-meal-art{
+
+        opacity:
+          1 !important;
+
+      }
+
+
+      /* =====================================
+         PHONE
          ===================================== */
 
       @media(max-width:600px){
@@ -559,7 +629,7 @@
         .m1015-option{
 
           grid-template-columns:
-            104px
+            74px
             minmax(
               0,
               1fr
@@ -567,11 +637,14 @@
             auto
             !important;
 
-          min-height:
-            98px !important;
-
           gap:
             8px !important;
+
+          min-height:
+            76px !important;
+
+          padding:
+            7px !important;
 
         }
 
@@ -580,13 +653,16 @@
         .m1015-option img{
 
           width:
-            104px !important;
+            74px !important;
 
           height:
-            82px !important;
+            60px !important;
+
+          min-width:
+            74px !important;
 
           border-radius:
-            12px !important;
+            10px !important;
 
         }
 
@@ -595,7 +671,7 @@
         .m1015-option h4{
 
           font-size:
-            13px !important;
+            12px !important;
 
         }
 
@@ -603,8 +679,17 @@
         #manaV1015Fuel
         .m1015-option p{
 
+          margin:
+            3px
+            0
+            5px
+            !important;
+
           font-size:
-            9px !important;
+            8px !important;
+
+          line-height:
+            1.25 !important;
 
         }
 
@@ -613,12 +698,36 @@
         .m1015-option-macros{
 
           font-size:
-            9px !important;
+            8px !important;
+
+        }
+
+
+        #manaV1015Fuel
+        .m1015-option
+        .m1015-add{
+
+          min-width:
+            49px !important;
+
+          min-height:
+            34px !important;
+
+          padding:
+            0
+            8px !important;
+
+          font-size:
+            8px !important;
 
         }
 
       }
 
+
+      /* =====================================
+         SMALL PHONE
+         ===================================== */
 
       @media(max-width:390px){
 
@@ -626,13 +735,16 @@
         .m1015-option{
 
           grid-template-columns:
-            94px
+            68px
             minmax(
               0,
               1fr
             )
             auto
             !important;
+
+          gap:
+            7px !important;
 
         }
 
@@ -641,10 +753,27 @@
         .m1015-option img{
 
           width:
-            94px !important;
+            68px !important;
 
           height:
-            76px !important;
+            56px !important;
+
+          min-width:
+            68px !important;
+
+        }
+
+
+        #manaV1015Fuel
+        .m1015-option
+        .m1015-add{
+
+          min-width:
+            46px !important;
+
+          padding:
+            0
+            7px !important;
 
         }
 
@@ -662,7 +791,7 @@
 
 
   /* =========================================
-     IMAGE FALLBACK
+     APPLY IMAGE
      ========================================= */
 
   function applyImage(
@@ -686,7 +815,7 @@
 
     if (
       img.dataset
-        .m1020Meal ===
+        .m10202Meal ===
       signature
     ) {
 
@@ -696,12 +825,12 @@
 
 
     img.dataset
-      .m1020Meal =
+      .m10202Meal =
       signature;
 
 
     img.classList.add(
-      "m1020-meal-art"
+      "m10202-meal-art"
     );
 
 
@@ -729,7 +858,7 @@
 
 
   /* =========================================
-     OPTION CARDS
+     MEAL OPTIONS
      ========================================= */
 
   function decorateMealOptions() {
@@ -785,7 +914,7 @@
 
 
   /* =========================================
-     LOGGED MEALS
+     TODAY'S MEALS
      ========================================= */
 
   function loggedFallback(
@@ -858,6 +987,7 @@
             ),
 
             {
+
               file:
                 known.file,
 
@@ -866,6 +996,7 @@
                 loggedFallback(
                   card
                 )
+
             }
 
           );
@@ -877,7 +1008,7 @@
 
 
   /* =========================================
-     FUEL HEADER
+     FUEL IDENTITY
      ========================================= */
 
   function decorateFuelHeader() {
@@ -888,11 +1019,19 @@
       );
 
 
+    if (
+      !root
+    ) {
+
+      return;
+
+    }
+
+
     const kicker =
-      root
-        ?.querySelector(
-          ".m1015-kicker"
-        );
+      root.querySelector(
+        ".m1015-kicker"
+      );
 
 
     if (
@@ -904,12 +1043,8 @@
     }
 
 
-    const title =
-      programName();
-
-
     kicker.textContent =
-      title ===
+      programName() ===
         "MANA 28"
 
         ? "MANA 28 • FUEL"
@@ -920,11 +1055,7 @@
 
 
   /* =========================================
-     SAFE REFRESH
-
-     IMPORTANT:
-     One refresh only.
-     No stacked mobile refresh chain.
+     LIGHTWEIGHT REFRESH
      ========================================= */
 
   function refresh() {
@@ -938,8 +1069,6 @@
     }
 
 
-    installStyles();
-
     decorateMealOptions();
 
     decorateLoggedMeals();
@@ -950,7 +1079,7 @@
 
 
   function scheduleRefresh(
-    delay = 40
+    delay = 70
   ) {
 
     clearTimeout(
@@ -968,69 +1097,9 @@
 
 
   /* =========================================
-     SAFE HOLDER OBSERVER
+     EVENTS ONLY
 
-     ONLY watches direct replacement of the
-     main Fuel screen.
-
-     It does NOT watch every meal-card mutation.
-     ========================================= */
-
-  function attachObserver() {
-
-    holderObserver
-      ?.disconnect();
-
-
-    const holder =
-      $(
-        "manaV83Content"
-      );
-
-
-    if (
-      !holder
-    ) {
-
-      return;
-
-    }
-
-
-    holderObserver =
-      new MutationObserver(
-        () => {
-
-          if (
-            fuelOpen()
-          ) {
-
-            scheduleRefresh(
-              50
-            );
-
-          }
-
-        }
-      );
-
-
-    holderObserver.observe(
-      holder,
-      {
-        childList:
-          true,
-
-        subtree:
-          false
-      }
-    );
-
-  }
-
-
-  /* =========================================
-     EVENTS
+     NO MutationObserver.
      ========================================= */
 
   function bindEvents() {
@@ -1040,7 +1109,7 @@
       event => {
 
         /*
-          Open Fuel.
+          ENTER FUEL
         */
 
         if (
@@ -1050,7 +1119,7 @@
         ) {
 
           scheduleRefresh(
-            140
+            130
           );
 
 
@@ -1060,16 +1129,33 @@
 
 
         /*
-          Open Breakfast / Lunch /
-          Dinner / Snacks.
-
-          v10.15 renders first.
-          Then we decorate artwork once.
+          BREAKFAST / LUNCH /
+          DINNER / SNACKS
         */
 
         if (
           event.target.closest(
             "[data-m1015-meal]"
+          )
+        ) {
+
+          scheduleRefresh(
+            80
+          );
+
+
+          return;
+
+        }
+
+
+        /*
+          ADD MEAL
+        */
+
+        if (
+          event.target.closest(
+            "[data-m1015-add]"
           )
         ) {
 
@@ -1084,30 +1170,7 @@
 
 
         /*
-          ADD meal.
-
-          Allow v10.15 to save and render,
-          then decorate Today's Meals.
-        */
-
-        if (
-          event.target.closest(
-            "[data-m1015-add]"
-          )
-        ) {
-
-          scheduleRefresh(
-            100
-          );
-
-
-          return;
-
-        }
-
-
-        /*
-          Remove meal.
+          REMOVE MEAL
         */
 
         if (
@@ -1117,7 +1180,27 @@
         ) {
 
           scheduleRefresh(
-            100
+            90
+          );
+
+
+          return;
+
+        }
+
+
+        /*
+          CLOSE MODAL
+        */
+
+        if (
+          event.target.closest(
+            "[data-m1015-close]"
+          )
+        ) {
+
+          scheduleRefresh(
+            80
           );
 
         }
@@ -1128,11 +1211,7 @@
 
 
     /*
-      v10.15 already emits this after
-      Fuel data changes.
-
-      This is the safest primary refresh
-      signal for meal artwork.
+      Fuel data update.
     */
 
     window.addEventListener(
@@ -1153,6 +1232,10 @@
     );
 
 
+    /*
+      Program tab update.
+    */
+
     window.addEventListener(
       "mana:program-tab-change",
       () => {
@@ -1171,6 +1254,10 @@
     );
 
 
+    /*
+      Returning to app.
+    */
+
     window.addEventListener(
       "focus",
       () => {
@@ -1180,7 +1267,7 @@
         ) {
 
           scheduleRefresh(
-            80
+            100
           );
 
         }
@@ -1221,19 +1308,21 @@
 
     bindEvents();
 
-    attachObserver();
 
+    /*
+      One initial refresh only.
+    */
 
     setTimeout(
       refresh,
-      600
+      650
     );
 
 
     console.log(
       "Mana Fuel Meal Illustrations",
       BUILD,
-      "mobile-safe"
+      "lightweight"
     );
 
   }
