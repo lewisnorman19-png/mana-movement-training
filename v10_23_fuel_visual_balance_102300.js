@@ -1,19 +1,19 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.23.4
-   FUEL — TALLER MEAL ARTWORK
+   MANA MOVEMENT TRAINING v10.23.6
+   FUEL — MATCH CATEGORY CARD SIZING
 
-   BUILD: 102340
+   BUILD: 102360
 
    PURPOSE
    -----------------------------------------
-   - Keep current Fuel layout
-   - Keep full-width meal rows
-   - Keep small + button
-   - Keep compact Add Your Own
-   - Keep larger Daily Targets
-   - Make meal illustrations TALLER
-   - Fill meal card vertically
-   - Laptop + phone
+   - Add-a-Meal category cards are the master
+   - Meal selection cards match their sizing
+   - Same artwork proportions
+   - Same card height
+   - Small + button
+   - Compact Add Your Own
+   - Desktop + phone
+   - CSS ONLY
    ========================================= */
 
 (() => {
@@ -21,7 +21,7 @@
 
 
   const STYLE_ID =
-    "mana-v10234-fuel-card-balance";
+    "mana-v10236-fuel-match-cards";
 
 
   function installStyles() {
@@ -47,7 +47,21 @@
 
 
       /* =====================================
-         MEAL MODAL
+         COACH CHAT
+         FUEL ONLY
+         ===================================== */
+
+      #manaV83Content:has(#manaV1015Fuel)
+      #manaV969CoachChat{
+
+        display:
+          none !important;
+
+      }
+
+
+      /* =====================================
+         DESKTOP MEAL MODAL
          ===================================== */
 
       #manaV1015Fuel
@@ -81,7 +95,10 @@
 
 
       /* =====================================
-         MEAL ROW — DESKTOP
+         DESKTOP MEAL OPTION
+
+         Uses same visual proportions as
+         Add-a-Meal category artwork.
          ===================================== */
 
       #manaV1015Fuel
@@ -91,9 +108,9 @@
           grid !important;
 
         grid-template-columns:
-          128px
+          118px
           minmax(0,1fr)
-          34px
+          32px
           !important;
 
         align-items:
@@ -103,13 +120,13 @@
           100% !important;
 
         min-height:
-          94px !important;
+          100px !important;
 
         gap:
-          12px !important;
+          11px !important;
 
         padding:
-          7px !important;
+          8px !important;
 
         overflow:
           hidden !important;
@@ -127,10 +144,6 @@
       }
 
 
-      /* =====================================
-         TALLER MEAL ILLUSTRATION
-         ===================================== */
-
       #manaV1015Fuel
       .m1022-option-art{
 
@@ -144,16 +157,19 @@
           center !important;
 
         width:
-          128px !important;
+          118px !important;
 
         height:
-          78px !important;
+          84px !important;
 
         min-width:
-          128px !important;
+          118px !important;
 
         overflow:
           hidden !important;
+
+        border-radius:
+          11px !important;
 
         border:
           1px solid
@@ -163,9 +179,6 @@
             117,
             .18
           ) !important;
-
-        border-radius:
-          11px !important;
 
         background:
           #070707 !important;
@@ -185,27 +198,14 @@
         height:
           100% !important;
 
-        max-width:
-          100% !important;
-
-        max-height:
-          100% !important;
-
         object-fit:
           cover !important;
 
         object-position:
           center !important;
 
-        padding:
-          0 !important;
-
       }
 
-
-      /* =====================================
-         MEAL COPY
-         ===================================== */
 
       #manaV1015Fuel
       .m1022-option-copy{
@@ -271,7 +271,7 @@
 
 
       /* =====================================
-         + BUTTON
+         SMALL +
          ===================================== */
 
       #manaV1015Fuel
@@ -288,22 +288,22 @@
           center !important;
 
         width:
-          32px !important;
+          30px !important;
 
         min-width:
-          32px !important;
+          30px !important;
 
         max-width:
-          32px !important;
+          30px !important;
 
         height:
-          32px !important;
+          30px !important;
 
         min-height:
-          32px !important;
+          30px !important;
 
         max-height:
-          32px !important;
+          30px !important;
 
         padding:
           0 !important;
@@ -358,7 +358,7 @@
           #f3d875 !important;
 
         font-size:
-          22px !important;
+          20px !important;
 
         font-weight:
           400 !important;
@@ -377,10 +377,10 @@
       .m1022-custom{
 
         margin-top:
-          8px !important;
+          6px !important;
 
         padding-top:
-          8px !important;
+          7px !important;
 
         border-top:
           1px solid
@@ -395,17 +395,14 @@
         margin:
           0
           0
-          6px
+          5px
           !important;
 
         color:
-          #9b9b9b !important;
+          #999 !important;
 
         font-size:
-          11px !important;
-
-        font-weight:
-          800 !important;
+          10px !important;
 
       }
 
@@ -413,14 +410,8 @@
       #manaV1015Fuel
       .m1022-custom-grid{
 
-        grid-template-columns:
-          minmax(0,2fr)
-          minmax(80px,1fr)
-          minmax(80px,1fr)
-          !important;
-
         gap:
-          6px !important;
+          5px !important;
 
       }
 
@@ -429,18 +420,15 @@
       .m1022-custom-grid input{
 
         min-height:
-          32px !important;
+          30px !important;
 
         padding:
-          6px
-          9px
+          5px
+          8px
           !important;
 
-        border-radius:
-          8px !important;
-
         font-size:
-          9px !important;
+          8px !important;
 
       }
 
@@ -456,13 +444,13 @@
           auto !important;
 
         min-width:
-          104px !important;
+          100px !important;
 
         min-height:
-          30px !important;
+          28px !important;
 
         margin:
-          7px
+          5px
           0
           0
           auto
@@ -470,7 +458,7 @@
 
         padding:
           0
-          12px
+          11px
           !important;
 
         border:
@@ -561,15 +549,6 @@
          ===================================== */
 
       #manaV1015Fuel
-      .m1022-target-grid{
-
-        gap:
-          11px !important;
-
-      }
-
-
-      #manaV1015Fuel
       .m1022-target{
 
         min-height:
@@ -614,9 +593,6 @@
       #manaV1015Fuel
       .m1022-target-label{
 
-        color:
-          #aaa !important;
-
         font-size:
           10px !important;
 
@@ -635,38 +611,24 @@
       }
 
 
-      #manaV1015Fuel
-      .m1022-target-value span{
-
-        font-size:
-          10px !important;
-
-      }
-
-
-      #manaV1015Fuel
-      .m1022-bar{
-
-        height:
-          8px !important;
-
-        margin-top:
-          12px !important;
-
-      }
-
-
       /* =====================================
          PHONE
+
+         EXACT REFERENCE:
+         ADD-A-MEAL CATEGORY CARD
          ===================================== */
 
       @media(max-width:600px){
+
 
         #manaV1015Fuel
         .m1022-modal-backdrop{
 
           padding:
-            6px !important;
+            5px !important;
+
+          align-items:
+            flex-start !important;
 
         }
 
@@ -676,11 +638,18 @@
 
           width:
             calc(
-              100vw - 12px
+              100vw - 10px
             ) !important;
 
           max-width:
-            none !important;
+            calc(
+              100vw - 10px
+            ) !important;
+
+          max-height:
+            calc(
+              100dvh - 10px
+            ) !important;
 
           padding:
             10px !important;
@@ -688,44 +657,73 @@
         }
 
 
+        /*
+          This matches the existing phone
+          Add-a-Meal category sizing:
+
+          image = 104px
+          card height ≈ 92px
+        */
+
         #manaV1015Fuel
         .m1022-option{
 
           grid-template-columns:
-            92px
+            104px
             minmax(0,1fr)
-            29px
+            28px
             !important;
 
           gap:
             8px !important;
 
           min-height:
-            80px !important;
+            92px !important;
 
           padding:
             6px !important;
 
+          border-radius:
+            14px !important;
+
         }
 
-
-        /*
-          IMPORTANT:
-          Same width as before.
-          Only HEIGHT is increased.
-        */
 
         #manaV1015Fuel
         .m1022-option-art{
 
           width:
-            92px !important;
+            104px !important;
 
           min-width:
-            92px !important;
+            104px !important;
 
           height:
-            66px !important;
+            80px !important;
+
+          min-height:
+            80px !important;
+
+          border-radius:
+            10px !important;
+
+        }
+
+
+        #manaV1015Fuel
+        .m1022-option-art img{
+
+          width:
+            100% !important;
+
+          height:
+            100% !important;
+
+          object-fit:
+            cover !important;
+
+          object-position:
+            center !important;
 
         }
 
@@ -736,6 +734,9 @@
           font-size:
             13px !important;
 
+          line-height:
+            1.15 !important;
+
         }
 
 
@@ -743,13 +744,16 @@
         .m1022-option p{
 
           margin:
-            2px
+            3px
             0
-            4px
+            5px
             !important;
 
           font-size:
             8px !important;
+
+          line-height:
+            1.25 !important;
 
         }
 
@@ -768,16 +772,22 @@
         > .m1022-add{
 
           width:
-            28px !important;
+            27px !important;
 
           min-width:
-            28px !important;
+            27px !important;
+
+          max-width:
+            27px !important;
 
           height:
-            28px !important;
+            27px !important;
 
           min-height:
-            28px !important;
+            27px !important;
+
+          max-height:
+            27px !important;
 
         }
 
@@ -787,60 +797,21 @@
         > .m1022-add::before{
 
           font-size:
-            19px !important;
+            18px !important;
 
         }
 
 
-        /* =================================
-           TODAY'S MEALS — PHONE
-           ================================= */
-
-        #manaV1015Fuel
-        .m1022-logged{
-
-          grid-template-columns:
-            80px
-            minmax(0,1fr)
-            27px
-            !important;
-
-          gap:
-            8px !important;
-
-          min-height:
-            74px !important;
-
-          padding:
-            6px !important;
-
-        }
-
-
-        #manaV1015Fuel
-        .m1022-logged-art{
-
-          width:
-            80px !important;
-
-          height:
-            60px !important;
-
-        }
-
-
-        /* =================================
-           ADD YOUR OWN — PHONE
-           ================================= */
+        /* Add Your Own stays secondary */
 
         #manaV1015Fuel
         .m1022-custom{
 
           margin-top:
-            6px !important;
+            5px !important;
 
           padding-top:
-            7px !important;
+            6px !important;
 
         }
 
@@ -849,7 +820,7 @@
         .m1022-custom h4{
 
           font-size:
-            10px !important;
+            9px !important;
 
         }
 
@@ -858,9 +829,13 @@
         .m1022-custom-grid{
 
           grid-template-columns:
-            1fr
-            1fr
+            minmax(0,1.5fr)
+            minmax(0,1fr)
+            minmax(0,1fr)
             !important;
+
+          gap:
+            4px !important;
 
         }
 
@@ -870,10 +845,7 @@
         input:first-child{
 
           grid-column:
-            1
-            /
-            -1
-            !important;
+            auto !important;
 
         }
 
@@ -882,22 +854,39 @@
         .m1022-custom-grid input{
 
           min-height:
-            29px !important;
+            27px !important;
 
           padding:
-            5px
-            7px
+            4px
+            6px
             !important;
 
           font-size:
-            8px !important;
+            7px !important;
 
         }
 
 
-        /* =================================
-           TARGETS — PHONE
-           ================================= */
+        #manaV1015Fuel
+        .m1022-custom
+        > .m1022-add{
+
+          min-height:
+            26px !important;
+
+          min-width:
+            92px !important;
+
+          margin-top:
+            4px !important;
+
+          font-size:
+            7px !important;
+
+        }
+
+
+        /* Targets remain prominent */
 
         #manaV1015Fuel
         .m1022-target{
@@ -907,24 +896,6 @@
 
           padding:
             12px !important;
-
-        }
-
-
-        #manaV1015Fuel
-        .m1022-target-icon{
-
-          width:
-            40px !important;
-
-          height:
-            40px !important;
-
-          flex:
-            0
-            0
-            40px
-            !important;
 
         }
 
@@ -942,6 +913,9 @@
 
       /* =====================================
          SMALL PHONE
+
+         Matches the smaller category card:
+         ~92px artwork width
          ===================================== */
 
       @media(max-width:390px){
@@ -950,13 +924,16 @@
         .m1022-option{
 
           grid-template-columns:
-            82px
+            92px
             minmax(0,1fr)
             27px
             !important;
 
           min-height:
-            75px !important;
+            86px !important;
+
+          gap:
+            7px !important;
 
         }
 
@@ -965,37 +942,16 @@
         .m1022-option-art{
 
           width:
-            82px !important;
+            92px !important;
 
           min-width:
-            82px !important;
+            92px !important;
 
           height:
-            61px !important;
+            74px !important;
 
-        }
-
-
-        #manaV1015Fuel
-        .m1022-logged{
-
-          grid-template-columns:
-            72px
-            minmax(0,1fr)
-            26px
-            !important;
-
-        }
-
-
-        #manaV1015Fuel
-        .m1022-logged-art{
-
-          width:
-            72px !important;
-
-          height:
-            56px !important;
+          min-height:
+            74px !important;
 
         }
 
@@ -1018,8 +974,8 @@
 
 
     console.log(
-      "Mana Fuel Taller Artwork",
-      "102340"
+      "Mana Fuel Match Cards",
+      "102360"
     );
 
   }
