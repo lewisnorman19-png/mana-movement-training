@@ -1,25 +1,27 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.24.1
-   HOME — PREMIUM COLOUR + ILLUSTRATIONS
+   MANA MOVEMENT TRAINING v10.24.2
+   HOME — PREMIUM OUTLINE COLOUR SYSTEM
 
-   BUILD: 102410
+   BUILD: 102420
 
-   HOME VISUAL SYSTEM
+   VISUAL RULE
+   -----------------------------------------
+   - KEEP ORIGINAL HOME TEXT COLOURS
+   - KEEP ORIGINAL TYPOGRAPHY
+   - KEEP DARK PREMIUM CARDS
+   - COLOUR ONLY IN:
+       • CARD OUTLINE
+       • TOP ACCENT
+       • SUBTLE BACKGROUND GLOW
+       • ILLUSTRATION / ICON
+   - NO SOLID YELLOW SELECTED CARD
+
+   COLOUR SYSTEM
    -----------------------------------------
    PROFILE       = GREEN
    MANA STRENGTH = GOLD
    MANA 28       = BLUE
    MANA LYFE     = PURPLE / TEAL
-
-   PURPOSE
-   -----------------------------------------
-   - Dark premium cards
-   - NO solid yellow selected card
-   - Stronger colour accents
-   - Real illustrated graphics in each block
-   - Consistent desktop + phone
-   - Artwork sits on right side
-   - Text remains readable
    ========================================= */
 
 (() => {
@@ -27,103 +29,55 @@
 
 
   const BUILD =
-    "102410";
+    "102420";
 
 
   const STYLE_ID =
-    "mana-v10241-home-premium-style";
+    "mana-v10242-home-outline-system";
 
 
   /* =========================================
-     SVG ARTWORK
+     ARTWORK
      ========================================= */
 
   const ART = {
 
 
     profile: `
-      <svg
-        viewBox="0 0 180 150"
-        aria-hidden="true"
-      >
-
-        <defs>
-
-          <linearGradient
-            id="profileGlow"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="1"
-          >
-
-            <stop
-              offset="0%"
-              stop-color="#8cf0ad"
-            />
-
-            <stop
-              offset="100%"
-              stop-color="#38c978"
-            />
-
-          </linearGradient>
-
-        </defs>
-
+      <svg viewBox="0 0 160 130" aria-hidden="true">
 
         <circle
-          cx="92"
-          cy="45"
-          r="23"
+          cx="80"
+          cy="38"
+          r="20"
           fill="none"
-          stroke="url(#profileGlow)"
-          stroke-width="7"
+          stroke="#63d99a"
+          stroke-width="6"
         />
-
 
         <path
           d="
-            M47 126
-            C50 88 67 72 92 72
-            C117 72 135 88 139 126
+            M43 110
+            C47 78 60 65 80 65
+            C100 65 114 78 118 110
           "
           fill="none"
-          stroke="url(#profileGlow)"
-          stroke-width="8"
+          stroke="#63d99a"
+          stroke-width="7"
           stroke-linecap="round"
         />
 
-
         <path
           d="
-            M66 96
-            L80 108
-            L111 85
+            M60 87
+            L73 98
+            L100 77
           "
           fill="none"
-          stroke="#e8fff0"
-          stroke-width="6"
+          stroke="#b9f4d0"
+          stroke-width="5"
           stroke-linecap="round"
           stroke-linejoin="round"
-        />
-
-
-        <circle
-          cx="142"
-          cy="38"
-          r="7"
-          fill="#55d98b"
-          opacity=".9"
-        />
-
-
-        <circle
-          cx="42"
-          cy="55"
-          r="4"
-          fill="#55d98b"
-          opacity=".45"
         />
 
       </svg>
@@ -131,106 +85,52 @@
 
 
     strength: `
-      <svg
-        viewBox="0 0 190 150"
-        aria-hidden="true"
-      >
+      <svg viewBox="0 0 170 130" aria-hidden="true">
 
-        <defs>
-
-          <linearGradient
-            id="strengthGlow"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="1"
-          >
-
-            <stop
-              offset="0%"
-              stop-color="#ffe685"
-            />
-
-            <stop
-              offset="100%"
-              stop-color="#d8a824"
-            />
-
-          </linearGradient>
-
-        </defs>
-
-
-        <path
-          d="
-            M49 76
-            H141
-          "
-          stroke="url(#strengthGlow)"
-          stroke-width="10"
+        <line
+          x1="45"
+          y1="66"
+          x2="125"
+          y2="66"
+          stroke="#e0bb51"
+          stroke-width="8"
           stroke-linecap="round"
         />
 
-
         <rect
-          x="27"
-          y="54"
-          width="15"
-          height="44"
-          rx="5"
-          fill="#f2c94c"
-        />
-
-
-        <rect
-          x="45"
-          y="61"
-          width="11"
-          height="30"
+          x="25"
+          y="48"
+          width="13"
+          height="36"
           rx="4"
-          fill="#f8da69"
+          fill="#e0bb51"
         />
 
-
         <rect
-          x="148"
-          y="61"
-          width="11"
-          height="30"
+          x="40"
+          y="53"
+          width="9"
+          height="26"
           rx="4"
-          fill="#f8da69"
+          fill="#f3d875"
         />
-
 
         <rect
-          x="162"
-          y="54"
-          width="15"
-          height="44"
-          rx="5"
-          fill="#f2c94c"
+          x="121"
+          y="53"
+          width="9"
+          height="26"
+          rx="4"
+          fill="#f3d875"
         />
 
-
-        <path
-          d="
-            M68 119
-            C77 99 86 93 95 93
-            C105 93 114 99 124 119
-          "
-          fill="none"
-          stroke="#fff4c6"
-          stroke-width="7"
-          stroke-linecap="round"
-        />
-
-
-        <circle
-          cx="95"
-          cy="103"
-          r="34"
-          fill="#f2c94c"
-          opacity=".055"
+        <rect
+          x="133"
+          y="48"
+          width="13"
+          height="36"
+          rx="4"
+          fill="#e0bb51"
         />
 
       </svg>
@@ -238,191 +138,83 @@
 
 
     mana28: `
-      <svg
-        viewBox="0 0 190 150"
-        aria-hidden="true"
-      >
-
-        <defs>
-
-          <linearGradient
-            id="mana28Glow"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="1"
-          >
-
-            <stop
-              offset="0%"
-              stop-color="#79c8ff"
-            />
-
-            <stop
-              offset="100%"
-              stop-color="#348bea"
-            />
-
-          </linearGradient>
-
-        </defs>
-
+      <svg viewBox="0 0 170 130" aria-hidden="true">
 
         <circle
-          cx="96"
-          cy="75"
-          r="49"
+          cx="84"
+          cy="64"
+          r="40"
           fill="none"
-          stroke="#4ea7ff"
+          stroke="#4d98c9"
           stroke-width="6"
-          opacity=".28"
+          opacity=".35"
         />
-
 
         <path
           d="
-            M96 26
-            A49 49 0 1 1 54 100
+            M84 24
+            A40 40 0 1 1 51 87
           "
           fill="none"
-          stroke="url(#mana28Glow)"
-          stroke-width="8"
+          stroke="#55a8de"
+          stroke-width="7"
           stroke-linecap="round"
         />
 
-
         <text
-          x="95"
-          y="88"
+          x="84"
+          y="77"
           text-anchor="middle"
-          fill="#eaf6ff"
-          font-size="42"
-          font-weight="900"
+          fill="#d9efff"
           font-family="Arial, sans-serif"
+          font-size="34"
+          font-weight="900"
         >
           28
         </text>
-
-
-        <path
-          d="
-            M139 34
-            L157 34
-            L157 52
-          "
-          fill="none"
-          stroke="#78c9ff"
-          stroke-width="6"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
-
-        <path
-          d="
-            M157 34
-            L140 51
-          "
-          stroke="#78c9ff"
-          stroke-width="6"
-          stroke-linecap="round"
-        />
 
       </svg>
     `,
 
 
     lyfe: `
-      <svg
-        viewBox="0 0 190 150"
-        aria-hidden="true"
-      >
-
-        <defs>
-
-          <linearGradient
-            id="lyfeGlow"
-            x1="0"
-            y1="0"
-            x2="1"
-            y2="1"
-          >
-
-            <stop
-              offset="0%"
-              stop-color="#b58cff"
-            />
-
-            <stop
-              offset="55%"
-              stop-color="#9a6cf4"
-            />
-
-            <stop
-              offset="100%"
-              stop-color="#45d7c3"
-            />
-
-          </linearGradient>
-
-        </defs>
-
-
-        <circle
-          cx="95"
-          cy="73"
-          r="45"
-          fill="#a779ff"
-          opacity=".055"
-        />
-
+      <svg viewBox="0 0 170 130" aria-hidden="true">
 
         <path
           d="
-            M95 124
-            C95 98 99 79 116 59
+            M84 109
+            C84 85 89 69 103 52
           "
           fill="none"
-          stroke="url(#lyfeGlow)"
-          stroke-width="7"
+          stroke="#a681dc"
+          stroke-width="6"
           stroke-linecap="round"
         />
 
-
         <path
           d="
-            M111 63
-            C123 39 143 36 155 42
-            C151 64 136 77 113 75
+            M100 55
+            C111 35 129 33 140 39
+            C136 58 123 69 102 66
           "
           fill="none"
-          stroke="#45d7c3"
-          stroke-width="6"
+          stroke="#4ac6ae"
+          stroke-width="5"
           stroke-linecap="round"
           stroke-linejoin="round"
         />
 
-
         <path
           d="
-            M88 86
-            C78 64 59 58 43 65
-            C50 88 65 98 89 96
+            M78 77
+            C69 58 52 54 39 61
+            C45 80 59 89 79 87
           "
           fill="none"
-          stroke="#a779ff"
-          stroke-width="6"
+          stroke="#a681dc"
+          stroke-width="5"
           stroke-linecap="round"
           stroke-linejoin="round"
-        />
-
-
-        <circle
-          cx="95"
-          cy="37"
-          r="8"
-          fill="#b78dff"
-          opacity=".82"
         />
 
       </svg>
@@ -458,31 +250,90 @@
 
 
       /* =====================================
-         HOME COLOUR TOKENS
+         IMPORTANT:
+         RESTORE ORIGINAL HOME TEXT COLOURS
          ===================================== */
 
-      #manaV80Home{
+      #manaV80Home
+      .mana-v8013-program-label{
 
-        --home-gold:
-          #f2c94c;
+        color:
+          #f3d875 !important;
 
-        --home-green:
-          #55d98b;
+      }
 
-        --home-blue:
-          #4ea7ff;
 
-        --home-purple:
-          #a779ff;
+      #manaV80Home
+      .mana-v8013-program h2{
 
-        --home-teal:
-          #45d7c3;
+        color:
+          #ffffff !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-program p{
+
+        color:
+          #aaaaaa !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-open{
+
+        color:
+          #f3d875 !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-free-note{
+
+        color:
+          #d9c36d !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-price strong{
+
+        color:
+          #f3d875 !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-price span{
+
+        color:
+          #888888 !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-badge{
+
+        border-color:
+          #67551d !important;
+
+        background:
+          #191607 !important;
+
+        color:
+          #f3d875 !important;
 
       }
 
 
       /* =====================================
-         ALL HOME CARDS
+         BASE CARD
          ===================================== */
 
       #manaV80Home
@@ -503,35 +354,85 @@
         background:
           linear-gradient(
             145deg,
-            #121212 0%,
-            #090909 75%
+            #151515,
+            #080808
           ) !important;
-
-        color:
-          #fff !important;
 
       }
 
 
       /* =====================================
-         KILL SOLID YELLOW ACTIVE STATE
+         REMOVE SOLID SELECTED FILL
          ===================================== */
 
       #manaV80Home
-      .mana-v8013-program.current,
-
-      #manaV80Home
-      #manaV80Strength.current{
+      .mana-v8013-program.current{
 
         background:
           linear-gradient(
             145deg,
-            #131313,
-            #090909
+            #151515,
+            #080808
           ) !important;
 
+        border-width:
+          1px !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-program.current h2{
+
         color:
-          #fff !important;
+          #ffffff !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-program.current
+      .mana-v8013-program-label{
+
+        color:
+          #f3d875 !important;
+
+      }
+
+
+      /* =====================================
+         REMOVE OLD SOLID TOP BAR
+         ===================================== */
+
+      #manaV80Home
+      .mana-v8013-program.current::before{
+
+        content:
+          "" !important;
+
+        position:
+          absolute !important;
+
+        z-index:
+          4 !important;
+
+        top:
+          0 !important;
+
+        left:
+          22px !important;
+
+        right:
+          22px !important;
+
+        width:
+          auto !important;
+
+        height:
+          2px !important;
+
+        border-radius:
+          999px !important;
 
       }
 
@@ -547,10 +448,10 @@
           absolute !important;
 
         z-index:
-          0 !important;
+          1 !important;
 
         right:
-          20px !important;
+          22px !important;
 
         top:
           50% !important;
@@ -561,10 +462,10 @@
           ) !important;
 
         width:
-          160px !important;
+          142px !important;
 
         height:
-          132px !important;
+          112px !important;
 
         display:
           flex !important;
@@ -579,7 +480,7 @@
           none !important;
 
         opacity:
-          .96 !important;
+          .88 !important;
 
       }
 
@@ -587,34 +488,17 @@
       #manaV80Home
       .mana-v1024-home-art svg{
 
-        display:
-          block !important;
-
         width:
           100% !important;
 
         height:
           100% !important;
 
-        overflow:
-          visible !important;
-
-        filter:
-          drop-shadow(
-            0
-            0
-            14px
-            var(
-              --art-glow
-            )
-          ) !important;
+        display:
+          block !important;
 
       }
 
-
-      /*
-        Keep card copy over artwork.
-      */
 
       #manaV80Home
       .mana-v8013-program
@@ -628,7 +512,7 @@
           relative !important;
 
         z-index:
-          2 !important;
+          3 !important;
 
       }
 
@@ -637,22 +521,13 @@
       .mana-v8013-program p{
 
         max-width:
-          64% !important;
-
-      }
-
-
-      #manaV80Home
-      #manaV80ProfileSetup p{
-
-        max-width:
           67% !important;
 
       }
 
 
       /* =====================================
-         PROFILE — GREEN
+         PROFILE — GREEN OUTLINE
          ===================================== */
 
       #manaV80Home
@@ -661,21 +536,30 @@
         border:
           1px solid
           rgba(
-            85,
-            217,
-            139,
-            .62
+            64,
+            178,
+            120,
+            .48
           ) !important;
 
-        box-shadow:
-          0
-          14px
-          36px
-          rgba(
-            85,
-            217,
-            139,
-            .10
+        background:
+
+          radial-gradient(
+            circle at top right,
+            rgba(
+              64,
+              178,
+              120,
+              .08
+            ),
+            transparent
+            46%
+          ),
+
+          linear-gradient(
+            145deg,
+            #111713,
+            #090909
           ) !important;
 
       }
@@ -684,104 +568,12 @@
       #manaV80Home
       #manaV80ProfileSetup::before{
 
-        content:
-          "" !important;
-
-        position:
-          absolute !important;
-
-        z-index:
-          1 !important;
-
-        top:
-          0 !important;
-
-        left:
-          0 !important;
-
-        width:
-          5px !important;
-
-        height:
-          100% !important;
-
         background:
-          var(
-            --home-green
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      #manaV80ProfileSetup::after{
-
-        content:
-          "" !important;
-
-        position:
-          absolute !important;
-
-        z-index:
-          0 !important;
-
-        right:
-          -60px !important;
-
-        top:
-          -90px !important;
-
-        width:
-          260px !important;
-
-        height:
-          260px !important;
-
-        border-radius:
-          50% !important;
-
-        background:
-          radial-gradient(
-            circle,
-            rgba(
-              85,
-              217,
-              139,
-              .20
-            ),
+          linear-gradient(
+            90deg,
+            transparent,
+            #55c68b,
             transparent
-            68%
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      #manaV80ProfileSetup
-      .mana-v1024-home-art{
-
-        --art-glow:
-          rgba(
-            85,
-            217,
-            139,
-            .24
-          );
-
-      }
-
-
-      #manaV80Home
-      #manaV80ProfileSetup
-      .mana-v8013-profile-label,
-
-      #manaV80Home
-      #manaV80ProfileSetup
-      .mana-v8013-profile-open{
-
-        color:
-          var(
-            --home-green
           ) !important;
 
       }
@@ -797,95 +589,44 @@
         border:
           1px solid
           rgba(
-            242,
-            201,
-            76,
-            .64
+            209,
+            174,
+            65,
+            .58
           ) !important;
-
-        box-shadow:
-          0
-          14px
-          38px
-          rgba(
-            242,
-            201,
-            76,
-            .10
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="strength"]::after{
-
-        content:
-          "" !important;
-
-        position:
-          absolute !important;
-
-        z-index:
-          0 !important;
-
-        right:
-          -55px !important;
-
-        top:
-          -75px !important;
-
-        width:
-          250px !important;
-
-        height:
-          250px !important;
-
-        border-radius:
-          50% !important;
 
         background:
+
           radial-gradient(
-            circle,
+            circle at top right,
             rgba(
-              242,
-              201,
-              76,
-              .23
+              218,
+              181,
+              69,
+              .09
             ),
             transparent
-            67%
+            48%
+          ),
+
+          linear-gradient(
+            145deg,
+            #17150d,
+            #090909
           ) !important;
 
       }
 
 
       #manaV80Home
-      [data-program="strength"]
-      .mana-v1024-home-art{
+      [data-program="strength"]::before{
 
-        --art-glow:
-          rgba(
-            242,
-            201,
-            76,
-            .27
-          );
-
-      }
-
-
-      #manaV80Home
-      [data-program="strength"]
-      .mana-v8013-program-label,
-
-      #manaV80Home
-      [data-program="strength"]
-      .mana-v8013-open{
-
-        color:
-          var(
-            --home-gold
+        background:
+          linear-gradient(
+            90deg,
+            transparent,
+            #d9b852,
+            transparent
           ) !important;
 
       }
@@ -901,102 +642,51 @@
         border:
           1px solid
           rgba(
-            78,
-            167,
-            255,
-            .68
+            73,
+            150,
+            201,
+            .55
           ) !important;
-
-        box-shadow:
-          0
-          14px
-          38px
-          rgba(
-            78,
-            167,
-            255,
-            .11
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="mana28"]::after{
-
-        content:
-          "" !important;
-
-        position:
-          absolute !important;
-
-        z-index:
-          0 !important;
-
-        right:
-          -55px !important;
-
-        top:
-          -75px !important;
-
-        width:
-          250px !important;
-
-        height:
-          250px !important;
-
-        border-radius:
-          50% !important;
 
         background:
+
           radial-gradient(
-            circle,
+            circle at top right,
             rgba(
-              78,
-              167,
-              255,
-              .25
+              73,
+              150,
+              201,
+              .09
             ),
             transparent
-            67%
+            48%
+          ),
+
+          linear-gradient(
+            145deg,
+            #10161a,
+            #090909
           ) !important;
 
       }
 
 
       #manaV80Home
-      [data-program="mana28"]
-      .mana-v1024-home-art{
+      [data-program="mana28"]::before{
 
-        --art-glow:
-          rgba(
-            78,
-            167,
-            255,
-            .28
-          );
-
-      }
-
-
-      #manaV80Home
-      [data-program="mana28"]
-      .mana-v8013-program-label,
-
-      #manaV80Home
-      [data-program="mana28"]
-      .mana-v8013-open{
-
-        color:
-          var(
-            --home-blue
+        background:
+          linear-gradient(
+            90deg,
+            transparent,
+            #55a8de,
+            transparent
           ) !important;
 
       }
 
 
       /* =====================================
-         MANA LYFE — PURPLE / TEAL
+         MANA LYFE — PURPLE
          ===================================== */
 
       #manaV80Home
@@ -1005,139 +695,66 @@
         border:
           1px solid
           rgba(
-            167,
-            121,
-            255,
-            .70
+            141,
+            104,
+            193,
+            .55
           ) !important;
-
-        box-shadow:
-          0
-          14px
-          38px
-          rgba(
-            167,
-            121,
-            255,
-            .12
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="life"]::after{
-
-        content:
-          "" !important;
-
-        position:
-          absolute !important;
-
-        z-index:
-          0 !important;
-
-        right:
-          -50px !important;
-
-        top:
-          -65px !important;
-
-        width:
-          260px !important;
-
-        height:
-          260px !important;
-
-        border-radius:
-          50% !important;
 
         background:
+
           radial-gradient(
-            circle at 55% 38%,
+            circle at top right,
             rgba(
-              167,
-              121,
-              255,
-              .26
+              141,
+              104,
+              193,
+              .10
             ),
             transparent
-            54%
+            48%
           ),
-          radial-gradient(
-            circle at 65% 72%,
-            rgba(
-              69,
-              215,
-              195,
-              .16
-            ),
+
+          linear-gradient(
+            145deg,
+            #15111a,
+            #090909
+          ) !important;
+
+      }
+
+
+      #manaV80Home
+      [data-program="life"]::before{
+
+        background:
+          linear-gradient(
+            90deg,
+            transparent,
+            #a681dc,
+            #4ac6ae,
             transparent
-            55%
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="life"]
-      .mana-v1024-home-art{
-
-        --art-glow:
-          rgba(
-            167,
-            121,
-            255,
-            .28
-          );
-
-      }
-
-
-      #manaV80Home
-      [data-program="life"]
-      .mana-v8013-program-label{
-
-        color:
-          var(
-            --home-purple
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="life"]
-      .mana-v8013-open{
-
-        color:
-          var(
-            --home-teal
           ) !important;
 
       }
 
 
       /* =====================================
-         ACTIVE STATES
+         ACTIVE STATE
 
-         ACCENT ONLY.
-         NO SOLID FILL.
+         SAME CARD.
+         JUST STRONGER OUTLINE/GLOW.
          ===================================== */
 
       #manaV80Home
       [data-program="strength"].current{
 
-        background:
-          linear-gradient(
-            145deg,
-            #14130f,
-            #090909
-          ) !important;
-
         border-color:
-          var(
-            --home-gold
+          rgba(
+            217,
+            184,
+            82,
+            .95
           ) !important;
 
         box-shadow:
@@ -1146,54 +763,19 @@
           0
           1px
           rgba(
-            242,
-            201,
-            76,
-            .18
+            217,
+            184,
+            82,
+            .12
           ),
           0
-          16px
-          44px
+          14px
+          34px
           rgba(
-            242,
-            201,
-            76,
-            .19
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="strength"].current::before{
-
-        content:
-          "" !important;
-
-        display:
-          block !important;
-
-        position:
-          absolute !important;
-
-        z-index:
-          3 !important;
-
-        top:
-          0 !important;
-
-        left:
-          0 !important;
-
-        width:
-          5px !important;
-
-        height:
-          100% !important;
-
-        background:
-          var(
-            --home-gold
+            217,
+            184,
+            82,
+            .13
           ) !important;
 
       }
@@ -1202,16 +784,12 @@
       #manaV80Home
       [data-program="mana28"].current{
 
-        background:
-          linear-gradient(
-            145deg,
-            #101319,
-            #090909
-          ) !important;
-
         border-color:
-          var(
-            --home-blue
+          rgba(
+            85,
+            168,
+            222,
+            .95
           ) !important;
 
         box-shadow:
@@ -1220,54 +798,19 @@
           0
           1px
           rgba(
-            78,
-            167,
-            255,
-            .18
+            85,
+            168,
+            222,
+            .12
           ),
           0
-          16px
-          44px
+          14px
+          34px
           rgba(
-            78,
-            167,
-            255,
-            .19
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="mana28"].current::before{
-
-        content:
-          "" !important;
-
-        display:
-          block !important;
-
-        position:
-          absolute !important;
-
-        z-index:
-          3 !important;
-
-        top:
-          0 !important;
-
-        left:
-          0 !important;
-
-        width:
-          5px !important;
-
-        height:
-          100% !important;
-
-        background:
-          var(
-            --home-blue
+            85,
+            168,
+            222,
+            .13
           ) !important;
 
       }
@@ -1276,16 +819,12 @@
       #manaV80Home
       [data-program="life"].current{
 
-        background:
-          linear-gradient(
-            145deg,
-            #131018,
-            #090909
-          ) !important;
-
         border-color:
-          var(
-            --home-purple
+          rgba(
+            166,
+            129,
+            220,
+            .95
           ) !important;
 
         box-shadow:
@@ -1294,142 +833,45 @@
           0
           1px
           rgba(
-            167,
-            121,
-            255,
-            .18
+            166,
+            129,
+            220,
+            .12
           ),
           0
-          16px
-          44px
+          14px
+          34px
           rgba(
-            167,
-            121,
-            255,
-            .20
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="life"].current::before{
-
-        content:
-          "" !important;
-
-        display:
-          block !important;
-
-        position:
-          absolute !important;
-
-        z-index:
-          3 !important;
-
-        top:
-          0 !important;
-
-        left:
-          0 !important;
-
-        width:
-          5px !important;
-
-        height:
-          100% !important;
-
-        background:
-          linear-gradient(
-            180deg,
-            var(
-              --home-purple
-            ),
-            var(
-              --home-teal
-            )
+            166,
+            129,
+            220,
+            .14
           ) !important;
 
       }
 
 
       /* =====================================
-         ACTIVE PROGRAM BADGES
+         ACTIVE PROGRAM BADGE
+
+         NO SOLID YELLOW FILL
          ===================================== */
 
       #manaV80Home
       .mana-v8013-current-badge{
 
         background:
-          rgba(
-            255,
-            255,
-            255,
-            .035
-          ) !important;
+          #101010 !important;
+
+        color:
+          #f3d875 !important;
+
+        border:
+          1px solid
+          #67551d !important;
 
         box-shadow:
           none !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="strength"]
-      .mana-v8013-current-badge{
-
-        color:
-          var(
-            --home-gold
-          ) !important;
-
-        border-color:
-          rgba(
-            242,
-            201,
-            76,
-            .55
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="mana28"]
-      .mana-v8013-current-badge{
-
-        color:
-          var(
-            --home-blue
-          ) !important;
-
-        border-color:
-          rgba(
-            78,
-            167,
-            255,
-            .55
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="life"]
-      .mana-v8013-current-badge{
-
-        color:
-          var(
-            --home-purple
-          ) !important;
-
-        border-color:
-          rgba(
-            167,
-            121,
-            255,
-            .55
-          ) !important;
 
       }
 
@@ -1438,25 +880,23 @@
          MOBILE
          ===================================== */
 
-      @media(
-        max-width:600px
-      ){
+      @media(max-width:600px){
 
 
         #manaV80Home
         .mana-v1024-home-art{
 
           right:
-            5px !important;
+            8px !important;
 
           width:
-            118px !important;
-
-          height:
             108px !important;
 
+          height:
+            92px !important;
+
           opacity:
-            .94 !important;
+            .88 !important;
 
         }
 
@@ -1465,16 +905,7 @@
         .mana-v8013-program p{
 
           max-width:
-            67% !important;
-
-        }
-
-
-        #manaV80Home
-        #manaV80ProfileSetup p{
-
-          max-width:
-            67% !important;
+            66% !important;
 
         }
 
@@ -1482,55 +913,40 @@
         #manaV80Home
         .mana-v8013-program.current::before{
 
-          width:
-            4px !important;
+          left:
+            16px !important;
 
-        }
-
-
-        #manaV80Home
-        #manaV80ProfileSetup::before{
-
-          width:
-            4px !important;
+          right:
+            16px !important;
 
         }
 
       }
 
 
-      /* =====================================
-         SMALL PHONE
-         ===================================== */
-
-      @media(
-        max-width:390px
-      ){
+      @media(max-width:390px){
 
 
         #manaV80Home
         .mana-v1024-home-art{
 
           right:
-            2px !important;
+            4px !important;
 
           width:
-            103px !important;
+            96px !important;
 
           height:
-            96px !important;
+            82px !important;
 
         }
 
 
         #manaV80Home
-        .mana-v8013-program p,
-
-        #manaV80Home
-        #manaV80ProfileSetup p{
+        .mana-v8013-program p{
 
           max-width:
-            66% !important;
+            65% !important;
 
         }
 
@@ -1548,7 +964,7 @@
 
 
   /* =========================================
-     ADD ARTWORK TO CARD
+     ADD ART
      ========================================= */
 
   function addArt(
@@ -1558,9 +974,7 @@
 
     if (
       !element ||
-      !ART[
-        type
-      ]
+      !ART[type]
     ) {
       return;
     }
@@ -1580,13 +994,11 @@
 
 
     artwork.className =
-      `mana-v1024-home-art mana-v1024-art-${type}`;
+      `mana-v1024-home-art mana-v1024-${type}`;
 
 
     artwork.innerHTML =
-      ART[
-        type
-      ];
+      ART[type];
 
 
     element.appendChild(
@@ -1608,9 +1020,7 @@
       );
 
 
-    if (
-      !home
-    ) {
+    if (!home) {
       return;
     }
 
@@ -1660,12 +1070,6 @@
     decorateHome();
 
 
-    /*
-      Home can refresh after profile/program
-      changes. Re-run only on known app events.
-      No MutationObserver.
-    */
-
     document.addEventListener(
       "mana:profile-synced",
       decorateHome
@@ -1678,18 +1082,16 @@
     );
 
 
-    window
-      .refreshManaHomePremium =
-        decorateHome;
+    window.refreshManaHomePremium =
+      decorateHome;
 
 
-    window
-      .MANA_HOME_PREMIUM_BUILD =
-        BUILD;
+    window.MANA_HOME_PREMIUM_BUILD =
+      BUILD;
 
 
     console.log(
-      "Mana Home Premium",
+      "Mana Home Outline System",
       BUILD
     );
 
@@ -1705,8 +1107,7 @@
       "DOMContentLoaded",
       init,
       {
-        once:
-          true
+        once:true
       }
     );
 
