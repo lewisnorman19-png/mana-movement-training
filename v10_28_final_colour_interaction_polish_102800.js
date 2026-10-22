@@ -1,36 +1,22 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.28
-   FINAL COLOUR + INTERACTION POLISH
+   MANA MOVEMENT TRAINING v10.28.1
+   COLOUR + INTERACTION POLISH
 
-   BUILD: 102800
+   BUILD: 102810
 
-   UPGRADES
+   SEMANTIC COLOURS
    -----------------------------------------
-   1. "Ready for your next block?"
-      becomes Coach Chat green.
+   COACH / SUPPORT / UPGRADE = GREEN
+   PROGRESS                  = PURPLE
+   LEARNING                  = ORANGE
 
-   2. Mana Lyfe Support Chat
-      becomes the same premium green.
-
-   3. Fuel manual Water / Recovery
-      updates in place.
-      NO full-screen re-render / flicker.
-
-   4. Progress
-      purple outline system everywhere.
-
-   5. Learning
-      orange outline system everywhere.
-
-   6. Progress + Learning
-      receive matching lightweight icons.
-
-   DOES NOT
+   ALSO
    -----------------------------------------
-   - change phone layouts
-   - change workout logic
-   - change saved data format
-   - use MutationObserver
+   - Fuel manual controls update in place
+   - No Fuel flicker
+   - Progress icons
+   - Learning icons
+   - No MutationObserver
    ========================================= */
 
 (() => {
@@ -38,11 +24,11 @@
 
 
   const BUILD =
-    "102800";
+    "102810";
 
 
   const STYLE_ID =
-    "mana-v1028-final-polish";
+    "mana-v10281-final-polish";
 
 
   const GREEN =
@@ -180,7 +166,7 @@
 
 
   /* =========================================
-     STYLES
+     CSS
      ========================================= */
 
   function installStyles() {
@@ -207,10 +193,10 @@
 
       /* =====================================
          READY FOR YOUR NEXT BLOCK
-         COACH CHAT GREEN
+         GREEN
          ===================================== */
 
-      #manaV1017ClientBlock
+      #manaV1017ProgramBlock
       .m1017-request{
 
         border:
@@ -219,7 +205,145 @@
             85,
             217,
             139,
-            .68
+            .72
+          ) !important;
+
+        background:
+
+          radial-gradient(
+            circle at top right,
+            rgba(
+              85,
+              217,
+              139,
+              .11
+            ),
+            transparent
+            46%
+          ),
+
+          linear-gradient(
+            145deg,
+            #101713,
+            #090909
+          ) !important;
+
+        box-shadow:
+          0
+          12px
+          30px
+          rgba(
+            0,
+            0,
+            0,
+            .23
+          ) !important;
+
+      }
+
+
+      #manaV1017ProgramBlock
+      .m1017-request-title{
+
+        color:
+          #fff !important;
+
+      }
+
+
+      #manaV1017ProgramBlock
+      .m1017-request-text{
+
+        color:
+          #aaa !important;
+
+      }
+
+
+      #manaV1017ProgramBlock
+      .m1017-request-btn{
+
+        border:
+          1px solid
+          ${GREEN} !important;
+
+        background:
+          rgba(
+            85,
+            217,
+            139,
+            .06
+          ) !important;
+
+        color:
+          #dff9e8 !important;
+
+        box-shadow:
+          0
+          0
+          16px
+          rgba(
+            85,
+            217,
+            139,
+            .08
+          ) !important;
+
+      }
+
+
+      #manaV1017ProgramBlock
+      .m1017-status{
+
+        border-color:
+          rgba(
+            85,
+            217,
+            139,
+            .46
+          ) !important;
+
+        background:
+          rgba(
+            85,
+            217,
+            139,
+            .04
+          ) !important;
+
+        color:
+          #b6e5c7 !important;
+
+      }
+
+
+      #manaV1017ProgramBlock
+      .m1017-ready{
+
+        border-color:
+          ${GREEN} !important;
+
+        color:
+          ${GREEN} !important;
+
+      }
+
+
+      /* =====================================
+         MANA LYFE SUPPORT CARD
+         GREEN
+         ===================================== */
+
+      #manaV933Life
+      .mana-v933-card.mana-v933-support{
+
+        border:
+          1px solid
+          rgba(
+            85,
+            217,
+            139,
+            .72
           ) !important;
 
         background:
@@ -242,164 +366,6 @@
             #090909
           ) !important;
 
-        box-shadow:
-          0
-          12px
-          28px
-          rgba(
-            0,
-            0,
-            0,
-            .22
-          ) !important;
-
-      }
-
-
-      #manaV1017ClientBlock
-      .m1017-request-title{
-
-        color:
-          #ffffff !important;
-
-      }
-
-
-      #manaV1017ClientBlock
-      .m1017-request-text{
-
-        color:
-          #aaa !important;
-
-      }
-
-
-      #manaV1017ClientBlock
-      .m1017-request-btn{
-
-        border:
-          1px solid
-          ${GREEN} !important;
-
-        background:
-          rgba(
-            85,
-            217,
-            139,
-            .055
-          ) !important;
-
-        color:
-          #dff9e8 !important;
-
-        box-shadow:
-          0
-          0
-          16px
-          rgba(
-            85,
-            217,
-            139,
-            .06
-          ) !important;
-
-      }
-
-
-      #manaV1017ClientBlock
-      .m1017-request-btn:not(:disabled):active{
-
-        transform:
-          scale(.99) !important;
-
-      }
-
-
-      #manaV1017ClientBlock
-      .m1017-status{
-
-        border-color:
-          rgba(
-            85,
-            217,
-            139,
-            .40
-          ) !important;
-
-        background:
-          rgba(
-            85,
-            217,
-            139,
-            .035
-          ) !important;
-
-        color:
-          #a9dcbc !important;
-
-      }
-
-
-      #manaV1017ClientBlock
-      .m1017-ready{
-
-        border-color:
-          ${GREEN} !important;
-
-        color:
-          ${GREEN} !important;
-
-      }
-
-
-      /* =====================================
-         MANA LYFE SUPPORT CHAT CARD
-         GREEN
-         ===================================== */
-
-      #manaV933Life
-      .mana-v933-support{
-
-        border:
-          1px solid
-          rgba(
-            85,
-            217,
-            139,
-            .68
-          ) !important;
-
-        background:
-
-          radial-gradient(
-            circle at top right,
-            rgba(
-              85,
-              217,
-              139,
-              .09
-            ),
-            transparent
-            46%
-          ),
-
-          linear-gradient(
-            145deg,
-            #101713,
-            #090909
-          ) !important;
-
-        box-shadow:
-          0
-          12px
-          28px
-          rgba(
-            0,
-            0,
-            0,
-            .22
-          ) !important;
-
       }
 
 
@@ -417,7 +383,8 @@
       .mana-v933-support
       .mana-v933-pill{
 
-        border-color:
+        border:
+          1px solid
           ${GREEN} !important;
 
         background:
@@ -425,7 +392,7 @@
             85,
             217,
             139,
-            .055
+            .06
           ) !important;
 
         color:
@@ -447,7 +414,7 @@
             85,
             217,
             139,
-            .055
+            .06
           ) !important;
 
         color:
@@ -462,35 +429,29 @@
          ===================================== */
 
       #manaV95ChatModal.mana-v935-life-mode
-      .mana-v950-shell{
+      .mana-v950-header{
 
-        border-color:
+        border-bottom:
+          1px solid
           rgba(
             85,
             217,
             139,
-            .48
+            .30
+          ) !important;
+
+        background:
+          linear-gradient(
+            180deg,
+            #101713,
+            #090909
           ) !important;
 
       }
 
 
       #manaV95ChatModal.mana-v935-life-mode
-      .mana-v950-head{
-
-        border-bottom-color:
-          rgba(
-            85,
-            217,
-            139,
-            .20
-          ) !important;
-
-      }
-
-
-      #manaV95ChatModal.mana-v935-life-mode
-      .mana-v950-kicker{
+      .mana-v950-header-kicker{
 
         color:
           ${GREEN} !important;
@@ -498,37 +459,47 @@
       }
 
 
-      #manaV95ChatModal.mana-v935-life-mode
+      #manaV935LifeChatIntro
       .mana-v935-intro-inner{
 
-        border-color:
+        border:
+          1px solid
           rgba(
             85,
             217,
             139,
-            .40
+            .56
           ) !important;
 
         background:
-          rgba(
-            85,
-            217,
-            139,
-            .035
+          linear-gradient(
+            145deg,
+            #101713,
+            #090909
           ) !important;
 
       }
 
 
-      #manaV95ChatModal.mana-v935-life-mode
+      #manaV935LifeChatIntro
+      .mana-v935-intro-kicker{
+
+        color:
+          ${GREEN} !important;
+
+      }
+
+
+      #manaV935LifeChatQuick
       .mana-v935-quick-btn{
 
-        border-color:
+        border:
+          1px solid
           rgba(
             85,
             217,
             139,
-            .48
+            .50
           ) !important;
 
         background:
@@ -536,11 +507,11 @@
             85,
             217,
             139,
-            .035
+            .04
           ) !important;
 
         color:
-          #bdeace !important;
+          #c8eed6 !important;
 
       }
 
@@ -553,7 +524,7 @@
             85,
             217,
             139,
-            .42
+            .50
           ) !important;
 
       }
@@ -562,7 +533,8 @@
       #manaV95ChatModal.mana-v935-life-mode
       .mana-v950-send{
 
-        border-color:
+        border:
+          1px solid
           ${GREEN} !important;
 
         background:
@@ -574,17 +546,15 @@
           ) !important;
 
         color:
-          #dff9e8 !important;
+          #e1f8e9 !important;
 
       }
 
 
       /* =====================================
-         PROGRESS
-         PURPLE EVERYWHERE
+         STRENGTH PROGRESS
+         PURPLE
          ===================================== */
-
-      /* Strength */
 
       #manaV993StrengthProgress
       .mana-v993-periods,
@@ -602,14 +572,28 @@
       .mana-v993-summary,
 
       #manaV993StrengthProgress
-      .mana-v993-row{
+      .mana-v993-exercise-select{
 
         border-color:
           rgba(
             166,
             129,
             220,
-            .52
+            .68
+          ) !important;
+
+      }
+
+
+      #manaV993StrengthProgress
+      .mana-v993-row{
+
+        border-top-color:
+          rgba(
+            166,
+            129,
+            220,
+            .30
           ) !important;
 
       }
@@ -630,7 +614,7 @@
             166,
             129,
             220,
-            .075
+            .08
           ) !important;
 
         color:
@@ -639,12 +623,12 @@
         box-shadow:
           0
           0
-          15px
+          16px
           rgba(
             166,
             129,
             220,
-            .08
+            .10
           ) !important;
 
       }
@@ -660,6 +644,9 @@
 
 
       #manaV993StrengthProgress
+      .mana-v993-kicker,
+
+      #manaV993StrengthProgress
       .mana-v993-panel-kicker{
 
         color:
@@ -668,7 +655,10 @@
       }
 
 
-      /* Mana 28 */
+      /* =====================================
+         MANA 28 PROGRESS
+         PURPLE
+         ===================================== */
 
       #manaV83Content
       .mana-v981-root
@@ -691,7 +681,7 @@
             166,
             129,
             220,
-            .52
+            .68
           ) !important;
 
       }
@@ -727,7 +717,8 @@
       .mana-v981-root
       .mana-v981-icon{
 
-        border-color:
+        border:
+          1px solid
           ${PURPLE} !important;
 
         background:
@@ -737,6 +728,20 @@
             220,
             .06
           ) !important;
+
+        color:
+          ${PURPLE} !important;
+
+      }
+
+
+      #manaV83Content
+      .mana-v981-root
+      .mana-v981-kicker,
+
+      #manaV83Content
+      .mana-v981-root
+      .mana-v981-overall-label{
 
         color:
           ${PURPLE} !important;
@@ -772,7 +777,10 @@
       }
 
 
-      /* Mana Lyfe */
+      /* =====================================
+         MANA LYFE PROGRESS
+         PURPLE
+         ===================================== */
 
       #manaV939Progress2
       .mana-v939-range button,
@@ -794,7 +802,7 @@
             166,
             129,
             220,
-            .52
+            .68
           ) !important;
 
       }
@@ -811,7 +819,7 @@
             166,
             129,
             220,
-            .075
+            .08
           ) !important;
 
         color:
@@ -821,7 +829,13 @@
 
 
       #manaV939Progress2
-      .mana-v939-kicker{
+      .mana-v939-kicker,
+
+      #manaV939Progress2
+      .mana-v939-stat strong,
+
+      #manaV939Progress2
+      .mana-v939-recent-row strong{
 
         color:
           ${PURPLE} !important;
@@ -843,10 +857,8 @@
 
       /* =====================================
          LEARNING
-         ORANGE EVERYWHERE
+         ORANGE
          ===================================== */
-
-      /* Shared Mana28 Learn */
 
       #manaV83Content
       .mana-v985-head{
@@ -856,7 +868,7 @@
             233,
             138,
             84,
-            .38
+            .45
           ) !important;
 
       }
@@ -887,12 +899,13 @@
       #manaV83Content
       .mana-v985-learn-card{
 
-        border-color:
+        border:
+          1px solid
           rgba(
             233,
             138,
             84,
-            .58
+            .68
           ) !important;
 
         background:
@@ -915,36 +928,25 @@
       }
 
 
-      /* Mana Lyfe Learn */
+      /* =====================================
+         MANA LYFE LEARNING
+         ORANGE
+         ===================================== */
 
       #manaV933Life
-      .mana-v933-learn-item,
-
-      #manaV933Life
-      .mana-v933-card
       .mana-v933-learn-item{
 
-        border-color:
+        border:
+          1px solid
           rgba(
             233,
             138,
             84,
-            .58
+            .68
           ) !important;
-
-      }
-
-
-      #manaV933Life
-      .mana-v933-learn-button{
 
         background:
-          rgba(
-            233,
-            138,
-            84,
-            .02
-          ) !important;
+          #0c0908 !important;
 
       }
 
@@ -1003,7 +1005,7 @@
           13px !important;
 
         background:
-          #0a0a0a !important;
+          #090909 !important;
 
       }
 
@@ -1024,17 +1026,6 @@
         color:
           ${PURPLE} !important;
 
-        box-shadow:
-          0
-          0
-          14px
-          rgba(
-            166,
-            129,
-            220,
-            .08
-          ) !important;
-
       }
 
 
@@ -1043,83 +1034,12 @@
         color:
           ${ORANGE} !important;
 
-        box-shadow:
-          0
-          0
-          14px
-          rgba(
-            233,
-            138,
-            84,
-            .08
-          ) !important;
-
-      }
-
-
-      /* Mini card icons */
-
-      .m1028-mini-icon{
-
-        flex:
-          0 0
-          30px !important;
-
-        width:
-          30px !important;
-
-        height:
-          30px !important;
-
-        display:
-          grid !important;
-
-        place-items:
-          center !important;
-
-        border:
-          1px solid
-          currentColor !important;
-
-        border-radius:
-          9px !important;
-
-        background:
-          #090909 !important;
-
-      }
-
-
-      .m1028-mini-icon svg{
-
-        width:
-          18px !important;
-
-        height:
-          18px !important;
-
-      }
-
-
-      .m1028-progress-mini{
-
-        color:
-          ${PURPLE} !important;
-
-      }
-
-
-      .m1028-learning-mini{
-
-        color:
-          ${ORANGE} !important;
-
       }
 
 
       /* =====================================
-         FUEL MANUAL CONTROL FEEDBACK
-         NO PAGE FLASH
+         FUEL
+         IN-PLACE MANUAL UPDATE
          ===================================== */
 
       #manaV1015Fuel
@@ -1131,24 +1051,6 @@
         transition:
           border-color .15s ease,
           box-shadow .15s ease !important;
-
-      }
-
-
-      #manaV1015Fuel
-      .m1022-target.m1028-updated{
-
-        box-shadow:
-          0
-          0
-          0
-          1px
-          rgba(
-            255,
-            255,
-            255,
-            .025
-          ) inset !important;
 
       }
 
@@ -1164,28 +1066,28 @@
 
 
   /* =========================================
-     SAFE JSON
+     JSON
      ========================================= */
 
   function safeJson(
-    value,
+    raw,
     fallback = {}
   ) {
 
     try {
 
-      const parsed =
+      const value =
         JSON.parse(
-          value || ""
+          raw || ""
         );
 
 
       return (
-        parsed &&
-        typeof parsed ===
+        value &&
+        typeof value ===
           "object"
       )
-        ? parsed
+        ? value
         : fallback;
 
     } catch {
@@ -1198,7 +1100,7 @@
 
 
   /* =========================================
-     TODAY KEY
+     DATE KEY
      ========================================= */
 
   function todayKey() {
@@ -1213,19 +1115,17 @@
 
       String(
         d.getMonth() + 1
-      )
-        .padStart(
-          2,
-          "0"
-        ),
+      ).padStart(
+        2,
+        "0"
+      ),
 
       String(
         d.getDate()
+      ).padStart(
+        2,
+        "0"
       )
-        .padStart(
-          2,
-          "0"
-        )
 
     ].join(
       "-"
@@ -1233,10 +1133,6 @@
 
   }
 
-
-  /* =========================================
-     CLAMP
-     ========================================= */
 
   function clamp(
     value,
@@ -1256,7 +1152,7 @@
 
 
   /* =========================================
-     UPDATE FUEL TILE ONLY
+     FUEL TILE UPDATE
      ========================================= */
 
   function updateFuelTile(
@@ -1310,18 +1206,14 @@
 
       const percentage =
         target > 0
-
-          ? Math.max(
+          ? clamp(
+              (
+                Number(value) /
+                Number(target)
+              ) * 100,
               0,
-              Math.min(
-                100,
-                (
-                  Number(value) /
-                  Number(target)
-                ) * 100
-              )
+              100
             )
-
           : 0;
 
 
@@ -1330,31 +1222,14 @@
 
     }
 
-
-    tile.classList.add(
-      "m1028-updated"
-    );
-
-
-    setTimeout(
-      () => {
-
-        tile.classList.remove(
-          "m1028-updated"
-        );
-
-      },
-      160
-    );
-
   }
 
 
   /* =========================================
-     WATER — IN PLACE
+     WATER
      ========================================= */
 
-  function changeWaterWithoutRender(
+  function changeWater(
     delta
   ) {
 
@@ -1375,10 +1250,11 @@
 
 
     const day =
-
-      store[key] &&
-      typeof store[key] ===
-        "object"
+      (
+        store[key] &&
+        typeof store[key] ===
+          "object"
+      )
 
         ? store[key]
 
@@ -1430,7 +1306,7 @@
       );
 
 
-    const targetWater =
+    const waterTarget =
       Math.max(
         0,
         Number(
@@ -1445,7 +1321,7 @@
 
       day.water,
 
-      targetWater,
+      waterTarget,
 
       "ml"
 
@@ -1464,10 +1340,10 @@
 
 
   /* =========================================
-     CURRENT RECOVERY SCORE
+     RECOVERY
      ========================================= */
 
-  function currentRecovery() {
+  function recoveryScore() {
 
     const store =
       safeJson(
@@ -1506,11 +1382,12 @@
 
     const raw =
       String(
+
         day.recoveryLevel ||
         day.recovery ||
         ""
-      )
-        .toLowerCase();
+
+      ).toLowerCase();
 
 
     if (
@@ -1547,11 +1424,7 @@
   }
 
 
-  /* =========================================
-     RECOVERY — IN PLACE
-     ========================================= */
-
-  function changeRecoveryWithoutRender(
+  function changeRecovery(
     delta
   ) {
 
@@ -1572,34 +1445,37 @@
 
 
     const day =
-
-      store[key] &&
-      typeof store[key] ===
-        "object"
-
+      (
+        store[key] &&
+        typeof store[key] ===
+          "object"
+      )
         ? store[key]
-
         : {};
 
 
-    const score =
+    const value =
       clamp(
-        currentRecovery()
+
+        recoveryScore()
         +
         Number(
           delta || 0
         ),
+
         0,
+
         10
+
       );
 
 
     day.recoveryScore =
-      score;
+      value;
 
 
     if (
-      score >= 7
+      value >= 7
     ) {
 
       day.recoveryLevel =
@@ -1609,7 +1485,7 @@
         true;
 
     } else if (
-      score >= 4
+      value >= 4
     ) {
 
       day.recoveryLevel =
@@ -1619,7 +1495,7 @@
         false;
 
     } else if (
-      score > 0
+      value > 0
     ) {
 
       day.recoveryLevel =
@@ -1658,11 +1534,9 @@
 
       "recovery",
 
-      score,
+      value,
 
-      10,
-
-      ""
+      10
 
     );
 
@@ -1679,15 +1553,23 @@
 
 
   /* =========================================
-     STOP FUEL FULL RENDER
-
-     Capture runs before v10.22's
-     document bubble handler.
+     FUEL CLICK INTERCEPT
      ========================================= */
 
-  function interceptFuelControls(
+  function interceptFuel(
     event
   ) {
+
+    if (
+      !event.target.closest(
+        "#manaV1015Fuel"
+      )
+    ) {
+
+      return;
+
+    }
+
 
     const water =
       event.target.closest(
@@ -1711,21 +1593,6 @@
     }
 
 
-    /*
-      Only intercept the current Fuel UI.
-    */
-
-    if (
-      !event.target.closest(
-        "#manaV1015Fuel"
-      )
-    ) {
-
-      return;
-
-    }
-
-
     event.preventDefault();
 
     event.stopImmediatePropagation();
@@ -1733,7 +1600,7 @@
 
     if (water) {
 
-      changeWaterWithoutRender(
+      changeWater(
 
         Number(
           water.dataset
@@ -1748,7 +1615,7 @@
     }
 
 
-    changeRecoveryWithoutRender(
+    changeRecovery(
 
       Number(
         recovery.dataset
@@ -1761,10 +1628,10 @@
 
 
   /* =========================================
-     ADD SECTION ICON
+     SECTION ICON
      ========================================= */
 
-  function sectionIcon(
+  function addSectionIcon(
     parent,
     type
   ) {
@@ -1845,63 +1712,12 @@
 
 
   /* =========================================
-     MINI ICON
+     DECORATE
      ========================================= */
 
-  function prependMiniIcon(
-    target,
-    type
-  ) {
+  function decorate() {
 
-    if (
-      !target ||
-      !ICONS[type]
-    ) {
-
-      return;
-
-    }
-
-
-    if (
-      target.querySelector(
-        `.m1028-${type}-mini`
-      )
-    ) {
-
-      return;
-
-    }
-
-
-    const icon =
-      document.createElement(
-        "span"
-      );
-
-
-    icon.className =
-      `m1028-mini-icon m1028-${type}-mini`;
-
-
-    icon.innerHTML =
-      ICONS[type];
-
-
-    target.prepend(
-      icon
-    );
-
-  }
-
-
-  /* =========================================
-     DECORATE PROGRESS
-     ========================================= */
-
-  function decorateProgress() {
-
-    sectionIcon(
+    addSectionIcon(
 
       document.querySelector(
         "#manaV993StrengthProgress .mana-v993-head"
@@ -1912,7 +1728,7 @@
     );
 
 
-    sectionIcon(
+    addSectionIcon(
 
       document.querySelector(
         "#manaV83Content .mana-v981-root .mana-v981-head"
@@ -1923,72 +1739,7 @@
     );
 
 
-    /*
-      Strength metric cards
-    */
-
-    document
-      .querySelectorAll(
-        "#manaV993StrengthProgress .mana-v993-metric"
-      )
-      .forEach(
-        card => {
-
-          prependMiniIcon(
-            card,
-            "progress"
-          );
-
-        }
-      );
-
-
-    /*
-      Mana 28 progress cards already have
-      their own icon box. Keep those and
-      recolour them purple via CSS.
-    */
-
-
-    /*
-      Mana Lyfe cards
-    */
-
-    document
-      .querySelectorAll(
-        "#manaV939Progress2 .mana-v939-card"
-      )
-      .forEach(
-        card => {
-
-          const kicker =
-            card.querySelector(
-              ".mana-v939-kicker"
-            );
-
-
-          if (kicker) {
-
-            prependMiniIcon(
-              kicker,
-              "progress"
-            );
-
-          }
-
-        }
-      );
-
-  }
-
-
-  /* =========================================
-     DECORATE LEARNING
-     ========================================= */
-
-  function decorateLearning() {
-
-    sectionIcon(
+    addSectionIcon(
 
       document.querySelector(
         "#manaV83Content .mana-v985-head"
@@ -1998,90 +1749,42 @@
 
     );
 
-
-    document
-      .querySelectorAll(
-        "#manaV83Content .mana-v985-learn-button"
-      )
-      .forEach(
-        button => {
-
-          const strong =
-            button.querySelector(
-              "strong"
-            );
-
-
-          if (strong) {
-
-            prependMiniIcon(
-              strong,
-              "learning"
-            );
-
-          }
-
-        }
-      );
-
-
-    document
-      .querySelectorAll(
-        "#manaV933Life .mana-v933-learn-button"
-      )
-      .forEach(
-        button => {
-
-          const strong =
-            button.querySelector(
-              "strong"
-            );
-
-
-          if (strong) {
-
-            prependMiniIcon(
-              strong,
-              "learning"
-            );
-
-          }
-
-        }
-      );
-
   }
 
 
   /* =========================================
-     REFRESH
+     SETTLE
      ========================================= */
-
-  function refresh() {
-
-    decorateProgress();
-
-    decorateLearning();
-
-  }
-
 
   function settle() {
 
-    refresh();
+    /*
+      Reinstalling pushes this stylesheet
+      to the end of <head>, so older screen
+      CSS cannot take priority afterwards.
+    */
+
+    installStyles();
+
+    decorate();
 
 
     [
-      60,
-      180,
-      420,
-      850
+      80,
+      220,
+      500
     ]
       .forEach(
         delay => {
 
           setTimeout(
-            refresh,
+            () => {
+
+              installStyles();
+
+              decorate();
+
+            },
             delay
           );
 
@@ -2097,21 +1800,11 @@
 
   function init() {
 
-    installStyles();
-
-
-    /*
-      IMPORTANT:
-      capture=true prevents v10.22 from
-      doing its full Fuel render for these
-      two manual controls.
-    */
-
     document.addEventListener(
 
       "click",
 
-      interceptFuelControls,
+      interceptFuel,
 
       true
 
@@ -2130,13 +1823,13 @@
       .forEach(
         eventName => {
 
-          window.addEventListener(
+          document.addEventListener(
             eventName,
             settle
           );
 
 
-          document.addEventListener(
+          window.addEventListener(
             eventName,
             settle
           );
@@ -2158,7 +1851,9 @@
               [data-v981-period],
               [data-v939-range],
               [data-v985-learn],
-              [data-v933-learn-open]
+              [data-v933-learn-open],
+              [data-v933-support-chat],
+              #manaV1017Request
             `
           )
         ) {
@@ -2190,7 +1885,7 @@
 
 
     console.log(
-      "Mana Final Colour + Interaction Polish",
+      "Mana Final Polish",
       BUILD
     );
 
