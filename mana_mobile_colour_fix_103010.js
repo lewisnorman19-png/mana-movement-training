@@ -1,448 +1,524 @@
 
-/* ==========================================
+/* ===================================================
    MANA MOVEMENT TRAINING
-   MOBILE VISUAL CLEANUP
-   VERSION 10.30.1
-   BUILD 103010
+   UNIFIED PREMIUM GOLD DESIGN
+   VERSION 10.30.2
+   BUILD 103020
 
-   MOBILE ONLY
+   ONE COLOUR STANDARD FOR ALL THREE PROGRAMS
 
-   KEEP:
-   - All Overview layouts
-   - Desktop Strength fix
-   - Existing icon artwork
-   - Bottom navigation layout
-   - Workout functionality
+   CARDS / PANELS:
+   Thin subtle yellow-gold borders
+
+   BOTTOM NAV:
+   No tab borders
+   No icon borders
+   Existing coloured icons retained
+
+   TEXT:
+   Gold / white / grey
+
+   PRESERVE:
+   - Strength desktop two-column layout
+   - Mana 28 desktop layout
+   - Mana Lyfe desktop layout
+   - Phone layouts
+   - Overview content and artwork
+   - Workout exercise illustrations
+   - Program functionality
    - Fuel logging
    - Coach Hub
+   - Next-block upgrade
 
-   CHANGE:
-   - Remove decorative icon borders
-   - Remove bottom tab borders
-   - Restore fine gold internal borders
-   - Keep section-coloured headings
-   - Keep existing gold, white, grey text
-   - Preserve green upgrade button
-   ========================================== */
+   NO:
+   - New layout grids
+   - Repeated stylesheet replacement
+   - Timed colour refresh loops
+   - MutationObserver repaint loops
+   =================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "103010";
+  const BUILD = "103020";
 
-  const STYLE_ID =
-    "mana-mobile-cleanup-103010";
-
-  const COLORS = {
-    program: "#55a8de",
-    routine: "#55a8de",
-    fuel: "#e0bb51",
-    progress: "#a681dc",
-    learn: "#e98a54",
-    reclaim: "#55d98b"
-  };
+  const STYLE_ID = "mana-mobile-cleanup-103010";
 
   const CSS = `
 
-    @media (max-width: 700px) {
+    :root {
+      --mana-unified-gold:
+        rgba(212,175,55,.62);
 
-      :root {
-        --mm-gold:
-          rgba(200,166,75,.55);
+      --mana-unified-gold-text:
+        #f3d875;
 
-        --mm-blue:
-          #55a8de;
+      --mana-unified-green:
+        #55d98b;
+    }
 
-        --mm-purple:
-          #a681dc;
+    /* ==========================================
+       1. BOTTOM NAVIGATION
 
-        --mm-orange:
-          #e98a54;
+       Remove all coloured rectangular borders.
+       Keep original icons, labels and layout.
+       ========================================== */
 
-        --mm-green:
-          #55d98b;
-      }
+    html body #manaV83Tabs
+    .mana-v83-tab[data-v83-tab],
 
-      /* =====================================
-         BOTTOM NAVIGATION
-         NO BOX BORDERS
-         ===================================== */
+    html body #manaV83Tabs
+    .mana-v83-tab[data-v83-tab].active,
 
-      #manaV83Tabs
-      .mana-v83-tab,
+    html body #manaV83Tabs
+    .mana-v83-tab[data-v83-tab]:hover {
 
-      #manaV83Tabs
-      .mana-v83-tab.active,
+      border:
+        0 none transparent !important;
 
-      #manaV83Tabs
-      .mana-v83-tab:hover {
-        border: 0 !important;
-        outline: 0 !important;
-        box-shadow: none !important;
-      }
+      border-width:
+        0 !important;
 
-      #manaV83Tabs
-      .mana-v83-tab::before,
+      outline:
+        none !important;
 
-      #manaV83Tabs
-      .mana-v83-tab::after {
-        border: 0 !important;
-        box-shadow: none !important;
-      }
+      box-shadow:
+        none !important;
 
-      /* Remove borders around bottom icons */
-
-      #manaV83Tabs
-      .m10140-tab-inner,
-
-      #manaV83Tabs
-      .m10140-tab-icon,
-
-      #manaV83Tabs
-      .m10140-tab-fallback {
-        border: 0 !important;
-        outline: 0 !important;
-        box-shadow: none !important;
-      }
-
-      /* Keep icon artwork and its colours */
-
-      #manaV83Tabs
-      .m10140-tab-icon {
-        background: transparent !important;
-      }
-
-      /* =====================================
-         ALL INTERNAL CARD BORDERS
-         SUBTLE GOLD
-         ===================================== */
-
-      #manaV83Content .mana-v85-day,
-      #manaV83Content .mana-v85-exercise,
-      #manaV83Content .mana-v980-day,
-      #manaV83Content .mana-v980-workout,
-      #manaV83Content .mana-v980-exercises,
-      #manaV83Content .mana-v980-exercise,
-      #manaV83Content .mana-v981-card,
-      #manaV83Content .mana-v985-learn-card,
-      #manaV83Content .mana-v993-panel,
-      #manaV83Content .mana-v993-row,
-      #manaV83Content .mana-v927-card,
-      #manaV83Content .mana102210-outline {
-        border-color: var(--mm-gold) !important;
-        border-width: 1px !important;
-      }
-
-      /* =====================================
-         WORKOUTS
-         ===================================== */
-
-      #manaV64Exercises .mana-v64-card,
-      #manaV64Exercises .mana-v970-action,
-      #manaV64Exercises .mana-v970-disclosure {
-        border-color: var(--mm-gold) !important;
-        border-width: 1px !important;
-      }
-
-      /* =====================================
-         PROGRESS
-         STRENGTH
-         ===================================== */
-
-      #manaV83Content .mana-v993-periods,
-      #manaV83Content .mana-v993-period,
-      #manaV83Content .mana-v993-metric,
-      #manaV83Content .mana-v993-detail-btn,
-      #manaV83Content .mana-v993-panel,
-      #manaV83Content .mana-v993-summary,
-      #manaV83Content .mana-v993-row,
-      #manaV83Content .mana-v993-exercise-select {
-        border: 1px solid var(--mm-gold) !important;
-      }
-
-      /* MANA 28 */
-
-      #manaV83Content .mana-v981-periods,
-      #manaV83Content .mana-v981-period,
-      #manaV83Content .mana-v981-overall,
-      #manaV83Content .mana-v981-card {
-        border: 1px solid var(--mm-gold) !important;
-      }
-
-      /* MANA LYFE */
-
-      #manaV83Content .mana-v939-range,
-      #manaV83Content .mana-v939-card,
-      #manaV83Content .mana-v939-stat,
-      #manaV83Content .mana-v939-insight,
-      #manaV83Content .mana-v939-recent-row {
-        border-color: var(--mm-gold) !important;
-        border-width: 1px !important;
-      }
-
-      /* =====================================
-         LEARNING
-         ===================================== */
-
-      #manaV83Content .mana-v985-learn-card,
-      #manaV83Content .mana-v985-learn-button,
-      #manaV933Life .mana-v933-learn-item,
-      #manaV933Life .mana-v933-learn-button {
-        border-color: var(--mm-gold) !important;
-        border-width: 1px !important;
-      }
-
-      /* =====================================
-         INNER PAGE ICON FRAMES
-         REMOVE BORDERS, NOT ICONS
-         ===================================== */
-
-      #manaV83Content
-      .m1028-section-icon,
-
-      #manaV83Content
-      .m1028-progress-icon,
-
-      #manaV83Content
-      .m1028-learning-icon,
-
-      #manaV83Content
-      .mana-v981-icon,
-
-      #manaV83Content
-      .mana-v985-head-icon,
-
-      #manaV83Content
-      .m10140-fuel-panel-icon {
-        border: none !important;
-        outline: none !important;
-        box-shadow: none !important;
-      }
-
-      /* Preserve the original icon imagery */
-
-      #manaV83Content
-      .m1028-section-icon img,
-
-      #manaV83Content
-      .m1028-progress-icon img,
-
-      #manaV83Content
-      .m1028-learning-icon img {
-        border: none !important;
-        box-shadow: none !important;
-      }
-
-      /* =====================================
-         MAIN HEADINGS
-         ===================================== */
-
-      #manaV83Content
-      .mana103010-heading {
-        color:
-          var(--mana-mobile-heading)
-          !important;
-      }
-
-      #manaV83Content
-      .mana103010-heading svg {
-        color:
-          var(--mana-mobile-heading)
-          !important;
-        stroke: currentColor !important;
-      }
-
-      /* =====================================
-         GREEN NEXT BLOCK UPGRADE
-         ===================================== */
-
-      #manaV1017ProgramBlock
-      .m1017-request-btn,
-
-      #manaV1017ProgramBlock
-      #manaV1017Request {
-        background: #164b30 !important;
-        border: 1px solid #55d98b !important;
-        color: #ffffff !important;
-      }
+      background:
+        transparent !important;
 
     }
+
+    /* Remove decorative tab box layers */
+
+    html body #manaV83Tabs
+    .mana-v83-tab[data-v83-tab]::before,
+
+    html body #manaV83Tabs
+    .mana-v83-tab[data-v83-tab]::after {
+
+      border:
+        0 !important;
+
+      outline:
+        0 !important;
+
+      box-shadow:
+        none !important;
+
+    }
+
+    /* Remove frames around tab artwork */
+
+    html body #manaV83Tabs
+    .m10140-tab-inner,
+
+    html body #manaV83Tabs
+    .m10140-tab-icon,
+
+    html body #manaV83Tabs
+    .m10140-tab-fallback,
+
+    html body #manaV83Tabs
+    .m1025-custom-tab-icon,
+
+    html body #manaV83Tabs
+    .mana-v83-tab img,
+
+    html body #manaV83Tabs
+    .mana-v83-tab svg {
+
+      border:
+        0 !important;
+
+      outline:
+        none !important;
+
+      box-shadow:
+        none !important;
+
+    }
+
+    /* Original icon images remain visible */
+
+    #manaV83Tabs .m10140-tab-icon {
+      background:
+        transparent !important;
+    }
+
+    /* Keep active indication and icon artwork.
+       Do not override icon colours or labels. */
+
+    /* ==========================================
+       2. ALL OVERVIEW CARD BORDERS
+
+       Do not change layout, sizing or spacing.
+       Only the decorative outlines become gold.
+       ========================================== */
+
+    html body #manaV964Launchpad
+    .mana-v964-launch,
+
+    html body .mana-v978-launchpad
+    .mana-v978-launch {
+
+      border:
+        1px solid
+        var(--mana-unified-gold) !important;
+
+    }
+
+    /* Overview icon artwork and its internal
+       frame retain their original design.
+       Their coloured glow is not altered. */
+
+    /* ==========================================
+       3. WORKOUT PAGES
+
+       Fine gold border on every main card.
+       ========================================== */
+
+    html body #manaV83Content
+    .mana-v85-day,
+
+    html body #manaV83Content
+    .mana-v85-exercise,
+
+    html body #manaV83Content
+    .mana-v980-day,
+
+    html body #manaV83Content
+    .mana-v980-workout,
+
+    html body #manaV83Content
+    .mana-v980-exercises,
+
+    html body #manaV83Content
+    .mana-v980-exercise,
+
+    html body #manaV64Exercises
+    .mana-v64-card,
+
+    html body #manaV64Exercises
+    .mana-v970-disclosure,
+
+    html body #manaV64Exercises
+    .mana-v970-action {
+
+      border-color:
+        var(--mana-unified-gold) !important;
+
+      border-width:
+        1px !important;
+
+    }
+
+    /* Workout inputs retain their functionality */
+
+    html body #manaV64Exercises
+    input,
+
+    html body #manaV64Exercises
+    select {
+
+      border-color:
+        var(--mana-unified-gold) !important;
+
+      border-width:
+        1px !important;
+
+    }
+
+    /* ==========================================
+       4. STRENGTH PROGRESS
+
+       Daily / Weekly / Monthly
+       Summary metrics
+       Progress detail buttons
+       Exercise data
+       ========================================== */
+
+    html body #manaV83Content
+    .mana-v993-periods,
+
+    html body #manaV83Content
+    .mana-v993-period,
+
+    html body #manaV83Content
+    .mana-v993-metric,
+
+    html body #manaV83Content
+    .mana-v993-detail-btn,
+
+    html body #manaV83Content
+    .mana-v993-panel,
+
+    html body #manaV83Content
+    .mana-v993-summary,
+
+    html body #manaV83Content
+    .mana-v993-row,
+
+    html body #manaV83Content
+    .mana-v993-exercise-select {
+
+      border:
+        1px solid
+        var(--mana-unified-gold) !important;
+
+    }
+
+    /* ==========================================
+       5. MANA 28 PROGRESS
+       ========================================== */
+
+    html body #manaV83Content
+    .mana-v981-periods,
+
+    html body #manaV83Content
+    .mana-v981-period,
+
+    html body #manaV83Content
+    .mana-v981-overall,
+
+    html body #manaV83Content
+    .mana-v981-card {
+
+      border:
+        1px solid
+        var(--mana-unified-gold) !important;
+
+    }
+
+    /* ==========================================
+       6. MANA LYFE PROGRESS
+       ========================================== */
+
+    html body #manaV83Content
+    .mana-v939-range,
+
+    html body #manaV83Content
+    .mana-v939-card,
+
+    html body #manaV83Content
+    .mana-v939-stat,
+
+    html body #manaV83Content
+    .mana-v939-insight,
+
+    html body #manaV83Content
+    .mana-v939-recent-row {
+
+      border-color:
+        var(--mana-unified-gold) !important;
+
+      border-width:
+        1px !important;
+
+    }
+
+    /* ==========================================
+       7. LEARNING
+
+       All Learning cards and buttons gold.
+       No purple / orange border outlines.
+       ========================================== */
+
+    html body #manaV83Content
+    .mana-v985-learn-card,
+
+    html body #manaV83Content
+    .mana-v985-learn-button,
+
+    html body #manaV933Life
+    .mana-v933-learn-item,
+
+    html body #manaV933Life
+    .mana-v933-learn-button {
+
+      border:
+        1px solid
+        var(--mana-unified-gold) !important;
+
+    }
+
+    html body #manaV83Content
+    .mana-v985-head {
+
+      border-bottom-color:
+        var(--mana-unified-gold) !important;
+
+    }
+
+    /* ==========================================
+       8. FUEL
+
+       Same thin border across all meal cards.
+       ========================================== */
+
+    html body #manaV980SharedFuel
+    .m980-meal,
+
+    html body #manaV980SharedFuel
+    .m10140-meal-visual,
+
+    html body #manaV980SharedFuel
+    .m10140-fuel-panel-icon {
+
+      border:
+        1px solid
+        var(--mana-unified-gold) !important;
+
+    }
+
+    /* ==========================================
+       9. SHARED LEGACY COLOUR CLASSES
+
+       Remove remaining coloured card borders
+       from previous visual upgrades.
+       ========================================== */
+
+    html body #manaV83Content
+    .mana102210-outline,
+
+    html body #manaV83Content
+    .mana102920-colour-border,
+
+    html body #manaV83Content
+    .mana102930-gold-border,
+
+    html body #manaV83Content
+    .mana102940-gold-border {
+
+      border-color:
+        var(--mana-unified-gold) !important;
+
+      border-width:
+        1px !important;
+
+    }
+
+    /* ==========================================
+       10. EXISTING SECTION HEADINGS
+
+       No additional heading recolouring.
+       Icons remain the colour identifiers.
+       ========================================== */
+
+    /* No typography overrides required. */
+
+    /* ==========================================
+       11. NEXT PROGRAM BLOCK
+
+       Keep this action green.
+       ========================================== */
+
+    html body #manaV1017ProgramBlock
+    .m1017-request {
+
+      border:
+        1px solid
+        var(--mana-unified-gold) !important;
+
+    }
+
+    html body #manaV1017ProgramBlock
+    .m1017-request-btn,
+
+    html body #manaV1017ProgramBlock
+    #manaV1017Request {
+
+      background:
+        #164b30 !important;
+
+      border:
+        1px solid
+        var(--mana-unified-green) !important;
+
+      color:
+        #ffffff !important;
+
+    }
+
+    html body #manaV1017ProgramBlock
+    .m1017-request-btn:hover {
+
+      background:
+        #207046 !important;
+
+    }
+
+    /* ==========================================
+       12. PRESERVE ALL RESPONSIVE LAYOUTS
+
+       No media queries that change:
+       width / display / grid / position.
+       ========================================== */
 
   `;
 
   /* ==========================================
-     INSTALL STYLES ONCE
+     INSTALL ONCE
      ========================================== */
 
   function install() {
+
     let style = document.getElementById(
       STYLE_ID
     );
 
     if (!style) {
+
       style = document.createElement("style");
+
       style.id = STYLE_ID;
-      style.textContent = CSS;
+
       document.head.appendChild(style);
-    }
-  }
 
-  /* ==========================================
-     ACTIVE TAB
-     ========================================== */
-
-  function activeTab() {
-    const button = document.querySelector(
-      '#manaV83Tabs .mana-v83-tab.active[data-v83-tab], ' +
-      '#manaV83Tabs .mana-v83-tab[aria-selected="true"][data-v83-tab]'
-    );
-
-    return button?.dataset?.v83Tab || "";
-  }
-
-  /* ==========================================
-     HEADING COLOUR
-     ========================================== */
-
-  function syncHeading() {
-    const content =
-      document.getElementById(
-        "manaV83Content"
-      );
-
-    if (!content) return;
-
-    const tab = activeTab();
-    const colour = COLORS[tab];
-
-    content.style.setProperty(
-      "--mana-mobile-heading",
-      colour || "#f3d875"
-    );
-
-    content.querySelectorAll(
-      ".mana103010-heading"
-    ).forEach(node => {
-      node.classList.remove(
-        "mana103010-heading"
-      );
-    });
-
-    if (!colour || tab === "overview") {
-      return;
     }
 
-    const patterns = {
-      program:
-        /^(my strength program|my program|workouts)/i,
-      routine:
-        /^(my routine|my program|workouts)/i,
-      fuel:
-        /^(fuel|my fuel|nutrition)/i,
-      progress:
-        /^(your progress|my progress|progress)/i,
-      learn:
-        /^(learning|my learning|learn)/i,
-      reclaim:
-        /^reclaim/i
-    };
-
-    const pattern = patterns[tab];
-    if (!pattern) return;
-
-    const headings = content.querySelectorAll(
-      "h1,h2,h3,.mana-v993-head," +
-      ".mana-v981-head,.mana-v985-head"
-    );
-
-    for (const node of headings) {
-      const text = (
-        node.textContent || ""
-      ).replace(/\s+/g, " ").trim();
-
-      if (
-        text.length < 90 &&
-        pattern.test(text)
-      ) {
-        node.classList.add(
-          "mana103010-heading"
-        );
-        break;
-      }
+    if (style.textContent !== CSS) {
+      style.textContent = CSS;
     }
-  }
 
-  /* ==========================================
-     LIGHTWEIGHT REFRESH
-     ========================================== */
-
-  let pending = false;
-
-  function scheduleSync() {
-    if (pending) return;
-
-    pending = true;
-
-    requestAnimationFrame(() => {
-      pending = false;
-      syncHeading();
-    });
   }
 
   /* ==========================================
      INITIALISE
+
+     No timers.
+     No DOM mutation loops.
+     No repeated refresh.
      ========================================== */
 
   function init() {
+
     install();
-    syncHeading();
 
-    [
-      "mana:program-tab-change",
-      "mana:program-change",
-      "mana:workout-progress-change"
-    ].forEach(name => {
-      document.addEventListener(name, scheduleSync);
-      window.addEventListener(name, scheduleSync);
-    });
+    window.MANA_MOBILE_COLOUR_BUILD = BUILD;
 
-    document.addEventListener(
-      "click",
-      event => {
-        if (!(event.target instanceof Element)) return;
-
-        if (event.target.closest(
-          "#manaV83Tabs .mana-v83-tab, " +
-          "[data-v985-learn], " +
-          "[data-v993-period]"
-        )) {
-          scheduleSync();
-        }
-      }
-    );
-
-    window.addEventListener(
-      "pageshow",
-      scheduleSync
-    );
-
-    window.MANA_MOBILE_COLOUR_BUILD =
-      BUILD;
+    window.MANA_UNIFIED_GOLD_BUILD = BUILD;
 
     console.log(
-      "MANA MOBILE CLEANUP",
+      "MANA UNIFIED GOLD DESIGN",
       BUILD
     );
+
   }
 
   if (document.readyState === "loading") {
+
     document.addEventListener(
       "DOMContentLoaded",
       init,
       { once: true }
     );
+
   } else {
+
     init();
+
   }
 
 })();
