@@ -1,24 +1,25 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v10.27
+   MANA MOVEMENT TRAINING v10.27.2
    HOME + COACH EXPERIENCE POLISH
 
-   BUILD: 102700
+   BUILD: 102720
 
-   PURPOSE
-   -----------------------------------------
    HOME
-   - Premium Home presentation
-   - Restore text every time Home returns
-   - Stronger program messaging
-   - Preserve green / blue / yellow system
-   - Strength → Lyfe → Mana 28 order
-   - No missing text after navigation
+   -----------------------------------------
+   - Equal dimensions for all 3 program cards
+   - Match premium Choose Your Plan proportions
+   - Bigger headings
+   - Restore Home copy reliably
+   - Prevent disappearing / dark text
+   - Strength = green
+   - Lyfe = blue
+   - Mana 28 = yellow
 
    COACH CHAT
-   - MANA STRENGTH OVERVIEW ONLY
-   - Remove from Workout / Fuel / Progress /
-     Learning tabs
-   - Stronger premium coaching presentation
+   -----------------------------------------
+   - Strength Overview ONLY
+   - Removed from all other tabs
+   - Stronger premium presentation
    ========================================= */
 
 (() => {
@@ -26,11 +27,11 @@
 
 
   const BUILD =
-    "102700";
+    "102720";
 
 
   const STYLE_ID =
-    "mana-v1027-home-coach-polish";
+    "mana-v10272-home-coach-polish";
 
 
   const CHAT_ID =
@@ -78,37 +79,68 @@
       #manaV80Home
       .mana-v8013-brand{
 
+        display:
+          block !important;
+
+        visibility:
+          visible !important;
+
+        opacity:
+          1 !important;
+
         margin-bottom:
           28px !important;
 
       }
 
 
-      #manaV80Home
-      .mana-v8013-brand h1{
-
-        margin-bottom:
-          7px !important;
-
-      }
-
-
       /* =====================================
          HOME PROGRAM CARDS
+         SAME DIMENSIONS ACROSS ALL 3
          ===================================== */
 
       #manaV80Home
       .mana-v8013-program{
 
+        position:
+          relative !important;
+
+        width:
+          100% !important;
+
         min-height:
-          220px !important;
+          300px !important;
+
+        height:
+          300px !important;
 
         padding:
-          28px
-          30px !important;
+          30px
+          32px !important;
 
         border-radius:
-          26px !important;
+          24px !important;
+
+        display:
+          flex !important;
+
+        flex-direction:
+          column !important;
+
+        justify-content:
+          flex-start !important;
+
+        overflow:
+          hidden !important;
+
+        opacity:
+          1 !important;
+
+        visibility:
+          visible !important;
+
+        color:
+          #fff !important;
 
         transition:
           transform .18s ease,
@@ -127,46 +159,130 @@
       }
 
 
+      /* =====================================
+         PROGRAM LABELS
+         ===================================== */
+
       #manaV80Home
+      .mana-v8013-program
+      .mana-v8013-program-label,
+
+      #manaV80Home
+      .mana-v8013-program.current
       .mana-v8013-program-label{
 
-        font-size:
-          13px !important;
+        display:
+          block !important;
 
-        letter-spacing:
-          .14em !important;
+        visibility:
+          visible !important;
 
-      }
-
-
-      #manaV80Home
-      .mana-v8013-program h2{
-
-        max-width:
-          68% !important;
-
-        margin-top:
-          7px !important;
-
-        font-size:
-          31px !important;
-
-        line-height:
-          1.05 !important;
-
-      }
-
-
-      #manaV80Home
-      .mana-v8013-program p{
-
-        max-width:
-          68% !important;
-
-        margin-top:
-          12px !important;
+        opacity:
+          1 !important;
 
         color:
+          #f3d875 !important;
+
+        -webkit-text-fill-color:
+          #f3d875 !important;
+
+        font-size:
+          15px !important;
+
+        font-weight:
+          950 !important;
+
+        letter-spacing:
+          .15em !important;
+
+        line-height:
+          1.2 !important;
+
+      }
+
+
+      /* =====================================
+         BIGGER PROGRAM HEADINGS
+         ===================================== */
+
+      #manaV80Home
+      .mana-v8013-program h2,
+
+      #manaV80Home
+      .mana-v8013-program.current h2{
+
+        display:
+          block !important;
+
+        visibility:
+          visible !important;
+
+        opacity:
+          1 !important;
+
+        max-width:
+          72% !important;
+
+        margin:
+          9px
+          0
+          0 !important;
+
+        color:
+          #fff !important;
+
+        -webkit-text-fill-color:
+          #fff !important;
+
+        font-size:
+          40px !important;
+
+        font-weight:
+          950 !important;
+
+        line-height:
+          1.02 !important;
+
+        word-break:
+          normal !important;
+
+        white-space:
+          normal !important;
+
+      }
+
+
+      /* =====================================
+         HOME BODY COPY
+         ===================================== */
+
+      #manaV80Home
+      .mana-v8013-program p,
+
+      #manaV80Home
+      .mana-v8013-program.current p{
+
+        display:
+          block !important;
+
+        visibility:
+          visible !important;
+
+        opacity:
+          1 !important;
+
+        max-width:
+          70% !important;
+
+        margin:
+          14px
+          0
+          0 !important;
+
+        color:
+          #b1b1b1 !important;
+
+        -webkit-text-fill-color:
           #b1b1b1 !important;
 
         font-size:
@@ -179,7 +295,78 @@
 
 
       /* =====================================
-         NEW PROGRAM SUPPORT LINE
+         PRICE
+         ===================================== */
+
+      #manaV80Home
+      .mana-v8013-price{
+
+        display:
+          block !important;
+
+        visibility:
+          visible !important;
+
+        opacity:
+          1 !important;
+
+        margin-top:
+          14px !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-price strong{
+
+        color:
+          #f3d875 !important;
+
+        -webkit-text-fill-color:
+          #f3d875 !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-price span{
+
+        color:
+          #888 !important;
+
+        -webkit-text-fill-color:
+          #888 !important;
+
+      }
+
+
+      /* =====================================
+         FREE NOTE
+         ===================================== */
+
+      #manaV80Home
+      .mana-v8013-free-note{
+
+        display:
+          block !important;
+
+        visibility:
+          visible !important;
+
+        opacity:
+          1 !important;
+
+        color:
+          #d9c36d !important;
+
+        -webkit-text-fill-color:
+          #d9c36d !important;
+
+      }
+
+
+      /* =====================================
+         SUPPORT LINE
          ===================================== */
 
       #manaV80Home
@@ -189,16 +376,25 @@
           relative !important;
 
         z-index:
-          3 !important;
+          4 !important;
+
+        display:
+          block !important;
+
+        visibility:
+          visible !important;
+
+        opacity:
+          1 !important;
 
         max-width:
-          68% !important;
+          70% !important;
 
         margin-top:
-          12px !important;
+          auto !important;
 
         padding-top:
-          11px !important;
+          12px !important;
 
         border-top:
           1px solid
@@ -206,23 +402,20 @@
             255,
             255,
             255,
-            .08
+            .09
           ) !important;
-
-        color:
-          #858585 !important;
 
         font-size:
           11px !important;
 
         font-weight:
-          850 !important;
+          950 !important;
 
         letter-spacing:
-          .08em !important;
+          .09em !important;
 
         line-height:
-          1.45 !important;
+          1.4 !important;
 
         text-transform:
           uppercase !important;
@@ -235,12 +428,10 @@
       .m1027-home-support{
 
         color:
-          rgba(
-            85,
-            217,
-            139,
-            .82
-          ) !important;
+          #55d98b !important;
+
+        -webkit-text-fill-color:
+          #55d98b !important;
 
       }
 
@@ -250,12 +441,10 @@
       .m1027-home-support{
 
         color:
-          rgba(
-            85,
-            168,
-            222,
-            .84
-          ) !important;
+          #55a8de !important;
+
+        -webkit-text-fill-color:
+          #55a8de !important;
 
       }
 
@@ -265,22 +454,64 @@
       .m1027-home-support{
 
         color:
-          rgba(
-            224,
-            187,
-            81,
-            .88
-          ) !important;
+          #e0bb51 !important;
+
+        -webkit-text-fill-color:
+          #e0bb51 !important;
 
       }
 
 
       /* =====================================
-         HOME CARD BADGES
+         OPEN LINK
+         ===================================== */
+
+      #manaV80Home
+      .mana-v8013-open,
+
+      #manaV80Home
+      .mana-v8013-program.current
+      .mana-v8013-open{
+
+        display:
+          block !important;
+
+        visibility:
+          visible !important;
+
+        opacity:
+          1 !important;
+
+        margin-top:
+          13px !important;
+
+        color:
+          #f3d875 !important;
+
+        -webkit-text-fill-color:
+          #f3d875 !important;
+
+        font-size:
+          13px !important;
+
+        font-weight:
+          950 !important;
+
+      }
+
+
+      /* =====================================
+         TOP BADGES
          ===================================== */
 
       #manaV80Home
       .mana-v8013-badge{
+
+        visibility:
+          visible !important;
+
+        opacity:
+          1 !important;
 
         top:
           18px !important;
@@ -289,169 +520,94 @@
           18px !important;
 
         background:
-          rgba(
-            9,
-            9,
-            9,
-            .85
-          ) !important;
-
-        font-size:
-          9px !important;
-
-        letter-spacing:
-          .10em !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="strength"]
-      .mana-v8013-badge{
-
-        border-color:
-          rgba(
-            85,
-            217,
-            139,
-            .58
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="life"]
-      .mana-v8013-badge{
-
-        border-color:
-          rgba(
-            85,
-            168,
-            222,
-            .58
-          ) !important;
-
-      }
-
-
-      #manaV80Home
-      [data-program="mana28"]
-      .mana-v8013-badge{
-
-        border-color:
-          rgba(
-            224,
-            187,
-            81,
-            .62
-          ) !important;
-
-      }
-
-
-      /* =====================================
-         HOME OPEN LINK
-         ===================================== */
-
-      #manaV80Home
-      .mana-v8013-open{
-
-        margin-top:
-          15px !important;
-
-        font-size:
-          13px !important;
-
-        letter-spacing:
-          .025em !important;
-
-      }
-
-
-      /* =====================================
-         HOME NAV POLISH
-         ===================================== */
-
-      #manaV80Home
-      .mana-v8013-bottom{
-
-        background:
-          rgba(
-            5,
-            5,
-            5,
-            .96
-          ) !important;
-
-        border-top:
-          1px solid
-          #292929 !important;
-
-        backdrop-filter:
-          blur(16px) !important;
-
-      }
-
-
-      #manaV80Home
-      .mana-v8013-nav{
-
-        border:
-          1px solid
-          #292929 !important;
-
-        border-radius:
-          15px !important;
-
-        background:
-          #0b0b0b !important;
-
-        color:
-          #888 !important;
-
-      }
-
-
-      #manaV80Home
-      .mana-v8013-nav.active{
-
-        border-color:
-          rgba(
-            224,
-            187,
-            81,
-            .75
-          ) !important;
-
-        background:
-          rgba(
-            224,
-            187,
-            81,
-            .045
-          ) !important;
+          #090909 !important;
 
         color:
           #f3d875 !important;
 
-        box-shadow:
-          0
-          0
-          16px
-          rgba(
-            224,
-            187,
-            81,
-            .08
-          ) !important;
+        -webkit-text-fill-color:
+          #f3d875 !important;
+
+      }
+
+
+      /* =====================================
+         ACTIVE PROGRAM BADGE
+         ===================================== */
+
+      #manaV80Home
+      .mana-v8013-current-badge{
+
+        visibility:
+          visible !important;
+
+        opacity:
+          1 !important;
+
+        color:
+          #f3d875 !important;
+
+        -webkit-text-fill-color:
+          #f3d875 !important;
+
+      }
+
+
+      /* =====================================
+         HOME ICON
+         ===================================== */
+
+      #manaV80Home
+      .m1025-home-icon{
+
+        z-index:
+          2 !important;
+
+        right:
+          28px !important;
+
+        top:
+          50% !important;
+
+        width:
+          88px !important;
+
+        height:
+          88px !important;
+
+        border-radius:
+          24px !important;
+
+      }
+
+
+      #manaV80Home
+      .m1025-home-icon svg{
+
+        width:
+          61px !important;
+
+        height:
+          61px !important;
+
+      }
+
+
+      #manaV80Home
+      .mana-v8013-program
+      > *:not(.m1025-home-icon){
+
+        position:
+          relative !important;
+
+        z-index:
+          4 !important;
 
       }
 
 
       /* =====================================
          COACH CHAT
-         OVERVIEW ONLY
          ===================================== */
 
       #manaV969CoachChat{
@@ -476,7 +632,7 @@
             85,
             217,
             139,
-            .68
+            .72
           ) !important;
 
         border-radius:
@@ -490,7 +646,7 @@
               85,
               217,
               139,
-              .11
+              .12
             ),
             transparent
             42%
@@ -511,18 +667,7 @@
             0,
             0,
             .26
-          ),
-          0
-          0
-          0
-          1px
-          rgba(
-            85,
-            217,
-            139,
-            .035
-          )
-          inset !important;
+          ) !important;
 
       }
 
@@ -551,10 +696,7 @@
           linear-gradient(
             90deg,
             transparent,
-            var(
-              --m25-green,
-              #55d98b
-            ),
+            #55d98b,
             transparent
           ) !important;
 
@@ -565,16 +707,7 @@
       .mana-v969-chat-kicker{
 
         color:
-          var(
-            --m25-green,
-            #55d98b
-          ) !important;
-
-        font-size:
-          10px !important;
-
-        letter-spacing:
-          .16em !important;
+          #55d98b !important;
 
       }
 
@@ -582,17 +715,11 @@
       #manaV969CoachChat
       .mana-v969-chat-title{
 
-        margin-top:
-          7px !important;
-
         color:
           #fff !important;
 
         font-size:
           25px !important;
-
-        line-height:
-          1.08 !important;
 
       }
 
@@ -603,17 +730,8 @@
         max-width:
           650px !important;
 
-        margin-top:
-          9px !important;
-
         color:
           #b7b7b7 !important;
-
-        font-size:
-          14px !important;
-
-        line-height:
-          1.55 !important;
 
       }
 
@@ -621,14 +739,8 @@
       #manaV969CoachChat
       .mana-v969-chat-live{
 
-        border:
-          1px solid
-          rgba(
-            85,
-            217,
-            139,
-            .65
-          ) !important;
+        border-color:
+          #55d98b !important;
 
         background:
           rgba(
@@ -639,21 +751,7 @@
           ) !important;
 
         color:
-          var(
-            --m25-green,
-            #55d98b
-          ) !important;
-
-        box-shadow:
-          0
-          0
-          12px
-          rgba(
-            85,
-            217,
-            139,
-            .10
-          ) !important;
+          #55d98b !important;
 
       }
 
@@ -664,15 +762,9 @@
         min-height:
           56px !important;
 
-        margin-top:
-          19px !important;
-
         border:
           1px solid
-          var(
-            --m25-green,
-            #55d98b
-          ) !important;
+          #55d98b !important;
 
         border-radius:
           16px !important;
@@ -688,51 +780,6 @@
         color:
           #dff9e8 !important;
 
-        font-size:
-          12px !important;
-
-        letter-spacing:
-          .06em !important;
-
-        transition:
-          background .18s ease,
-          transform .18s ease,
-          box-shadow .18s ease !important;
-
-      }
-
-
-      #manaV969CoachChat
-      .mana-v969-chat-button:hover{
-
-        background:
-          rgba(
-            85,
-            217,
-            139,
-            .10
-          ) !important;
-
-        box-shadow:
-          0
-          0
-          20px
-          rgba(
-            85,
-            217,
-            139,
-            .09
-          ) !important;
-
-      }
-
-
-      #manaV969CoachChat
-      .mana-v969-chat-button:active{
-
-        transform:
-          scale(.995) !important;
-
       }
 
 
@@ -747,7 +794,10 @@
         .mana-v8013-program{
 
           min-height:
-            205px !important;
+            225px !important;
+
+          height:
+            auto !important;
 
           padding:
             23px
@@ -757,13 +807,25 @@
 
 
         #manaV80Home
-        .mana-v8013-program h2{
-
-          max-width:
-            70% !important;
+        .mana-v8013-program-label{
 
           font-size:
-            26px !important;
+            12px !important;
+
+        }
+
+
+        #manaV80Home
+        .mana-v8013-program h2,
+
+        #manaV80Home
+        .mana-v8013-program.current h2{
+
+          max-width:
+            72% !important;
+
+          font-size:
+            28px !important;
 
         }
 
@@ -777,9 +839,6 @@
           font-size:
             14px !important;
 
-          line-height:
-            1.5 !important;
-
         }
 
 
@@ -789,26 +848,38 @@
           max-width:
             70% !important;
 
+          margin-top:
+            14px !important;
+
           font-size:
             10px !important;
 
         }
 
 
-        #manaV969CoachChat{
+        #manaV80Home
+        .m1025-home-icon{
 
-          padding:
-            20px
-            18px !important;
+          right:
+            10px !important;
+
+          width:
+            66px !important;
+
+          height:
+            66px !important;
 
         }
 
 
-        #manaV969CoachChat
-        .mana-v969-chat-title{
+        #manaV80Home
+        .m1025-home-icon svg{
 
-          font-size:
-            23px !important;
+          width:
+            46px !important;
+
+          height:
+            46px !important;
 
         }
 
@@ -866,7 +937,7 @@
   }
 
 
-  function activeProgramTab() {
+  function activeTab() {
 
     return (
       document
@@ -882,7 +953,7 @@
 
 
   /* =========================================
-     HOME COPY
+     SUPPORT LINE
      ========================================= */
 
   function supportLine(
@@ -943,7 +1014,11 @@
   }
 
 
-  function restoreHomeCopy() {
+  /* =========================================
+     HOME RESTORE
+     ========================================= */
+
+  function restoreHome() {
 
     const home =
       document.getElementById(
@@ -1266,57 +1341,45 @@
 
   function enforceCoachChat() {
 
-    if (
-      !strengthOpen()
-    ) {
-
-      document
-        .getElementById(
-          CHAT_ID
-        )
-        ?.remove();
-
-
-      return;
-
-    }
-
-
-    const tab =
-      activeProgramTab();
-
-
-    /*
-      Coach Chat lives ONLY on Overview.
-    */
-
-    if (
-      tab !==
-      "overview"
-    ) {
-
-      document
-        .getElementById(
-          CHAT_ID
-        )
-        ?.remove();
-
-
-      return;
-
-    }
-
-
     const chat =
       document.getElementById(
         CHAT_ID
       );
 
 
-    if (!chat) {
+    if (
+      !strengthOpen()
+    ) {
+
+      chat
+        ?.remove();
+
 
       return;
 
+    }
+
+
+    /*
+      OVERVIEW ONLY
+    */
+
+    if (
+      activeTab() !==
+      "overview"
+    ) {
+
+      chat
+        ?.remove();
+
+
+      return;
+
+    }
+
+
+    if (!chat) {
+      return;
     }
 
 
@@ -1332,7 +1395,7 @@
       );
 
 
-    const text =
+    const copy =
       chat.querySelector(
         ".mana-v969-chat-text"
       );
@@ -1366,9 +1429,9 @@
     }
 
 
-    if (text) {
+    if (copy) {
 
-      text.textContent =
+      copy.textContent =
         "Questions about your training, Fuel, progress or program? Message your coach directly from your Mana Strength hub.";
 
     }
@@ -1398,7 +1461,7 @@
 
   function refresh() {
 
-    restoreHomeCopy();
+    restoreHome();
 
     enforceCoachChat();
 
@@ -1411,10 +1474,12 @@
 
 
     [
-      60,
-      180,
-      420,
-      850
+      40,
+      100,
+      220,
+      450,
+      850,
+      1400
     ]
       .forEach(
         delay => {
@@ -1446,7 +1511,8 @@
       "mana:program-change",
       "mana:profile-synced",
       "mana:strength-membership-change",
-      "mana:strength-synced"
+      "mana:strength-synced",
+      "mana:workout-progress-change"
     ]
       .forEach(
         eventName => {
@@ -1470,27 +1536,23 @@
       "click",
       event => {
 
-        const relevant =
+        if (
           event.target.closest(
             `
               #manaV80HomeBtn,
               [data-program],
               #manaV83Tabs .mana-v83-tab,
-              #manaV83Back,
               .mana-v83-back,
               #manaV80Strength
             `
+          )
+        ) {
+
+          requestAnimationFrame(
+            settle
           );
 
-
-        if (!relevant) {
-          return;
         }
-
-
-        requestAnimationFrame(
-          settle
-        );
 
       },
       true
