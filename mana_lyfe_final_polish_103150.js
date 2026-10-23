@@ -1,237 +1,246 @@
 
-/* ================================================
+/* =============================================
    MANA MOVEMENT TRAINING
-   MANA LYFE — FINAL NAVIGATION POLISH
-   BUILD 103160
+   MANA LYFE OVERVIEW + NAVIGATION
+   BUILD 103170
 
-   OVERVIEW
-   - Match actual bottom-tab order
-   - Correct Routine / Reset card positions
-   - Premium yellow card borders
-   - Support Chat green
+   COMPLETE REPLACEMENT FOR:
+   mana_lyfe_final_polish_103150.js
 
-   BOTTOM NAVIGATION
-   - Daily Routine: yellow icon and text
-   - Reset: green icon and text
-   - No icon borders
+   Fixes:
+   - Correct actual Overview card selectors
+   - Workouts / Routine / Reset / Learning
+   - Correct card ordering and navigation
+   - Matching icon and text colours
+   - Overview Support Chat green
+   - Same support-chat action as Reset
+   - Green completed workouts
+   - Yellow workout text
 
-   SUPPORT
-   - Overview Chat uses Reset's chat action
-
-   WORKOUTS
-   - Completed workout green with tick
-   - Exercise headings stay premium yellow
-   - Existing completion data preserved
-
-   No changes to Mana Strength or Mana 28.
-   ================================================ */
+   Preserves working Routine, Reset, Chat,
+   Learning and other program functionality.
+   ============================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "103160";
+  const BUILD = "103170";
   const STYLE_ID = "mana-lyfe-polish-103150";
-  const BODY_CLASS = "mana-lyfe-103160";
+  const BODY_CLASS = "mana-lyfe-103170";
 
   if (window.MANA_LYFE_FINAL_POLISH === BUILD) {
     return;
   }
 
+  const COLORS = {
+    workouts: "#55a8de",
+    routine: "#f3d875",
+    reset: "#55d98b",
+    learning: "#e98a54"
+  };
+
   const CSS = `
 
-    :root {
-      --ml160-gold: #f3d875;
-      --ml160-border: rgba(230,189,72,.68);
-      --ml160-green: #55d98b;
-      --ml160-green-dark: #164b30;
-    }
-
     /* =====================================
-       NAVIGATION: DAILY ROUTINE
+       OVERVIEW
        ===================================== */
 
     body.${BODY_CLASS}
-    #manaV83Tabs
-    [data-v83-tab="progress"] {
-      color: var(--ml160-gold) !important;
-      border: none !important;
-      box-shadow: none !important;
-      background: transparent !important;
+    .mana-v978-launchpad
+    .mana-v978-grid {
+      display: grid !important;
+      grid-template-columns:
+        repeat(2,minmax(0,1fr)) !important;
+      gap: 15px !important;
     }
 
     body.${BODY_CLASS}
-    #manaV83Tabs
-    [data-v83-tab="progress"] svg,
-    body.${BODY_CLASS}
-    #manaV83Tabs
-    [data-v83-tab="progress"] img {
-      color: var(--ml160-gold) !important;
-      border: none !important;
-      box-shadow: none !important;
-    }
-
-    /* =====================================
-       NAVIGATION: RESET
-       ===================================== */
-
-    body.${BODY_CLASS}
-    #manaV83Tabs
-    [data-v83-tab="reclaim"] {
-      color: var(--ml160-green) !important;
-      border: none !important;
-      box-shadow: none !important;
-      background: transparent !important;
-    }
-
-    body.${BODY_CLASS}
-    #manaV83Tabs
-    [data-v83-tab="reclaim"] svg {
-      color: var(--ml160-green) !important;
-      stroke: currentColor !important;
-      border: none !important;
-    }
-
-    /* Keep image artwork without recolouring
-       the image pixels themselves. */
-
-    body.${BODY_CLASS}
-    #manaV83Tabs
-    [data-v83-tab="reclaim"] img {
-      border: none !important;
-      box-shadow: none !important;
-    }
-
-    /* =====================================
-       OVERVIEW CARD COLOURS
-       ===================================== */
-
-    body.${BODY_CLASS}
-    .mana-v978-launch[data-v978-tab="reclaim"],
-    body.${BODY_CLASS}
-    .mana-v978-launch[data-v978-tab="progress"],
-    body.${BODY_CLASS}
-    .mana-v978-launch[data-v978-tab="routine"] {
+    .mana-v978-launch {
       border: 1px solid
-        var(--ml160-border) !important;
+        rgba(230,189,72,.68) !important;
     }
 
-    /* Daily Routine text/icon = gold */
+    /* Workouts */
 
     body.${BODY_CLASS}
-    .mana-v978-launch
-    .ml160-routine-title {
-      color: var(--ml160-gold) !important;
+    .mana-v978-launch[data-v978-tab="routine"]
+    .mana-v978-label {
+      color: ${COLORS.workouts} !important;
     }
 
     body.${BODY_CLASS}
-    .mana-v978-launch
-    .ml160-routine-icon {
-      color: var(--ml160-gold) !important;
-      border-color: var(--ml160-border) !important;
+    .mana-v978-launch[data-v978-tab="routine"]
+    .mana-v978-icon {
+      border-color: ${COLORS.workouts} !important;
     }
 
-    /* Reset icon and label = green */
+    /* Daily Routine */
+
+    body.${BODY_CLASS}
+    .mana-v978-launch[data-v978-tab="progress"]
+    .mana-v978-label,
+    body.${BODY_CLASS}
+    .mana-v978-launch[data-v978-tab="progress"]
+    .mana-v978-arrow {
+      color: ${COLORS.routine} !important;
+    }
+
+    body.${BODY_CLASS}
+    .mana-v978-launch[data-v978-tab="progress"]
+    .mana-v978-icon {
+      border-color: ${COLORS.routine} !important;
+    }
+
+    /* Reset */
+
+    body.${BODY_CLASS}
+    .mana-v978-launch[data-v978-tab="reclaim"] {
+      background:
+        linear-gradient(145deg,#111812,#090909)
+        !important;
+    }
+
+    body.${BODY_CLASS}
+    .mana-v978-launch[data-v978-tab="reclaim"]
+    .mana-v978-label,
+    body.${BODY_CLASS}
+    .mana-v978-launch[data-v978-tab="reclaim"]
+    .mana-v978-arrow {
+      color: ${COLORS.reset} !important;
+    }
 
     body.${BODY_CLASS}
     .mana-v978-launch[data-v978-tab="reclaim"]
     .mana-v978-icon {
-      color: var(--ml160-green) !important;
-      border-color: var(--ml160-green) !important;
+      border-color: ${COLORS.reset} !important;
     }
 
+    /* Learning */
+
     body.${BODY_CLASS}
-    .mana-v978-launch[data-v978-tab="reclaim"]
+    .mana-v978-launch[data-v978-tab="learn"]
     .mana-v978-label {
-      color: var(--ml160-green) !important;
-    }
-
-    body.${BODY_CLASS}
-    .mana-v978-launch[data-v978-tab="reclaim"]
-    .mana-v978-title {
-      color: var(--ml160-gold) !important;
+      color: ${COLORS.learning} !important;
     }
 
     /* =====================================
-       OVERVIEW SUPPORT CHAT
-       SAME AS RESET SUPPORT BUTTON
+       BOTTOM TAB ICON + TEXT MATCH
        ===================================== */
 
     body.${BODY_CLASS}
-    .mana-v933-card.mana-v933-support {
-      border: 1px solid
-        var(--ml160-border) !important;
-      background: linear-gradient(
-        145deg,#111812,#090909
-      ) !important;
+    #manaV83Tabs
+    [data-v83-tab="program"] {
+      color: ${COLORS.workouts} !important;
     }
 
     body.${BODY_CLASS}
-    .mana-v933-support .mana-v933-kicker,
-    body.${BODY_CLASS}
-    .mana-v933-support .mana-v933-pill {
-      color: var(--ml160-green) !important;
+    #manaV83Tabs
+    [data-v83-tab="progress"] {
+      color: ${COLORS.routine} !important;
     }
 
     body.${BODY_CLASS}
-    .mana-v933-support .mana-v933-pill {
-      border: 1px solid
-        var(--ml160-green) !important;
-      background: #10291a !important;
+    #manaV83Tabs
+    [data-v83-tab="reclaim"] {
+      color: ${COLORS.reset} !important;
     }
 
     body.${BODY_CLASS}
-    .mana-v933-support [data-v933-support-chat],
+    #manaV83Tabs
+    [data-v83-tab="learn"] {
+      color: ${COLORS.learning} !important;
+    }
+
     body.${BODY_CLASS}
-    .mana-v933-support .mana-v933-primary,
+    #manaV83Tabs
+    [data-v83-tab="program"] *,
     body.${BODY_CLASS}
-    #ml140OpenChat {
-      width: 100% !important;
-      min-height: 58px !important;
-      border: 1px solid
-        var(--ml160-green) !important;
-      border-radius: 999px !important;
-      background:
-        var(--ml160-green-dark) !important;
-      color: #ffffff !important;
+    #manaV83Tabs
+    [data-v83-tab="progress"] *,
+    body.${BODY_CLASS}
+    #manaV83Tabs
+    [data-v83-tab="reclaim"] *,
+    body.${BODY_CLASS}
+    #manaV83Tabs
+    [data-v83-tab="learn"] * {
+      color: inherit !important;
+    }
+
+    body.${BODY_CLASS}
+    #manaV83Tabs
+    .mana-v83-tab {
+      border: none !important;
       box-shadow: none !important;
-      font-size: 14px !important;
-      font-weight: 900 !important;
-      cursor: pointer;
-    }
-
-    body.${BODY_CLASS}
-    .mana-v933-support [data-v933-support-chat]:active {
-      background: #237147 !important;
     }
 
     /* =====================================
-       LYFE WORKOUTS — COMPLETED CARDS
+       OVERVIEW SUPPORT CHAT — GREEN
+       ===================================== */
+
+    body.${BODY_CLASS}
+    .ml170-support-card {
+      border: 1px solid
+        rgba(230,189,72,.68) !important;
+      background:
+        linear-gradient(145deg,#101813,#090909)
+        !important;
+    }
+
+    body.${BODY_CLASS}
+    .ml170-support-card button,
+    body.${BODY_CLASS}
+    button.ml170-support-button {
+      width: 100% !important;
+      min-height: 58px !important;
+      border: 1px solid ${COLORS.reset} !important;
+      border-radius: 999px !important;
+      background: #164b30 !important;
+      color: #fff !important;
+      font-size: 14px !important;
+      font-weight: 900 !important;
+      box-shadow: none !important;
+    }
+
+    body.${BODY_CLASS}
+    .ml170-support-card button:active {
+      background: #24764b !important;
+    }
+
+    body.${BODY_CLASS}
+    .ml170-support-card
+    .mana-v933-kicker,
+    body.${BODY_CLASS}
+    .ml170-support-card
+    .mana-v933-pill {
+      color: ${COLORS.reset} !important;
+    }
+
+    /* =====================================
+       COMPLETED LYFE WORKOUTS
        ===================================== */
 
     body.${BODY_CLASS}
     .mana-v980-day.done {
       position: relative;
-      border: 1px solid
-        var(--ml160-green) !important;
-      background: linear-gradient(
-        145deg,#132b1d,#0a120c
-      ) !important;
-      box-shadow: none !important;
+      border: 1px solid ${COLORS.reset} !important;
+      background:
+        linear-gradient(145deg,#132b1d,#0a120c)
+        !important;
     }
 
     body.${BODY_CLASS}
     .mana-v980-day.done::after {
       content: "✓";
       position: absolute;
-      top: 12px;
       right: 12px;
-      display: grid;
-      place-items: center;
+      top: 12px;
       width: 25px;
       height: 25px;
-      border: 1px solid var(--ml160-green);
+      display: grid;
+      place-items: center;
       border-radius: 50%;
-      background: var(--ml160-green-dark);
+      background: #164b30;
+      border: 1px solid ${COLORS.reset};
       color: #fff;
       font-size: 17px;
       font-weight: 900;
@@ -239,62 +248,42 @@
     }
 
     body.${BODY_CLASS}
-    .mana-v980-day.done .mana-v980-number {
-      background: #164b30 !important;
-      border-color: var(--ml160-green) !important;
-      color: var(--ml160-green) !important;
-    }
-
-    body.${BODY_CLASS}
     .mana-v980-day.done .mana-v980-title,
     body.${BODY_CLASS}
-    .mana-v980-day.done .mana-v980-category {
-      color: var(--ml160-gold) !important;
+    .mana-v980-day.done .mana-v980-category,
+    body.${BODY_CLASS}
+    .mana-v980-session .mana-v980-exercise-name {
+      color: ${COLORS.routine} !important;
     }
 
-    /* Workout detail text stays gold */
-
     body.${BODY_CLASS}
-    .mana-v980-session
-    .mana-v980-exercise-name {
-      color: var(--ml160-gold) !important;
+    .mana-v980-session .mana-v980-exercise-name {
       font-size: 19px !important;
       line-height: 1.3 !important;
     }
 
-    body.${BODY_CLASS}
-    .mana-v980-session
-    .mana-v980-exercise-detail {
-      color: #c7c7c7 !important;
-      font-size: 15px !important;
-      line-height: 1.5 !important;
-    }
-
-    body.${BODY_CLASS}
-    .mana-v980-session
-    .mana-v980-note-title {
-      color: var(--ml160-gold) !important;
-    }
-
     @media(max-width:700px) {
       body.${BODY_CLASS}
-      .mana-v980-session
-      .mana-v980-exercise-name {
+      .mana-v980-session .mana-v980-exercise-name {
         font-size: 18px !important;
       }
     }
-  `;
 
-  /* ==========================================
-     DETECT ACTIVE PROGRAM
-     ========================================== */
+    @media(max-width:480px) {
+      body.${BODY_CLASS}
+      .mana-v978-launchpad
+      .mana-v978-grid {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  `;
 
   function isLyfe() {
     const shell = document.getElementById(
       "manaV83ProgramShell"
     );
 
-    const title = String(
+    const title = (
       document.getElementById("manaV83Title")
         ?.textContent || ""
     ).trim().toUpperCase();
@@ -308,40 +297,32 @@
     );
   }
 
-  /* ==========================================
-     TEXT HELPERS
-     ========================================== */
-
-  function setText(node,text) {
-    if (!node) return;
-
-    if (node.textContent.trim() !== text) {
-      node.textContent = text;
+  function setText(el,value) {
+    if (el && el.textContent.trim() !== value) {
+      el.textContent = value;
     }
   }
 
-  function updateLabel(tab,text) {
-    if (!tab) return;
+  function labelTab(button,label) {
+    if (!button) return;
 
-    const leaves = Array.from(
-      tab.querySelectorAll("span,small,strong")
-    ).filter(node =>
-      node.children.length === 0
-    );
+    const nodes = Array.from(
+      button.querySelectorAll("span,small,strong")
+    ).filter(el => !el.children.length);
 
-    const existing = leaves.find(node =>
+    const node = nodes.find(el =>
       /^(progress|routine|reclaim|reset)$/i.test(
-        node.textContent.trim()
+        el.textContent.trim()
       )
     );
 
-    if (existing) {
-      setText(existing,text);
+    if (node) {
+      setText(node,label);
       return;
     }
 
-    const textNode = Array.from(
-      tab.childNodes
+    const direct = Array.from(
+      button.childNodes
     ).find(node =>
       node.nodeType === 3 &&
       /(progress|routine|reclaim|reset)/i.test(
@@ -349,22 +330,15 @@
       )
     );
 
-    if (textNode) {
-      textNode.textContent =
-        textNode.textContent.replace(
-          /(progress|routine|reclaim|reset)/i,
-          text
-        );
+    if (direct) {
+      direct.textContent = direct.textContent.replace(
+        /(progress|routine|reclaim|reset)/i,
+        label
+      );
     }
   }
 
-  /* ==========================================
-     BOTTOM TAB COLOURS AND LABELS
-     ========================================== */
-
-  function updateTabs() {
-    if (!isLyfe()) return;
-
+  function updateBottomTabs() {
     const nav = document.getElementById(
       "manaV83Tabs"
     );
@@ -379,183 +353,208 @@
       '[data-v83-tab="reclaim"]'
     );
 
-    updateLabel(routine,"Routine");
-    updateLabel(reset,"Reset");
-
-    /* Preserve existing route identifiers.
-       Do not rebuild tab elements. */
+    if (isLyfe()) {
+      labelTab(routine,"Routine");
+      labelTab(reset,"Reset");
+    }
   }
 
-  /* ==========================================
-     OVERVIEW CARD MATCHING
+  /* =====================================
+     ACTUAL V9.78 OVERVIEW CARD ROUTES
 
-     Order cards by their actual bottom tab
-     positions, not by guessed positions.
-     ========================================== */
+     routine  = Workouts
+     progress = Daily Routine
+     reclaim  = Reset
+     learn    = Learning
+
+     Do not modify the route identifiers.
+     ===================================== */
+
+  const CARD_DETAILS = {
+    routine: {
+      label:"WORKOUTS",
+      title:"Your Lyfe Workouts",
+      text:"Strength, movement, cardio and recovery across your four-week Lyfe program.",
+      action:"VIEW WORKOUTS →"
+    },
+
+    progress: {
+      label:"DAILY ROUTINE",
+      title:"Build the Day First",
+      text:"Your daily non-negotiables. Build consistency one action at a time.",
+      action:"OPEN ROUTINE →"
+    },
+
+    reclaim: {
+      label:"RESET",
+      title:"Reset Now",
+      text:"Pause, breathe and follow a guided reset whenever you need it.",
+      action:"OPEN RESET →"
+    },
+
+    learn: {
+      label:"LEARNING",
+      title:"Tools for Lyfe",
+      text:"Practical principles for movement, recovery, resilience and daily life.",
+      action:"START LEARNING →"
+    }
+  };
 
   function updateOverview() {
     if (!isLyfe()) return;
 
     const grid = document.querySelector(
-      ".mana-v978-launchpad .mana-v978-grid"
+      "#manaV83Content .mana-v978-grid"
     );
 
     if (!grid) return;
 
-    const cards = Array.from(
-      grid.querySelectorAll(
-        ".mana-v978-launch[data-v978-tab]"
-      )
-    );
+    const order = [
+      "routine",
+      "progress",
+      "reclaim",
+      "learn"
+    ];
 
-    if (!cards.length) return;
-
-    const routine = cards.find(card =>
-      ["routine","progress"].includes(
-        card.dataset.v978Tab
-      )
-    );
-
-    const reset = cards.find(card =>
-      card.dataset.v978Tab === "reclaim"
-    );
-
-    if (routine) {
-      setText(
-        routine.querySelector(".mana-v978-title"),
-        "Daily Routine"
+    order.forEach(route => {
+      const card = grid.querySelector(
+        `.mana-v978-launch[data-v978-tab="${route}"]`
       );
 
-      routine.querySelector(
-        ".mana-v978-title"
-      )?.classList.add("ml160-routine-title");
+      if (!card) return;
 
-      routine.querySelector(
-        ".mana-v978-icon"
-      )?.classList.add("ml160-routine-icon");
-    }
+      const item = CARD_DETAILS[route];
 
-    if (reset) {
       setText(
-        reset.querySelector(".mana-v978-title"),
-        "Reset"
+        card.querySelector(".mana-v978-label"),
+        item.label
       );
 
       setText(
-        reset.querySelector(".mana-v978-label"),
-        "RESET"
+        card.querySelector(".mana-v978-title"),
+        item.title
       );
-    }
 
-    /* Match positions of Routine and Reset
-       to the navigation's actual order. */
+      setText(
+        card.querySelector(".mana-v978-text"),
+        item.text
+      );
 
-    const nav = document.getElementById(
-      "manaV83Tabs"
-    );
+      setText(
+        card.querySelector(".mana-v978-arrow"),
+        item.action
+      );
 
-    if (!nav || !routine || !reset) return;
+      /* Moves real nodes, keeping handlers. */
 
-    const navButtons = Array.from(
-      nav.querySelectorAll(
-        ".mana-v83-tab[data-v83-tab]"
-      )
-    );
-
-    const routineIndex = navButtons.findIndex(
-      button => button.dataset.v83Tab === "progress"
-    );
-
-    const resetIndex = navButtons.findIndex(
-      button => button.dataset.v83Tab === "reclaim"
-    );
-
-    if (routineIndex < 0 || resetIndex < 0) return;
-
-    const gridCards = Array.from(grid.children);
-
-    const routinePosition = gridCards.indexOf(routine);
-    const resetPosition = gridCards.indexOf(reset);
-
-    if (routinePosition < 0 || resetPosition < 0) {
-      return;
-    }
-
-    const correct =
-      (routineIndex < resetIndex) ===
-      (routinePosition < resetPosition);
-
-    if (correct) return;
-
-    /* Swap only these two elements.
-       Do not replace or clone either card. */
-
-    const marker = document.createComment(
-      "Mana Lyfe card swap"
-    );
-
-    grid.insertBefore(marker,routine);
-    grid.insertBefore(routine,reset);
-    grid.insertBefore(reset,marker);
-    marker.remove();
+      grid.appendChild(card);
+    });
   }
 
-  /* ==========================================
-     SUPPORT CHAT — SAME ACTION AS RESET
+  /* =====================================
+     OVERVIEW SUPPORT CHAT
 
-     Call existing Mana Lyfe support function.
-     Capture once and prevent double actions.
-     ========================================== */
+     Locate the actual OPEN CHAT button,
+     not an assumed old card class.
+     ===================================== */
 
-  function handleSupport(event) {
+  function enhanceSupportCard() {
     if (!isLyfe()) return;
 
-    if (!(event.target instanceof Element)) return;
-
-    const button = event.target.closest(
-      "#manaV83Content " +
-      ".mana-v933-support " +
-      "[data-v933-support-chat]"
+    const holder = document.getElementById(
+      "manaV83Content"
     );
 
-    if (!button) return;
+    if (!holder) return;
 
-    if (
-      typeof window.openManaLifeSupport !== "function"
-    ) return;
+    const buttons = Array.from(
+      holder.querySelectorAll("button")
+    );
 
-    event.preventDefault();
-    event.stopImmediatePropagation();
+    buttons.forEach(button => {
+      const text = button.textContent.trim();
 
-    window.openManaLifeSupport();
+      if (
+        !/^(open chat|open support chat|support chat)\s*[→➜]?$/i
+          .test(text)
+      ) return;
+
+      if (button.closest(".mana-v978-launch")) {
+        return;
+      }
+
+      button.classList.add(
+        "ml170-support-button"
+      );
+
+      /* Identify the surrounding support card. */
+
+      const card = button.closest(
+        ".mana-v933-support, .mana-v933-card, " +
+        ".m1025-support, .mana-v978-support, " +
+        "article, section"
+      ) || button.parentElement;
+
+      if (card) {
+        card.classList.add(
+          "ml170-support-card"
+        );
+      }
+
+      if (button.dataset.ml170SupportBound) {
+        return;
+      }
+
+      button.dataset.ml170SupportBound = "1";
+
+      button.addEventListener(
+        "click",
+        event => {
+          if (!isLyfe()) return;
+
+          if (
+            typeof window.openManaLifeSupport
+            !== "function"
+          ) return;
+
+          event.preventDefault();
+          event.stopImmediatePropagation();
+
+          window.openManaLifeSupport();
+        },
+        true
+      );
+    });
   }
 
-  /* ==========================================
-     LIGHTWEIGHT REFRESH
-     ========================================== */
+  /* =====================================
+     STABLE REFRESH
+     ===================================== */
 
-  let pending = false;
+  let queued = false;
 
   function refresh() {
     const active = isLyfe();
 
     document.body.classList.toggle(
-      BODY_CLASS,active
+      BODY_CLASS,
+      active
     );
 
     if (!active) return;
 
-    updateTabs();
+    updateBottomTabs();
     updateOverview();
+    enhanceSupportCard();
   }
 
   function scheduleRefresh() {
-    if (pending) return;
+    if (queued) return;
 
-    pending = true;
+    queued = true;
 
     requestAnimationFrame(() => {
-      pending = false;
+      queued = false;
       refresh();
     });
   }
@@ -563,15 +562,12 @@
   function afterNavigation() {
     scheduleRefresh();
 
-    /* One extra check for existing
-       asynchronous program rendering. */
+    /* Legacy Overview renderer settles
+       asynchronously after navigation. */
 
-    setTimeout(scheduleRefresh,180);
+    setTimeout(scheduleRefresh,220);
+    setTimeout(scheduleRefresh,700);
   }
-
-  /* ==========================================
-     INITIALISE
-     ========================================== */
 
   function init() {
     let style = document.getElementById(
@@ -586,48 +582,48 @@
 
     style.textContent = CSS;
 
-    document.addEventListener(
-      "click",handleSupport,true
-    );
-
     [
       "mana:program-tab-change",
       "mana:program-change",
       "mana:workout-progress-change"
-    ].forEach(name => {
+    ].forEach(eventName => {
       window.addEventListener(
-        name,afterNavigation
+        eventName,afterNavigation
       );
 
       document.addEventListener(
-        name,afterNavigation
+        eventName,afterNavigation
       );
     });
 
-    document.addEventListener("click",event => {
-      if (!(event.target instanceof Element)) return;
+    document.addEventListener(
+      "click",
+      event => {
+        if (!(event.target instanceof Element)) {
+          return;
+        }
 
-      if (event.target.closest(
-        [
-          "#manaV83Tabs .mana-v83-tab",
-          ".mana-v978-launch",
-          ".mana-v980-day"
-        ].join(",")
-      )) {
-        afterNavigation();
+        if (event.target.closest(
+          "#manaV83Tabs .mana-v83-tab, " +
+          ".mana-v978-launch, " +
+          "#manaV83Back"
+        )) {
+          afterNavigation();
+        }
       }
-    });
-
-    window.addEventListener(
-      "pageshow",afterNavigation
     );
 
-    refresh();
+    window.addEventListener(
+      "pageshow",
+      afterNavigation
+    );
+
+    afterNavigation();
 
     window.MANA_LYFE_FINAL_POLISH = BUILD;
 
     console.log(
-      "MANA LYFE NAVIGATION POLISH",
+      "MANA LYFE OVERVIEW FIX",
       BUILD
     );
   }
