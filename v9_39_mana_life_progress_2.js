@@ -1,212 +1,218 @@
 
-/* ============================================
+/* =================================================
    MANA MOVEMENT TRAINING
-   MANA LYFE — DAILY ROUTINE
-   BUILD 103130
+   MANA LYFE — ROUTINE + RECLAIM
+   BUILD 103140
 
    REPLACES:
    v9_39_mana_life_progress_2.js
 
-   - Progress becomes Daily Routine
-   - 9 practical daily habits
-   - Daily checkbox tracking
-   - Optional daily note
-   - Saved separately by calendar date
-   - Reset Now and Support Chat access
-   - No mental health scoring
-   - Existing Reclaim remains available
+   ROUTINE:
+   - Moves to former Reclaim tab position
+   - Daily checklist only
+   - Preserves previously saved checkboxes
+   - No notes or support buttons
 
-   MANA 28:
-   - Water progress blue
-   - Recovery progress purple
-   - Other progress green
-   - Premium gold outlines
+   RECLAIM:
+   - Moves next to Learning
+   - Prominent green Reset Now
+   - Existing guided Reset questions
+   - Prominent green Support Chat
+   - No journal or mood scoring
 
-   No changes to Mana Strength or workouts.
-   ============================================ */
+   CHAT:
+   - More Support contact details
+
+   BOTH:
+   - Whakatauki at the bottom
+
+   PRESERVES:
+   - Mana Strength and Mana 28
+   - Existing Mana Lyfe workouts
+   - Fuel and Progress
+   - Existing Reset Now modal
+   - Existing coaching chat
+   - Premium gold design
+   ================================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "103130";
-  const STYLE_ID = "mana-lyfe-routine-103130";
-  const ROOT_ID = "manaLyfeDailyRoutine103130";
-  const STORAGE_KEY = "mana-lyfe-daily-routine-103130";
+  const BUILD = "103140";
 
-  if (window.MANA_LYFE_ROUTINE_BUILD === BUILD) return;
+  if (window.MANA_LYFE_ROUTINE_BUILD === BUILD) {
+    return;
+  }
+
+  const STYLE_ID = "mana-lyfe-routine-103140";
+  const ROUTINE_ID = "manaLyfeDailyRoutine103130";
+  const RECLAIM_ID = "manaLyfeReclaim103140";
+
+  /* Keep existing stored routine data. */
+
+  const STORAGE_KEY =
+    "mana-lyfe-daily-routine-103130";
 
   const HABITS = [
-    {
-      key: "bed",
-      name: "Make your bed",
-      detail: "Start your day with one completed action.",
-      icon: "✓"
-    },
-    {
-      key: "water",
-      name: "Drink your water",
-      detail: "Stay hydrated throughout the day.",
-      icon: "◉"
-    },
-    {
-      key: "food",
-      name: "Eat well",
-      detail: "Nourish your body with regular meals.",
-      icon: "✓"
-    },
-    {
-      key: "walk",
-      name: "Go for a walk",
-      detail: "Fresh air, daylight and movement.",
-      icon: "→"
-    },
-    {
-      key: "workout",
-      name: "Workout or move",
-      detail: "Train, stretch or move with purpose.",
-      icon: "✓"
-    },
-    {
-      key: "sleep",
-      name: "Prioritise sleep",
-      detail: "Make time for quality rest and recovery.",
-      icon: "☾"
-    },
-    {
-      key: "journal",
-      name: "Journal or reflect",
-      detail: "Take a moment to organise your thoughts.",
-      icon: "✎"
-    },
-    {
-      key: "connection",
-      name: "Friends and family",
-      detail: "Connect with someone important to you.",
-      icon: "♡"
-    },
-    {
-      key: "support",
-      name: "Reach out for support",
-      detail: "Connect when you need it. Optional.",
-      icon: "♡"
-    }
+    ["bed", "Make your bed",
+     "Start your day with one completed action."],
+
+    ["water", "Drink your water",
+     "Stay hydrated throughout the day."],
+
+    ["food", "Eat well",
+     "Nourish your body with regular meals."],
+
+    ["walk", "Go for a walk",
+     "Fresh air, daylight and movement."],
+
+    ["workout", "Workout or move",
+     "Train, stretch or move with purpose."],
+
+    ["sleep", "Prioritise sleep",
+     "Make time for quality recovery."],
+
+    ["journal", "Journal or reflect",
+     "Take a moment to organise your thoughts."],
+
+    ["connection", "Friends and family",
+     "Connect with someone important to you."],
+
+    ["support", "Reach out for support",
+     "Connect when you need it. Optional."]
   ];
 
-  const CSS = `
-    /* =====================================
-       MANA LYFE DAILY ROUTINE
-       ===================================== */
+  const WHAKATAUKI = `
+    <div class="ml140-whakatauki">
+      <span>WHAKATAUKĪ</span>
+      <strong>
+        Ehara taku toa i te toa takitahi,
+        engari he toa takitini.
+      </strong>
+      <p>
+        My strength is not mine alone,
+        but the strength of many.
+      </p>
+    </div>
+  `;
 
-    #${ROOT_ID} {
+  /* ==========================================
+     VISUAL DESIGN
+     ========================================== */
+
+  const CSS = `
+
+    #${ROUTINE_ID},
+    #${RECLAIM_ID} {
+      width: 100%;
       max-width: 780px;
-      margin: 0 auto 36px;
+      margin: 0 auto 35px;
       color: #f5f5f5;
     }
 
-    #${ROOT_ID} * {
+    #${ROUTINE_ID} *,
+    #${RECLAIM_ID} * {
       box-sizing: border-box;
     }
 
-    #${ROOT_ID} .mlr-header {
-      margin-bottom: 20px;
-    }
-
-    #${ROOT_ID} .mlr-kicker {
+    .ml140-kicker {
       color: #f3d875;
       font-size: 11px;
       font-weight: 900;
       letter-spacing: .13em;
     }
 
-    #${ROOT_ID} h2 {
+    .ml140-heading {
       color: #fff;
       font-size: clamp(27px,6vw,35px);
+      line-height: 1.12;
       font-weight: 950;
-      line-height: 1.1;
-      margin: 8px 0;
+      margin: 9px 0;
     }
 
-    #${ROOT_ID} .mlr-intro {
+    .ml140-intro {
       color: #aaa;
       font-size: 14px;
       line-height: 1.6;
-      margin: 0;
+      margin: 0 0 20px;
     }
 
-    #${ROOT_ID} .mlr-summary {
-      padding: 19px;
+    /* =====================================
+       DAILY ROUTINE
+       ===================================== */
+
+    .ml140-summary {
       border: 1px solid rgba(230,189,72,.68);
-      border-radius: 19px;
-      background: linear-gradient(
-        145deg,#15140f,#090909
-      );
-      margin-bottom: 14px;
+      border-radius: 18px;
+      padding: 18px;
+      background: #11100c;
+      margin-bottom: 15px;
     }
 
-    #${ROOT_ID} .mlr-summary-head {
+    .ml140-summary-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
+      gap: 10px;
+      margin-bottom: 13px;
     }
 
-    #${ROOT_ID} .mlr-summary-head strong {
+    .ml140-count {
       color: #f3d875;
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 900;
     }
 
-    #${ROOT_ID} .mlr-summary-head span {
+    .ml140-percent {
       color: #fff;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 900;
     }
 
-    #${ROOT_ID} .mlr-track {
-      height: 9px;
-      border-radius: 99px;
+    .ml140-track {
+      width: 100%;
+      height: 8px;
       background: #292929;
+      border-radius: 99px;
       overflow: hidden;
     }
 
-    #${ROOT_ID} .mlr-fill {
-      height: 100%;
+    .ml140-fill {
       width: 0%;
+      height: 100%;
       border-radius: inherit;
       background: linear-gradient(
         90deg,#278b57,#45c783
       );
-      transition: width .2s ease;
     }
 
-    #${ROOT_ID} .mlr-date {
-      margin-top: 12px;
+    .ml140-date {
+      margin-top: 11px;
       color: #999;
       font-size: 11px;
     }
 
-    #${ROOT_ID} .mlr-items {
+    .ml140-list {
       display: grid;
       gap: 9px;
     }
 
-    #${ROOT_ID} .mlr-item {
+    .ml140-habit {
       display: flex;
       align-items: center;
-      gap: 14px;
-      padding: 15px;
+      gap: 13px;
+      padding: 14px;
       background: #0c0c0b;
       border: 1px solid rgba(230,189,72,.55);
       border-radius: 15px;
       cursor: pointer;
     }
 
-    #${ROOT_ID} .mlr-item.done {
+    .ml140-habit.done {
       background: #101910;
     }
 
-    #${ROOT_ID} .mlr-checkbox {
+    .ml140-checkbox {
       width: 23px;
       height: 23px;
       flex: 0 0 23px;
@@ -214,12 +220,12 @@
       cursor: pointer;
     }
 
-    #${ROOT_ID} .mlr-item-copy {
+    .ml140-copy {
       flex: 1;
       min-width: 0;
     }
 
-    #${ROOT_ID} .mlr-item-name {
+    .ml140-name {
       display: block;
       color: #fff;
       font-size: 16px;
@@ -227,7 +233,11 @@
       line-height: 1.35;
     }
 
-    #${ROOT_ID} .mlr-item-detail {
+    .ml140-habit.done .ml140-name {
+      color: #f3d875;
+    }
+
+    .ml140-detail {
       display: block;
       color: #999;
       font-size: 12px;
@@ -235,296 +245,657 @@
       margin-top: 4px;
     }
 
-    #${ROOT_ID} .mlr-item.done
-    .mlr-item-name {
-      color: #f3d875;
-    }
+    /* =====================================
+       RECLAIM
+       ===================================== */
 
-    #${ROOT_ID} .mlr-note-card {
-      margin-top: 18px;
+    .ml140-reclaim-card {
       border: 1px solid rgba(230,189,72,.68);
-      border-radius: 17px;
-      padding: 16px;
-      background: #0c0c0b;
+      border-radius: 20px;
+      padding: 22px 18px;
+      background: linear-gradient(
+        145deg,#14140f,#090909
+      );
+      margin-top: 17px;
     }
 
-    #${ROOT_ID} .mlr-note-title {
-      display: block;
+    .ml140-card-title {
       color: #f3d875;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 900;
-      letter-spacing: .06em;
-      margin-bottom: 9px;
+      letter-spacing: .07em;
+      margin: 0 0 10px;
     }
 
-    #${ROOT_ID} .mlr-note {
-      width: 100%;
-      min-height: 88px;
-      background: #111;
-      border: 1px solid rgba(230,189,72,.45);
-      border-radius: 11px;
-      padding: 12px;
-      color: #fff;
-      font: inherit;
+    .ml140-card-text {
+      color: #bbb;
       font-size: 14px;
-      line-height: 1.5;
-      resize: vertical;
+      line-height: 1.65;
+      margin: 0 0 17px;
     }
 
-    #${ROOT_ID} .mlr-note::placeholder {
-      color: #777;
-    }
-
-    #${ROOT_ID} .mlr-note-status {
-      color: #aaa;
-      font-size: 11px;
-      margin-top: 8px;
-      min-height: 16px;
-    }
-
-    #${ROOT_ID} .mlr-actions {
-      display: grid;
-      grid-template-columns: repeat(2,minmax(0,1fr));
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    #${ROOT_ID} .mlr-action {
-      min-height: 55px;
+    .ml140-action {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 60px;
+      padding: 14px 20px;
       border-radius: 999px;
       border: 1px solid #55d98b;
       background: #164b30;
       color: #fff;
+      font-size: 15px;
       font-weight: 900;
-      font-size: 12px;
+      letter-spacing: .045em;
       cursor: pointer;
-      padding: 12px;
-    }
-
-    #${ROOT_ID} .mlr-action:active {
-      background: #216f47;
-    }
-
-    #${ROOT_ID} .mlr-footer {
-      color: #999;
       text-align: center;
-      font-size: 12px;
+    }
+
+    .ml140-action:active {
+      background: #237147;
+    }
+
+    .ml140-help {
+      margin-top: 23px;
+    }
+
+    /* =====================================
+       WHAKATAUKI
+       ===================================== */
+
+    .ml140-whakatauki {
+      margin-top: 24px;
+      padding: 20px 16px;
+      border: 1px solid rgba(230,189,72,.52);
+      border-radius: 17px;
+      background: #0b0b0a;
+      text-align: center;
+    }
+
+    .ml140-whakatauki span {
+      display: block;
+      color: #d7b24a;
+      font-size: 10px;
+      letter-spacing: .16em;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+
+    .ml140-whakatauki strong {
+      display: block;
+      color: #f3d875;
+      font-size: 16px;
+      font-weight: 850;
+      line-height: 1.55;
+    }
+
+    .ml140-whakatauki p {
+      color: #aaa;
+      font-size: 13px;
+      margin: 9px 0 0;
+      line-height: 1.55;
+    }
+
+    /* =====================================
+       SUPPORT CHAT — MORE SUPPORT
+       ===================================== */
+
+    #manaLyfeMoreSupport103140 {
+      border-top: 1px solid rgba(230,189,72,.48);
       margin-top: 18px;
-      line-height: 1.6;
+      padding: 15px 5px 3px;
+      color: #eee;
     }
 
-    /* MANA LYFE GREEN SUPPORT ACTIONS */
-
-    #manaV936Reset,
-    #manaV936Support,
-    #manaV933OpenReset,
-    #manaV933OpenSupport,
-    [data-v933-support-chat],
-    #manaV936Modal .mana-v936-primary {
-      border: 1px solid #55d98b !important;
-      border-radius: 999px !important;
-      background: #164b30 !important;
-      color: #fff !important;
+    #manaLyfeMoreSupport103140 h3 {
+      color: #f3d875;
+      font-size: 16px;
+      margin: 0 0 7px;
     }
 
-    /* MANA 28 PROGRESS */
-
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-card,
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-overall,
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-periods {
-      border-color: rgba(230,189,72,.68) !important;
+    #manaLyfeMoreSupport103140 p {
+      color: #aaa;
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 0 0 12px;
     }
 
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-overall-bar span,
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-bar span {
-      background: linear-gradient(
-        90deg,#278b57,#45c783
-      ) !important;
+    #manaLyfeMoreSupport103140 .ml140-link {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 11px;
+      margin-bottom: 7px;
+      border: 1px solid rgba(230,189,72,.45);
+      border-radius: 11px;
+      background: #111;
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
     }
 
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-card.water
-    .mana-v981-bar span {
-      background: linear-gradient(
-        90deg,#1677bb,#42b8ff
-      ) !important;
-    }
-
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-card.recovery
-    .mana-v981-bar span {
-      background: linear-gradient(
-        90deg,#6f49bb,#a77bff
-      ) !important;
+    #manaLyfeMoreSupport103140 .ml140-link strong {
+      color: #f3d875;
+      white-space: nowrap;
     }
 
     @media(max-width:420px) {
-      #${ROOT_ID} .mlr-item {
-        padding: 13px 12px;
-        gap: 11px;
+      .ml140-habit {
+        padding: 12px;
       }
 
-      #${ROOT_ID} .mlr-item-name {
+      .ml140-name {
         font-size: 15px;
       }
 
-      #${ROOT_ID} .mlr-actions {
-        gap: 8px;
+      .ml140-action {
+        min-height: 56px;
+        font-size: 14px;
       }
     }
   `;
 
-  /* =====================================
-     DATE AND STORAGE
-     ===================================== */
+  /* ==========================================
+     HELPERS
+     ========================================== */
 
-  function todayKey() {
-    const now = new Date();
-
-    return [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2,"0"),
-      String(now.getDate()).padStart(2,"0")
-    ].join("-");
-  }
-
-  function loadStore() {
+  function readJSON(key) {
     try {
-      const data = JSON.parse(
-        localStorage.getItem(STORAGE_KEY) || "{}"
-      );
-      return data && typeof data === "object"
-        ? data : {};
+      return JSON.parse(
+        localStorage.getItem(key) || "{}"
+      ) || {};
     } catch (_) {
       return {};
     }
   }
 
-  function saveStore(store) {
+  function todayKey() {
+    const d = new Date();
+
+    return [
+      d.getFullYear(),
+      String(d.getMonth()+1).padStart(2,"0"),
+      String(d.getDate()).padStart(2,"0")
+    ].join("-");
+  }
+
+  function loadToday() {
+    return readJSON(STORAGE_KEY)[todayKey()] || {};
+  }
+
+  function saveToday(checks) {
+    const store = readJSON(STORAGE_KEY);
+    const old = store[todayKey()] || {};
+
+    store[todayKey()] = {
+      ...old,
+      checks
+    };
+
     try {
       localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify(store)
       );
       return true;
-    } catch (error) {
-      console.warn(
-        "Mana Lyfe routine save unavailable",
-        error
-      );
+    } catch (_) {
       return false;
     }
   }
 
-  function dayData() {
-    const store = loadStore();
-    const day = store[todayKey()] || {};
-
-    return {
-      checks: day.checks || {},
-      note: String(day.note || "")
-    };
-  }
-
-  function updateDay(updater) {
-    const store = loadStore();
-    const key = todayKey();
-
-    const current = {
-      checks: {...(store[key]?.checks || {})},
-      note: String(store[key]?.note || "")
-    };
-
-    updater(current);
-    store[key] = current;
-
-    return saveStore(store);
-  }
-
-  /* =====================================
-     PROGRAM NAVIGATION
-     ===================================== */
-
   function isLyfe() {
-    const shell = document.getElementById(
-      "manaV83ProgramShell"
-    );
-
     const title = String(
       document.getElementById("manaV83Title")
         ?.textContent || ""
     ).trim().toUpperCase();
 
+    const shell = document.getElementById(
+      "manaV83ProgramShell"
+    );
+
     return Boolean(
       shell?.classList.contains("open") &&
-      (title.includes("MANA LYFE") ||
-       title.includes("MANA LIFE"))
-    );
-  }
-
-  function onRoutineTab() {
-    return isLyfe() && Boolean(
-      document.querySelector(
-        '#manaV83Tabs .mana-v83-tab.active' +
-        '[data-v83-tab="progress"]'
+      (
+        title.includes("MANA LYFE") ||
+        title.includes("MANA LIFE")
       )
     );
   }
 
-  function updateTabLabel() {
-    const tab = document.querySelector(
-      '#manaV83Tabs [data-v83-tab="progress"]'
+  function activeTab() {
+    return document.querySelector(
+      "#manaV83Tabs .mana-v83-tab.active"
+    )?.dataset.v83Tab || "";
+  }
+
+  /* ==========================================
+     NAVIGATION SWAP
+
+     Keep original data-v83-tab values.
+     This preserves existing navigation.
+     Move their physical positions only.
+     ========================================== */
+
+  function arrangeTabs() {
+    const nav = document.getElementById(
+      "manaV83Tabs"
     );
 
-    if (!tab) return;
+    if (!nav) return;
+
+    const routine = nav.querySelector(
+      '[data-v83-tab="progress"]'
+    );
+
+    const reclaim = nav.querySelector(
+      '[data-v83-tab="reclaim"]'
+    );
+
+    if (!routine || !reclaim) return;
 
     if (isLyfe()) {
-      if (tab.dataset.mlrOriginalHtml === undefined) {
-        tab.dataset.mlrOriginalHtml = tab.innerHTML;
+      if (!routine.dataset.ml140Original) {
+        routine.dataset.ml140Original =
+          routine.innerHTML;
       }
 
-      /* Retain existing icon artwork. */
-      const textNodes = Array.from(
-        tab.querySelectorAll("span,small,strong")
-      ).filter(node =>
-        node.children.length === 0 &&
-        /^progress$/i.test(node.textContent.trim())
+      if (!reclaim.dataset.ml140Original) {
+        reclaim.dataset.ml140Original =
+          reclaim.innerHTML;
+      }
+
+      const labels = routine.querySelectorAll(
+        "span,small,strong"
       );
 
-      if (textNodes.length) {
-        textNodes[textNodes.length - 1].textContent =
-          "Routine";
-      } else if (
-        /^progress$/i.test(tab.textContent.trim())
-      ) {
-        tab.textContent = "Routine";
+      let changed = false;
+
+      labels.forEach(el => {
+        if (
+          !el.children.length &&
+          /^(progress|routine)$/i.test(
+            el.textContent.trim()
+          )
+        ) {
+          el.textContent = "Routine";
+          changed = true;
+        }
+      });
+
+      if (!changed) {
+        const txt = Array.from(
+          routine.childNodes
+        ).find(node =>
+          node.nodeType === 3 &&
+          /progress/i.test(node.textContent)
+        );
+
+        if (txt) {
+          txt.textContent =
+            txt.textContent.replace(
+              /progress/i,"Routine"
+            );
+        }
       }
-    } else if (
-      tab.dataset.mlrOriginalHtml !== undefined
-    ) {
-      tab.innerHTML = tab.dataset.mlrOriginalHtml;
-      delete tab.dataset.mlrOriginalHtml;
+
+      /* Routine goes where Reclaim was;
+         Reclaim goes where Progress was. */
+
+      if (routine.nextElementSibling !== reclaim) {
+        const marker = document.createComment(
+          "Mana Lyfe tab position"
+        );
+
+        reclaim.parentNode.insertBefore(
+          marker,reclaim
+        );
+
+        routine.parentNode.insertBefore(
+          reclaim,routine
+        );
+
+        marker.parentNode.replaceChild(
+          routine,marker
+        );
+      }
+    } else {
+      [routine,reclaim].forEach(tab => {
+        if (tab.dataset.ml140Original) {
+          tab.innerHTML = tab.dataset.ml140Original;
+          delete tab.dataset.ml140Original;
+        }
+      });
     }
   }
 
-  /* =====================================
-     RENDER ROUTINE
-     ===================================== */
+  /* ==========================================
+     ROUTINE CHECKLIST
+     ========================================== */
 
-  function renderRoutine() {
-    if (!onRoutineTab()) return;
+  function updateSummary(root) {
+    const checks = loadToday().checks || {};
+
+    const done = HABITS.filter(
+      h => Boolean(checks[h[0]])
+    ).length;
+
+    const percent = Math.round(
+      done / HABITS.length * 100
+    );
+
+    root.querySelector(
+      ".ml140-count"
+    ).textContent =
+      done + " of " + HABITS.length + " completed";
+
+    root.querySelector(
+      ".ml140-percent"
+    ).textContent = percent + "%";
+
+    root.querySelector(
+      ".ml140-fill"
+    ).style.width = percent + "%";
+
+    root.querySelector(
+      ".ml140-date"
+    ).textContent =
+      new Date().toLocaleDateString(
+        "en-AU",{
+          weekday:"long",
+          day:"numeric",
+          month:"long"
+        }
+      );
+  }
+
+  function renderRoutine(holder) {
+    if (holder.querySelector("#"+ROUTINE_ID)) {
+      updateSummary(holder);
+      return;
+    }
+
+    const root = document.createElement("section");
+    root.id = ROUTINE_ID;
+
+    root.innerHTML = `
+      <div class="ml140-kicker">
+        MANA LYFE • DAILY ROUTINE
+      </div>
+      <h2 class="ml140-heading">
+        Build the day first.
+      </h2>
+      <p class="ml140-intro">
+        Your daily non-negotiables.
+        Simple actions that build
+        consistency and momentum.
+      </p>
+      <div class="ml140-summary">
+        <div class="ml140-summary-row">
+          <strong class="ml140-count"></strong>
+          <span class="ml140-percent"></span>
+        </div>
+        <div class="ml140-track">
+          <div class="ml140-fill"></div>
+        </div>
+        <div class="ml140-date"></div>
+      </div>
+      <div class="ml140-list"></div>
+      ${WHAKATAUKI}
+    `;
+
+    holder.replaceChildren(root);
+
+    const checks = loadToday().checks || {};
+    const list = root.querySelector(".ml140-list");
+
+    HABITS.forEach(([key,name,detail]) => {
+      const row = document.createElement("label");
+      row.className = "ml140-habit";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "ml140-checkbox";
+      checkbox.checked = Boolean(checks[key]);
+
+      row.classList.toggle(
+        "done",checkbox.checked
+      );
+
+      const copy = document.createElement("span");
+      copy.className = "ml140-copy";
+
+      const heading = document.createElement("strong");
+      heading.className = "ml140-name";
+      heading.textContent = name;
+
+      const secondary = document.createElement("small");
+      secondary.className = "ml140-detail";
+      secondary.textContent = detail;
+
+      copy.append(heading,secondary);
+      row.append(checkbox,copy);
+      list.appendChild(row);
+
+      checkbox.addEventListener("change", () => {
+        const fresh = {
+          ...(loadToday().checks || {})
+        };
+
+        fresh[key] = checkbox.checked;
+
+        if (!saveToday(fresh)) {
+          checkbox.checked = !checkbox.checked;
+          return;
+        }
+
+        row.classList.toggle(
+          "done",checkbox.checked
+        );
+
+        updateSummary(root);
+      });
+    });
+
+    updateSummary(root);
+  }
+
+  /* ==========================================
+     RECLAIM — RESET + SUPPORT ONLY
+     ========================================== */
+
+  function renderReclaim(holder) {
+    if (holder.querySelector("#"+RECLAIM_ID)) {
+      return;
+    }
+
+    const root = document.createElement("section");
+    root.id = RECLAIM_ID;
+
+    root.innerHTML = `
+      <div class="ml140-kicker">
+        MANA LYFE • RECLAIM
+      </div>
+
+      <h2 class="ml140-heading">
+        Reset. Rebuild. Move Forward.
+      </h2>
+
+      <p class="ml140-intro">
+        When you need to reset, start here.
+        A few simple steps can help
+        you choose what comes next.
+      </p>
+
+      <div class="ml140-reclaim-card">
+        <h3 class="ml140-card-title">
+          RESET NOW
+        </h3>
+
+        <p class="ml140-card-text">
+          Follow a short guided reset
+          with breathing, simple questions
+          and practical next steps.
+        </p>
+
+        <button
+          type="button"
+          class="ml140-action"
+          id="ml140OpenReset">
+          ↻ RESET NOW
+        </button>
+      </div>
+
+      <div class="ml140-reclaim-card ml140-help">
+        <h3 class="ml140-card-title">
+          SUPPORT & CONNECTION
+        </h3>
+
+        <p class="ml140-card-text">
+          You don't have to work
+          everything out on your own.
+          Reach out when you need guidance.
+        </p>
+
+        <button
+          type="button"
+          class="ml140-action"
+          id="ml140OpenChat">
+          ♡ SUPPORT CHAT
+        </button>
+      </div>
+
+      ${WHAKATAUKI}
+    `;
+
+    holder.replaceChildren(root);
+
+    root.querySelector(
+      "#ml140OpenReset"
+    ).addEventListener("click", () => {
+      if (
+        typeof window.openManaLifeReset ===
+        "function"
+      ) {
+        window.openManaLifeReset();
+      }
+    });
+
+    root.querySelector(
+      "#ml140OpenChat"
+    ).addEventListener("click", () => {
+      if (
+        typeof window.openManaLifeSupport ===
+        "function"
+      ) {
+        window.openManaLifeSupport();
+        scheduleSupport();
+      }
+    });
+  }
+
+  /* ==========================================
+     MORE SUPPORT INSIDE CHAT
+     ========================================== */
+
+  function addMoreSupport() {
+    if (!isLyfe()) return;
+
+    const chat = document.getElementById(
+      "manaV95ChatModal"
+    );
+
+    if (!chat) return;
+
+    if (
+      chat.querySelector(
+        "#manaLyfeMoreSupport103140"
+      )
+    ) return;
+
+    const panel = document.createElement("section");
+    panel.id = "manaLyfeMoreSupport103140";
+
+    panel.innerHTML = `
+      <h3>More Support</h3>
+
+      <p>
+        Your coach can offer guidance,
+        but is not an emergency or
+        crisis support service.
+        If you need additional support,
+        these Australian services can help.
+      </p>
+
+      <a class="ml140-link"
+         href="tel:131114">
+        <span>Lifeline</span>
+        <strong>13 11 14</strong>
+      </a>
+
+      <a class="ml140-link"
+         href="tel:1300224636">
+        <span>Beyond Blue</span>
+        <strong>1300 22 4636</strong>
+      </a>
+
+      <a class="ml140-link"
+         href="tel:139276">
+        <span>13YARN</span>
+        <strong>13 92 76</strong>
+      </a>
+
+      <a class="ml140-link"
+         href="tel:000">
+        <span>Emergency assistance</span>
+        <strong>000</strong>
+      </a>
+
+      <p>
+        If you or someone else is in
+        immediate danger, call 000.
+      </p>
+    `;
+
+    const target =
+      chat.querySelector(".mana-v950-body") ||
+      chat.querySelector(".mana-v950-content") ||
+      chat;
+
+    target.appendChild(panel);
+  }
+
+  let supportQueued = false;
+
+  function scheduleSupport() {
+    if (supportQueued) return;
+
+    supportQueued = true;
+
+    requestAnimationFrame(() => {
+      supportQueued = false;
+      addMoreSupport();
+    });
+  }
+
+  /* ==========================================
+     PAGE SYNC
+
+     The older Mana Lyfe scripts still own
+     navigation. Only replace content while
+     the matching tab is active.
+
+     Do not observe styles or Fuel.
+     ========================================== */
+
+  let queued = false;
+
+  function sync() {
+    if (!isLyfe()) {
+      return;
+    }
+
+    arrangeTabs();
 
     const holder = document.getElementById(
       "manaV83Content"
@@ -532,246 +903,41 @@
 
     if (!holder) return;
 
-    const existing = document.getElementById(
-      ROOT_ID
-    );
+    const tab = activeTab();
 
-    if (existing && existing.parentElement === holder) {
-      updateSummary(existing);
-      return;
+    if (tab === "progress") {
+      renderRoutine(holder);
     }
 
-    holder.replaceChildren();
-
-    const root = document.createElement("section");
-    root.id = ROOT_ID;
-
-    root.innerHTML = `
-      <header class="mlr-header">
-        <div class="mlr-kicker">
-          MANA LYFE • DAILY ROUTINE
-        </div>
-        <h2>Build the day first.</h2>
-        <p class="mlr-intro">
-          Your daily non-negotiables.
-          Simple actions that build consistency,
-          confidence and momentum.
-        </p>
-      </header>
-
-      <div class="mlr-summary">
-        <div class="mlr-summary-head">
-          <strong class="mlr-count"></strong>
-          <span class="mlr-percent"></span>
-        </div>
-        <div class="mlr-track">
-          <div class="mlr-fill"></div>
-        </div>
-        <div class="mlr-date"></div>
-      </div>
-
-      <div class="mlr-items"></div>
-
-      <div class="mlr-note-card">
-        <label class="mlr-note-title"
-               for="mlrDailyNote">
-          DAILY NOTES • OPTIONAL
-        </label>
-        <textarea
-          id="mlrDailyNote"
-          class="mlr-note"
-          maxlength="1000"
-          placeholder="Anything you want to remember, plan or celebrate today."
-        ></textarea>
-        <div class="mlr-note-status">
-          Private note saved on this device.
-        </div>
-      </div>
-
-      <div class="mlr-actions">
-        <button type="button"
-                class="mlr-action"
-                id="mlrResetNow">
-          ↻ RESET NOW
-        </button>
-        <button type="button"
-                class="mlr-action"
-                id="mlrSupportChat">
-          ♡ SUPPORT CHAT
-        </button>
-      </div>
-
-      <p class="mlr-footer">
-        You don't need a perfect day.
-        Just keep moving with purpose.
-      </p>
-    `;
-
-    holder.appendChild(root);
-
-    const items = root.querySelector(".mlr-items");
-    const state = dayData();
-
-    HABITS.forEach(habit => {
-      const label = document.createElement("label");
-
-      label.className = "mlr-item";
-      label.dataset.habit = habit.key;
-
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.className = "mlr-checkbox";
-      checkbox.checked = Boolean(
-        state.checks[habit.key]
-      );
-
-      const copy = document.createElement("span");
-      copy.className = "mlr-item-copy";
-
-      const name = document.createElement("strong");
-      name.className = "mlr-item-name";
-      name.textContent = habit.name;
-
-      const detail = document.createElement("small");
-      detail.className = "mlr-item-detail";
-      detail.textContent = habit.detail;
-
-      copy.append(name,detail);
-      label.append(checkbox,copy);
-
-      if (checkbox.checked) {
-        label.classList.add("done");
-      }
-
-      checkbox.addEventListener("change", () => {
-        const saved = updateDay(day => {
-          day.checks[habit.key] = checkbox.checked;
-        });
-
-        label.classList.toggle(
-          "done",checkbox.checked
-        );
-
-        updateSummary(root);
-
-        if (!saved) {
-          const status = root.querySelector(
-            ".mlr-note-status"
-          );
-          status.textContent =
-            "Unable to save on this device.";
-        }
-      });
-
-      items.appendChild(label);
-    });
-
-    const note = root.querySelector(".mlr-note");
-    note.value = state.note;
-
-    note.addEventListener("change", () => {
-      const saved = updateDay(day => {
-        day.note = note.value;
-      });
-
-      root.querySelector(
-        ".mlr-note-status"
-      ).textContent = saved
-        ? "Daily note saved on this device."
-        : "Unable to save on this device.";
-    });
-
-    root.querySelector(
-      "#mlrResetNow"
-    ).addEventListener("click", () => {
-      if (typeof window.openManaLifeReset === "function") {
-        window.openManaLifeReset();
-      } else {
-        alert("Reset Now is unavailable.");
-      }
-    });
-
-    root.querySelector(
-      "#mlrSupportChat"
-    ).addEventListener("click", () => {
-      if (typeof window.openManaLifeSupport === "function") {
-        window.openManaLifeSupport();
-      } else {
-        alert("Support Chat is unavailable.");
-      }
-    });
-
-    updateSummary(root);
-  }
-
-  function updateSummary(root) {
-    const state = dayData();
-
-    const completed = HABITS.filter(
-      habit => Boolean(state.checks[habit.key])
-    ).length;
-
-    const percent = Math.round(
-      completed / HABITS.length * 100
-    );
-
-    const count = root.querySelector(".mlr-count");
-    const percentage = root.querySelector(
-      ".mlr-percent"
-    );
-    const fill = root.querySelector(".mlr-fill");
-    const date = root.querySelector(".mlr-date");
-
-    if (count) {
-      count.textContent =
-        completed + " of " + HABITS.length +
-        " completed";
-    }
-
-    if (percentage) {
-      percentage.textContent = percent + "%";
-    }
-
-    if (fill) {
-      fill.style.width = percent + "%";
-    }
-
-    if (date) {
-      date.textContent =
-        new Date().toLocaleDateString(
-          "en-AU",{
-            weekday:"long",
-            day:"numeric",
-            month:"long"
-          }
-        );
+    if (tab === "reclaim") {
+      renderReclaim(holder);
     }
   }
 
-  /* =====================================
-     STABLE PAGE HANDLING
-     ===================================== */
+  function scheduleSync() {
+    if (queued) return;
 
-  let pending = false;
-
-  function refresh() {
-    updateTabLabel();
-
-    if (onRoutineTab()) {
-      renderRoutine();
-    }
-  }
-
-  function scheduleRefresh() {
-    if (pending) return;
-
-    pending = true;
+    queued = true;
 
     requestAnimationFrame(() => {
-      pending = false;
-      refresh();
+      queued = false;
+      sync();
     });
   }
+
+  function afterNavigation() {
+    scheduleSync();
+
+    /* Legacy Mana Lyfe renderers run after
+       tab changes. Perform a settling check. */
+
+    setTimeout(scheduleSync,180);
+    setTimeout(scheduleSync,380);
+  }
+
+  /* ==========================================
+     INITIALISE
+     ========================================== */
 
   function init() {
     if (!document.getElementById(STYLE_ID)) {
@@ -781,18 +947,28 @@
       document.head.appendChild(style);
     }
 
-    /* Watch only client content and navigation.
-       Avoid monitoring Fuel or style changes. */
-
     const holder = document.getElementById(
       "manaV83Content"
     );
 
     if (holder) {
       const observer = new MutationObserver(() => {
-        if (onRoutineTab() &&
-            !holder.querySelector("#" + ROOT_ID)) {
-          scheduleRefresh();
+        if (!isLyfe()) return;
+
+        const tab = activeTab();
+
+        if (
+          tab === "progress" &&
+          !holder.querySelector("#"+ROUTINE_ID)
+        ) {
+          scheduleSync();
+        }
+
+        if (
+          tab === "reclaim" &&
+          !holder.querySelector("#"+RECLAIM_ID)
+        ) {
+          scheduleSync();
         }
       });
 
@@ -804,9 +980,14 @@
     [
       "mana:program-tab-change",
       "mana:program-change"
-    ].forEach(name => {
-      window.addEventListener(name,scheduleRefresh);
-      document.addEventListener(name,scheduleRefresh);
+    ].forEach(eventName => {
+      window.addEventListener(
+        eventName,afterNavigation
+      );
+
+      document.addEventListener(
+        eventName,afterNavigation
+      );
     });
 
     document.addEventListener("click",event => {
@@ -815,25 +996,37 @@
       if (event.target.closest(
         "#manaV83Tabs .mana-v83-tab"
       )) {
-        setTimeout(scheduleRefresh,160);
+        afterNavigation();
+      }
+
+      if (event.target.closest(
+        "[data-v933-support-chat], " +
+        "#manaV936Support"
+      )) {
+        scheduleSupport();
+        setTimeout(scheduleSupport,200);
       }
     });
 
-    window.addEventListener("pageshow",scheduleRefresh);
+    window.addEventListener(
+      "pageshow",afterNavigation
+    );
 
-    refresh();
+    afterNavigation();
 
     window.MANA_LYFE_ROUTINE_BUILD = BUILD;
 
     console.log(
-      "MANA LYFE DAILY ROUTINE",
+      "MANA LYFE ROUTINE + RECLAIM",
       BUILD
     );
   }
 
   if (document.readyState === "loading") {
     document.addEventListener(
-      "DOMContentLoaded",init,{once:true}
+      "DOMContentLoaded",
+      init,
+      {once:true}
     );
   } else {
     init();
