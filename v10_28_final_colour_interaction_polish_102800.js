@@ -1,1914 +1,630 @@
-/* =========================================
-   MANA MOVEMENT TRAINING v10.28.1
-   COLOUR + INTERACTION POLISH
 
-   BUILD: 102810
+/* ==========================================
+   MANA MOVEMENT TRAINING
+   VISUAL + FUEL STABILITY
+   VERSION 10.28.2
+   BUILD 103100
 
-   SEMANTIC COLOURS
-   -----------------------------------------
-   COACH / SUPPORT / UPGRADE = GREEN
-   PROGRESS                  = PURPLE
-   LEARNING                  = ORANGE
+   REPLACES:
+   v10_28_final_colour_interaction_polish_102800.js
 
-   ALSO
-   -----------------------------------------
-   - Fuel manual controls update in place
-   - No Fuel flicker
-   - Progress icons
-   - Learning icons
+   PURPOSE:
+   - Stop repeated stylesheet removal
+   - Stop unnecessary Fuel value rewrites
+   - Preserve water logging
+   - Preserve recovery logging
+   - Preserve Progress and Learning icons
+   - Preserve green coaching actions
+   - Let newer premium colour scripts
+     control the finished visual design
+
+   IMPORTANT:
+   - No repeating timers
    - No MutationObserver
-   ========================================= */
+   - No page rebuild
+   - No changes to stored data structure
+   ========================================== */
 
 (() => {
   "use strict";
 
-
-  const BUILD =
-    "102810";
-
+  const BUILD = "103100";
 
   const STYLE_ID =
     "mana-v10281-final-polish";
 
+  if (
+    window.MANA_FINAL_POLISH_BUILD === BUILD
+  ) return;
 
-  const GREEN =
-    "#55d98b";
+  const GREEN = "#55d98b";
+  const GOLD = "#f3d875";
 
+  const FUEL_KEY = "mana-fuel-v571";
+  const TARGET_KEY = "mana-fuel-v58-targets";
+  const DAILY_KEY = "mana-strength-v866-daily";
 
-  const PURPLE =
-    "#a681dc";
-
-
-  const ORANGE =
-    "#e98a54";
-
-
-  const FUEL_KEY =
-    "mana-fuel-v571";
-
-
-  const TARGET_KEY =
-    "mana-fuel-v58-targets";
-
-
-  const DAILY_KEY =
-    "mana-strength-v866-daily";
-
-
-  /* =========================================
+  /* ========================================
      ICONS
-     ========================================= */
+     ======================================== */
 
   const ICONS = {
-
-
-    progress:`
-
-      <svg
-        viewBox="0 0 64 64"
-        aria-hidden="true"
-      >
-
-        <path
-          d="
-            M12 50
-            H52
-          "
-          fill="none"
-          stroke="currentColor"
-          stroke-width="4"
-          stroke-linecap="round"
-        />
-
-        <path
-          d="
-            M16 44
-            L27 33
-            L36 38
-            L50 19
-          "
-          fill="none"
-          stroke="currentColor"
-          stroke-width="5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
-        <path
-          d="
-            M41 19
-            H50
-            V28
-          "
-          fill="none"
-          stroke="currentColor"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
+    progress: `
+      <svg viewBox="0 0 64 64"
+           aria-hidden="true">
+        <path d="M12 50 H52"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="4"
+              stroke-linecap="round"/>
+        <path d="M16 44 L27 33 L36 38 L50 19"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="5"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+        <path d="M41 19 H50 V28"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
       </svg>
-
     `,
-
-
-    learning:`
-
-      <svg
-        viewBox="0 0 64 64"
-        aria-hidden="true"
-      >
-
-        <path
-          d="
-            M32 15
-            C25 9 17 9 10 13
-            V47
-            C17 43 25 44 32 50
-          "
-          fill="none"
-          stroke="currentColor"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
-        <path
-          d="
-            M32 15
-            C39 9 47 9 54 13
-            V47
-            C47 43 39 44 32 50
-          "
-          fill="none"
-          stroke="currentColor"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        />
-
-        <path
-          d="
-            M32 15
-            V50
-          "
-          fill="none"
-          stroke="currentColor"
-          stroke-width="4"
-          stroke-linecap="round"
-        />
-
+    learning: `
+      <svg viewBox="0 0 64 64"
+           aria-hidden="true">
+        <path d="M32 15 C25 9 17 9 10 13
+                 V47 C17 43 25 44 32 50"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+        <path d="M32 15 C39 9 47 9 54 13
+                 V47 C47 43 39 44 32 50"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="4"
+              stroke-linecap="round"
+              stroke-linejoin="round"/>
+        <path d="M32 15 V50"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="4"
+              stroke-linecap="round"/>
       </svg>
-
     `
-
   };
 
-
-  /* =========================================
-     CSS
-     ========================================= */
-
-  function installStyles() {
-
-    document
-      .getElementById(
-        STYLE_ID
-      )
-      ?.remove();
-
-
-    const style =
-      document.createElement(
-        "style"
-      );
-
-
-    style.id =
-      STYLE_ID;
-
-
-    style.textContent = `
-
-
-      /* =====================================
-         READY FOR YOUR NEXT BLOCK
-         GREEN
-         ===================================== */
-
-      #manaV1017ProgramBlock
-      .m1017-request{
-
-        border:
-          1px solid
-          rgba(
-            85,
-            217,
-            139,
-            .72
-          ) !important;
-
-        background:
-
-          radial-gradient(
-            circle at top right,
-            rgba(
-              85,
-              217,
-              139,
-              .11
-            ),
-            transparent
-            46%
-          ),
-
-          linear-gradient(
-            145deg,
-            #101713,
-            #090909
-          ) !important;
-
-        box-shadow:
-          0
-          12px
-          30px
-          rgba(
-            0,
-            0,
-            0,
-            .23
-          ) !important;
-
-      }
-
-
-      #manaV1017ProgramBlock
-      .m1017-request-title{
-
-        color:
-          #fff !important;
-
-      }
-
-
-      #manaV1017ProgramBlock
-      .m1017-request-text{
-
-        color:
-          #aaa !important;
-
-      }
-
-
-      #manaV1017ProgramBlock
-      .m1017-request-btn{
-
-        border:
-          1px solid
-          ${GREEN} !important;
-
-        background:
-          rgba(
-            85,
-            217,
-            139,
-            .06
-          ) !important;
-
-        color:
-          #dff9e8 !important;
-
-        box-shadow:
-          0
-          0
-          16px
-          rgba(
-            85,
-            217,
-            139,
-            .08
-          ) !important;
-
-      }
-
-
-      #manaV1017ProgramBlock
-      .m1017-status{
-
-        border-color:
-          rgba(
-            85,
-            217,
-            139,
-            .46
-          ) !important;
-
-        background:
-          rgba(
-            85,
-            217,
-            139,
-            .04
-          ) !important;
-
-        color:
-          #b6e5c7 !important;
-
-      }
-
-
-      #manaV1017ProgramBlock
-      .m1017-ready{
-
-        border-color:
-          ${GREEN} !important;
-
-        color:
-          ${GREEN} !important;
-
-      }
-
-
-      /* =====================================
-         MANA LYFE SUPPORT CARD
-         GREEN
-         ===================================== */
-
-      #manaV933Life
-      .mana-v933-card.mana-v933-support{
-
-        border:
-          1px solid
-          rgba(
-            85,
-            217,
-            139,
-            .72
-          ) !important;
-
-        background:
-
-          radial-gradient(
-            circle at top right,
-            rgba(
-              85,
-              217,
-              139,
-              .10
-            ),
-            transparent
-            45%
-          ),
-
-          linear-gradient(
-            145deg,
-            #101713,
-            #090909
-          ) !important;
-
-      }
-
-
-      #manaV933Life
-      .mana-v933-support
-      .mana-v933-kicker{
-
-        color:
-          ${GREEN} !important;
-
-      }
-
-
-      #manaV933Life
-      .mana-v933-support
-      .mana-v933-pill{
-
-        border:
-          1px solid
-          ${GREEN} !important;
-
-        background:
-          rgba(
-            85,
-            217,
-            139,
-            .06
-          ) !important;
-
-        color:
-          ${GREEN} !important;
-
-      }
-
-
-      #manaV933Life
-      .mana-v933-support
-      .mana-v933-primary{
-
-        border:
-          1px solid
-          ${GREEN} !important;
-
-        background:
-          rgba(
-            85,
-            217,
-            139,
-            .06
-          ) !important;
-
-        color:
-          #dff9e8 !important;
-
-      }
-
-
-      /* =====================================
-         MANA LYFE CHAT MODAL
-         GREEN
-         ===================================== */
-
-      #manaV95ChatModal.mana-v935-life-mode
-      .mana-v950-header{
-
-        border-bottom:
-          1px solid
-          rgba(
-            85,
-            217,
-            139,
-            .30
-          ) !important;
-
-        background:
-          linear-gradient(
-            180deg,
-            #101713,
-            #090909
-          ) !important;
-
-      }
-
-
-      #manaV95ChatModal.mana-v935-life-mode
-      .mana-v950-header-kicker{
-
-        color:
-          ${GREEN} !important;
-
-      }
-
-
-      #manaV935LifeChatIntro
-      .mana-v935-intro-inner{
-
-        border:
-          1px solid
-          rgba(
-            85,
-            217,
-            139,
-            .56
-          ) !important;
-
-        background:
-          linear-gradient(
-            145deg,
-            #101713,
-            #090909
-          ) !important;
-
-      }
-
-
-      #manaV935LifeChatIntro
-      .mana-v935-intro-kicker{
-
-        color:
-          ${GREEN} !important;
-
-      }
-
-
-      #manaV935LifeChatQuick
-      .mana-v935-quick-btn{
-
-        border:
-          1px solid
-          rgba(
-            85,
-            217,
-            139,
-            .50
-          ) !important;
-
-        background:
-          rgba(
-            85,
-            217,
-            139,
-            .04
-          ) !important;
-
-        color:
-          #c8eed6 !important;
-
-      }
-
-
-      #manaV95ChatModal.mana-v935-life-mode
-      .mana-v950-input{
-
-        border-color:
-          rgba(
-            85,
-            217,
-            139,
-            .50
-          ) !important;
-
-      }
-
-
-      #manaV95ChatModal.mana-v935-life-mode
-      .mana-v950-send{
-
-        border:
-          1px solid
-          ${GREEN} !important;
-
-        background:
-          rgba(
-            85,
-            217,
-            139,
-            .08
-          ) !important;
-
-        color:
-          #e1f8e9 !important;
-
-      }
-
-
-      /* =====================================
-         STRENGTH PROGRESS
-         PURPLE
-         ===================================== */
-
-      #manaV993StrengthProgress
-      .mana-v993-periods,
-
-      #manaV993StrengthProgress
-      .mana-v993-metric,
-
-      #manaV993StrengthProgress
-      .mana-v993-detail-btn,
-
-      #manaV993StrengthProgress
-      .mana-v993-panel,
-
-      #manaV993StrengthProgress
-      .mana-v993-summary,
-
-      #manaV993StrengthProgress
-      .mana-v993-exercise-select{
-
-        border-color:
-          rgba(
-            166,
-            129,
-            220,
-            .68
-          ) !important;
-
-      }
-
-
-      #manaV993StrengthProgress
-      .mana-v993-row{
-
-        border-top-color:
-          rgba(
-            166,
-            129,
-            220,
-            .30
-          ) !important;
-
-      }
-
-
-      #manaV993StrengthProgress
-      .mana-v993-period.active,
-
-      #manaV993StrengthProgress
-      .mana-v993-detail-btn.active{
-
-        border:
-          1px solid
-          ${PURPLE} !important;
-
-        background:
-          rgba(
-            166,
-            129,
-            220,
-            .08
-          ) !important;
-
-        color:
-          ${PURPLE} !important;
-
-        box-shadow:
-          0
-          0
-          16px
-          rgba(
-            166,
-            129,
-            220,
-            .10
-          ) !important;
-
-      }
-
-
-      #manaV993StrengthProgress
-      .mana-v993-fill{
-
-        background:
-          ${PURPLE} !important;
-
-      }
-
-
-      #manaV993StrengthProgress
-      .mana-v993-kicker,
-
-      #manaV993StrengthProgress
-      .mana-v993-panel-kicker{
-
-        color:
-          ${PURPLE} !important;
-
-      }
-
-
-      /* =====================================
-         MANA 28 PROGRESS
-         PURPLE
-         ===================================== */
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-periods,
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-overall,
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-card,
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-message{
-
-        border-color:
-          rgba(
-            166,
-            129,
-            220,
-            .68
-          ) !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-period.active{
-
-        background:
-          rgba(
-            166,
-            129,
-            220,
-            .10
-          ) !important;
-
-        color:
-          ${PURPLE} !important;
-
-        box-shadow:
-          inset
-          0
-          0
-          0
-          1px
-          ${PURPLE} !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-icon{
-
-        border:
-          1px solid
-          ${PURPLE} !important;
-
-        background:
-          rgba(
-            166,
-            129,
-            220,
-            .06
-          ) !important;
-
-        color:
-          ${PURPLE} !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-kicker,
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-overall-label{
-
-        color:
-          ${PURPLE} !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-overall::before,
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-message::before{
-
-        background:
-          ${PURPLE} !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-overall-bar span,
-
-      #manaV83Content
-      .mana-v981-root
-      .mana-v981-bar span{
-
-        background:
-          ${PURPLE} !important;
-
-      }
-
-
-      /* =====================================
-         MANA LYFE PROGRESS
-         PURPLE
-         ===================================== */
-
-      #manaV939Progress2
-      .mana-v939-range button,
-
-      #manaV939Progress2
-      .mana-v939-card,
-
-      #manaV939Progress2
-      .mana-v939-stat,
-
-      #manaV939Progress2
-      .mana-v939-insight,
-
-      #manaV939Progress2
-      .mana-v939-recent-row{
-
-        border-color:
-          rgba(
-            166,
-            129,
-            220,
-            .68
-          ) !important;
-
-      }
-
-
-      #manaV939Progress2
-      .mana-v939-range button.active{
-
-        border-color:
-          ${PURPLE} !important;
-
-        background:
-          rgba(
-            166,
-            129,
-            220,
-            .08
-          ) !important;
-
-        color:
-          ${PURPLE} !important;
-
-      }
-
-
-      #manaV939Progress2
-      .mana-v939-kicker,
-
-      #manaV939Progress2
-      .mana-v939-stat strong,
-
-      #manaV939Progress2
-      .mana-v939-recent-row strong{
-
-        color:
-          ${PURPLE} !important;
-
-      }
-
-
-      #manaV939Progress2
-      .mana-v939-fill,
-
-      #manaV939Progress2
-      .mana-v939-mood-bar{
-
-        background:
-          ${PURPLE} !important;
-
-      }
-
-
-      /* =====================================
-         LEARNING
-         ORANGE
-         ===================================== */
-
-      #manaV83Content
-      .mana-v985-head{
-
-        border-bottom-color:
-          rgba(
-            233,
-            138,
-            84,
-            .45
-          ) !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v985-head::after{
-
-        background:
-          linear-gradient(
-            90deg,
-            ${ORANGE},
-            transparent
-          ) !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v985-kicker{
-
-        color:
-          ${ORANGE} !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v985-learn-card{
-
-        border:
-          1px solid
-          rgba(
-            233,
-            138,
-            84,
-            .68
-          ) !important;
-
-        background:
-          linear-gradient(
-            145deg,
-            #17110e,
-            #090909
-          ) !important;
-
-      }
-
-
-      #manaV83Content
-      .mana-v985-learn-button
-      > span:last-child{
-
-        color:
-          ${ORANGE} !important;
-
-      }
-
-
-      /* =====================================
-         MANA LYFE LEARNING
-         ORANGE
-         ===================================== */
-
-      #manaV933Life
-      .mana-v933-learn-item{
-
-        border:
-          1px solid
-          rgba(
-            233,
-            138,
-            84,
-            .68
-          ) !important;
-
-        background:
-          #0c0908 !important;
-
-      }
-
-
-      #manaV933Life
-      .mana-v933-learn-button
-      > span:last-child{
-
-        color:
-          ${ORANGE} !important;
-
-      }
-
-
-      /* =====================================
-         SECTION ICONS
-         ===================================== */
-
-      .m1028-section-title{
-
-        display:
-          flex !important;
-
-        align-items:
-          center !important;
-
-        gap:
-          12px !important;
-
-      }
-
-
-      .m1028-section-icon{
-
-        flex:
-          0 0
-          42px !important;
-
-        width:
-          42px !important;
-
-        height:
-          42px !important;
-
-        display:
-          grid !important;
-
-        place-items:
-          center !important;
-
-        border:
-          1px solid
-          currentColor !important;
-
-        border-radius:
-          13px !important;
-
-        background:
-          #090909 !important;
-
-      }
-
-
-      .m1028-section-icon svg{
-
-        width:
-          27px !important;
-
-        height:
-          27px !important;
-
-      }
-
-
-      .m1028-progress-icon{
-
-        color:
-          ${PURPLE} !important;
-
-      }
-
-
-      .m1028-learning-icon{
-
-        color:
-          ${ORANGE} !important;
-
-      }
-
-
-      /* =====================================
-         FUEL
-         IN-PLACE MANUAL UPDATE
-         ===================================== */
-
-      #manaV1015Fuel
-      .m1022-target.water,
-
-      #manaV1015Fuel
-      .m1022-target.recovery{
-
-        transition:
-          border-color .15s ease,
-          box-shadow .15s ease !important;
-
-      }
-
-    `;
-
-
-    document.head
-      .appendChild(
-        style
-      );
-
-  }
-
-
-  /* =========================================
-     JSON
-     ========================================= */
-
-  function safeJson(
-    raw,
-    fallback = {}
-  ) {
-
-    try {
-
-      const value =
-        JSON.parse(
-          raw || ""
-        );
-
-
-      return (
-        value &&
-        typeof value ===
-          "object"
-      )
-        ? value
-        : fallback;
-
-    } catch {
-
-      return fallback;
-
+  /* ========================================
+     STYLES - INSTALL ONCE
+     ======================================== */
+
+  const CSS = `
+    .m1028-section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
+    .m1028-section-icon {
+      flex: 0 0 42px;
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      background: #090909;
+      border: 1px solid
+        rgba(230,189,72,.65);
+      border-radius: 13px;
+    }
+
+    .m1028-section-icon svg {
+      width: 27px;
+      height: 27px;
+    }
+
+    .m1028-progress-icon {
+      color: ${GOLD};
+    }
+
+    .m1028-learning-icon {
+      color: ${GOLD};
+    }
+
+    /* COACH AND UPGRADE ACTIONS */
+
+    #manaV1017ProgramBlock .m1017-request {
+      border-color: rgba(85,217,139,.65);
+      background: linear-gradient(
+        145deg,#101713,#090909
+      );
+    }
+
+    #manaV1017ProgramBlock .m1017-request-btn {
+      border: 1px solid ${GREEN};
+      background: #164b30;
+      color: #fff;
+    }
+
+    #manaV1017ProgramBlock .m1017-request-btn:hover {
+      background: #207046;
+    }
+
+    #manaV933Life .mana-v933-support {
+      border-color: rgba(85,217,139,.65);
+    }
+
+    #manaV933Life .mana-v933-support
+    .mana-v933-kicker {
+      color: ${GREEN};
+    }
+
+    #manaV95ChatModal.mana-v935-life-mode
+    .mana-v950-header {
+      border-bottom-color:
+        rgba(85,217,139,.3);
+    }
+
+    #manaV95ChatModal.mana-v935-life-mode
+    .mana-v950-header-kicker {
+      color: ${GREEN};
+    }
+
+    /* STABLE FUEL TARGET DISPLAY */
+
+    #manaV1015Fuel .m1022-target,
+    #manaV1015Fuel .m1022-target-value,
+    #manaV1015Fuel .m1022-bar,
+    #manaV1015Fuel .m1022-bar span {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    /* Keep the established colours */
+
+    #manaV1015Fuel
+    .m1022-target.calories .m1022-bar span,
+    #manaV1015Fuel
+    .m1022-target.protein .m1022-bar span {
+      background: linear-gradient(
+        90deg,#278b57,#45c783
+      ) !important;
+    }
+
+    #manaV1015Fuel
+    .m1022-target.water .m1022-bar span {
+      background: linear-gradient(
+        90deg,#1677bb,#42b8ff
+      ) !important;
+    }
+
+    #manaV1015Fuel
+    .m1022-target.recovery .m1022-bar span {
+      background: linear-gradient(
+        90deg,#6f49bb,#a77bff
+      ) !important;
+    }
+  `;
+
+  function installStyles() {
+    if (document.getElementById(STYLE_ID)) {
+      return;
+    }
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = CSS;
+    document.head.appendChild(style);
   }
 
+  /* ========================================
+     STORAGE HELPERS
+     ======================================== */
 
-  /* =========================================
-     DATE KEY
-     ========================================= */
+  function readJSON(key) {
+    try {
+      return JSON.parse(
+        localStorage.getItem(key) || "{}"
+      ) || {};
+    } catch (_) {
+      return {};
+    }
+  }
 
   function todayKey() {
-
-    const d =
-      new Date();
-
+    const date = new Date();
 
     return [
-
-      d.getFullYear(),
-
-      String(
-        d.getMonth() + 1
-      ).padStart(
-        2,
-        "0"
-      ),
-
-      String(
-        d.getDate()
-      ).padStart(
-        2,
-        "0"
-      )
-
-    ].join(
-      "-"
-    );
-
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2,"0"),
+      String(date.getDate()).padStart(2,"0")
+    ].join("-");
   }
 
-
-  function clamp(
-    value,
-    min,
-    max
-  ) {
-
+  function clamp(number,min,max) {
     return Math.max(
       min,
-      Math.min(
-        max,
-        Number(value) || 0
-      )
+      Math.min(max,Number(number) || 0)
     );
-
   }
 
+  function formatLitres(ml) {
+    return (Number(ml) / 1000)
+      .toFixed(2)
+      .replace(/0+$/,"")
+      .replace(/\.$/,"");
+  }
 
-  /* =========================================
-     FUEL TILE UPDATE
-     ========================================= */
+  /* ========================================
+     UPDATE ONLY CHANGED TARGET VALUES
+     ======================================== */
 
   function updateFuelTile(
     type,
     value,
-    target,
-    suffix = ""
+    target
   ) {
+    const tile = document.querySelector(
+      `#manaV1015Fuel .m1022-target.${type}`
+    );
 
-    const tile =
-      document.querySelector(
-        `#manaV1015Fuel .m1022-target.${type}`
-      );
+    if (!tile) return;
 
+    const valueEl = tile.querySelector(
+      ".m1022-target-value"
+    );
 
-    if (!tile) {
-      return;
+    let mainValue = String(value);
+    let mainTarget = String(target);
+    let suffix = "";
+
+    if (type === "water") {
+      mainValue = formatLitres(value);
+      mainTarget = formatLitres(target);
+      suffix = " L";
     }
 
+    if (type === "protein") suffix = " g";
 
-    const valueEl =
-      tile.querySelector(
-        ".m1022-target-value"
+    const signature = [
+      mainValue,mainTarget,suffix
+    ].join("|");
+
+    if (
+      valueEl &&
+      valueEl.dataset.manaStableValue !== signature
+    ) {
+      const targetSpan =
+        document.createElement("span");
+
+      targetSpan.textContent =
+        "/ " + mainTarget + suffix;
+
+      valueEl.replaceChildren(
+        document.createTextNode(
+          mainValue + suffix + " "
+        ),
+        targetSpan
       );
 
-
-    if (valueEl) {
-
-      valueEl.innerHTML = `
-
-        ${value}
-        ${suffix}
-
-        <span>
-          / ${target}
-          ${suffix}
-        </span>
-
-      `;
-
+      valueEl.dataset.manaStableValue =
+        signature;
     }
 
-
-    const bar =
-      tile.querySelector(
-        ".m1022-bar span"
-      );
-
+    const bar = tile.querySelector(
+      ".m1022-bar span"
+    );
 
     if (bar) {
+      const percentage = target > 0
+        ? clamp(value / target * 100,0,100)
+        : 0;
 
-      const percentage =
-        target > 0
-          ? clamp(
-              (
-                Number(value) /
-                Number(target)
-              ) * 100,
-              0,
-              100
-            )
-          : 0;
+      const width = percentage + "%";
 
-
-      bar.style.width =
-        `${percentage}%`;
-
+      if (bar.style.width !== width) {
+        bar.style.width = width;
+      }
     }
-
   }
 
+  /* ========================================
+     WATER LOGGING
+     ======================================== */
 
-  /* =========================================
-     WATER
-     ========================================= */
+  function changeWater(delta) {
+    const store = readJSON(FUEL_KEY);
+    const key = todayKey();
 
-  function changeWater(
-    delta
-  ) {
+    const day = (
+      store[key] &&
+      typeof store[key] === "object"
+    ) ? store[key] : {
+      meals:{},
+      water:0
+    };
 
-    const store =
-      safeJson(
+    day.water = Math.max(
+      0,
+      (Number(day.water) || 0) +
+      Number(delta || 0)
+    );
 
-        localStorage.getItem(
-          FUEL_KEY
-        ),
-
-        {}
-
-      );
-
-
-    const key =
-      todayKey();
-
-
-    const day =
-      (
-        store[key] &&
-        typeof store[key] ===
-          "object"
-      )
-
-        ? store[key]
-
-        : {
-            meals:{},
-            water:0
-          };
-
-
-    day.water =
-      Math.max(
-        0,
-        (
-          Number(
-            day.water
-          ) || 0
-        )
-        +
-        Number(
-          delta || 0
-        )
-      );
-
-
-    store[key] =
-      day;
-
+    store[key] = day;
 
     localStorage.setItem(
-
-      FUEL_KEY,
-
-      JSON.stringify(
-        store
-      )
-
+      FUEL_KEY,JSON.stringify(store)
     );
 
-
-    const targets =
-      safeJson(
-
-        localStorage.getItem(
-          TARGET_KEY
-        ),
-
-        {}
-
-      );
-
-
+    const targets = readJSON(TARGET_KEY);
     const waterTarget =
-      Math.max(
-        0,
-        Number(
-          targets.water
-        ) || 2300
-      );
-
+      Math.max(1,Number(targets.water) || 2300);
 
     updateFuelTile(
-
-      "water",
-
-      day.water,
-
-      waterTarget,
-
-      "ml"
-
+      "water",day.water,waterTarget
     );
-
 
     window.dispatchEvent(
-
-      new CustomEvent(
-        "mana:fuel-updated"
-      )
-
+      new CustomEvent("mana:fuel-updated")
     );
-
   }
 
+  /* ========================================
+     RECOVERY LOGGING
+     ======================================== */
 
-  /* =========================================
-     RECOVERY
-     ========================================= */
-
-  function recoveryScore() {
-
-    const store =
-      safeJson(
-
-        localStorage.getItem(
-          DAILY_KEY
-        ),
-
-        {}
-
-      );
-
-
-    const day =
-      store[
-        todayKey()
-      ] || {};
-
-
+  function recoveryScore(day) {
     if (
-      Number.isFinite(
-        Number(
-          day.recoveryScore
-        )
-      )
+      day.recoveryScore !== null &&
+      day.recoveryScore !== undefined &&
+      day.recoveryScore !== "" &&
+      Number.isFinite(Number(day.recoveryScore))
     ) {
-
-      return clamp(
-        day.recoveryScore,
-        0,
-        10
-      );
-
+      return clamp(day.recoveryScore,0,10);
     }
 
-
-    const raw =
-      String(
-
-        day.recoveryLevel ||
-        day.recovery ||
-        ""
-
-      ).toLowerCase();
-
+    const level = String(
+      day.recoveryLevel ||
+      day.recovery ||
+      ""
+    ).toLowerCase();
 
     if (
-      raw === "good" ||
-      raw === "true"
-    ) {
+      level === "good" ||
+      level === "true"
+    ) return 8;
 
-      return 8;
-
-    }
-
+    if (level === "moderate") return 5;
 
     if (
-      raw === "moderate"
-    ) {
-
-      return 5;
-
-    }
-
-
-    if (
-      raw === "needs-attention" ||
-      raw === "low"
-    ) {
-
-      return 3;
-
-    }
-
+      level === "needs-attention" ||
+      level === "low"
+    ) return 3;
 
     return 0;
-
   }
 
+  function changeRecovery(delta) {
+    const store = readJSON(DAILY_KEY);
+    const key = todayKey();
 
-  function changeRecovery(
-    delta
-  ) {
+    const day = (
+      store[key] &&
+      typeof store[key] === "object"
+    ) ? store[key] : {};
 
-    const store =
-      safeJson(
+    const value = clamp(
+      recoveryScore(day) + Number(delta || 0),
+      0,10
+    );
 
-        localStorage.getItem(
-          DAILY_KEY
-        ),
+    day.recoveryScore = value;
 
-        {}
-
-      );
-
-
-    const key =
-      todayKey();
-
-
-    const day =
-      (
-        store[key] &&
-        typeof store[key] ===
-          "object"
-      )
-        ? store[key]
-        : {};
-
-
-    const value =
-      clamp(
-
-        recoveryScore()
-        +
-        Number(
-          delta || 0
-        ),
-
-        0,
-
-        10
-
-      );
-
-
-    day.recoveryScore =
-      value;
-
-
-    if (
-      value >= 7
-    ) {
-
-      day.recoveryLevel =
-        "good";
-
-      day.recovery =
-        true;
-
-    } else if (
-      value >= 4
-    ) {
-
-      day.recoveryLevel =
-        "moderate";
-
-      day.recovery =
-        false;
-
-    } else if (
-      value > 0
-    ) {
-
-      day.recoveryLevel =
-        "needs-attention";
-
-      day.recovery =
-        false;
-
+    if (value >= 7) {
+      day.recoveryLevel = "good";
+      day.recovery = true;
+    } else if (value >= 4) {
+      day.recoveryLevel = "moderate";
+      day.recovery = false;
+    } else if (value > 0) {
+      day.recoveryLevel = "needs-attention";
+      day.recovery = false;
     } else {
-
-      day.recoveryLevel =
-        "";
-
-      day.recovery =
-        false;
-
+      day.recoveryLevel = "";
+      day.recovery = false;
     }
 
-
-    store[key] =
-      day;
-
+    store[key] = day;
 
     localStorage.setItem(
-
-      DAILY_KEY,
-
-      JSON.stringify(
-        store
-      )
-
+      DAILY_KEY,JSON.stringify(store)
     );
 
-
-    updateFuelTile(
-
-      "recovery",
-
-      value,
-
-      10
-
-    );
-
+    updateFuelTile("recovery",value,10);
 
     window.dispatchEvent(
-
-      new CustomEvent(
-        "mana:recovery-updated"
-      )
-
+      new CustomEvent("mana:recovery-updated")
     );
-
   }
 
+  /* ========================================
+     FUEL CONTROL INTERCEPT
 
-  /* =========================================
-     FUEL CLICK INTERCEPT
-     ========================================= */
+     Preserve existing button behaviour.
+     Handle only one action per click.
+     ======================================== */
 
-  function interceptFuel(
-    event
-  ) {
-
-    if (
-      !event.target.closest(
-        "#manaV1015Fuel"
-      )
-    ) {
-
+  function interceptFuel(event) {
+    if (!(event.target instanceof Element)) {
       return;
-
     }
 
+    if (!event.target.closest(
+      "#manaV1015Fuel"
+    )) return;
 
-    const water =
-      event.target.closest(
-        "[data-m1022-water]"
-      );
+    const water = event.target.closest(
+      "[data-m1022-water]"
+    );
 
+    const recovery = event.target.closest(
+      "[data-m1022-recovery]"
+    );
 
-    const recovery =
-      event.target.closest(
-        "[data-m1022-recovery]"
-      );
-
-
-    if (
-      !water &&
-      !recovery
-    ) {
-
-      return;
-
-    }
-
+    if (!water && !recovery) return;
 
     event.preventDefault();
-
     event.stopImmediatePropagation();
 
-
     if (water) {
-
       changeWater(
-
-        Number(
-          water.dataset
-            .m1022Water
-        ) || 0
-
+        Number(water.dataset.m1022Water) || 0
       );
-
-
-      return;
-
+    } else {
+      changeRecovery(
+        Number(recovery.dataset.m1022Recovery) || 0
+      );
     }
-
-
-    changeRecovery(
-
-      Number(
-        recovery.dataset
-          .m1022Recovery
-      ) || 0
-
-    );
-
   }
 
+  /* ========================================
+     SECTION ICONS
+     ======================================== */
 
-  /* =========================================
-     SECTION ICON
-     ========================================= */
+  function addSectionIcon(parent,type) {
+    if (!parent || !ICONS[type]) return;
 
-  function addSectionIcon(
-    parent,
-    type
-  ) {
+    if (parent.querySelector(
+      `.m1028-${type}-icon`
+    )) return;
 
-    if (
-      !parent ||
-      !ICONS[type]
-    ) {
+    const title = parent.querySelector("h2");
 
-      return;
+    if (!title) return;
 
-    }
+    const row = document.createElement("div");
+    row.className = "m1028-section-title";
 
-
-    if (
-      parent.querySelector(
-        `.m1028-${type}-icon`
-      )
-    ) {
-
-      return;
-
-    }
-
-
-    const title =
-      parent.querySelector(
-        "h2"
-      );
-
-
-    if (!title) {
-      return;
-    }
-
-
-    const row =
-      document.createElement(
-        "div"
-      );
-
-
-    row.className =
-      "m1028-section-title";
-
-
-    const icon =
-      document.createElement(
-        "span"
-      );
-
-
+    const icon = document.createElement("span");
     icon.className =
       `m1028-section-icon m1028-${type}-icon`;
 
+    icon.innerHTML = ICONS[type];
 
-    icon.innerHTML =
-      ICONS[type];
-
-
-    title.parentNode
-      .insertBefore(
-        row,
-        title
-      );
-
-
-    row.appendChild(
-      icon
+    title.parentNode.insertBefore(
+      row,title
     );
 
-
-    row.appendChild(
-      title
-    );
-
+    row.append(icon,title);
   }
 
-
-  /* =========================================
-     DECORATE
-     ========================================= */
-
   function decorate() {
-
     addSectionIcon(
-
       document.querySelector(
         "#manaV993StrengthProgress .mana-v993-head"
       ),
-
       "progress"
-
     );
 
-
     addSectionIcon(
-
       document.querySelector(
         "#manaV83Content .mana-v981-root .mana-v981-head"
       ),
-
       "progress"
-
     );
 
-
     addSectionIcon(
-
       document.querySelector(
         "#manaV83Content .mana-v985-head"
       ),
-
       "learning"
-
     );
-
   }
 
+  /* ========================================
+     STABLE REFRESH
 
-  /* =========================================
-     SETTLE
-     ========================================= */
+     No stylesheet reinstalls.
+     No repeated delayed refresh sequence.
+     ======================================== */
 
-  function settle() {
+  let pending = false;
 
-    /*
-      Reinstalling pushes this stylesheet
-      to the end of <head>, so older screen
-      CSS cannot take priority afterwards.
-    */
+  function refresh() {
+    if (pending) return;
 
-    installStyles();
+    pending = true;
 
-    decorate();
-
-
-    [
-      80,
-      220,
-      500
-    ]
-      .forEach(
-        delay => {
-
-          setTimeout(
-            () => {
-
-              installStyles();
-
-              decorate();
-
-            },
-            delay
-          );
-
-        }
-      );
-
+    requestAnimationFrame(() => {
+      pending = false;
+      decorate();
+    });
   }
 
-
-  /* =========================================
-     INIT
-     ========================================= */
+  /* ========================================
+     INITIALISE
+     ======================================== */
 
   function init() {
+    installStyles();
 
     document.addEventListener(
-
-      "click",
-
-      interceptFuel,
-
-      true
-
+      "click",interceptFuel,true
     );
 
+    document.addEventListener(
+      "click",event => {
+        if (!(event.target instanceof Element)) {
+          return;
+        }
 
-    settle();
-
+        if (event.target.closest(
+          [
+            "#manaV83Tabs .mana-v83-tab",
+            "[data-v993-period]",
+            "[data-v993-detail]",
+            "[data-v981-period]",
+            "[data-v985-learn]"
+          ].join(",")
+        )) {
+          requestAnimationFrame(refresh);
+        }
+      }
+    );
 
     [
       "mana:program-tab-change",
       "mana:program-change",
-      "mana:workout-progress-change",
-      "mana:recovery-updated"
-    ]
-      .forEach(
-        eventName => {
-
-          document.addEventListener(
-            eventName,
-            settle
-          );
-
-
-          window.addEventListener(
-            eventName,
-            settle
-          );
-
-        }
-      );
-
-
-    document.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target.closest(
-            `
-              #manaV83Tabs .mana-v83-tab,
-              [data-v993-period],
-              [data-v993-detail],
-              [data-v981-period],
-              [data-v939-range],
-              [data-v985-learn],
-              [data-v933-learn-open],
-              [data-v933-support-chat],
-              #manaV1017Request
-            `
-          )
-        ) {
-
-          requestAnimationFrame(
-            settle
-          );
-
-        }
-
-      }
-    );
-
+      "mana:workout-progress-change"
+    ].forEach(name => {
+      document.addEventListener(name,refresh);
+      window.addEventListener(name,refresh);
+    });
 
     window.addEventListener(
-      "pageshow",
-      settle
+      "pageshow",refresh
     );
 
+    refresh();
 
-    window
-      .refreshManaFinalPolish =
-        settle;
-
-
-    window
-      .MANA_FINAL_POLISH_BUILD =
-        BUILD;
-
+    window.refreshManaFinalPolish = refresh;
+    window.MANA_FINAL_POLISH_BUILD = BUILD;
 
     console.log(
-      "Mana Final Polish",
-      BUILD
+      "MANA FUEL STABILITY FIX",BUILD
     );
-
   }
 
-
-  if (
-    document.readyState ===
-      "loading"
-  ) {
-
+  if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {
-        once:true
-      }
+      {once:true}
     );
-
   } else {
-
     init();
-
   }
 
 })();
