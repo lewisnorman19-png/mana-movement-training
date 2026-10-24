@@ -1,30 +1,51 @@
 
 /* =====================================================
    MANA MOVEMENT TRAINING
-   PREMIUM STRENGTH WORKOUT CARDS
-   BUILD 103520
+   STRENGTH WORKOUT CARD POLISH
+   BUILD 103530
 
-   - Premium yellow borders on every workout card
-   - Remove coloured border accents
-   - Large yellow completed tick, top right
-   - "WORKOUT COMPLETE THIS WEEK" below tick
-   - Remove original small completion badge
-   - No illustrations or external images
-   - Preserve workout controls and history
-   - No polling or repeated rendering timers
+   FULL REPLACEMENT FOR:
+   mana_strength_workout_ticks_103520.js
+
+   FIXES
+   - Complete only the correct workout
+   - Match saved day index and session name
+   - Require 100% workout completion
+   - Check current calendar week
+   - Yellow tick instead of blue
+   - Yellow completion text
+   - Remove previous small completion badge
+   - Uniform thicker premium yellow borders
+   - Remove coloured card edge accents
+
+   PRESERVES
+   - Existing workout cards and layout
+   - Week selection
+   - Start Workout action
+   - View Workout expansion
+   - Workout history
+   - All other programs
+
+   No images.
+   No background timers.
+   No global render interception.
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "103520";
-  const STYLE_ID = "mana-strength-ticks-103520";
+  const BUILD = "103530";
+  const STYLE_ID = "mana-strength-ticks-103530";
+  const LOG_KEY = "mana-strength-v64-logs";
 
-  if (window.MANA_STRENGTH_TICKS_103520) return;
-  window.MANA_STRENGTH_TICKS_103520 = true;
+  if (window.MANA_STRENGTH_TICKS_103530) {
+    return;
+  }
+
+  window.MANA_STRENGTH_TICKS_103530 = true;
 
   const GOLD = "#F3D875";
-  const CARD = ".mana-v85-day";
+
   const $ = id => document.getElementById(id);
 
   function strengthOpen() {
@@ -39,169 +60,370 @@
     );
   }
 
-  function workoutTabOpen() {
-    const active = document.querySelector(
+  function workoutsOpen() {
+    return document.querySelector(
       "#manaV83Tabs .mana-v83-tab.active"
+    )?.dataset.v83Tab === "program";
+  }
+
+  function getLogs() {
+    try {
+      const logs = JSON.parse(
+        localStorage.getItem(LOG_KEY) || "[]"
+      );
+
+      return Array.isArray(logs)
+        ? logs
+        : [];
+
+    } catch (error) {
+      return [];
+    }
+  }
+
+  /* =========================================
+     CURRENT WEEK
+     Monday 00:00 to next Monday 00:00
+     ========================================= */
+
+  function currentWeek() {
+    const now = new Date();
+
+    const weekday =
+      (now.getDay() + 6) % 7;
+
+    const start = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() - weekday
     );
 
-    return active?.dataset.v83Tab === "program";
+    const end = new Date(start);
+
+    end.setDate(
+      end.getDate() + 7
+    );
+
+    return {start, end};
   }
+
+  function cleanName(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
+
+  /* =========================================
+     CORRECT WORKOUT MATCHING
+     ========================================= */
+
+  function workoutCompleted(
+    dayIndex,
+    sessionName
+  ) {
+    const logs = getLogs();
+    const week = currentWeek();
+
+    const targetName = cleanName(
+      sessionName
+    );
+
+    return logs.some(log => {
+      if (!log || !log.date) {
+        return false;
+      }
+
+      const date = new Date(log.date);
+
+      if (
+        !Number.isFinite(date.getTime()) ||
+        date < week.start ||
+        date >= week.end
+      ) {
+        return false;
+      }
+
+      const savedIndex = Number(
+        log.dayIndex
+      );
+
+      if (
+        !Number.isInteger(savedIndex) ||
+        savedIndex !== dayIndex
+      ) {
+        return false;
+      }
+
+      const savedName = cleanName(
+        log.sessionName
+      );
+
+      // Require the saved workout to match
+      // this card, not merely another
+      // workout completed this week.
+      if (
+        !savedName ||
+        savedName !== targetName
+      ) {
+        return false;
+      }
+
+      const percentage = Number(
+        log.completionPercent ?? 0
+      );
+
+      return percentage >= 100;
+    });
+  }
+
+  /* =========================================
+     STYLES
+     ========================================= */
 
   function installStyles() {
     if ($(STYLE_ID)) return;
 
-    const style = document.createElement("style");
+    const style = document.createElement(
+      "style"
+    );
+
     style.id = STYLE_ID;
 
     style.textContent = `
 
-      /* =====================================
-         UNIFORM PREMIUM YELLOW OUTLINES
-         ===================================== */
+      /* ===================================
+         ALL WORKOUT CARDS — YELLOW
+         =================================== */
 
       #manaV83Content
-      ${CARD} {
+      .mana-v85-day,
+
+      #manaV83Content
+      .mana-v85-day.in-progress,
+
+      #manaV83Content
+      .mana-v85-day.mana-v964-expanded {
+
         position: relative !important;
-        border: 1.5px solid ${GOLD} !important;
-        border-color: ${GOLD} !important;
-        border-left-color: ${GOLD} !important;
-        border-right-color: ${GOLD} !important;
+
+        border: 2px solid ${GOLD} !important;
+
         border-top-color: ${GOLD} !important;
+        border-right-color: ${GOLD} !important;
         border-bottom-color: ${GOLD} !important;
-        border-radius: 20px !important;
-        box-shadow: none !important;
+        border-left-color: ${GOLD} !important;
+
         outline: none !important;
+
+        border-radius: 20px !important;
+
         background:
           linear-gradient(
             145deg,
             #15130d,
             #090909
           ) !important;
+
+        box-shadow: none !important;
+
         box-sizing: border-box !important;
       }
 
-      /* Remove decorative colour accents. */
+      /* ===================================
+         REMOVE COLOURED SIDE ACCENTS
+         =================================== */
 
       #manaV83Content
-      ${CARD}::before,
+      .mana-v85-day::before,
+
       #manaV83Content
-      ${CARD}::after {
-        background: transparent !important;
+      .mana-v85-day::after {
+
+        content: none !important;
+
+        display: none !important;
+
+        background: none !important;
+
         border: none !important;
+
         box-shadow: none !important;
       }
 
       #manaV83Content
-      ${CARD}.in-progress,
-      #manaV83Content
-      ${CARD}.mana-v964-expanded {
-        border-color: ${GOLD} !important;
+      .mana-v85-day
+      .mana-v85-head {
+
+        border-left: none !important;
+        border-right: none !important;
+
         box-shadow: none !important;
       }
 
-      /* =====================================
-         NEW COMPLETION MARK
-         ===================================== */
+      /* ===================================
+         REMOVE EXISTING COMPLETION BADGE
+         =================================== */
 
       #manaV83Content
-      .mf520-complete {
+      .mf530-old-complete {
+
+        display: none !important;
+      }
+
+      /* ===================================
+         YELLOW COMPLETION MARK
+         =================================== */
+
+      #manaV83Content
+      .mf530-complete {
+
         position: absolute;
+
         top: 16px;
         right: 16px;
-        width: 112px;
+
+        width: 116px;
+
         display: flex;
         flex-direction: column;
+
         align-items: center;
         justify-content: center;
-        gap: 7px;
+
+        gap: 8px;
+
+        color: ${GOLD} !important;
+
         text-align: center;
+
         pointer-events: none;
-        z-index: 2;
+
+        z-index: 3;
       }
 
       #manaV83Content
-      .mf520-tick {
-        width: 34px;
-        height: 34px;
+      .mf530-complete-icon {
+
+        width: 37px;
+        height: 37px;
+
         display: flex;
         align-items: center;
         justify-content: center;
-        color: ${GOLD};
+
+        color: ${GOLD} !important;
       }
 
       #manaV83Content
-      .mf520-tick svg {
-        width: 34px;
-        height: 34px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2.1;
+      .mf530-complete-icon svg {
+
+        width: 37px !important;
+        height: 37px !important;
+
+        fill: none !important;
+
+        color: ${GOLD} !important;
+
+        stroke: ${GOLD} !important;
+
+        stroke-width: 2.5 !important;
+
         stroke-linecap: round;
         stroke-linejoin: round;
+
+        filter: none !important;
       }
 
       #manaV83Content
-      .mf520-complete-label {
-        color: ${GOLD};
-        font-size: 10px;
-        font-weight: 900;
-        line-height: 1.35;
-        letter-spacing: .45px;
-      }
-
-      /* Space for the new tick.
-         Original card height remains flexible. */
+      .mf530-complete-icon svg circle,
 
       #manaV83Content
-      ${CARD}.mf520-done
+      .mf530-complete-icon svg path {
+
+        fill: none !important;
+
+        stroke: ${GOLD} !important;
+
+        stroke-width: 2.5 !important;
+      }
+
+      #manaV83Content
+      .mf530-complete-label {
+
+        color: ${GOLD} !important;
+
+        font-size: 10px !important;
+
+        font-weight: 950 !important;
+
+        line-height: 1.35 !important;
+
+        letter-spacing: .4px !important;
+      }
+
+      /* ===================================
+         PRESERVE READABLE TITLE SPACING
+         =================================== */
+
+      #manaV83Content
+      .mana-v85-day.mf530-done
       .mana-v85-top {
-        padding-right: 115px;
+
+        padding-right: 121px;
+
         box-sizing: border-box;
       }
 
       #manaV83Content
-      ${CARD}.mf520-done
+      .mana-v85-day.mf530-done
       .mana-v85-count {
+
         display: none !important;
       }
 
-      /* Hide only the older completion badge
-         identified by the JavaScript below. */
+      /* ===================================
+         MOBILE
+         =================================== */
 
-      #manaV83Content
-      .mf520-original-complete {
-        display: none !important;
-      }
-
-      @media(max-width:480px) {
+      @media (max-width:480px) {
 
         #manaV83Content
-        .mf520-complete {
-          top: 13px;
+        .mf530-complete {
+
+          width: 88px;
+
+          top: 14px;
           right: 12px;
-          width: 89px;
+
           gap: 5px;
         }
 
         #manaV83Content
-        .mf520-tick,
+        .mf530-complete-icon,
+
         #manaV83Content
-        .mf520-tick svg {
-          width: 30px;
-          height: 30px;
+        .mf530-complete-icon svg {
+
+          width: 31px !important;
+          height: 31px !important;
         }
 
         #manaV83Content
-        .mf520-complete-label {
-          font-size: 9px;
-          line-height: 1.3;
-          letter-spacing: .2px;
+        .mf530-complete-label {
+
+          font-size: 9px !important;
+
+          line-height: 1.3 !important;
+
+          letter-spacing: .1px !important;
         }
 
         #manaV83Content
-        ${CARD}.mf520-done
+        .mana-v85-day.mf530-done
         .mana-v85-top {
-          padding-right: 92px;
+
+          padding-right: 94px;
         }
       }
 
@@ -211,138 +433,172 @@
   }
 
   /* =========================================
-     RECOGNISE EXISTING WEEKLY COMPLETION
+     IDENTIFY ORIGINAL BADGE
      ========================================= */
 
-  function findOldCompletionBadge(card) {
-    const candidates = card.querySelectorAll(
+  function hideOldBadge(card) {
+    const nodes = card.querySelectorAll(
       "span, small, strong, div"
     );
 
-    for (const node of candidates) {
-      if (node.classList.contains(
-        "mf520-complete"
-      )) continue;
+    nodes.forEach(node => {
+      if (
+        node.closest(".mf530-complete")
+      ) {
+        return;
+      }
 
       const text = (
         node.textContent || ""
       ).replace(/\s+/g, " ").trim();
 
-      if (!/^(?:✓|✔|☑)?\s*COMPLETED THIS WEEK$/i
-        .test(text)) {
-        continue;
+      if (
+        /^(?:✓|✔|☑)?\s*COMPLETED THIS WEEK$/i
+        .test(text)
+      ) {
+        node.classList.add(
+          "mf530-old-complete"
+        );
       }
-
-      // Avoid hiding a parent container with
-      // other workout information inside.
-      const nestedText = [
-        ...node.children
-      ].some(child =>
-        (child.textContent || "")
-          .trim().length > 0
-      );
-
-      if (nestedText) continue;
-
-      return node;
-    }
-
-    return null;
+    });
   }
 
-  function makeCompletionMark() {
-    const wrapper = document.createElement(
+  /* =========================================
+     CREATE YELLOW TICK
+     ========================================= */
+
+  function makeTick() {
+    const mark = document.createElement(
       "div"
     );
 
-    wrapper.className = "mf520-complete";
-    wrapper.setAttribute(
+    mark.className = "mf530-complete";
+
+    mark.setAttribute(
       "role",
       "img"
     );
 
-    wrapper.setAttribute(
+    mark.setAttribute(
       "aria-label",
       "Workout complete this week"
     );
 
-    wrapper.innerHTML = `
-      <span class="mf520-tick">
-        <svg viewBox="0 0 36 36"
-          aria-hidden="true">
-          <circle cx="18" cy="18" r="15"/>
-          <path d="M10.5 18.5l5 5L25.5 13"/>
+    mark.innerHTML = `
+
+      <span class="mf530-complete-icon">
+
+        <svg
+          viewBox="0 0 36 36"
+          aria-hidden="true"
+        >
+
+          <circle
+            cx="18"
+            cy="18"
+            r="15"
+          />
+
+          <path
+            d="M10.5 18.5 L15.5 23.5 L25.5 12.5"
+          />
+
         </svg>
+
       </span>
 
-      <span class="mf520-complete-label">
+      <span class="mf530-complete-label">
         WORKOUT COMPLETE<br>
         THIS WEEK
       </span>
+
     `;
 
-    return wrapper;
+    return mark;
   }
 
-  function decorateCard(card) {
+  /* =========================================
+     DECORATE EXACT WORKOUT
+     ========================================= */
+
+  function decorateCard(card, index) {
     if (!(card instanceof HTMLElement)) {
       return;
     }
 
-    const original = findOldCompletionBadge(card);
+    // Hide the existing weekly completion
+    // badge without using it to determine
+    // whether this workout was completed.
 
-    if (original) {
-      original.classList.add(
-        "mf520-original-complete"
-      );
-    }
+    hideOldBadge(card);
 
-    // Read the app's own weekly completion
-    // status instead of guessing from
-    // historic workouts or dates.
+    // Remove any mark from previous builds
+    // if one exists in this same card.
 
-    const completed = Boolean(
-      original ||
+    card.querySelectorAll(
+      ".mf520-complete, .mf510-right"
+    ).forEach(node => node.remove());
+
+    const name = (
       card.querySelector(
-        ".mf520-original-complete"
-      )
+        ".mana-v85-title"
+      )?.textContent || ""
+    ).trim();
+
+    const completed = workoutCompleted(
+      index,
+      name
     );
 
     let mark = card.querySelector(
-      ".mf520-complete"
+      ".mf530-complete"
     );
 
     if (completed) {
-      card.classList.add("mf520-done");
+      card.classList.add(
+        "mf530-done"
+      );
 
       if (!mark) {
-        mark = makeCompletionMark();
+        mark = makeTick();
         card.appendChild(mark);
       }
+
     } else {
-      card.classList.remove("mf520-done");
+      card.classList.remove(
+        "mf530-done"
+      );
+
       mark?.remove();
     }
   }
 
   function decorateCards() {
-    if (!strengthOpen() || !workoutTabOpen()) {
+    if (
+      !strengthOpen() ||
+      !workoutsOpen()
+    ) {
       return;
     }
 
     document.querySelectorAll(
-      "#manaV83Content " + CARD
-    ).forEach(decorateCard);
+      "#manaV83Content .mana-v85-day"
+    ).forEach(
+      (card, index) => {
+        decorateCard(card, index);
+      }
+    );
   }
 
   /* =========================================
-     UPDATE AFTER EXISTING RENDER
+     LIGHTWEIGHT REFRESH
      ========================================= */
 
   let queued = false;
 
   function refresh() {
     if (queued) return;
+
     queued = true;
 
     requestAnimationFrame(() => {
@@ -372,11 +628,12 @@
           return;
         }
 
-        if (event.target.closest(
-          "#manaV83Tabs, " +
-          ".mana-v85-day, " +
-          "[data-v993-period]"
-        )) {
+        if (
+          event.target.closest(
+            "#manaV83Tabs, " +
+            ".mana-v85-day"
+          )
+        ) {
           refresh();
         }
       }
@@ -384,6 +641,11 @@
 
     window.addEventListener(
       "mana:strength-synced",
+      refresh
+    );
+
+    window.addEventListener(
+      "mana:workout-timing-saved",
       refresh
     );
 
@@ -400,7 +662,7 @@
     refresh();
 
     console.log(
-      "Mana Strength Premium Workout Cards",
+      "Mana Strength Workout Cards",
       BUILD
     );
   }
@@ -411,6 +673,7 @@
       init,
       {once:true}
     );
+
   } else {
     init();
   }
