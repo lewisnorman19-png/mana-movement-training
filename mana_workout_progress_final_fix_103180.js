@@ -1,256 +1,346 @@
 
-/* ================================================
+/* ===========================================
    MANA MOVEMENT TRAINING
-   WORKOUT + PROGRESS FINAL POLISH
-   BUILD 103180
+   WORKOUT + PROGRESS COLOUR CORRECTION
+   BUILD 103200
 
-   MANA 28 + MANA LYFE WORKOUTS
-   - Unfinished workouts: white borders
-   - Completed workouts: green borders
-   - Existing completion ticks preserved
-   - No changes to text or layout
+   MANA 28 + MANA LYFE
+   Unfinished workouts:
+   - White outside border
+   - White number border
+   - White number text
+   - No coloured side accent
+
+   Completed workouts:
+   - Green border
+   - Green tick
+   - Green completion styling
 
    MANA 28 PROGRESS
-   - Workouts: green
-   - Water: blue
-   - Recovery: purple
-   - Calories: green
-   - Protein: green
+   - Workouts: Green
+   - Water: Blue
+   - Recovery: Purple
+   - Calories: Green
+   - Protein: Green
 
-   Does not change:
+   Correct BOTH progress tracks and fills.
+
+   Does not modify:
    - Mana Strength
-   - Workout content
-   - Saved workout history
-   - Daily Routine
-   - Reset
-   - Support Chat
-   - Navigation
-   ================================================ */
+   - Workout completion data
+   - Workout navigation
+   - Fuel records
+   - Routine or Reset
+   =========================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "103180";
+  const BUILD = "103200";
+
   const STYLE_ID =
     "mana-workout-progress-final-fix-103180";
-
-  if (document.getElementById(STYLE_ID)) {
-    return;
-  }
 
   const CSS = `
 
     /* =====================================
-       SHARED WORKOUT CARDS
-
-       Mana 28 and Mana Lyfe both use
-       the v980 workout card system.
-
-       Unfinished = white
-       Completed = green
+       WORKOUT CARDS
+       INCOMPLETE = WHITE
        ===================================== */
 
     #manaV83Content
     .mana-v980-day:not(.done) {
 
-      border:
-        1px solid rgba(
-          255,255,255,.72
-        ) !important;
+      border: 1px solid
+        rgba(255,255,255,.80) !important;
 
-      box-shadow:
-        none !important;
+      background: linear-gradient(
+        145deg,
+        #111111,
+        #080808
+      ) !important;
+
+      box-shadow: none !important;
 
     }
+
+    /* Remove the coloured side line */
 
     #manaV83Content
     .mana-v980-day:not(.done)::before {
 
-      background:
-        rgba(255,255,255,.52) !important;
+      background: rgba(
+        255,255,255,.55
+      ) !important;
 
     }
 
-    /* Completed workout card */
+    /* Number boxes - all neutral white */
+
+    #manaV83Content
+    .mana-v980-day:not(.done)
+    .mana-v980-number {
+
+      border: 1px solid
+        rgba(255,255,255,.80) !important;
+
+      background: #111111 !important;
+
+      color: #ffffff !important;
+
+      box-shadow: none !important;
+
+    }
+
+    /* =====================================
+       COMPLETED WORKOUTS = GREEN
+       ===================================== */
 
     #manaV83Content
     .mana-v980-day.done {
 
-      border:
-        1px solid #55d98b !important;
+      border: 1px solid
+        #55d98b !important;
 
-      background:
-        linear-gradient(
-          145deg,
-          #132b1d,
-          #0a120c
-        ) !important;
+      background: linear-gradient(
+        145deg,
+        #132b1d,
+        #0a120c
+      ) !important;
 
-      box-shadow:
-        none !important;
+      box-shadow: none !important;
 
     }
 
     #manaV83Content
     .mana-v980-day.done::before {
 
-      background:
-        #55d98b !important;
+      background: #55d98b !important;
 
     }
-
-    /* Existing completion number/tick */
 
     #manaV83Content
     .mana-v980-day.done
     .mana-v980-number {
 
-      border-color:
+      border: 1px solid
         #55d98b !important;
 
-      background:
-        #164b30 !important;
+      background: #164b30 !important;
 
-      color:
-        #55d98b !important;
+      color: #55d98b !important;
+
+      box-shadow: none !important;
 
     }
 
-    /* Prevent duplicate overlay ticks:
-       original workout system already
-       displays a tick in the number. */
+    /* The original workout number becomes
+       a tick when completed. Don't add
+       a second duplicate tick. */
 
-    body.mana-lyfe-103170
     #manaV83Content
     .mana-v980-day.done::after {
 
-      content:
-        none !important;
+      content: none !important;
+
+    }
+
+    /* Leave exercise headings yellow */
+
+    #manaV83Content
+    .mana-v980-day
+    .mana-v980-title,
+
+    #manaV83Content
+    .mana-v980-day
+    .mana-v980-category {
+
+      color: #f3d875 !important;
 
     }
 
     /* =====================================
        MANA 28 PROGRESS
-
-       Actual grid order:
-       1 Workouts
-       2 Water
-       3 Recovery
-       4 Calories
-       5 Protein
-
-       Match Mana Strength bar colours.
+       FIVE CARD GRID
        ===================================== */
 
-    /* Default: GREEN */
+    /* GREEN: default fill and track */
 
     #manaV83Content
     .mana-v981-root
     .mana-v981-grid
-    .mana-v981-card
-    .mana-v981-bar span {
+    > .mana-v981-card
+    .mana-v981-bar {
 
-      background:
-        linear-gradient(
-          90deg,
-          #278b57,
-          #45c783
-        ) !important;
+      background: rgba(
+        69,199,131,.22
+      ) !important;
+
+      background-image: none !important;
 
     }
 
-    /* WATER: BLUE - second card */
-
     #manaV83Content
     .mana-v981-root
     .mana-v981-grid
-    .mana-v981-card:nth-child(2)
-    .mana-v981-bar span {
+    > .mana-v981-card
+    .mana-v981-bar > span {
 
-      background:
-        linear-gradient(
-          90deg,
-          #1677bb,
-          #42b8ff
-        ) !important;
+      background: linear-gradient(
+        90deg,
+        #278b57,
+        #45c783
+      ) !important;
 
-    }
-
-    /* RECOVERY: PURPLE - third card */
-
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-grid
-    .mana-v981-card:nth-child(3)
-    .mana-v981-bar span {
-
-      background:
-        linear-gradient(
-          90deg,
-          #6f49bb,
-          #a77bff
-        ) !important;
+      background-color: #45c783 !important;
 
     }
 
     /* =====================================
-       MANA 28 PROGRESS
-       KEEP PREMIUM GOLD CARD BORDERS
+       WATER = BLUE
+       CARD 2
+       ===================================== */
+
+    #manaV83Content
+    .mana-v981-root
+    .mana-v981-grid
+    > .mana-v981-card:nth-child(2)
+    .mana-v981-bar {
+
+      background: rgba(
+        66,184,255,.22
+      ) !important;
+
+      background-image: none !important;
+
+    }
+
+    #manaV83Content
+    .mana-v981-root
+    .mana-v981-grid
+    > .mana-v981-card:nth-child(2)
+    .mana-v981-bar > span {
+
+      background: linear-gradient(
+        90deg,
+        #1677bb,
+        #42b8ff
+      ) !important;
+
+      background-color: #42b8ff !important;
+
+    }
+
+    /* =====================================
+       RECOVERY = PURPLE
+       CARD 3
+       ===================================== */
+
+    #manaV83Content
+    .mana-v981-root
+    .mana-v981-grid
+    > .mana-v981-card:nth-child(3)
+    .mana-v981-bar {
+
+      background: rgba(
+        167,123,255,.22
+      ) !important;
+
+      background-image: none !important;
+
+    }
+
+    #manaV83Content
+    .mana-v981-root
+    .mana-v981-grid
+    > .mana-v981-card:nth-child(3)
+    .mana-v981-bar > span {
+
+      background: linear-gradient(
+        90deg,
+        #6f49bb,
+        #a77bff
+      ) !important;
+
+      background-color: #a77bff !important;
+
+    }
+
+    /* =====================================
+       PROGRESS ICONS
+       ===================================== */
+
+    #manaV83Content
+    .mana-v981-root
+    .mana-v981-grid
+    > .mana-v981-card:nth-child(2)
+    .mana-v981-icon {
+
+      color: #42b8ff !important;
+
+    }
+
+    #manaV83Content
+    .mana-v981-root
+    .mana-v981-grid
+    > .mana-v981-card:nth-child(3)
+    .mana-v981-icon {
+
+      color: #a77bff !important;
+
+    }
+
+    /* =====================================
+       PREMIUM GOLD PROGRESS CARD BORDERS
        ===================================== */
 
     #manaV83Content
     .mana-v981-root
     .mana-v981-card {
 
-      border-color:
-        rgba(230,189,72,.68) !important;
-
-    }
-
-    /* Water indicator */
-
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-card:nth-child(2)
-    .mana-v981-icon {
-
-      color:
-        #42b8ff !important;
-
-    }
-
-    /* Recovery indicator */
-
-    #manaV83Content
-    .mana-v981-root
-    .mana-v981-card:nth-child(3)
-    .mana-v981-icon {
-
-      color:
-        #a77bff !important;
+      border-color: rgba(
+        230,189,72,.68
+      ) !important;
 
     }
 
   `;
 
-  function init() {
+  function install() {
 
-    const style =
-      document.createElement("style");
+    let style =
+      document.getElementById(
+        STYLE_ID
+      );
 
-    style.id =
-      STYLE_ID;
+    if (!style) {
 
-    style.textContent =
-      CSS;
+      style =
+        document.createElement(
+          "style"
+        );
 
-    document.head.appendChild(style);
+      style.id =
+        STYLE_ID;
+
+      document.head.appendChild(
+        style
+      );
+
+    }
+
+    if (style.textContent !== CSS) {
+
+      style.textContent =
+        CSS;
+
+    }
 
     window.MANA_WORKOUT_PROGRESS_FIX =
       BUILD;
 
     console.log(
-      "MANA WORKOUT + PROGRESS FINAL FIX",
+      "Mana Workout + Progress Fix",
       BUILD
     );
 
@@ -260,13 +350,13 @@
 
     document.addEventListener(
       "DOMContentLoaded",
-      init,
+      install,
       { once: true }
     );
 
   } else {
 
-    init();
+    install();
 
   }
 
