@@ -175,7 +175,6 @@
 
   function clean() {
     cleanSupportChat();
-    cleanWhakatauki();
   }
 
   function scheduleClean() {
