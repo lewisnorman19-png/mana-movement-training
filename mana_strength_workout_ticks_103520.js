@@ -1,60 +1,40 @@
 
 /* =====================================================
    MANA MOVEMENT TRAINING
-   STRENGTH WORKOUT CARD POLISH
-   BUILD 103530
+   STRENGTH WORKOUT CARDS — BUILD 103550
 
-   FULL REPLACEMENT FOR:
+   COMPLETE FILE REPLACEMENT
    mana_strength_workout_ticks_103520.js
 
-   FIXES
-   - Complete only the correct workout
-   - Match saved day index and session name
-   - Require 100% workout completion
-   - Check current calendar week
-   - Yellow tick instead of blue
-   - Yellow completion text
-   - Remove previous small completion badge
-   - Uniform thicker premium yellow borders
-   - Remove coloured card edge accents
-
-   PRESERVES
-   - Existing workout cards and layout
-   - Week selection
-   - Start Workout action
-   - View Workout expansion
-   - Workout history
-   - All other programs
-
-   No images.
-   No background timers.
-   No global render interception.
+   - Premium yellow workout card borders
+   - Correct weekly completion ticks
+   - Yellow tick and completion label
+   - Old completion badge hidden
+   - No exercise grid or row borders
+   - Yellow exercise number pills
+   - White exercise text
+   - Improved exercise spacing and alignment
+   - Subtle hover, no animation loops
+   - No changes to saved workout data
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "103530";
-  const STYLE_ID = "mana-strength-ticks-103530";
+  const BUILD = "103550";
+  const STYLE_ID = "mana-strength-card-style-103550";
   const LOG_KEY = "mana-strength-v64-logs";
 
-  if (window.MANA_STRENGTH_TICKS_103530) {
-    return;
-  }
-
-  window.MANA_STRENGTH_TICKS_103530 = true;
+  if (window.MANA_STRENGTH_CARDS_103550) return;
+  window.MANA_STRENGTH_CARDS_103550 = true;
 
   const GOLD = "#F3D875";
-
   const $ = id => document.getElementById(id);
 
   function strengthOpen() {
-    const title = (
-      $("manaV83Title")?.textContent || ""
-    ).trim().toUpperCase();
-
     return (
-      title === "MANA STRENGTH" &&
+      $("manaV83Title")?.textContent
+        ?.trim().toUpperCase() === "MANA STRENGTH" &&
       $("manaV83ProgramShell")
         ?.classList.contains("open")
     );
@@ -66,45 +46,31 @@
     )?.dataset.v83Tab === "program";
   }
 
-  function getLogs() {
+  function readLogs() {
     try {
       const logs = JSON.parse(
         localStorage.getItem(LOG_KEY) || "[]"
       );
-
-      return Array.isArray(logs)
-        ? logs
-        : [];
-
-    } catch (error) {
+      return Array.isArray(logs) ? logs : [];
+    } catch {
       return [];
     }
   }
 
-  /* =========================================
-     CURRENT WEEK
-     Monday 00:00 to next Monday 00:00
-     ========================================= */
-
   function currentWeek() {
     const now = new Date();
-
-    const weekday =
-      (now.getDay() + 6) % 7;
+    const day = (now.getDay() + 6) % 7;
 
     const start = new Date(
       now.getFullYear(),
       now.getMonth(),
-      now.getDate() - weekday
+      now.getDate() - day
     );
 
     const end = new Date(start);
+    end.setDate(end.getDate() + 7);
 
-    end.setDate(
-      end.getDate() + 7
-    );
-
-    return {start, end};
+    return { start, end };
   }
 
   function cleanName(value) {
@@ -114,339 +80,272 @@
       .replace(/\s+/g, " ");
   }
 
-  /* =========================================
-     CORRECT WORKOUT MATCHING
-     ========================================= */
+  function completedThisWeek(index, name) {
+    const { start, end } = currentWeek();
+    const targetName = cleanName(name);
 
-  function workoutCompleted(
-    dayIndex,
-    sessionName
-  ) {
-    const logs = getLogs();
-    const week = currentWeek();
-
-    const targetName = cleanName(
-      sessionName
-    );
-
-    return logs.some(log => {
-      if (!log || !log.date) {
-        return false;
-      }
+    return readLogs().some(log => {
+      if (!log?.date) return false;
 
       const date = new Date(log.date);
 
       if (
         !Number.isFinite(date.getTime()) ||
-        date < week.start ||
-        date >= week.end
-      ) {
+        date < start ||
+        date >= end
+      ) return false;
+
+      if (Number(log.dayIndex) !== index) {
         return false;
       }
-
-      const savedIndex = Number(
-        log.dayIndex
-      );
 
       if (
-        !Number.isInteger(savedIndex) ||
-        savedIndex !== dayIndex
-      ) {
-        return false;
-      }
+        cleanName(log.sessionName) !== targetName
+      ) return false;
 
-      const savedName = cleanName(
-        log.sessionName
-      );
-
-      // Require the saved workout to match
-      // this card, not merely another
-      // workout completed this week.
-      if (
-        !savedName ||
-        savedName !== targetName
-      ) {
-        return false;
-      }
-
-      const percentage = Number(
+      return Number(
         log.completionPercent ?? 0
-      );
-
-      return percentage >= 100;
+      ) >= 100;
     });
   }
-
-  /* =========================================
-     STYLES
-     ========================================= */
 
   function installStyles() {
     if ($(STYLE_ID)) return;
 
-    const style = document.createElement(
-      "style"
-    );
-
+    const style = document.createElement("style");
     style.id = STYLE_ID;
 
     style.textContent = `
 
-      /* ===================================
-         ALL WORKOUT CARDS — YELLOW
-         =================================== */
+      /* =====================================
+         MAIN WORKOUT CARDS
+         ===================================== */
 
-      #manaV83Content
-      .mana-v85-day,
-
-      #manaV83Content
-      .mana-v85-day.in-progress,
-
-      #manaV83Content
-      .mana-v85-day.mana-v964-expanded {
-
+      #manaV83Content .mana-v85-day,
+      #manaV83Content .mana-v85-day.in-progress,
+      #manaV83Content .mana-v85-day.mana-v964-expanded {
         position: relative !important;
-
         border: 2px solid ${GOLD} !important;
-
-        border-top-color: ${GOLD} !important;
-        border-right-color: ${GOLD} !important;
-        border-bottom-color: ${GOLD} !important;
-        border-left-color: ${GOLD} !important;
-
-        outline: none !important;
-
+        border-color: ${GOLD} !important;
         border-radius: 20px !important;
-
         background:
-          linear-gradient(
-            145deg,
-            #15130d,
-            #090909
-          ) !important;
-
+          linear-gradient(145deg,#15130d,#090909)
+          !important;
         box-shadow: none !important;
-
+        outline: none !important;
         box-sizing: border-box !important;
       }
 
-      /* ===================================
-         REMOVE COLOURED SIDE ACCENTS
-         =================================== */
-
-      #manaV83Content
-      .mana-v85-day::before,
-
-      #manaV83Content
-      .mana-v85-day::after {
-
+      #manaV83Content .mana-v85-day::before,
+      #manaV83Content .mana-v85-day::after {
         content: none !important;
-
-        display: none !important;
-
-        background: none !important;
-
-        border: none !important;
-
-        box-shadow: none !important;
-      }
-
-      #manaV83Content
-      .mana-v85-day
-      .mana-v85-head {
-
-        border-left: none !important;
-        border-right: none !important;
-
-        box-shadow: none !important;
-      }
-
-      /* ===================================
-         REMOVE EXISTING COMPLETION BADGE
-         =================================== */
-
-      #manaV83Content
-      .mf530-old-complete {
-
         display: none !important;
       }
 
-      /* ===================================
-         YELLOW COMPLETION MARK
-         =================================== */
+      /* =====================================
+         REMOVE OLD COMPLETION INDICATOR
+         ===================================== */
 
-      #manaV83Content
-      .mf530-complete {
+      #manaV83Content .mf550-old-badge {
+        display: none !important;
+      }
 
+      /* =====================================
+         TOP-RIGHT YELLOW COMPLETION TICK
+         ===================================== */
+
+      #manaV83Content .mf550-complete {
         position: absolute;
-
-        top: 16px;
+        top: 15px;
         right: 16px;
-
-        width: 116px;
-
+        width: 118px;
         display: flex;
         flex-direction: column;
-
         align-items: center;
-        justify-content: center;
-
-        gap: 8px;
-
-        color: ${GOLD} !important;
-
+        gap: 7px;
         text-align: center;
-
         pointer-events: none;
-
         z-index: 3;
       }
 
-      #manaV83Content
-      .mf530-complete-icon {
-
+      #manaV83Content .mf550-complete svg {
         width: 37px;
         height: 37px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        color: ${GOLD} !important;
-      }
-
-      #manaV83Content
-      .mf530-complete-icon svg {
-
-        width: 37px !important;
-        height: 37px !important;
-
         fill: none !important;
-
-        color: ${GOLD} !important;
-
         stroke: ${GOLD} !important;
-
-        stroke-width: 2.5 !important;
-
+        stroke-width: 2.4;
         stroke-linecap: round;
         stroke-linejoin: round;
-
-        filter: none !important;
       }
 
-      #manaV83Content
-      .mf530-complete-icon svg circle,
-
-      #manaV83Content
-      .mf530-complete-icon svg path {
-
-        fill: none !important;
-
-        stroke: ${GOLD} !important;
-
-        stroke-width: 2.5 !important;
-      }
-
-      #manaV83Content
-      .mf530-complete-label {
-
+      #manaV83Content .mf550-complete-label {
         color: ${GOLD} !important;
-
         font-size: 10px !important;
-
+        line-height: 1.3 !important;
         font-weight: 950 !important;
-
-        line-height: 1.35 !important;
-
-        letter-spacing: .4px !important;
+        letter-spacing: .35px !important;
       }
 
-      /* ===================================
-         PRESERVE READABLE TITLE SPACING
-         =================================== */
-
       #manaV83Content
-      .mana-v85-day.mf530-done
+      .mana-v85-day.mf550-done
       .mana-v85-top {
-
-        padding-right: 121px;
-
+        padding-right: 121px !important;
         box-sizing: border-box;
       }
 
       #manaV83Content
-      .mana-v85-day.mf530-done
+      .mana-v85-day.mf550-done
       .mana-v85-count {
-
         display: none !important;
       }
 
-      /* ===================================
-         MOBILE
-         =================================== */
+      /* =====================================
+         EXPANDED EXERCISE LIST
+         REMOVE OUTER BOX
+         ===================================== */
+
+      #manaV83Content
+      .mana-v85-day.mana-v964-expanded
+      .mana-v85-exercises {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 4px !important;
+        padding: 6px 18px 20px !important;
+        margin: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+      }
+
+      /* =====================================
+         EXERCISE ROWS — NO GRID LINES
+         ===================================== */
+
+      #manaV83Content
+      .mana-v85-day.mana-v964-expanded
+      .mana-v85-exercise {
+        display: flex !important;
+        align-items: center !important;
+        gap: 14px !important;
+        min-height: 43px !important;
+        margin: 0 !important;
+        padding: 10px 12px !important;
+        border: none !important;
+        border-top: none !important;
+        border-bottom: none !important;
+        border-radius: 10px !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        color: #fff !important;
+        font-size: 13px !important;
+        line-height: 1.5 !important;
+        box-sizing: border-box !important;
+      }
+
+      #manaV83Content
+      .mana-v85-day.mana-v964-expanded
+      .mana-v85-exercise > span:last-child {
+        color: #fff !important;
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+
+      /* =====================================
+         YELLOW NUMBER PILLS
+         ===================================== */
+
+      #manaV83Content
+      .mana-v85-day.mana-v964-expanded
+      .mana-v85-num {
+        display: grid !important;
+        place-items: center !important;
+        flex: 0 0 29px !important;
+        width: 29px !important;
+        height: 29px !important;
+        border: 1.5px solid ${GOLD} !important;
+        border-radius: 10px !important;
+        background:
+          rgba(243,216,117,.06) !important;
+        color: ${GOLD} !important;
+        font-size: 12px !important;
+        font-weight: 900 !important;
+        box-shadow: none !important;
+      }
+
+      /* =====================================
+         DESKTOP HOVER — SUBTLE
+         ===================================== */
+
+      @media (hover:hover) and (pointer:fine) {
+        #manaV83Content
+        .mana-v85-day.mana-v964-expanded
+        .mana-v85-exercise:hover {
+          background:
+            rgba(243,216,117,.055) !important;
+        }
+      }
+
+      /* =====================================
+         MOBILE SPACING
+         ===================================== */
 
       @media (max-width:480px) {
 
-        #manaV83Content
-        .mf530-complete {
-
-          width: 88px;
-
-          top: 14px;
+        #manaV83Content .mf550-complete {
+          top: 13px;
           right: 12px;
-
+          width: 90px;
           gap: 5px;
         }
 
-        #manaV83Content
-        .mf530-complete-icon,
-
-        #manaV83Content
-        .mf530-complete-icon svg {
-
-          width: 31px !important;
-          height: 31px !important;
+        #manaV83Content .mf550-complete svg {
+          width: 31px;
+          height: 31px;
         }
 
-        #manaV83Content
-        .mf530-complete-label {
-
+        #manaV83Content .mf550-complete-label {
           font-size: 9px !important;
-
-          line-height: 1.3 !important;
-
           letter-spacing: .1px !important;
         }
 
         #manaV83Content
-        .mana-v85-day.mf530-done
+        .mana-v85-day.mf550-done
         .mana-v85-top {
+          padding-right: 96px !important;
+        }
 
-          padding-right: 94px;
+        #manaV83Content
+        .mana-v85-day.mana-v964-expanded
+        .mana-v85-exercises {
+          padding: 5px 10px 17px !important;
+        }
+
+        #manaV83Content
+        .mana-v85-day.mana-v964-expanded
+        .mana-v85-exercise {
+          gap: 11px !important;
+          padding: 10px 8px !important;
+          min-height: 43px !important;
         }
       }
 
+      @media (prefers-reduced-motion:reduce) {
+        #manaV83Content .mana-v85-exercise {
+          transition: none !important;
+        }
+      }
     `;
 
     document.head.appendChild(style);
   }
 
-  /* =========================================
-     IDENTIFY ORIGINAL BADGE
-     ========================================= */
-
   function hideOldBadge(card) {
-    const nodes = card.querySelectorAll(
-      "span, small, strong, div"
-    );
-
-    nodes.forEach(node => {
-      if (
-        node.closest(".mf530-complete")
-      ) {
-        return;
-      }
+    card.querySelectorAll(
+      "span,small,strong,div"
+    ).forEach(node => {
+      if (node.closest(".mf550-complete")) return;
 
       const text = (
         node.textContent || ""
@@ -454,25 +353,16 @@
 
       if (
         /^(?:✓|✔|☑)?\s*COMPLETED THIS WEEK$/i
-        .test(text)
+          .test(text)
       ) {
-        node.classList.add(
-          "mf530-old-complete"
-        );
+        node.classList.add("mf550-old-badge");
       }
     });
   }
 
-  /* =========================================
-     CREATE YELLOW TICK
-     ========================================= */
-
   function makeTick() {
-    const mark = document.createElement(
-      "div"
-    );
-
-    mark.className = "mf530-complete";
+    const mark = document.createElement("div");
+    mark.className = "mf550-complete";
 
     mark.setAttribute(
       "role",
@@ -485,58 +375,30 @@
     );
 
     mark.innerHTML = `
+      <svg viewBox="0 0 36 36"
+        aria-hidden="true">
+        <circle cx="18" cy="18" r="15"/>
+        <path d="M10.5 18.5 L15.5 23.5 L25.5 12.5"/>
+      </svg>
 
-      <span class="mf530-complete-icon">
-
-        <svg
-          viewBox="0 0 36 36"
-          aria-hidden="true"
-        >
-
-          <circle
-            cx="18"
-            cy="18"
-            r="15"
-          />
-
-          <path
-            d="M10.5 18.5 L15.5 23.5 L25.5 12.5"
-          />
-
-        </svg>
-
-      </span>
-
-      <span class="mf530-complete-label">
+      <span class="mf550-complete-label">
         WORKOUT COMPLETE<br>
         THIS WEEK
       </span>
-
     `;
 
     return mark;
   }
 
-  /* =========================================
-     DECORATE EXACT WORKOUT
-     ========================================= */
-
   function decorateCard(card, index) {
-    if (!(card instanceof HTMLElement)) {
-      return;
-    }
-
-    // Hide the existing weekly completion
-    // badge without using it to determine
-    // whether this workout was completed.
+    if (!(card instanceof HTMLElement)) return;
 
     hideOldBadge(card);
 
-    // Remove any mark from previous builds
-    // if one exists in this same card.
-
+    // Retire any marks from earlier builds.
     card.querySelectorAll(
-      ".mf520-complete, .mf510-right"
+      ".mf520-complete, .mf530-complete, " +
+      ".mf540-complete, .mf510-right"
     ).forEach(node => node.remove());
 
     const name = (
@@ -545,54 +407,35 @@
       )?.textContent || ""
     ).trim();
 
-    const completed = workoutCompleted(
-      index,
-      name
+    const done = completedThisWeek(index, name);
+
+    const existing = card.querySelector(
+      ".mf550-complete"
     );
 
-    let mark = card.querySelector(
-      ".mf530-complete"
+    card.classList.toggle(
+      "mf550-done",
+      done
     );
 
-    if (completed) {
-      card.classList.add(
-        "mf530-done"
-      );
-
-      if (!mark) {
-        mark = makeTick();
-        card.appendChild(mark);
-      }
-
-    } else {
-      card.classList.remove(
-        "mf530-done"
-      );
-
-      mark?.remove();
+    if (done && !existing) {
+      card.appendChild(makeTick());
+    } else if (!done && existing) {
+      existing.remove();
     }
   }
 
   function decorateCards() {
-    if (
-      !strengthOpen() ||
-      !workoutsOpen()
-    ) {
+    if (!strengthOpen() || !workoutsOpen()) {
       return;
     }
 
     document.querySelectorAll(
       "#manaV83Content .mana-v85-day"
-    ).forEach(
-      (card, index) => {
-        decorateCard(card, index);
-      }
-    );
+    ).forEach((card,index) => {
+      decorateCard(card,index);
+    });
   }
-
-  /* =========================================
-     LIGHTWEIGHT REFRESH
-     ========================================= */
 
   let queued = false;
 
@@ -615,29 +458,19 @@
     if (content) {
       new MutationObserver(refresh).observe(
         content,
-        {
-          childList: true
-        }
+        { childList: true }
       );
     }
 
-    document.addEventListener(
-      "click",
-      event => {
-        if (!(event.target instanceof Element)) {
-          return;
-        }
+    document.addEventListener("click", event => {
+      if (!(event.target instanceof Element)) return;
 
-        if (
-          event.target.closest(
-            "#manaV83Tabs, " +
-            ".mana-v85-day"
-          )
-        ) {
-          refresh();
-        }
+      if (event.target.closest(
+        "#manaV83Tabs, .mana-v85-day"
+      )) {
+        refresh();
       }
-    );
+    });
 
     window.addEventListener(
       "mana:strength-synced",
@@ -662,7 +495,7 @@
     refresh();
 
     console.log(
-      "Mana Strength Workout Cards",
+      "Mana Strength Workout Card Polish",
       BUILD
     );
   }
@@ -671,9 +504,8 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {once:true}
+      { once:true }
     );
-
   } else {
     init();
   }
