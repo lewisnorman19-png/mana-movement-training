@@ -1,23 +1,31 @@
 
 /* =====================================================
    MANA MOVEMENT TRAINING
-   STRENGTH WORKOUTS — ALWAYS VISIBLE
-   BUILD 103560
+   ALWAYS-VISIBLE STRENGTH WORKOUTS
+   BUILD 103570
 
-   - Show exercises on every workout card
-   - Show Start Workout buttons automatically
-   - Remove View Workout / Hide Workout labels
-   - Preserve clean exercise list styling
+   COMPLETE REPLACEMENT FOR:
+   mana_strength_always_show_exercises_103560.js
+
+   FIX
+   Overrides the original collapsed-card rule
+   in v9_64_strength_launchpad.js.
+
+   - All exercises visible immediately
+   - Start Workout always visible
+   - No need to expand cards
+   - Preserve yellow number pills
+   - Preserve white exercise text
+   - Preserve yellow workout borders
    - Preserve yellow completion ticks
-   - Preserve original workout functionality
-   - No observers or timers
+   - No observers, timers or image loading
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "103560";
-  const STYLE_ID = "mana-strength-always-visible-103560";
+  const BUILD = "103570";
+  const STYLE_ID = "mana-strength-always-visible-103570";
 
   if (document.getElementById(STYLE_ID)) return;
 
@@ -27,8 +35,16 @@
   style.textContent = `
 
     /* ======================================
-       ALWAYS SHOW EXERCISE LIST
+       OVERRIDE ORIGINAL COLLAPSED RULE
        ====================================== */
+
+    #manaV83Content
+    .mana-v85-day:not(.mana-v964-expanded)
+    .mana-v85-exercises,
+
+    #manaV83Content
+    .mana-v85-day.mana-v964-expanded
+    .mana-v85-exercises,
 
     #manaV83Content
     .mana-v85-day
@@ -36,19 +52,56 @@
 
       display: flex !important;
       flex-direction: column !important;
-      gap: 4px !important;
 
+      gap: 4px !important;
       padding: 6px 18px 20px !important;
 
       margin: 0 !important;
 
+      visibility: visible !important;
+      opacity: 1 !important;
+
       border: none !important;
+      outline: none !important;
       background: transparent !important;
       box-shadow: none !important;
     }
 
     /* ======================================
-       CLEAN EXERCISE ROWS
+       ALWAYS SHOW WORKOUT START BUTTON
+       ====================================== */
+
+    #manaV83Content
+    .mana-v85-day:not(.mana-v964-expanded)
+    .mana-v85-start,
+
+    #manaV83Content
+    .mana-v85-day.mana-v964-expanded
+    .mana-v85-start,
+
+    #manaV83Content
+    .mana-v85-day
+    .mana-v85-start {
+
+      display: block !important;
+
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+
+    /* ======================================
+       HIDE UNNECESSARY EXPAND CONTROLS
+       ====================================== */
+
+    #manaV83Content
+    .mana-v85-day
+    .mana-v964-open-label {
+
+      display: none !important;
+    }
+
+    /* ======================================
+       EXERCISE ROWS — CLEAN PRESENTATION
        ====================================== */
 
     #manaV83Content
@@ -56,6 +109,7 @@
     .mana-v85-exercise {
 
       display: flex !important;
+
       align-items: center !important;
 
       min-height: 43px !important;
@@ -65,13 +119,26 @@
       padding: 10px 12px !important;
 
       border: none !important;
+      border-top: none !important;
+      border-bottom: none !important;
+
       border-radius: 10px !important;
 
       background: transparent !important;
 
-      color: #ffffff !important;
+      color: #FFFFFF !important;
       font-size: 13px !important;
       line-height: 1.5 !important;
+    }
+
+    #manaV83Content
+    .mana-v85-day
+    .mana-v85-exercise > span:last-child {
+
+      color: #FFFFFF !important;
+      flex: 1;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     /* ======================================
@@ -87,54 +154,41 @@
 
       width: 29px !important;
       height: 29px !important;
+
       flex: 0 0 29px !important;
 
       border: 1.5px solid #F3D875 !important;
+
       border-radius: 10px !important;
 
-      background: rgba(243,216,117,.06) !important;
+      background:
+        rgba(243,216,117,.06) !important;
 
       color: #F3D875 !important;
+      font-size: 12px !important;
       font-weight: 900 !important;
     }
 
     /* ======================================
-       ALWAYS SHOW START WORKOUT BUTTON
+       PREMIUM YELLOW OUTER BORDER
        ====================================== */
 
     #manaV83Content
-    .mana-v85-day
-    .mana-v85-start {
-
-      display: block !important;
-    }
-
-    /* ======================================
-       REMOVE EXPAND / COLLAPSE LABEL
-       ====================================== */
+    .mana-v85-day,
 
     #manaV83Content
-    .mana-v85-day
-    .mana-v964-open-label {
-
-      display: none !important;
-    }
-
-    /* ======================================
-       KEEP CONSISTENT PREMIUM CARD BORDERS
-       ====================================== */
+    .mana-v85-day:not(.mana-v964-expanded),
 
     #manaV83Content
-    .mana-v85-day {
+    .mana-v85-day.mana-v964-expanded {
 
       border: 2px solid #F3D875 !important;
       border-color: #F3D875 !important;
-
       border-radius: 20px !important;
     }
 
     /* ======================================
-       MOBILE SPACING
+       MOBILE
        ====================================== */
 
     @media (max-width:480px) {
