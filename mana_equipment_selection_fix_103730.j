@@ -1,102 +1,90 @@
 
-/* =========================================================
-   MANA MOVEMENT TRAINING — EQUIPMENT SELECTION FIX
-   BUILD 103730 — COMPLETE JAVASCRIPT FILE
+/* ============================================================
+   MANA MOVEMENT TRAINING — EQUIPMENT SELECTION REPAIR
+   BUILD 103730 — COMPLETE STANDALONE JAVASCRIPT FILE
 
-   Fix: previously saved Kettlebells must not override a new
-   Full Gym / Dumbbells / Home Basics / Bodyweight selection.
+   Fixes persisted Kettlebells being reapplied when switching
+   the Profile Equipment dropdown to Full gym, Dumbbells,
+   Home basics, or Bodyweight.
 
-   Keeps the existing kettlebell library and program builder.
-   No polling, global DOM interception or workout changes.
-   ========================================================= */
+   Does not rebuild the profile, workouts, chats or demos.
+   ============================================================ */
 (() => {
   'use strict';
 
-  if (window.MANA_EQUIPMENT_SELECTION_FIX_103730) return;
-  window.MANA_EQUIPMENT_SELECTION_FIX_103730 = true;
+  if (window.MANA_EQUIPMENT_SELECTION_REPAIR_103730) return;
+  window.MANA_EQUIPMENT_SELECTION_REPAIR_103730 = true;
 
-  const PROFILE_KEY = 'mana-profile-v67';
-  const SELECT_ID = 'manaProfileEquipment';
-  const BUILDER_SELECTOR = '[data-strength-group="equipment"]';
-  const OPTIONS = new Set([
-    'Full gym', 'Dumbbells', 'Home basics', 'Bodyweight', 'Kettlebells'
+  const KEY = 'mana-profile-v67';
+  const EQUIPMENT_ID = 'manaProfileEquipment';
+  const BUILDER = '[data-strength-group="equipment"]';
+  const VALID = new Set([
+    'Full gym',
+    'Dumbbells',
+    'Home basics',
+    'Bodyweight',
+    'Kettlebells'
   ]);
-  let userChoice = null;
 
   function readProfile() {
     try {
-      const value = JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}');
+      const value = JSON.parse(localStorage.getItem(KEY) || '{}');
       return value && typeof value === 'object' && !Array.isArray(value)
         ? value : {};
-    } catch (_) {
+    } catch (error) {
+      console.warn('Mana profile equipment: profile read failed', error);
       return {};
     }
   }
 
-  function storeChoice(value) {
-    if (!OPTIONS.has(value)) return;
-    userChoice = value;
+  function persistEquipment(value) {
+    if (!VALID.has(value)) return;
     try {
       const profile = readProfile();
       if (profile.equipment !== value) {
         profile.equipment = value;
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+        localStorage.setItem(KEY, JSON.stringify(profile));
       }
     } catch (error) {
-      console.warn('Mana equipment preference could not be saved', error);
+      console.warn('Mana profile equipment: save failed', error);
     }
   }
 
-  function syncBuilder(value) {
-    const group = document.querySelector(BUILDER_SELECTOR);
-    if (!group || !OPTIONS.has(value)) return;
-    // Visual state only: the original builder handles program generation.
-    group.querySelectorAll('[data-value]').forEach(button => {
-      const selected = button.dataset.value === value;
-      button.classList.toggle('active', selected);
-      button.setAttribute('aria-pressed', String(selected));
-    });
-  }
-
-  function onEquipmentChange(event) {
+  function onProfileSelection(event) {
     const select = event.target;
-    if (!(select instanceof HTMLSelectElement) || select.id !== SELECT_ID) return;
-    storeChoice(select.value);
-    syncBuilder(select.value);
+    if (!(select instanceof HTMLSelectElement) || select.id !== EQUIPMENT_ID) return;
+
+    // Persist the user's latest choice before the older kettlebell
+    // upgrade can reapply a previously saved choice.
+    persistEquipment(select.value);
   }
 
-  function onBuilderClick(event) {
+  function onBuilderSelection(event) {
     if (!(event.target instanceof Element)) return;
-    const button = event.target.closest(BUILDER_SELECTOR + ' [data-value]');
-    if (!button || !OPTIONS.has(button.dataset.value)) return;
-    // Capture the intention immediately, before old navigation refreshes.
-    storeChoice(button.dataset.value);
-    const select = document.getElementById(SELECT_ID);
-    if (select && select.querySelector('option[value="' + button.dataset.value + '"]')) {
-      select.value = button.dataset.value;
-    }
+    const button = event.target.closest(BUILDER + ' [data-value]');
+    if (!button || !VALID.has(button.dataset.value)) return;
+
+    // The program builder has its own selection logic. Capture the
+    // user's choice without interfering with program generation.
+    persistEquipment(button.dataset.value);
   }
 
-  function onSaveClick(event) {
+  function onProfileSave(event) {
     if (!(event.target instanceof Element)) return;
-    const button = event.target.closest('#manaProfileSave');
-    if (!button) return;
-    const select = document.getElementById(SELECT_ID);
-    if (select instanceof HTMLSelectElement && OPTIONS.has(select.value)) {
-      storeChoice(select.value);
-      // Re-apply after the original save handler has finished.
-      queueMicrotask(() => storeChoice(select.value));
+    if (!event.target.closest('#manaProfileSave')) return;
+    const select = document.getElementById(EQUIPMENT_ID);
+    if (select instanceof HTMLSelectElement) {
+      persistEquipment(select.value);
     }
   }
 
   function init() {
-    // Capturing change before the 103490 navigation handler prevents the
-    // old persisted selection from overriding the user's new choice.
-    document.addEventListener('change', onEquipmentChange, true);
-    document.addEventListener('input', onEquipmentChange, true);
-    document.addEventListener('click', onBuilderClick, true);
-    document.addEventListener('click', onSaveClick, true);
-    console.log('Mana equipment selection fix 103730 ready');
+    document.addEventListener('change', onProfileSelection, true);
+    document.addEventListener('input', onProfileSelection, true);
+    document.addEventListener('click', onBuilderSelection, true);
+    document.addEventListener('click', onProfileSave, true);
+
+    console.log('Mana equipment selection repair 103730 loaded');
   }
 
   if (document.readyState === 'loading') {
