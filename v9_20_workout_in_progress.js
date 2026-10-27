@@ -1,5 +1,5 @@
 /* =========================================
-   MANA MOVEMENT TRAINING v9.20.1
+   MANA MOVEMENT TRAINING v9.20.2
    WORKOUT IN PROGRESS + RELIABLE TIMING SAVE
 
    - ONE VISIBLE WORKOUT TIMER
@@ -13,6 +13,7 @@
    - SAVES DURATION SECONDS / MINUTES
    - SAVES COMPLETION %
    - ROBUSTLY ATTACHES TIMING TO NEW LOG
+   - FINAL TICK ALL BUTTON TURNS YELLOW WHEN PRESSED
 
    STABILITY REPAIR:
    - NO CONTINUOUS MUTATION OBSERVER
@@ -557,6 +558,51 @@
     );
   }
 
+  function allWorkoutSetsDone() {
+    const checks =
+      [
+        ...document.querySelectorAll(
+          "#manaV64Exercises [data-v64-check]"
+        )
+      ];
+
+    return Boolean(
+      checks.length &&
+      checks.every(
+        check =>
+          check.classList.contains(
+            "done"
+          )
+      )
+    );
+  }
+
+  function syncWorkoutTickAllButton() {
+    const button =
+      document.getElementById(
+        "manaV920TickWorkout"
+      );
+
+    if (!button) {
+      return;
+    }
+
+    const done =
+      allWorkoutSetsDone();
+
+    button.classList.toggle(
+      "done",
+      done
+    );
+
+    button.setAttribute(
+      "aria-pressed",
+      done
+        ? "true"
+        : "false"
+    );
+  }
+
   function restoreTicks() {
     const state =
       loadState();
@@ -568,6 +614,7 @@
         state.completedSets !==
       "object"
     ) {
+      syncWorkoutTickAllButton();
       return;
     }
 
@@ -627,6 +674,8 @@
       );
 
     updateNativeSummary();
+
+    syncWorkoutTickAllButton();
   }
 
   function markInProgress(
@@ -907,6 +956,24 @@
         color:#f3d875;
         font-size:13px;
         font-weight:900;
+        transition:
+          background .18s ease,
+          border-color .18s ease,
+          color .18s ease,
+          transform .18s ease;
+      }
+
+      .mana-v920-workout-all.done{
+        background:#f3d875;
+        border-color:#f3d875;
+        color:#111;
+        box-shadow:
+          0 0 0 1px rgba(243,216,117,.18),
+          0 8px 24px rgba(243,216,117,.10);
+      }
+
+      .mana-v920-workout-all.done:active{
+        transform:scale(.995);
       }
 
       .mana-v920-pause{
@@ -999,6 +1066,8 @@
 
               updateNativeSummary();
 
+              syncWorkoutTickAllButton();
+
               setTimeout(
                 saveTicks,
                 50
@@ -1018,11 +1087,15 @@
   }
 
   function addWorkoutTickAll() {
-    if (
+    const existing =
       document.getElementById(
         "manaV920TickWorkout"
-      )
+      );
+
+    if (
+      existing
     ) {
+      syncWorkoutTickAllButton();
       return;
     }
 
@@ -1054,6 +1127,11 @@
     button.textContent =
       "✓ TICK ALL WORKOUT SETS";
 
+    button.setAttribute(
+      "aria-pressed",
+      "false"
+    );
+
     button.addEventListener(
       "click",
       () => {
@@ -1074,6 +1152,17 @@
             }
           );
 
+        button
+          .classList
+          .add(
+            "done"
+          );
+
+        button.setAttribute(
+          "aria-pressed",
+          "true"
+        );
+
         updateNativeSummary();
 
         setTimeout(
@@ -1089,6 +1178,8 @@
         "beforebegin",
         button
       );
+
+    syncWorkoutTickAllButton();
   }
 
   function addPauseButton() {
@@ -1199,6 +1290,8 @@
     addPauseButton();
 
     addWorkoutBadge();
+
+    syncWorkoutTickAllButton();
   }
 
   function updateOverview() {
@@ -1439,7 +1532,10 @@
         }
 
         setTimeout(
-          saveTicks,
+          () => {
+            saveTicks();
+            syncWorkoutTickAllButton();
+          },
           60
         );
 
@@ -1763,7 +1859,7 @@
       true;
 
     log.workoutTimingVersion =
-      "9.20.1";
+      "9.20.2";
 
     saveLogs(
       logs
@@ -1922,6 +2018,8 @@
       restoreTicks();
 
       updateTimerDisplay();
+
+      syncWorkoutTickAllButton();
     }
   }
 
@@ -2028,7 +2126,7 @@
     refreshEverything;
 
   window.MANA_WORKOUT_TIMING_BUILD =
-    "92010";
+    "92020";
 
   if (
     document.readyState ===
