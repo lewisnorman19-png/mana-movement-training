@@ -87,9 +87,7 @@
         display: none !important;
       }
       @media (max-width: 520px) {
-        #authView:not(.hide) {
-          padding: 25px 15px 35px !important;
-        }
+        #authView:not(.hide) { padding: 25px 15px 35px !important; }
       }
     `;
     document.head.appendChild(style);
@@ -100,56 +98,39 @@
     const signupTab = $('signupTab');
     const loginForm = $('loginForm');
     const signupForm = $('signupForm');
-
-    if (!loginTab || !signupTab || !loginForm || !signupForm) {
-      return;
-    }
+    if (!loginTab || !signupTab || !loginForm || !signupForm) return;
 
     /* A selected tab submits its existing, validated form.
        An unselected tab still switches forms using the original handler. */
     function onTabClick(event) {
       const button = event.target.closest('#loginTab, #signupTab');
-      if (!button || !button.classList.contains('active')) {
-        return;
-      }
+      if (!button || !button.classList.contains('active')) return;
 
       const form = button.id === 'loginTab' ? loginForm : signupForm;
-      if (form.classList.contains('hide')) {
-        return;
-      }
+      if (form.classList.contains('hide')) return;
 
       event.preventDefault();
       event.stopImmediatePropagation();
-
-      if (typeof form.requestSubmit === 'function') {
-        form.requestSubmit();
-      } else {
-        form.querySelector('.btn.primary')?.click();
-      }
+      if (typeof form.requestSubmit === 'function') form.requestSubmit();
+      else form.querySelector('.btn.primary')?.click();
     }
 
     document.addEventListener('click', onTabClick, true);
-
     loginTab.textContent = 'Login';
     signupTab.textContent = 'Sign Up';
-
     loginTab.title = 'Select Login, then click again to sign in';
     signupTab.title = 'Select Sign Up, then click again to create your account';
   }
 
   function init() {
     if (!$('authView')) return;
-
     addStyles();
     installTabSubmission();
-
     window.MANA_LOGIN_CLEAN_BUILD = '103790';
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init, {
-      once: true
-    });
+    document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {
     init();
   }
