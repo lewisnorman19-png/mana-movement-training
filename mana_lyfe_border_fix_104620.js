@@ -1,291 +1,393 @@
 
 /* ============================================================
    MANA MOVEMENT TRAINING
-   MANA LYFE — CARD BORDER REPAIR
-   BUILD 104620
+   MANA LYFE — OVERVIEW MOBILE REFINEMENT
+   BUILD 104623
 
-   COMPLETE JAVASCRIPT FILE
+   COMPLETE FILE REPLACEMENT
+
+   FILE:
+   mana_lyfe_border_fix_104620.js
 
    FIXES:
-   - Four large Overview cards: WHITE borders
-   - Four small illustration frames: ORANGE borders
-   - Remove leftover gold top-edge accents
+   ------------------------------------------------------------
+   1. Large Overview cards: clean white borders
+   2. Small illustration frames: orange borders
+   3. Remove decorative orange lines across card tops
+   4. Keep original title sizes
+   5. Keep original illustration sizes
+   6. Make small orange labels more compact on mobile
+   7. Give silver descriptions the full card width
+   8. Keep two cards side by side on phones
 
    PRESERVES:
-   - Existing card layouts and illustrations
-   - Orange labels and links
-   - Teal Support Chat
-   - White navigation and green Reset
-   - All existing functionality
+   ------------------------------------------------------------
+   - Existing titles and typography
+   - Original illustrations
+   - Support Chat styling
+   - Green Reset navigation
+   - White navigation icons
+   - Routine and Reset functionality
+   - Mana Strength and Mana28
+   - All saved data
 
-   LOAD AFTER 104610
+   LOAD USING VERSION 104623
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "104620";
+  const BUILD = "104623";
 
-  const SHELL_ID = "manaV83ProgramShell";
-  const TITLE_ID = "manaV83Title";
-  const CONTENT_ID = "manaV83Content";
+  const STYLE_ID =
+    "manaLyfeOverviewMobile104623";
 
-  const STYLE_ID = "manaLyfeBorderFix104620Style";
-
-  const WHITE = "#FFFFFF";
-  const ORANGE = "#FF7927";
-
-  if (window.MANA_LYFE_BORDER_FIX_BUILD === BUILD) {
+  if (document.getElementById(STYLE_ID)) {
     return;
   }
 
-  window.MANA_LYFE_BORDER_FIX_BUILD = BUILD;
+  const SHELL =
+    "#manaV83ProgramShell.mana-lyfe-premium-104580";
 
-  const $ = id => document.getElementById(id);
+  const CONTENT = "#manaV83Content";
 
-  function isLyfe() {
-    const shell = $(SHELL_ID);
-    const title = $(TITLE_ID);
-
-    if (!shell || !title) return false;
-    if (!shell.classList.contains("open")) return false;
-
-    const name = String(title.textContent || "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toUpperCase();
-
-    return name === "MANA LYFE" ||
-           name === "MANA LIFE";
-  }
+  const WHITE = "#FFFFFF";
+  const ORANGE = "#FF7927";
+  const SILVER = "#C1C6CE";
+  const CARD_BG = "#15171A";
 
   /* ============================================================
-     FIX THE TOP-EDGE DECORATION
+     INSTALL STYLES
      ============================================================ */
 
   function installStyles() {
-    if ($(STYLE_ID)) return;
+
+    if (document.getElementById(STYLE_ID)) {
+      return;
+    }
 
     const style = document.createElement("style");
+
     style.id = STYLE_ID;
 
     style.textContent = `
 
-      html body
-      #${SHELL_ID}.mana-lyfe-premium-104580
-      #${CONTENT_ID}
-      .mana-v978-grid
-      button.mana-v978-launch::before {
-
-        background: ${ORANGE} !important;
-        background-image: none !important;
-        box-shadow: none !important;
-      }
-
-      /* Prevent gold outlines and shadows
-         on hover or keyboard focus. */
+      /* ======================================
+         LARGE OVERVIEW CARDS
+         ====================================== */
 
       html body
-      #${SHELL_ID}.mana-lyfe-premium-104580
-      #${CONTENT_ID}
+      ${SHELL}
+      ${CONTENT}
       .mana-v978-grid
-      button.mana-v978-launch:hover,
+      .mana-v978-launch {
 
-      html body
-      #${SHELL_ID}.mana-lyfe-premium-104580
-      #${CONTENT_ID}
-      .mana-v978-grid
-      button.mana-v978-launch:focus-visible {
+        border: 1.5px solid ${WHITE} !important;
 
         border-color: ${WHITE} !important;
+
+        background: ${CARD_BG} !important;
+        background-image: none !important;
+
         box-shadow: none !important;
       }
 
-      /* Keep keyboard focus clearly visible. */
+      /* Remove orange top stripes */
 
       html body
-      #${SHELL_ID}.mana-lyfe-premium-104580
-      #${CONTENT_ID}
+      ${SHELL}
+      ${CONTENT}
       .mana-v978-grid
-      button.mana-v978-launch:focus-visible {
+      .mana-v978-launch::before {
+
+        display: none !important;
+        content: none !important;
+
+        background: none !important;
+        background-image: none !important;
+      }
+
+      /* ======================================
+         SMALL ILLUSTRATION FRAMES
+         ====================================== */
+
+      html body
+      ${SHELL}
+      ${CONTENT}
+      .mana-v978-grid
+      .mana-v978-launch
+      .mana-v978-icon {
+
+        border: 1.5px solid ${ORANGE} !important;
+
+        border-color: ${ORANGE} !important;
+
+        background: #0B0D10 !important;
+        background-image: none !important;
+
+        box-shadow: none !important;
+      }
+
+      /* Keep the original illustration artwork
+         and its existing dimensions unchanged. */
+
+      /* ======================================
+         EXISTING COPY
+         ====================================== */
+
+      html body
+      ${SHELL}
+      ${CONTENT}
+      .mana-v978-grid
+      .mana-v978-copy {
+
+        min-width: 0 !important;
+      }
+
+      html body
+      ${SHELL}
+      ${CONTENT}
+      .mana-v978-grid
+      .mana-v978-text {
+
+        color: ${SILVER} !important;
+
+        -webkit-text-fill-color:
+          ${SILVER} !important;
+
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
+      }
+
+      /* ======================================
+         PHONE LAYOUT
+         ====================================== */
+
+      @media (max-width: 700px) {
+
+        /* Keep two cards side by side */
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid {
+
+          display: grid !important;
+
+          grid-template-columns:
+            repeat(2, minmax(0, 1fr)) !important;
+
+          gap: 10px !important;
+        }
+
+        /* Stack artwork above the text */
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid
+        .mana-v978-launch {
+
+          display: flex !important;
+
+          flex-direction: column !important;
+
+          align-items: flex-start !important;
+
+          justify-content: flex-start !important;
+
+          gap: 10px !important;
+
+          min-width: 0 !important;
+
+          padding: 13px 11px !important;
+
+          text-align: left !important;
+        }
+
+        /* Keep the existing illustration size.
+           Only prevent it from shrinking. */
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid
+        .mana-v978-icon {
+
+          flex-shrink: 0 !important;
+
+          align-self: flex-start !important;
+        }
+
+        /* Full-width copy container */
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid
+        .mana-v978-copy {
+
+          display: flex !important;
+
+          flex-direction: column !important;
+
+          align-items: flex-start !important;
+
+          width: 100% !important;
+
+          max-width: 100% !important;
+
+          min-width: 0 !important;
+
+          flex: 1 1 auto !important;
+        }
+
+        /* Compact orange category labels */
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid
+        .mana-v978-label {
+
+          font-size: 9px !important;
+
+          line-height: 1.25 !important;
+
+          letter-spacing: .04em !important;
+
+          overflow-wrap: break-word !important;
+        }
+
+        /* IMPORTANT:
+           No font-size, weight or line-height
+           changes to .mana-v978-title.
+
+           The approved title styling is retained.
+        */
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid
+        .mana-v978-title {
+
+          max-width: 100% !important;
+
+          white-space: normal !important;
+
+          overflow-wrap: break-word !important;
+        }
+
+        /* Silver description uses full card width */
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid
+        .mana-v978-text {
+
+          display: block !important;
+
+          width: 100% !important;
+
+          max-width: 100% !important;
+
+          min-width: 0 !important;
+
+          margin-top: 9px !important;
+
+          white-space: normal !important;
+
+          overflow-wrap: break-word !important;
+        }
+
+        /* Orange action links */
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid
+        .mana-v978-arrow {
+
+          max-width: 100% !important;
+
+          white-space: normal !important;
+
+          overflow-wrap: break-word !important;
+        }
+
+      }
+
+      /* ======================================
+         SMALL PHONES
+         ====================================== */
+
+      @media (max-width: 380px) {
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid {
+
+          gap: 8px !important;
+        }
+
+        html body
+        ${SHELL}
+        ${CONTENT}
+        .mana-v978-grid
+        .mana-v978-launch {
+
+          padding: 11px 9px !important;
+        }
+
+        /* Titles and illustrations remain
+           at their approved sizes. */
+
+      }
+
+      /* ======================================
+         KEYBOARD ACCESSIBILITY
+         ====================================== */
+
+      html body
+      ${SHELL}
+      ${CONTENT}
+      .mana-v978-grid
+      .mana-v978-launch:focus-visible {
+
         outline: 2px solid ${ORANGE} !important;
-        outline-offset: 2px !important;
+
+        outline-offset: 3px !important;
       }
 
     `;
 
     document.head.appendChild(style);
-  }
 
-  /* ============================================================
-     APPLY DIRECTLY TO THE FOUR OVERVIEW CARDS
-     ============================================================ */
-
-  function apply() {
-    if (!isLyfe()) return;
-
-    const content = $(CONTENT_ID);
-
-    if (!content) return;
-
-    const grid = content.querySelector(
-      ".mana-v978-launchpad .mana-v978-grid"
+    console.log(
+      "[ManaLyfe] Overview mobile refinement — " +
+      BUILD
     );
-
-    if (!grid) return;
-
-    const cards = grid.querySelectorAll(
-      "button.mana-v978-launch[data-v978-tab]"
-    );
-
-    cards.forEach(card => {
-
-      /* LARGE CARD — WHITE BORDER */
-
-      if (
-        card.style.getPropertyValue("border-color")
-          !== WHITE ||
-        card.style.getPropertyPriority("border-color")
-          !== "important"
-      ) {
-        card.style.setProperty(
-          "border",
-          "1px solid " + WHITE,
-          "important"
-        );
-
-        card.style.setProperty(
-          "border-color",
-          WHITE,
-          "important"
-        );
-      }
-
-      card.style.setProperty(
-        "background",
-        "#15171A",
-        "important"
-      );
-
-      card.style.setProperty(
-        "box-shadow",
-        "none",
-        "important"
-      );
-
-      /* SMALL ICON FRAME — ORANGE BORDER */
-
-      const icon = card.querySelector(
-        ".mana-v978-icon"
-      );
-
-      if (!icon) return;
-
-      if (
-        icon.style.getPropertyValue("border-color")
-          !== ORANGE ||
-        icon.style.getPropertyPriority("border-color")
-          !== "important"
-      ) {
-        icon.style.setProperty(
-          "border",
-          "1px solid " + ORANGE,
-          "important"
-        );
-
-        icon.style.setProperty(
-          "border-color",
-          ORANGE,
-          "important"
-        );
-      }
-
-      icon.style.setProperty(
-        "background",
-        "#0B0D10",
-        "important"
-      );
-
-      icon.style.setProperty(
-        "box-shadow",
-        "none",
-        "important"
-      );
-
-    });
-  }
-
-  /* ============================================================
-     CONTROLLED SCHEDULER
-     ============================================================ */
-
-  let pending = false;
-
-  function schedule() {
-    if (pending) return;
-
-    pending = true;
-
-    requestAnimationFrame(() => {
-      pending = false;
-      apply();
-    });
   }
 
   /* ============================================================
      INITIALISE
      ============================================================ */
 
-  function init() {
-    installStyles();
-    apply();
-
-    const shell = $(SHELL_ID);
-
-    if (shell && window.MutationObserver) {
-      const observer = new MutationObserver(schedule);
-
-      observer.observe(shell, {
-        childList: true,
-        subtree: true
-      });
-    }
-
-    document.addEventListener(
-      "click",
-      event => {
-        if (
-          event.target instanceof Element &&
-          event.target.closest(
-            "#manaV83Tabs, #manaV83ProgramShell"
-          )
-        ) {
-          schedule();
-        }
-      },
-      true
-    );
-
-    window.addEventListener(
-      "mana:program-tab-change",
-      schedule
-    );
-
-    window.addEventListener("pageshow", schedule);
-
-    console.log(
-      "[ManaLyfe] Card borders repaired — " + BUILD
-    );
-  }
-
   if (document.readyState === "loading") {
+
     document.addEventListener(
       "DOMContentLoaded",
-      init,
+      installStyles,
       { once: true }
     );
+
   } else {
-    init();
+
+    installStyles();
+
   }
 
 })();
