@@ -1,38 +1,47 @@
 
 /* =====================================================
    MANA MOVEMENT TRAINING
-   MANA LYFE — LEARNING FINAL COLOURS
-   BUILD 104660
+   MANA LYFE — LEARNING FINAL COLOUR TIDY
+   BUILD 104661
 
-   COMPLETE FILE:
+   COMPLETE FILE REPLACEMENT:
    mana_lyfe_learning_finish_104660.js
 
    FIXES:
-   - Te Reo Māori phrases: orange
-   - English translations: silver
-   - Learning dropdown arrows: orange
-   - Learning card backgrounds: charcoal
-   - Learning card borders: white/silver
-   - No yellow or gold in Learning
+   - Everyday Māori phrases orange
+   - More Te Reo words and sentences orange
+   - English translations silver
+   - Learning arrows orange
+   - Charcoal backgrounds
+   - White/silver card borders
 
    PRESERVES:
-   - All Māori phrases and translations
-   - All learning content
-   - Accordion opening and closing
-   - Existing fonts and text sizes
-   - Mobile layouts
-   - All other Mana Movement programs
+   - All Learning content and translations
+   - Existing accordion functionality
+   - Original typography and spacing
+   - Mobile layout
+   - All other Mana Movement screens
+
+   No data or navigation changes.
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104660";
-  const STYLE_ID = "manaLyfeLearningFinish104660";
+  const BUILD = "104661";
+  const STYLE_ID = "manaLyfeLearningFinish104661";
+  const MORE_REO_CLASS = "mana-lyfe-more-reo-104661";
 
-  if (document.getElementById(STYLE_ID)) {
-    return;
-  }
+  if (document.getElementById(STYLE_ID)) return;
+
+  const SHELL =
+    "#manaV83ProgramShell.mana-lyfe-premium-104580";
+
+  const CONTENT = "#manaV83Content";
+
+  const ORANGE = "#FF7927";
+  const WHITE = "#FFFFFF";
+  const SILVER = "#C1C6CE";
 
   const style = document.createElement("style");
   style.id = STYLE_ID;
@@ -40,136 +49,131 @@
   style.textContent = `
 
     /* =====================================
-       MANA LYFE LEARNING ONLY
+       LEARNING PANELS
        ===================================== */
 
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
-    .mana-v984-root {
-
-      --learning-orange: #FF7927;
-      --learning-white: #FFFFFF;
-      --learning-silver: #C1C6CE;
-      --learning-surface: #15171A;
-    }
-
-    /* =====================================
-       LEARNING SECTION PANELS
-       ===================================== */
-
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
+    ${SHELL} ${CONTENT}
     .mana-v984-panel {
-
       background: #15171A !important;
       background-image: none !important;
-
       border: 1px solid #626973 !important;
       box-shadow: none !important;
     }
 
-    /* =====================================
-       SMALL SECTION LABELS
-       ===================================== */
-
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
+    ${SHELL} ${CONTENT}
     .mana-v984-small-label {
-
-      color: #FF7927 !important;
-      -webkit-text-fill-color: #FF7927 !important;
+      color: ${ORANGE} !important;
+      -webkit-text-fill-color: ${ORANGE} !important;
     }
 
     /* =====================================
        TE REO MĀORI — EVERYDAY
-
-       Keep the original size and layout.
        ===================================== */
 
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
+    ${SHELL} ${CONTENT}
     .mana-v984-phrase {
-
       background: #090B0D !important;
       background-image: none !important;
-
       border: 1px solid #454B53 !important;
       box-shadow: none !important;
     }
 
-    /* Māori phrases — orange */
-
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
+    ${SHELL} ${CONTENT}
     .mana-v984-phrase strong {
-
-      color: #FF7927 !important;
-      -webkit-text-fill-color: #FF7927 !important;
+      color: ${ORANGE} !important;
+      -webkit-text-fill-color: ${ORANGE} !important;
     }
 
-    /* English descriptions — silver */
-
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
+    ${SHELL} ${CONTENT}
     .mana-v984-phrase span {
-
-      color: #C1C6CE !important;
-      -webkit-text-fill-color: #C1C6CE !important;
+      color: ${SILVER} !important;
+      -webkit-text-fill-color: ${SILVER} !important;
     }
 
     /* =====================================
-       LYFE PRINCIPLES — EXPANDABLE LESSONS
+       LEARNING ACCORDIONS
        ===================================== */
 
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
+    ${SHELL} ${CONTENT}
     .mana-v984-accordion {
-
-      border: 1px solid #626973 !important;
       background: #15171A !important;
       background-image: none !important;
+      border: 1px solid #626973 !important;
       box-shadow: none !important;
     }
 
-    /* Lesson titles stay white */
-
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
+    ${SHELL} ${CONTENT}
     .mana-v984-accordion > button strong {
-
-      color: #FFFFFF !important;
-      -webkit-text-fill-color: #FFFFFF !important;
+      color: ${WHITE} !important;
+      -webkit-text-fill-color: ${WHITE} !important;
     }
 
-    /* Dropdown arrows become orange */
-
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
+    ${SHELL} ${CONTENT}
     .mana-v984-accordion > button span {
-
-      color: #FF7927 !important;
-      -webkit-text-fill-color: #FF7927 !important;
+      color: ${ORANGE} !important;
+      -webkit-text-fill-color: ${ORANGE} !important;
     }
 
-    /* Expanded lesson text stays silver */
-
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
+    ${SHELL} ${CONTENT}
     .mana-v984-accordion-body {
-
-      color: #C1C6CE !important;
-      -webkit-text-fill-color: #C1C6CE !important;
+      color: ${SILVER} !important;
+      -webkit-text-fill-color: ${SILVER} !important;
     }
 
     /* =====================================
-       KEYBOARD ACCESSIBILITY
+       MORE TE REO — WORDS + SENTENCES
+
+       Scope these rules to the specific
+       More Te Reo panel, identified below.
        ===================================== */
 
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
-    .mana-v984-accordion > button:focus-visible {
+    ${SHELL} ${CONTENT}
+    .${MORE_REO_CLASS} {
+      background: #15171A !important;
+      border-color: #626973 !important;
+    }
 
-      outline: 2px solid #FF7927 !important;
+    ${SHELL} ${CONTENT}
+    .${MORE_REO_CLASS}
+    :is(
+      strong,
+      b,
+      td:first-child,
+      th:first-child,
+      [class*="word"],
+      [class*="maori"]
+    ) {
+      color: ${ORANGE} !important;
+      -webkit-text-fill-color: ${ORANGE} !important;
+    }
+
+    ${SHELL} ${CONTENT}
+    .${MORE_REO_CLASS}
+    :is(
+      td:nth-child(2),
+      [class*="translation"],
+      [class*="english"]
+    ) {
+      color: ${SILVER} !important;
+      -webkit-text-fill-color: ${SILVER} !important;
+    }
+
+    /* Keep the section heading orange */
+
+    ${SHELL} ${CONTENT}
+    .${MORE_REO_CLASS}
+    .mana-v984-small-label {
+      color: ${ORANGE} !important;
+      -webkit-text-fill-color: ${ORANGE} !important;
+    }
+
+    /* =====================================
+       ACCESSIBILITY
+       ===================================== */
+
+    ${SHELL} ${CONTENT}
+    .mana-v984-accordion > button:focus-visible {
+      outline: 2px solid ${ORANGE} !important;
       outline-offset: 3px !important;
     }
 
@@ -177,8 +181,110 @@
 
   document.head.appendChild(style);
 
-  console.log(
-    "[ManaLyfe] Learning final colours " + BUILD
-  );
+  /* =========================================
+     IDENTIFY THE MORE TE REO SECTION
+
+     Older Learning content may use a
+     different panel class. Rather than
+     changing every Learning card, identify
+     this panel by its existing heading.
+
+     No content is replaced or rewritten.
+     ========================================= */
+
+  function markMoreTeReo() {
+    const shell = document.querySelector(SHELL);
+    const content = document.querySelector(CONTENT);
+
+    if (!shell || !content) return;
+
+    const elements = content.querySelectorAll(
+      "div, span, h2, h3, h4, p, strong"
+    );
+
+    for (const element of elements) {
+      if (element.children.length > 0) continue;
+
+      const heading = (element.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toUpperCase();
+
+      if (
+        !heading.includes("MORE TE REO") ||
+        !heading.includes("WORDS")
+      ) {
+        continue;
+      }
+
+      const panel = element.closest(
+        ".mana-v984-panel, " +
+        "section, article, " +
+        "[class*='panel'], " +
+        "[class*='card']"
+      ) || element.parentElement?.parentElement;
+
+      if (
+        !panel ||
+        panel === content ||
+        panel === shell ||
+        !content.contains(panel)
+      ) {
+        continue;
+      }
+
+      panel.classList.add(MORE_REO_CLASS);
+      break;
+    }
+  }
+
+  /* =========================================
+     INITIALISE AFTER CONTENT RENDERS
+     ========================================= */
+
+  let queued = false;
+
+  function scheduleUpdate() {
+    if (queued) return;
+
+    queued = true;
+
+    requestAnimationFrame(() => {
+      queued = false;
+      markMoreTeReo();
+    });
+  }
+
+  function init() {
+    markMoreTeReo();
+
+    const content =
+      document.getElementById("manaV83Content");
+
+    if (content) {
+      const observer = new MutationObserver(
+        scheduleUpdate
+      );
+
+      observer.observe(content, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    console.log(
+      "[ManaLyfe] Learning colours " + BUILD
+    );
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener(
+      "DOMContentLoaded",
+      init,
+      { once: true }
+    );
+  } else {
+    init();
+  }
 
 })();
