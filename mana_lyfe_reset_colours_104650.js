@@ -1,41 +1,31 @@
 
 /* =====================================================
    MANA MOVEMENT TRAINING
-   MANA LYFE — RESET + CHAT COLOUR FINISH
-   BUILD 104651
+   MANA LYFE — RESET + CHAT FINAL COLOURS
+   BUILD 104652
 
-   COMPLETE REPLACEMENT FILE:
+   COMPLETE FILE REPLACEMENT:
    mana_lyfe_reset_colours_104650.js
 
-   FIXES:
-   - Selected Reset choices orange
-   - Reset completion summary values orange
-   - Remaining Reset gold changed to orange
-   - Support Chat uses dark teal and cyan
-   - Guided Reset whakatauki orange
-   - Breathing circle stays green with white text
+   FINISHES:
+   - More Support heading orange
+   - Support numbers and link borders orange
+   - Selected Reset options orange
+   - Completion summaries orange
+   - Chat dark teal / cyan
+   - Reset breathing circle remains green
 
-   PRESERVES:
-   - Breathing timer and animation
-   - Reset step navigation
-   - Emotion and action selections
-   - Completion records
-   - Support Chat message functionality
-   - Routine and workout progress
-   - Mana Strength and Mana28
-
-   STYLING ONLY — NO DATA CHANGES
+   No data, navigation, chat or timer changes.
+   Mana Strength and Mana28 unaffected.
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104651";
-  const STYLE_ID = "manaLyfeResetColours104651";
+  const BUILD = "104652";
+  const STYLE_ID = "manaLyfeResetColours104652";
 
-  if (document.getElementById(STYLE_ID)) {
-    return;
-  }
+  if (document.getElementById(STYLE_ID)) return;
 
   const style = document.createElement("style");
   style.id = STYLE_ID;
@@ -67,8 +57,6 @@
       -webkit-text-fill-color: #C1C6CE !important;
     }
 
-    /* Reset entry card: white outline */
-
     #manaV83ProgramShell.mana-lyfe-premium-104580
     #manaV83Content
     #manaLyfeReclaim103140
@@ -98,12 +86,11 @@
     }
 
     /* =====================================
-       RESET BUTTON — GREEN ONLY
+       MAIN RESET BUTTON — GREEN
        ===================================== */
 
     #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
-    #ml140OpenReset {
+    #manaV83Content #ml140OpenReset {
       border-color: #55D98B !important;
       background: #164B30 !important;
       background-image: none !important;
@@ -115,32 +102,26 @@
        GUIDED RESET HEADER
        ===================================== */
 
-    #manaV936ResetModal
-    .mana-v936-head-kicker,
-    #manaV936ResetModal
-    .mana-v936-step-kicker {
+    #manaV936ResetModal .mana-v936-head-kicker,
+    #manaV936ResetModal .mana-v936-step-kicker {
       color: #FF7927 !important;
       -webkit-text-fill-color: #FF7927 !important;
     }
 
-    #manaV936ResetModal
-    .mana-v936-head-title,
-    #manaV936ResetModal
-    .mana-v936-step h2 {
+    #manaV936ResetModal .mana-v936-head-title,
+    #manaV936ResetModal .mana-v936-step h2 {
       color: #FFFFFF !important;
       -webkit-text-fill-color: #FFFFFF !important;
     }
 
-    #manaV936ResetModal
-    .mana-v936-head-sub,
-    #manaV936ResetModal
-    .mana-v936-step > p {
+    #manaV936ResetModal .mana-v936-head-sub,
+    #manaV936ResetModal .mana-v936-step > p {
       color: #C1C6CE !important;
       -webkit-text-fill-color: #C1C6CE !important;
     }
 
     /* =====================================
-       RESET PROGRESS LINE
+       RESET PROGRESS
        ===================================== */
 
     #manaV936ResetModal
@@ -155,7 +136,7 @@
     }
 
     /* =====================================
-       RESET WHAKATAUKI
+       GUIDED RESET WHAKATAUKI
        ===================================== */
 
     #manaV936ResetModal
@@ -180,7 +161,7 @@
     }
 
     /* =====================================
-       RESET OPTIONS — UNSELECTED
+       UNSELECTED RESET OPTIONS
        ===================================== */
 
     #manaV936ResetModal
@@ -203,63 +184,40 @@
     }
 
     /* =====================================
-       RESET OPTIONS — SELECTED ORANGE
-
-       Fix green selection on:
-       Write it privately
-       and other guided Reset choices.
+       SELECTED RESET OPTIONS — ORANGE
        ===================================== */
 
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     .mana-v936-option.selected,
-
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     [data-v936-emotion].selected,
-
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     [data-v936-movement].selected,
-
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     [data-v936-action].selected {
-
       border: 2px solid #FF7927 !important;
       border-color: #FF7927 !important;
-
       background: #392013 !important;
       background-image: none !important;
-
       color: #FFFFFF !important;
       -webkit-text-fill-color: #FFFFFF !important;
-
       box-shadow: none !important;
     }
 
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     .mana-v936-option.selected strong,
-
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     [data-v936-emotion].selected strong,
-
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     [data-v936-movement].selected strong,
-
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     [data-v936-action].selected strong {
-
       color: #FFFFFF !important;
       -webkit-text-fill-color: #FFFFFF !important;
     }
 
     /* =====================================
-       COMPLETE RESET — ORANGE
+       COMPLETION ACTIONS
        ===================================== */
 
     #manaV936ResetModal
@@ -271,8 +229,7 @@
       box-shadow: none !important;
     }
 
-    #manaV936ResetModal
-    .mana-v936-secondary {
+    #manaV936ResetModal .mana-v936-secondary {
       border: 1px solid #626973 !important;
       background: #15171A !important;
       background-image: none !important;
@@ -280,10 +237,8 @@
       -webkit-text-fill-color: #FFFFFF !important;
     }
 
-    #manaV936ResetModal
-    .mana-v936-complete,
-    #manaV936ResetModal
-    .mana-v936-quote {
+    #manaV936ResetModal .mana-v936-complete,
+    #manaV936ResetModal .mana-v936-quote {
       border: 1px solid #FF7927 !important;
       background: #15171A !important;
       background-image: none !important;
@@ -291,28 +246,21 @@
 
     #manaV936ResetModal
     .mana-v936-complete strong,
-    #manaV936ResetModal
-    .mana-v936-quote {
+    #manaV936ResetModal .mana-v936-quote {
       color: #FF7927 !important;
       -webkit-text-fill-color: #FF7927 !important;
     }
 
-    #manaV936ResetModal
-    .mana-v936-complete p {
+    #manaV936ResetModal .mana-v936-complete p {
       color: #C1C6CE !important;
       -webkit-text-fill-color: #C1C6CE !important;
     }
 
     /* =====================================
-       COMPLETION SUMMARY — NO MORE YELLOW
-
-       You named
-       You chose movement
-       Your next step
+       COMPLETION SUMMARY VALUES
        ===================================== */
 
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     #manaV937ResetSummary
     .mana-v937-summary-item {
       background: #101216 !important;
@@ -320,21 +268,17 @@
       box-shadow: none !important;
     }
 
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     #manaV937ResetSummary span {
       color: #C1C6CE !important;
       -webkit-text-fill-color: #C1C6CE !important;
     }
 
-    html body
-    #manaV936ResetModal
+    html body #manaV936ResetModal
     #manaV937ResetSummary strong {
       color: #FF7927 !important;
       -webkit-text-fill-color: #FF7927 !important;
     }
-
-    /* Reset progress cards outside the modal */
 
     #manaV937ResetProgressCard
     .mana-v937-progress-kicker,
@@ -347,11 +291,10 @@
     }
 
     /* =====================================
-       BREATHING CIRCLE — GREEN/WHITE
+       BREATHING CIRCLE — GREEN / WHITE
        ===================================== */
 
-    #manaV936ResetModal
-    #manaV936BreathStart {
+    #manaV936ResetModal #manaV936BreathStart {
       border-color: #55D98B !important;
       background: #164B30 !important;
       color: #FFFFFF !important;
@@ -375,8 +318,7 @@
     }
 
     /* =====================================
-       MANA LYFE SUPPORT CHAT
-       PREMIUM DARK TEAL / CYAN
+       MANA LYFE SUPPORT CHAT — TEAL/CYAN
        ===================================== */
 
     html body
@@ -457,7 +399,63 @@
     }
 
     /* =====================================
-       FOCUS INDICATORS
+       MORE SUPPORT — FINAL GOLD REMOVAL
+
+       Exact section:
+       #manaLyfeMoreSupport103140
+
+       Only the ManaLyfe support contacts.
+       Keep existing contact links functional.
+       ===================================== */
+
+    html body
+    #manaLyfeMoreSupport103140 {
+      border-top: 1px solid #454B53 !important;
+      background: #08090B !important;
+      color: #C1C6CE !important;
+    }
+
+    /* MORE SUPPORT heading */
+
+    html body
+    #manaLyfeMoreSupport103140 h3 {
+      color: #FF7927 !important;
+      -webkit-text-fill-color: #FF7927 !important;
+    }
+
+    /* Description below the heading */
+
+    html body
+    #manaLyfeMoreSupport103140 p {
+      color: #C1C6CE !important;
+      -webkit-text-fill-color: #C1C6CE !important;
+    }
+
+    /* Lifeline, Beyond Blue and other links */
+
+    html body
+    #manaLyfeMoreSupport103140
+    .ml140-link {
+      border: 1px solid #FF7927 !important;
+      background: #15171A !important;
+      background-image: none !important;
+      border-radius: 11px !important;
+      color: #FFFFFF !important;
+      -webkit-text-fill-color: #FFFFFF !important;
+      box-shadow: none !important;
+    }
+
+    /* Phone numbers — orange, not yellow */
+
+    html body
+    #manaLyfeMoreSupport103140
+    .ml140-link strong {
+      color: #FF7927 !important;
+      -webkit-text-fill-color: #FF7927 !important;
+    }
+
+    /* =====================================
+       ACCESSIBLE FOCUS
        ===================================== */
 
     #manaV936ResetModal
@@ -476,12 +474,18 @@
       outline-offset: 4px !important;
     }
 
+    #manaLyfeMoreSupport103140
+    .ml140-link:focus-visible {
+      outline: 2px solid #FF7927 !important;
+      outline-offset: 3px !important;
+    }
+
   `;
 
   document.head.appendChild(style);
 
   console.log(
-    "[ManaLyfe] Reset and Chat colours " + BUILD
+    "[ManaLyfe] Reset + Chat colour finish " + BUILD
   );
 
 })();
