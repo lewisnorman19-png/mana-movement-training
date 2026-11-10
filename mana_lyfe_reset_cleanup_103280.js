@@ -2,36 +2,44 @@
 /* =====================================================
    MANA MOVEMENT TRAINING
    MANA LYFE PREMIUM POLISH
-   BUILD 103480
+   BUILD 103481
 
    COMPLETE FILE REPLACEMENT
    File: mana_lyfe_reset_cleanup_103280.js
 
    FIXES:
-   1. All Overview card borders premium yellow
-   2. All Overview icon borders premium yellow
-   3. Reset navigation dot green, not purple
-   4. Reset tab icon and text green
-   5. Large round Reset Now button
-   6. Premium Support Chat layout
-   7. Emotion selection advances automatically
-   8. Chat SEND changes to SENT on success
+   1. Overview large card borders WHITE
+   2. Overview small icon borders ORANGE
+   3. Remove gold from Overview border styling
+   4. Reset navigation dot stays green
+   5. Reset tab icon and text remain green
+   6. Large round Reset Now button
+   7. Premium Support Chat layout
+   8. Emotion selection advances automatically
+   9. Chat SEND changes to SENT on success
 
    Preserves existing Reset and chat handlers.
    No changes to Mana Strength or Mana 28.
+
+   IMPORTANT:
+   This replaces the original gold border rules
+   directly instead of adding another override.
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "103480";
-  const STYLE_ID = "mana-lyfe-polish-103480";
+  const BUILD = "103481";
+  const STYLE_ID = "mana-lyfe-polish-103481";
 
-  if (window.MANA_LYFE_POLISH_103480) return;
-  window.MANA_LYFE_POLISH_103480 = true;
+  if (window.MANA_LYFE_POLISH_103481) return;
+  window.MANA_LYFE_POLISH_103481 = true;
 
   const GOLD = "#F3D875";
   const GREEN = "#55D98B";
+
+  const OVERVIEW_BORDER = "#FFFFFF";
+  const OVERVIEW_ICON_BORDER = "#FF7927";
 
   const $ = id => document.getElementById(id);
 
@@ -57,7 +65,7 @@
     style.textContent = `
 
       /* =====================================
-         OVERVIEW CARD BORDERS — GOLD
+         OVERVIEW CARD BORDERS — WHITE
          ===================================== */
 
       body.mana-lyfe-103170
@@ -70,21 +78,26 @@
       .mana-v978-grid
       .mana-v978-launch {
 
-        border: 1.5px solid ${GOLD} !important;
-        border-color: ${GOLD} !important;
+        border:
+          1.5px solid ${OVERVIEW_BORDER}
+          !important;
+
+        border-color:
+          ${OVERVIEW_BORDER} !important;
+
         border-radius: 21px !important;
         outline: none !important;
 
         background:
           linear-gradient(
             145deg,
-            #16140d,
+            #16171a,
             #090909
           ) !important;
       }
 
       /* =====================================
-         ICON FRAMES — ALL GOLD
+         ICON FRAMES — ORANGE
          ===================================== */
 
       body.mana-lyfe-103170
@@ -92,20 +105,28 @@
       .mana-v978-launch
       .mana-v978-icon {
 
-        border: 1.5px solid ${GOLD} !important;
-        border-top-color: ${GOLD} !important;
-        border-right-color: ${GOLD} !important;
-        border-bottom-color: ${GOLD} !important;
-        border-left-color: ${GOLD} !important;
+        border:
+          1.5px solid ${OVERVIEW_ICON_BORDER}
+          !important;
+
+        border-top-color:
+          ${OVERVIEW_ICON_BORDER} !important;
+
+        border-right-color:
+          ${OVERVIEW_ICON_BORDER} !important;
+
+        border-bottom-color:
+          ${OVERVIEW_ICON_BORDER} !important;
+
+        border-left-color:
+          ${OVERVIEW_ICON_BORDER} !important;
 
         outline: none !important;
         border-radius: 16px !important;
 
         background: #0b0b0b !important;
 
-        box-shadow:
-          inset 0 0 0 1px rgba(243,216,117,.08)
-          !important;
+        box-shadow: none !important;
       }
 
       body.mana-lyfe-103170
@@ -118,7 +139,8 @@
       .mana-v978-launch
       .mana-v978-icon::after {
 
-        border-color: ${GOLD} !important;
+        border-color:
+          ${OVERVIEW_ICON_BORDER} !important;
       }
 
       body.mana-lyfe-103170
@@ -130,8 +152,7 @@
         outline: none !important;
       }
 
-      /* Keep individual text colours.
-         Only borders become uniform gold. */
+      /* Keep the existing Overview text colours. */
 
       /* =====================================
          BOTTOM RESET TAB — GREEN
@@ -398,6 +419,7 @@
 
         font-size: 13px !important;
         line-height: 1.6 !important;
+        overflow-wrap: anywhere;
 
         margin-top: 7px !important;
       }
@@ -620,17 +642,22 @@
     );
 
     cards.forEach(card => {
+
+      /* LARGE CARD — WHITE BORDER */
+
       card.style.setProperty(
-        "border-color",
-        GOLD,
+        "border",
+        `1.5px solid ${OVERVIEW_BORDER}`,
         "important"
       );
 
       card.style.setProperty(
-        "border-width",
-        "1.5px",
+        "border-color",
+        OVERVIEW_BORDER,
         "important"
       );
+
+      /* SMALL ICON — ORANGE BORDER */
 
       const icon = card.querySelector(
         ".mana-v978-icon"
@@ -640,13 +667,13 @@
 
       icon.style.setProperty(
         "border",
-        `1.5px solid ${GOLD}`,
+        `1.5px solid ${OVERVIEW_ICON_BORDER}`,
         "important"
       );
 
       icon.style.setProperty(
         "border-color",
-        GOLD,
+        OVERVIEW_ICON_BORDER,
         "important"
       );
 
