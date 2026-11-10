@@ -1,31 +1,38 @@
 
 /* =====================================================
    MANA MOVEMENT TRAINING
-   MANA LYFE — ROUTINE + WHAKATAUKI TIDY
-   BUILD 104640
+   MANA LYFE — ROUTINE + RESET FINAL TIDY
+   BUILD 104641
 
-   COMPLETE FILE
+   COMPLETE FILE REPLACEMENT
    mana_lyfe_routine_tidy_104640.js
 
-   - Workout whakatauki: orange
-   - Routine progress bar: orange
-   - Routine checkboxes: orange
-   - Routine card borders: white
-   - Completed headings: white
-   - Supporting copy: silver
-   - No green outside Reset
+   FIXES:
+   1. Keep single left-line whakatauki
+   2. Hide duplicate bordered whakatauki
+      in Daily Routine and Reset
+   3. Reset Support Chat matches Overview:
+      dark teal background, cyan border
+   4. Support Chat button uses teal/cyan
+   5. Reset button stays green
 
-   VISUAL ONLY:
-   No workout logic, checklist handlers,
-   data storage or navigation changes.
-   Does not change Mana Strength or Mana28.
+   PRESERVES:
+   - Routine checklist and saved progress
+   - Routine orange progress indicators
+   - Workout styling and completion
+   - Original whakatauki text
+   - Reset breathing functionality
+   - Support Chat click handler
+   - Mana Strength and Mana28
+
+   Visual styling only. No storage changes.
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104640";
-  const STYLE_ID = "manaLyfeRoutineTidy104640";
+  const BUILD = "104641";
+  const STYLE_ID = "manaLyfeRoutineTidy104641";
 
   if (document.getElementById(STYLE_ID)) {
     return;
@@ -37,16 +44,18 @@
   style.textContent = `
 
     /* =====================================
-       MANA LYFE — ROUTINE COLOUR SYSTEM
+       MANA LYFE COLOUR SYSTEM
        ===================================== */
 
     #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content #manaLyfeDailyRoutine103130 {
+    #manaV83Content {
 
       --lyfe-orange: #FF7927;
       --lyfe-white: #FFFFFF;
       --lyfe-silver: #C1C6CE;
       --lyfe-surface: #15171A;
+      --lyfe-teal: #0D2429;
+      --lyfe-cyan: #27C6D7;
     }
 
     /* =====================================
@@ -84,7 +93,7 @@
     }
 
     /* =====================================
-       DAILY PROGRESS SUMMARY
+       DAILY ROUTINE PROGRESS SUMMARY
        ===================================== */
 
     html body
@@ -106,11 +115,7 @@
     #manaV83ProgramShell.mana-lyfe-premium-104580
     #manaV83Content
     #manaLyfeDailyRoutine103130
-    .ml140-count {
-
-      color: #FF7927 !important;
-      -webkit-text-fill-color: #FF7927 !important;
-    }
+    .ml140-count,
 
     html body
     #manaV83ProgramShell.mana-lyfe-premium-104580
@@ -152,7 +157,7 @@
     }
 
     /* =====================================
-       ROUTINE HABIT CARDS
+       DAILY ROUTINE HABIT CARDS
        ===================================== */
 
     html body
@@ -170,9 +175,6 @@
       box-shadow: none !important;
     }
 
-    /* Completed cards remain dark,
-       with a subtle orange background. */
-
     html body
     #manaV83ProgramShell.mana-lyfe-premium-104580
     #manaV83Content
@@ -186,7 +188,7 @@
     }
 
     /* =====================================
-       CHECKBOXES — ORANGE
+       ORANGE CHECKBOXES
        ===================================== */
 
     html body
@@ -196,12 +198,11 @@
     .ml140-checkbox {
 
       accent-color: #FF7927 !important;
-
       cursor: pointer !important;
     }
 
     /* =====================================
-       HABIT TEXT
+       DAILY ROUTINE TEXT
        ===================================== */
 
     html body
@@ -231,7 +232,8 @@
     }
 
     /* =====================================
-       WHAKATAUKI — ALL MANA LYFE SCREENS
+       KEEP THE SINGLE LEFT-LINE WHAKATAUKI
+       BOTH ROUTINE AND RESET
        ===================================== */
 
     html body
@@ -273,45 +275,127 @@
       -webkit-text-fill-color: #C1C6CE !important;
     }
 
-    /* Original Routine whakatauki,
-       if rendered by its own component. */
+    /* =====================================
+       REMOVE DUPLICATE BORDERED WHAKATAUKI
+
+       The older Routine/Reset renderer adds
+       .ml140-whakatauki.
+
+       Hide only that older card.
+       Keep the newer left-line footer.
+
+       No other content is removed.
+       ===================================== */
 
     html body
     #manaV83ProgramShell.mana-lyfe-premium-104580
     #manaV83Content
+    #manaLyfeDailyRoutine103130
+    .ml140-whakatauki,
+
+    html body
+    #manaV83ProgramShell.mana-lyfe-premium-104580
+    #manaV83Content
+    #manaLyfeReclaim103140
     .ml140-whakatauki {
 
-      border: 1px solid #FF7927 !important;
-
-      background: #15171A !important;
-      background-image: none !important;
+      display: none !important;
     }
 
-    html body
-    #manaV83ProgramShell.mana-lyfe-premium-104580
-    #manaV83Content
-    .ml140-whakatauki span,
+    /* =====================================
+       RESET SUPPORT CHAT CARD
+
+       MATCH THE OVERVIEW CHAT:
+       DARK TEAL + CYAN BORDER
+
+       Only the Support & Connection card.
+       The Reset Now card is unaffected.
+       ===================================== */
 
     html body
     #manaV83ProgramShell.mana-lyfe-premium-104580
     #manaV83Content
-    .ml140-whakatauki strong {
+    #manaLyfeReclaim103140
+    .ml140-reclaim-card.ml140-help {
 
-      color: #FF7927 !important;
-      -webkit-text-fill-color: #FF7927 !important;
+      background:
+        linear-gradient(
+          145deg,
+          #0D2429,
+          #10272C
+        ) !important;
+
+      background-color: #0D2429 !important;
+
+      border: 1px solid #27C6D7 !important;
+      border-radius: 20px !important;
+
+      box-shadow: none !important;
     }
 
+    /* SUPPORT & CONNECTION heading */
+
     html body
     #manaV83ProgramShell.mana-lyfe-premium-104580
     #manaV83Content
-    .ml140-whakatauki p {
+    #manaLyfeReclaim103140
+    .ml140-help .ml140-card-title {
+
+      color: #FFFFFF !important;
+      -webkit-text-fill-color: #FFFFFF !important;
+    }
+
+    /* Support Chat description */
+
+    html body
+    #manaV83ProgramShell.mana-lyfe-premium-104580
+    #manaV83Content
+    #manaLyfeReclaim103140
+    .ml140-help .ml140-card-text {
 
       color: #C1C6CE !important;
       -webkit-text-fill-color: #C1C6CE !important;
     }
 
     /* =====================================
-       MOBILE — PRESERVE EXISTING SIZES
+       SUPPORT CHAT BUTTON — TEAL/CYAN
+       ===================================== */
+
+    html body
+    #manaV83ProgramShell.mana-lyfe-premium-104580
+    #manaV83Content
+    #manaLyfeReclaim103140
+    #ml140OpenChat {
+
+      background: #16414A !important;
+      background-image: none !important;
+
+      border: 1px solid #27C6D7 !important;
+
+      color: #FFFFFF !important;
+      -webkit-text-fill-color: #FFFFFF !important;
+
+      box-shadow: none !important;
+    }
+
+    html body
+    #manaV83ProgramShell.mana-lyfe-premium-104580
+    #manaV83Content
+    #manaLyfeReclaim103140
+    #ml140OpenChat:active {
+
+      background: #205764 !important;
+    }
+
+    /* =====================================
+       RESET NOW — GREEN UNCHANGED
+
+       Preserve its existing colour, shape,
+       breathing interaction and click handler.
+       ===================================== */
+
+    /* =====================================
+       MOBILE — KEEP APPROVED SIZES
        ===================================== */
 
     @media (max-width: 600px) {
@@ -343,6 +427,16 @@
 
         overflow-wrap: break-word !important;
       }
+
+      html body
+      #manaV83ProgramShell.mana-lyfe-premium-104580
+      #manaV83Content
+      #manaLyfeReclaim103140
+      .ml140-reclaim-card.ml140-help {
+
+        border-radius: 17px !important;
+      }
+
     }
 
   `;
@@ -350,7 +444,7 @@
   document.head.appendChild(style);
 
   console.log(
-    "[ManaLyfe] Routine and whakatauki tidy " + BUILD
+    "[ManaLyfe] Routine + Reset tidy " + BUILD
   );
 
 })();
