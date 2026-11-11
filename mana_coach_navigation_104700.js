@@ -1,55 +1,48 @@
 
 /* =====================================================
    MANA MOVEMENT TRAINING
-   COACH HUB — DEDICATED NAVIGATION
-   BUILD 104700
+   COACH HUB — REAL NAVIGATION FIX
+   BUILD 104701
 
-   COMPLETE NEW FILE:
+   COMPLETE REPLACEMENT:
    mana_coach_navigation_104700.js
 
-   COACH TABS:
-   Home | Clients | Programs | Progress | Profile
+   FIXES:
+   - Targets the actual v9.7 Coach Shell
+   - Home / Clients / Programs / Progress / Profile
+   - Searchable client directory
+   - No flash back to old navigation
+   - Premium orange, black, white, silver
 
-   CLIENT TABS:
-   Home | Programs | Fuel | Progress | Profile
+   PRESERVES:
+   - Client navigation
+   - Coach login and logout
+   - Existing coach page routing
+   - Individual client profiles
+   - Supabase and saved client data
+   - All client-side program functionality
 
-   FEATURES:
-   - Separate coach/client navigation labels
-   - Searchable coach client directory
-   - Open existing client profiles
-   - Preserve original coach page routing
-   - Preserve all client-side navigation
-   - Premium black/orange/white/silver design
-
-   NO CHANGES TO:
-   - Authentication or account permissions
-   - Supabase records
-   - Program assignments
-   - Workout, Fuel or Progress data
+   No database changes.
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104700";
-  const STYLE_ID = "manaCoachNavigationStyle104700";
+  const BUILD = "104701";
+  const STYLE_ID = "manaCoachNavigationStyle104701";
+  const NAV_ID = "manaV97CoachNav";
   const DIRECTORY_ID = "manaCoachClientsPage104700";
   const DIRECTORY_CLASS = "mana-coach-directory-mode";
+  const HOME_ID = "coachHomePage";
 
-  if (window.MANA_COACH_NAV_104700) return;
-  window.MANA_COACH_NAV_104700 = true;
+  if (window.MANA_COACH_NAV_104701) return;
+  window.MANA_COACH_NAV_104701 = true;
 
   const $ = id => document.getElementById(id);
 
-  const clientTabs = {
-    home: ["⌂", "Home"],
-    programs: ["▣", "Programs"],
-    fuel: ["◯", "Fuel"],
-    progress: ["↗", "Progress"],
-    profile: ["◎", "Profile"]
-  };
+  let directoryOpen = false;
 
-  const coachTabs = {
+  const labels = {
     home: ["⌂", "Home"],
     fuel: ["♙", "Clients"],
     programs: ["▦", "Programs"],
@@ -57,43 +50,35 @@
     profile: ["◎", "Profile"]
   };
 
-  let directoryOpen = false;
-
   function escapeHTML(value) {
     return String(value ?? "").replace(
       /[&<>"']/g,
-      char => ({
+      character => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#39;"
-      })[char]
-    );
-  }
-
-  /* =====================================
-     IDENTIFY WORKSPACE BY VISIBLE SCREEN
-     ===================================== */
-
-  function isVisible(id) {
-    const element = $(id);
-
-    return Boolean(
-      element &&
-      !element.classList.contains("hide")
+      })[character]
     );
   }
 
   function coachActive() {
-    return (
-      isVisible("coachView") ||
-      isVisible("coachClientDetailView")
+    return Boolean(
+      (
+        $("coachView") &&
+        !$("coachView").classList.contains("hide")
+      ) ||
+      (
+        $("coachClientDetailView") &&
+        !$("coachClientDetailView")
+          .classList.contains("hide")
+      )
     );
   }
 
   /* =====================================
-     NAVIGATION STYLING
+     COACH NAVIGATION STYLING
      ===================================== */
 
   function installStyles() {
@@ -104,26 +89,16 @@
 
     style.textContent = `
 
-      /* =================================
-         COACH BOTTOM NAV ONLY
-         ================================= */
+      /* Real Coach Shell navigation */
 
-      body.mana-coach-nav-104700
-      #bottomNav {
-
-        background: rgba(8,9,11,.97) !important;
-
-        border-top: 1px solid #59616C !important;
-
+      #${NAV_ID} {
+        background: rgba(8,9,11,.98) !important;
+        border-top: 1px solid #535B65 !important;
         box-shadow: none !important;
       }
 
-      body.mana-coach-nav-104700
-      #bottomNav .navin {
-
+      #${NAV_ID} .mana-v970-nav-inner {
         width: min(980px,100%) !important;
-        max-width: 980px !important;
-
         display: grid !important;
 
         grid-template-columns:
@@ -132,80 +107,84 @@
         gap: 7px !important;
       }
 
-      body.mana-coach-nav-104700
-      #bottomNav [data-page] {
-
+      #${NAV_ID} .mana-v970-tab {
         min-width: 0 !important;
-        min-height: 60px !important;
+        min-height: 61px !important;
 
         padding: 8px 4px !important;
 
         border: 1px solid #454B53 !important;
-        border-radius: 12px !important;
+        border-radius: 13px !important;
 
         background: #15171A !important;
+        background-image: none !important;
 
         color: #C1C6CE !important;
-        -webkit-text-fill-color:
-          #C1C6CE !important;
+        -webkit-text-fill-color: #C1C6CE !important;
 
         font-size: 12px !important;
-        font-weight: 800 !important;
-
+        font-weight: 850 !important;
         text-align: center !important;
+        box-shadow: none !important;
       }
 
-      body.mana-coach-nav-104700
-      #bottomNav [data-page].active {
+      #${NAV_ID} .mana-v970-tab-icon {
+        display: block !important;
+        margin-bottom: 5px !important;
 
+        color: inherit !important;
+        font-size: 18px !important;
+        line-height: 1 !important;
+      }
+
+      #${NAV_ID} .mana-v970-tab.active {
         background: #392013 !important;
+        background-image: none !important;
 
         border-color: #FF7927 !important;
 
         color: #FF7927 !important;
-        -webkit-text-fill-color:
-          #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
       }
 
-      body.mana-coach-nav-104700
-      #bottomNav [data-page]:focus-visible {
-
+      #${NAV_ID} .mana-v970-tab:focus-visible {
         outline: 2px solid #FF7927 !important;
         outline-offset: 2px !important;
       }
 
-      /* =================================
-         CLIENT DIRECTORY
+      /* Coach logout colour */
 
-         Display alongside existing
-         coach home infrastructure.
+      #manaV97CoachLogout {
+        border-color: #FF7927 !important;
+        background: #15171A !important;
+
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+      }
+
+      /* =================================
+         SEARCHABLE CLIENT DIRECTORY
          ================================= */
 
-      #coachHomePage
       #${DIRECTORY_ID} {
-
         display: none !important;
       }
 
-      #coachHomePage.${DIRECTORY_CLASS}
+      #${HOME_ID}.${DIRECTORY_CLASS}
       > #manaCoachHubClean103760 {
-
         display: none !important;
       }
 
-      #coachHomePage.${DIRECTORY_CLASS}
+      #${HOME_ID}.${DIRECTORY_CLASS}
       > #${DIRECTORY_ID} {
-
         display: block !important;
       }
 
       #${DIRECTORY_ID} {
-
         width: 100%;
         max-width: 850px;
 
         margin: 0 auto 115px;
-
         color: #FFFFFF;
       }
 
@@ -214,45 +193,36 @@
       }
 
       #${DIRECTORY_ID} .mcn-panel {
-
         padding: 22px;
         margin-bottom: 15px;
 
         background: #15171A;
-
         border: 1px solid #626973;
         border-radius: 21px;
       }
 
       #${DIRECTORY_ID} .mcn-kicker {
-
         color: #FF7927;
-
         font-size: 10px;
         font-weight: 950;
         letter-spacing: .14em;
       }
 
       #${DIRECTORY_ID} h2 {
-
-        color: #FFFFFF;
-
         margin: 8px 0;
+        color: #FFFFFF;
 
         font-size: clamp(27px,5vw,36px);
         line-height: 1.12;
       }
 
       #${DIRECTORY_ID} p {
-
         color: #C1C6CE;
-
         font-size: 13px;
         line-height: 1.6;
       }
 
       #${DIRECTORY_ID} .mcn-search {
-
         display: block;
         width: 100%;
 
@@ -260,35 +230,29 @@
         padding: 13px;
 
         background: #090B0D;
-
         border: 1px solid #59616C;
         border-radius: 12px;
 
         color: #FFFFFF;
-
         font-size: 14px;
       }
 
       #${DIRECTORY_ID} .mcn-search:focus {
-
         border-color: #FF7927;
         outline: none;
       }
 
       #${DIRECTORY_ID} .mcn-client {
-
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
 
         width: 100%;
-
         margin-top: 9px;
         padding: 14px;
 
         background: #20242B;
-
         border: 1px solid #59616C;
         border-radius: 13px;
 
@@ -298,30 +262,20 @@
       }
 
       #${DIRECTORY_ID} .mcn-client strong {
-
         color: #FFFFFF;
         font-size: 14px;
       }
 
       #${DIRECTORY_ID} .mcn-client span {
-
         color: #FF7927;
         font-size: 12px;
         font-weight: 850;
       }
 
-      #${DIRECTORY_ID} .mcn-client:focus-visible {
-
-        outline: 2px solid #FF7927;
-        outline-offset: 2px;
-      }
-
       #${DIRECTORY_ID} .mcn-empty {
-
         padding: 16px;
 
         background: #101216;
-
         border: 1px solid #454B53;
         border-radius: 12px;
 
@@ -331,41 +285,33 @@
 
       @media(max-width:600px) {
 
-        body.mana-coach-nav-104700
-        #bottomNav .navin {
-
+        #${NAV_ID} .mana-v970-nav-inner {
           gap: 5px !important;
         }
 
-        body.mana-coach-nav-104700
-        #bottomNav [data-page] {
-
+        #${NAV_ID} .mana-v970-tab {
           min-height: 56px !important;
           font-size: 10px !important;
           padding: 8px 2px !important;
         }
 
         #${DIRECTORY_ID} .mcn-panel {
-
           padding: 15px;
           border-radius: 17px;
         }
 
         #${DIRECTORY_ID} .mcn-client {
-
           padding: 13px 10px;
         }
       }
+
     `;
 
     document.head.appendChild(style);
   }
 
   /* =====================================
-     EXISTING COACH CLIENT RECORDS
-
-     Read existing DOM client directory.
-     Do not assign or change programs.
+     REAL CLIENT DIRECTORY
      ===================================== */
 
   function clients() {
@@ -403,100 +349,97 @@
      ===================================== */
 
   function ensureDirectory() {
-    const home = $("coachHomePage");
-
+    const home = $(HOME_ID);
     if (!home) return null;
 
     let directory = $(DIRECTORY_ID);
 
-    if (!directory) {
-      directory = document.createElement("section");
+    if (directory) return directory;
 
-      directory.id = DIRECTORY_ID;
-      directory.setAttribute(
-        "aria-label",
-        "Coach client directory"
-      );
+    directory = document.createElement("section");
+    directory.id = DIRECTORY_ID;
 
-      home.appendChild(directory);
+    directory.setAttribute(
+      "aria-label",
+      "Coach client directory"
+    );
 
-      directory.innerHTML = `
-        <div class="mcn-panel">
+    directory.innerHTML = `
+      <div class="mcn-panel">
 
-          <div class="mcn-kicker">
-            MANA MOVEMENT · COACH OPERATIONS
-          </div>
-
-          <h2>Clients</h2>
-
-          <p>
-            Find your clients and open their
-            existing coaching profiles.
-          </p>
-
-          <input
-            class="mcn-search"
-            type="search"
-            id="manaCoachClientSearch104700"
-            placeholder="Search clients..."
-            aria-label="Search clients"
-          >
-
+        <div class="mcn-kicker">
+          MANA MOVEMENT · COACH OPERATIONS
         </div>
 
-        <div class="mcn-panel">
+        <h2>Clients</h2>
 
-          <div id="manaCoachClientList104700">
-          </div>
+        <p>
+          Search your client directory and
+          open an existing coaching profile.
+        </p>
 
-        </div>
-      `;
+        <input
+          id="manaCoachClientSearch104700"
+          class="mcn-search"
+          type="search"
+          placeholder="Search clients..."
+          aria-label="Search clients"
+        >
 
-      directory.addEventListener(
-        "input",
-        event => {
-          if (
-            event.target.id ===
-            "manaCoachClientSearch104700"
-          ) {
-            renderClientList();
-          }
+      </div>
+
+      <div class="mcn-panel">
+        <div id="manaCoachClientList104700"></div>
+      </div>
+    `;
+
+    home.appendChild(directory);
+
+    directory.addEventListener(
+      "input",
+      event => {
+        if (
+          event.target.id ===
+          "manaCoachClientSearch104700"
+        ) {
+          renderClients();
         }
-      );
+      }
+    );
 
-      directory.addEventListener(
-        "click",
-        event => {
-          const button = event.target.closest(
-            "[data-coach-client-id]"
+    directory.addEventListener(
+      "click",
+      event => {
+        const button = event.target.closest(
+          "[data-coach-client-id]"
+        );
+
+        if (!button) return;
+
+        const client = clients().find(
+          item =>
+            item.id === button.dataset.coachClientId
+        );
+
+        if (
+          client &&
+          typeof window.openCoachClientDetail ===
+            "function"
+        ) {
+          hideDirectory();
+
+          window.openCoachClientDetail(
+            client.id,
+            client.name
           );
-
-          if (!button) return;
-
-          const client = clients().find(
-            item =>
-              item.id ===
-              button.dataset.coachClientId
-          );
-
-          if (
-            client &&
-            typeof window.openCoachClientDetail ===
-              "function"
-          ) {
-            window.openCoachClientDetail(
-              client.id,
-              client.name
-            );
-          }
         }
-      );
-    }
+      }
+    );
 
     return directory;
   }
 
-  function renderClientList() {
+  function renderClients() {
     const list = $("manaCoachClientList104700");
     if (!list) return;
 
@@ -516,8 +459,8 @@
       list.innerHTML = `
         <div class="mcn-empty">
           No clients are currently loaded.
-          Open Coach Home and refresh the
-          dashboard if needed.
+          Return to Coach Home and refresh
+          the dashboard if needed.
         </div>
       `;
       return;
@@ -533,13 +476,16 @@
     }
 
     list.innerHTML = filtered.map(
-      item => `
+      client => `
         <button
           type="button"
           class="mcn-client"
-          data-coach-client-id="${escapeHTML(item.id)}"
+          data-coach-client-id="${escapeHTML(client.id)}"
         >
-          <strong>${escapeHTML(item.name)}</strong>
+          <strong>
+            ${escapeHTML(client.name)}
+          </strong>
+
           <span>Open Profile →</span>
         </button>
       `
@@ -547,35 +493,49 @@
   }
 
   /* =====================================
-     SHOW / HIDE COACH CLIENT DIRECTORY
+     NAVIGATION STATE
      ===================================== */
+
+  function setActiveTab(page) {
+    const nav = $(NAV_ID);
+    if (!nav) return;
+
+    nav.querySelectorAll(
+      "[data-coach-page]"
+    ).forEach(button => {
+      button.classList.toggle(
+        "active",
+        button.dataset.coachPage === page
+      );
+    });
+  }
 
   function hideDirectory() {
     directoryOpen = false;
 
-    $("coachHomePage")?.classList.remove(
+    $(HOME_ID)?.classList.remove(
       DIRECTORY_CLASS
     );
   }
 
   function openDirectory() {
-    if (
-      typeof window.showCoachPage !== "function"
-    ) {
-      return;
-    }
+    if (!coachActive()) return;
 
     ensureDirectory();
 
-    window.showCoachPage("home");
+    if (
+      typeof window.showCoachPage === "function"
+    ) {
+      window.showCoachPage("home");
+    }
 
     directoryOpen = true;
 
-    $("coachHomePage")?.classList.add(
+    $(HOME_ID)?.classList.add(
       DIRECTORY_CLASS
     );
 
-    renderClientList();
+    renderClients();
 
     setActiveTab("fuel");
 
@@ -583,68 +543,79 @@
   }
 
   /* =====================================
-     WORKSPACE-SPECIFIC TAB LABELS
+     UPDATE REAL COACH TAB LABELS
      ===================================== */
 
-  function setActiveTab(page) {
-    document.querySelectorAll(
-      "#bottomNav [data-page]"
-    ).forEach(button => {
-      button.classList.toggle(
-        "active",
-        button.dataset.page === page
+  function updateNav() {
+    const nav = $(NAV_ID);
+
+    if (!nav) return;
+
+    for (const [page,parts] of Object.entries(labels)) {
+      const button = nav.querySelector(
+        `[data-coach-page="${page}"]`
       );
-    });
-  }
 
-  function updateNavigation() {
-    const coach = coachActive();
+      if (!button) continue;
 
-    document.body.classList.toggle(
-      "mana-coach-nav-104700",
-      coach
-    );
+      const icon = button.querySelector(
+        ".mana-v970-tab-icon"
+      );
 
-    const labels = coach ? coachTabs : clientTabs;
-
-    document.querySelectorAll(
-      "#bottomNav [data-page]"
-    ).forEach(button => {
-
-      const item = labels[button.dataset.page];
-      if (!item) return;
-
-      const label = item[0] + "\n" + item[1];
-
-      if (button.textContent !== label) {
-        button.textContent = label;
-        button.style.whiteSpace = "pre-line";
+      if (icon && icon.textContent.trim() !== parts[0]) {
+        icon.textContent = parts[0];
       }
-    });
 
-    if (!coach) {
-      hideDirectory();
+      /* Reuse existing button.
+         No click handlers are removed. */
+
+      let label = button.querySelector(
+        ".mana-coach-tab-label-104701"
+      );
+
+      if (!label) {
+        const childNodes = Array.from(
+          button.childNodes
+        );
+
+        childNodes.forEach(node => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            node.textContent = "";
+          }
+        });
+
+        label = document.createElement("span");
+        label.className =
+          "mana-coach-tab-label-104701";
+
+        button.appendChild(label);
+      }
+
+      if (label.textContent !== parts[1]) {
+        label.textContent = parts[1];
+      }
+    }
+
+    if (directoryOpen && coachActive()) {
+      setActiveTab("fuel");
     }
   }
 
   /* =====================================
-     COACH NAVIGATION HANDLER
+     INTERCEPT CLIENTS TAB ONLY
 
-     Only intercept the old Fuel tab when
-     the authorised coach workspace is
-     visibly active.
-
-     All other existing page routes remain.
+     Use capture phase so the old coach
+     shell doesn't open the Fuel page.
      ===================================== */
 
-  function captureNavigation(event) {
+  function onClick(event) {
     const button = event.target.closest(
-      "#bottomNav [data-page]"
+      `#${NAV_ID} [data-coach-page]`
     );
 
     if (!button || !coachActive()) return;
 
-    if (button.dataset.page === "fuel") {
+    if (button.dataset.coachPage === "fuel") {
       event.preventDefault();
       event.stopImmediatePropagation();
 
@@ -656,30 +627,30 @@
   }
 
   /* =====================================
-     INITIALISE
+     KEEP NAV UPDATED
      ===================================== */
 
   function init() {
     installStyles();
     ensureDirectory();
+    updateNav();
 
     document.addEventListener(
       "click",
-      captureNavigation,
+      onClick,
       true
     );
 
     const observer = new MutationObserver(
-      updateNavigation
+      () => {
+        updateNav();
+      }
     );
 
-    [
-      "coachView",
-      "coachClientDetailView",
-      "clientView"
-    ].forEach(id => {
-      const element = $(id);
+    const coachView = $("coachView");
+    const detailView = $("coachClientDetailView");
 
+    [coachView,detailView].forEach(element => {
       if (!element) return;
 
       observer.observe(element,{
@@ -688,11 +659,18 @@
       });
     });
 
-    updateNavigation();
+    const nav = $(NAV_ID);
+
+    if (nav) {
+      observer.observe(nav,{
+        childList: true,
+        subtree: true
+      });
+    }
 
     window.addEventListener(
       "pageshow",
-      updateNavigation
+      updateNav
     );
 
     console.log(
