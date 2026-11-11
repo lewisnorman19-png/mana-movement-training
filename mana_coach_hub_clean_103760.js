@@ -1,90 +1,99 @@
 
 /* =====================================================
    MANA MOVEMENT TRAINING
-   COACH HUB — PREMIUM RUNNER DASHBOARD
-   BUILD 104680
+   COACH HUB — CONNECTED PREMIUM DASHBOARD
+   BUILD 104730
 
-   COMPLETE REPLACEMENT:
+   COMPLETE REPLACEMENT FILE:
    mana_coach_hub_clean_103760.js
 
-   ADDS:
-   - Official Mana Movement runner header
-   - Premium orange / black / white / silver theme
-   - Cleaner coach dashboard and client directory
-   - Consistent program cards
-   - Mobile and desktop polish
+   NEW HOME:
+   - Mana Movement runner header
+   - Coaching priorities
+   - Three program cards
+   - Manage Clients quick action
+   - Create Program quick action
+   - Real existing client directory
 
    PRESERVES:
-   - Existing client directory data
-   - Existing client profile navigation
-   - Original program grouping behaviour
-   - Current coach alerts
-   - Coach authentication and logout
-   - Supabase data and program assignments
-   - All client-side features
+   - Coach and Client login choice
+   - Existing Coach Shell navigation
+   - Individual coaching profiles
+   - Assigned Programs panel
+   - Existing Program Builder
+   - Supabase authentication and data
+   - All client-side programs
 
-   Does not create or alter database records.
+   No automatic database writes.
    ===================================================== */
 
 (() => {
   "use strict";
 
-  if (window.MANA_COACH_HUB_CLEAN_103760) return;
-  window.MANA_COACH_HUB_CLEAN_103760 = true;
-
-  const BUILD = "104680";
+  const BUILD = "104730";
   const ID = "manaCoachHubClean103760";
-  const STYLE_ID = "manaCoachHubCleanStyle103760";
+  const STYLE_ID = "manaCoachHubCleanStyle104730";
   const HOME_ID = "coachHomePage";
+  const NAV_ID = "manaV97CoachNav";
   const RUNNER = "ui/mana-runner-logo.png";
 
-  const programs = [
+  if (window.MANA_COACH_HUB_CLEAN_103760) {
+    return;
+  }
+
+  window.MANA_COACH_HUB_CLEAN_103760 = true;
+
+  const $ = id => document.getElementById(id);
+
+  let page = "home";
+  let currentProgram = "strength";
+
+  const PROGRAMS = [
     {
       id: "strength",
       name: "Mana Strength",
-      icon: "◆"
+      symbol: "◆",
+      description:
+        "Personalised strength, performance and coaching."
     },
     {
       id: "mana28",
       name: "Mana28",
-      icon: "▦"
+      symbol: "▦",
+      description:
+        "Structured 28-day training and healthy habits."
     },
     {
       id: "lyfe",
       name: "ManaLyfe",
-      icon: "♡"
+      symbol: "♡",
+      description:
+        "Movement, routine, mindset and wellbeing."
     }
   ];
 
-  let page = "home";
-  let currentProgram = "strength";
-  let lastClientId = "";
-
-  const $ = id => document.getElementById(id);
-
-  function html(value) {
+  function escapeHTML(value) {
     return String(value ?? "").replace(
       /[&<>"']/g,
-      ch => ({
+      character => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#39;"
-      })[ch]
+      })[character]
     );
   }
 
   /* =====================================
-     EXISTING CLIENT DIRECTORY
+     READ EXISTING CLIENTS
 
-     Use real client data from the existing
-     coach dashboard. Do not fabricate
-     program assignments.
+     Never invent program assignments.
      ===================================== */
 
   function clients() {
     const source = $("coachClientsCard");
+
     if (!source) return [];
 
     const map = new Map();
@@ -100,27 +109,36 @@
 
       const name = String(
         element.dataset.clientName ||
-        element.querySelector("strong")?.textContent ||
+        element.querySelector("strong")
+          ?.textContent ||
         "Client"
       ).trim();
 
       const raw = String(
         element.dataset.program ||
         element.dataset.clientProgram ||
-        element.closest("[data-program]")
-          ?.dataset.program ||
         ""
-      ).toLowerCase().trim();
+      ).trim().toLowerCase();
 
-      const program =
-        /^(strength|mana strength)$/.test(raw)
-          ? "strength"
-          : /^(mana28|mana 28)$/.test(raw)
-            ? "mana28"
-            : /^(manalyfe|mana lyfe|lyfe|life)$/
-                .test(raw)
-              ? "lyfe"
-              : "";
+      let program = "";
+
+      if (
+        raw === "strength" ||
+        raw === "mana strength"
+      ) {
+        program = "strength";
+      } else if (
+        raw === "mana28" ||
+        raw === "mana 28"
+      ) {
+        program = "mana28";
+      } else if (
+        raw === "manalyfe" ||
+        raw === "mana lyfe" ||
+        raw === "lyfe"
+      ) {
+        program = "lyfe";
+      }
 
       map.set(id, {
         id,
@@ -129,24 +147,24 @@
       });
     });
 
-    return [...map.values()].sort(
-      (a,b) => a.name.localeCompare(b.name)
+    return Array.from(map.values()).sort(
+      (a, b) => a.name.localeCompare(b.name)
     );
   }
 
-  function count(id) {
-    const value = String(
+  function liveCount(id) {
+    const text = String(
       $(id)?.textContent || ""
     ).trim();
 
-    return /^\d+$/.test(value) ? value : "—";
+    return /^\d+$/.test(text) ? text : "—";
   }
 
   /* =====================================
-     PREMIUM COACH HUB STYLES
+     PREMIUM DASHBOARD CSS
      ===================================== */
 
-  function installStyle() {
+  function installStyles() {
     if ($(STYLE_ID)) return;
 
     const style = document.createElement("style");
@@ -154,23 +172,22 @@
 
     style.textContent = `
 
-      #coachHomePage {
-        width: min(
-          1100px,
-          calc(100% - 24px)
-        ) !important;
+      #${HOME_ID} {
+        width: min(1100px,calc(100% - 24px))
+          !important;
 
         max-width: 1100px !important;
         margin: 0 auto !important;
       }
 
-      #coachHomePage > :not(#${ID}) {
+      #${HOME_ID} > :not(#${ID}) {
         display: none !important;
       }
 
       #${ID} {
-        color: #FFFFFF;
+        width: 100%;
         margin: 0 0 115px;
+        color: #FFFFFF;
         font-family: inherit;
       }
 
@@ -183,6 +200,11 @@
         cursor: pointer;
       }
 
+      #${ID} button:focus-visible {
+        outline: 2px solid #FF7927;
+        outline-offset: 3px;
+      }
+
       /* =================================
          RUNNER HEADER
          ================================= */
@@ -190,169 +212,144 @@
       #${ID} .hub-hero {
         display: flex;
         align-items: center;
-        gap: 18px;
+        gap: 15px;
 
-        margin-bottom: 17px;
-        padding: 24px;
-
-        border: 1px solid #626973;
-        border-radius: 24px;
-
-        background: #15171A;
-        background-image: none;
-      }
-
-      #${ID} .hub-runner {
-        width: 91px;
-        height: 76px;
-        flex: 0 0 91px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        background: #08090B;
-        border-radius: 15px;
-        overflow: hidden;
-      }
-
-      #${ID} .hub-runner img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
-
-      #${ID} .hub-brand {
-        min-width: 0;
-        flex: 1;
-      }
-
-      #${ID} .hub-kicker {
-        color: #FF7927;
-        font-size: 10px;
-        font-weight: 900;
-        letter-spacing: .16em;
-        line-height: 1.5;
-      }
-
-      #${ID} .hub-title {
-        margin: 6px 0;
-
-        color: #FFFFFF;
-        font-size: clamp(
-          27px,
-          4vw,
-          41px
-        );
-        font-weight: 950;
-        line-height: 1.12;
-      }
-
-      #${ID} .hub-sub {
-        color: #C1C6CE;
-        font-size: 13px;
-        line-height: 1.55;
-      }
-
-      /* =================================
-         DASHBOARD PANELS
-         ================================= */
-
-      #${ID} .hub-panel {
-        margin-bottom: 17px;
-        padding: 20px;
+        margin-bottom: 15px;
+        padding: 22px;
 
         background: #15171A;
         border: 1px solid #626973;
         border-radius: 22px;
       }
 
-      #${ID} h3 {
-        margin: 0 0 15px;
-        color: #FFFFFF;
-        font-size: 18px;
-        font-weight: 900;
-      }
-
-      #${ID} .hub-grid {
-        display: grid;
-        grid-template-columns: repeat(
-          3,
-          minmax(0,1fr)
-        );
-        gap: 12px;
-      }
-
-      /* =================================
-         PROGRAM CARDS
-         ================================= */
-
-      #${ID} .hub-card {
+      #${ID} .hub-runner {
         display: flex;
-        flex-direction: column;
-        align-items: center;
         justify-content: center;
-        gap: 10px;
+        align-items: center;
 
-        min-height: 160px;
-        padding: 18px 11px;
+        width: 80px;
+        height: 68px;
+        flex: 0 0 80px;
 
-        background: #1B1E23;
-        background-image: none;
-
-        border: 1px solid #FF7927;
-        border-radius: 18px;
-
-        color: #FFFFFF;
-        text-align: center;
-        box-shadow: none;
+        border: 0 !important;
+        border-radius: 0 !important;
+        outline: 0 !important;
+        box-shadow: none !important;
+        background: transparent !important;
+        overflow: visible;
       }
 
-      #${ID} .hub-card:hover,
-      #${ID} .hub-item:hover {
-        background: #252931;
-        border-color: #FF7927;
+      #${ID} .hub-runner img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+
+        border: 0 !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
       }
 
-      #${ID} .hub-symbol {
+      #${ID} .hub-kicker {
         color: #FF7927;
-        font-size: 25px;
-        line-height: 1;
+        font-size: 10px;
+        font-weight: 950;
+        letter-spacing: .13em;
       }
 
-      #${ID} .hub-card strong {
+      #${ID} .hub-title {
+        margin: 7px 0 6px;
+
         color: #FFFFFF;
-        font-size: 15px;
-        font-weight: 900;
+        font-size: clamp(29px,4vw,41px);
+        font-weight: 950;
+        line-height: 1.12;
       }
 
-      #${ID} .hub-card small {
+      #${ID} .hub-sub {
         color: #C1C6CE;
         font-size: 12px;
         line-height: 1.5;
       }
 
-      #${ID} .hub-figure {
+      /* =================================
+         SECTIONS
+         ================================= */
+
+      #${ID} .hub-panel {
+        margin-bottom: 15px;
+        padding: 20px;
+
+        background: #15171A;
+        border: 1px solid #626973;
+        border-radius: 21px;
+      }
+
+      #${ID} .hub-section-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+
+        margin-bottom: 15px;
+      }
+
+      #${ID} .hub-section-heading h3 {
+        margin: 0;
+        color: #FFFFFF;
+        font-size: 18px;
+        font-weight: 900;
+      }
+
+      #${ID} .hub-section-tag {
         color: #FF7927;
-        font-size: 26px;
-        font-weight: 950;
-        line-height: 1.15;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: .05em;
       }
 
       /* =================================
-         ATTENTION CARDS
+         NEEDS ATTENTION
          ================================= */
 
+      #${ID} .hub-alert-grid {
+        display: grid;
+        grid-template-columns:
+          repeat(3,minmax(0,1fr));
+        gap: 10px;
+      }
+
       #${ID} .hub-alert {
-        min-height: 116px;
-        padding: 15px 9px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+
+        min-height: 144px;
+        padding: 13px 8px;
 
         background: #1B1E23;
-        border: 1px solid #59616C;
-        border-radius: 15px;
+        border: 1px solid #535B65;
+        border-radius: 16px;
 
-        color: #FFFFFF;
         text-align: center;
+        color: #FFFFFF;
+      }
+
+      #${ID} .hub-alert-icon {
+        color: #FF7927;
+        font-size: 24px;
+        line-height: 1.1;
+      }
+
+      #${ID} .hub-alert-number {
+        margin-top: 8px;
+
+        color: #FF7927;
+        font-size: 26px;
+        font-weight: 950;
+        line-height: 1;
       }
 
       #${ID} .hub-alert strong {
@@ -361,131 +358,234 @@
 
         color: #FFFFFF;
         font-size: 13px;
-        font-weight: 850;
       }
 
       #${ID} .hub-alert small {
         display: block;
-        margin-top: 6px;
+        margin-top: 5px;
 
         color: #C1C6CE;
         font-size: 11px;
         line-height: 1.45;
       }
 
+      #${ID} .hub-alert:not(button) {
+        cursor: default;
+      }
+
+      /* =================================
+         THREE PROGRAM CARDS
+         ================================= */
+
+      #${ID} .hub-program-grid {
+        display: grid;
+        grid-template-columns:
+          repeat(3,minmax(0,1fr));
+        gap: 11px;
+      }
+
+      #${ID} .hub-program {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+
+        min-height: 155px;
+        padding: 18px 10px;
+
+        background: #1B1E23;
+        border: 1px solid #FF7927;
+        border-radius: 17px;
+
+        color: #FFFFFF;
+        text-align: center;
+      }
+
+      #${ID} .hub-program-symbol {
+        color: #FF7927;
+        font-size: 24px;
+        line-height: 1;
+      }
+
+      #${ID} .hub-program strong {
+        color: #FFFFFF;
+        font-size: 15px;
+        font-weight: 900;
+      }
+
+      #${ID} .hub-program small {
+        color: #C1C6CE;
+        font-size: 11px;
+        line-height: 1.45;
+      }
+
+      #${ID} .hub-program:hover,
+      #${ID} .hub-quick:hover,
+      #${ID} .hub-client:hover {
+        background: #272B32;
+      }
+
+      /* =================================
+         QUICK ACTIONS
+         ================================= */
+
+      #${ID} .hub-quick-grid {
+        display: grid;
+        grid-template-columns:
+          repeat(2,minmax(0,1fr));
+        gap: 11px;
+      }
+
+      #${ID} .hub-quick {
+        display: flex;
+        align-items: center;
+        gap: 13px;
+
+        min-height: 76px;
+        padding: 15px;
+
+        background: #1B1E23;
+        border: 1px solid #59616C;
+        border-radius: 15px;
+
+        color: #FFFFFF;
+        text-align: left;
+      }
+
+      #${ID} .hub-quick-icon {
+        display: grid;
+        place-items: center;
+        flex: 0 0 41px;
+
+        width: 41px;
+        height: 41px;
+
+        border: 1px solid #FF7927;
+        border-radius: 11px;
+
+        color: #FF7927;
+        font-size: 21px;
+      }
+
+      #${ID} .hub-quick-content {
+        flex: 1;
+        min-width: 0;
+      }
+
+      #${ID} .hub-quick strong {
+        display: block;
+        color: #FFFFFF;
+        font-size: 14px;
+      }
+
+      #${ID} .hub-quick small {
+        display: block;
+        margin-top: 4px;
+        color: #C1C6CE;
+        font-size: 11px;
+      }
+
+      #${ID} .hub-quick-arrow {
+        color: #FF7927;
+        font-size: 19px;
+      }
+
       /* =================================
          CLIENT DIRECTORY
          ================================= */
 
-      #${ID} .hub-heading {
-        display: flex;
+      #${ID} .hub-back {
+        display: inline-flex;
         align-items: center;
-        flex-wrap: wrap;
-        gap: 13px;
+        justify-content: center;
 
-        margin-bottom: 18px;
+        padding: 11px 13px;
+
+        background: #171A1F;
+        border: 1px solid #FF7927;
+        border-radius: 11px;
+
+        color: #FF7927;
+        font-size: 12px;
+        font-weight: 900;
       }
 
-      #${ID} .hub-heading h3 {
-        margin: 0;
+      #${ID} .hub-directory-title {
+        margin: 17px 0 8px;
+
+        color: #FFFFFF;
+        font-size: 20px;
+        font-weight: 900;
       }
 
-      #${ID} .hub-item {
+      #${ID} .hub-help {
+        margin: 9px 0 16px;
+
+        color: #C1C6CE;
+        font-size: 12px;
+        line-height: 1.6;
+      }
+
+      #${ID} .hub-client {
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 12px;
 
         width: 100%;
+        min-height: 58px;
         margin-top: 9px;
-        padding: 16px;
+        padding: 14px;
 
         background: #20242B;
         border: 1px solid #59616C;
-        border-radius: 14px;
+        border-radius: 13px;
 
         color: #FFFFFF;
         text-align: left;
       }
 
-      #${ID} .hub-item strong {
+      #${ID} .hub-client strong {
         color: #FFFFFF;
         font-size: 14px;
-        font-weight: 900;
       }
 
-      #${ID} .hub-item span {
-        color: #FF7927;
-        font-size: 13px;
-        font-weight: 800;
-      }
-
-      #${ID} .hub-help {
-        margin: 12px 0;
-
-        color: #C1C6CE;
-        font-size: 12px;
-        line-height: 1.65;
-      }
-
-      /* =================================
-         BACK / REFRESH BUTTONS
-         ================================= */
-
-      #${ID} .hub-back,
-      #${ID} .hub-secondary {
-        padding: 11px 14px;
-
-        background: #171A1F;
-        border: 1px solid #FF7927;
-        border-radius: 12px;
-
+      #${ID} .hub-client span {
         color: #FF7927;
         font-size: 12px;
-        font-weight: 900;
-      }
-
-      #${ID} .hub-back:hover,
-      #${ID} .hub-secondary:hover {
-        background: #392013;
-      }
-
-      #${ID} button:focus-visible {
-        outline: 2px solid #FF7927;
-        outline-offset: 3px;
+        font-weight: 850;
       }
 
       /* =================================
          MOBILE
          ================================= */
 
-      @media (max-width: 600px) {
+      @media(max-width:600px) {
 
-        #coachHomePage {
-          width: calc(
-            100% - 16px
-          ) !important;
+        #${HOME_ID} {
+          width: calc(100% - 16px)
+            !important;
         }
 
         #${ID} .hub-hero {
-          padding: 16px;
+          padding: 15px;
           gap: 11px;
           border-radius: 18px;
         }
 
         #${ID} .hub-runner {
-          width: 58px;
-          height: 57px;
-          flex-basis: 58px;
+          width: 56px;
+          height: 54px;
+          flex-basis: 56px;
         }
 
         #${ID} .hub-kicker {
           font-size: 8px;
-          letter-spacing: .10em;
         }
 
         #${ID} .hub-title {
-          font-size: 28px;
+          font-size: 27px;
         }
 
         #${ID} .hub-sub {
@@ -493,30 +593,18 @@
         }
 
         #${ID} .hub-panel {
-          padding: 15px;
-          border-radius: 18px;
+          padding: 14px;
+          border-radius: 17px;
         }
 
-        #${ID} .hub-grid {
-          gap: 7px;
-        }
-
-        #${ID} .hub-card {
-          min-height: 138px;
-          padding: 11px 5px;
-          gap: 8px;
-        }
-
-        #${ID} .hub-card strong {
-          font-size: 11px;
-        }
-
-        #${ID} .hub-card small {
-          font-size: 9px;
+        #${ID} .hub-alert-grid,
+        #${ID} .hub-program-grid {
+          gap: 6px;
         }
 
         #${ID} .hub-alert {
-          padding: 12px 5px;
+          min-height: 135px;
+          padding: 12px 4px;
         }
 
         #${ID} .hub-alert strong {
@@ -527,13 +615,29 @@
           font-size: 9px;
         }
 
-        #${ID} .hub-item {
-          padding: 13px 11px;
+        #${ID} .hub-alert-number {
+          font-size: 23px;
         }
 
-        #${ID} .hub-item span {
+        #${ID} .hub-program {
+          padding: 12px 5px;
+          min-height: 148px;
+        }
+
+        #${ID} .hub-program strong {
           font-size: 11px;
-          white-space: nowrap;
+        }
+
+        #${ID} .hub-program small {
+          font-size: 9px;
+        }
+
+        #${ID} .hub-quick-grid {
+          grid-template-columns: 1fr;
+        }
+
+        #${ID} .hub-client {
+          padding: 12px;
         }
       }
 
@@ -543,7 +647,7 @@
   }
 
   /* =====================================
-     EXISTING DASHBOARD CONTAINER
+     COACH HUB ROOT
      ===================================== */
 
   function root() {
@@ -551,36 +655,34 @@
 
     if (!home) return null;
 
-    if ($(ID)) return $(ID);
+    installStyles();
 
-    installStyle();
+    let target = $(ID);
 
-    const section = document.createElement("section");
+    if (!target) {
+      target = document.createElement("section");
+      target.id = ID;
 
-    section.id = ID;
-    section.setAttribute(
-      "aria-label",
-      "Mana Movement Coach Hub"
-    );
+      target.setAttribute(
+        "aria-label",
+        "Mana Movement Coach Hub"
+      );
 
-    home.prepend(section);
+      home.prepend(target);
 
-    section.addEventListener(
-      "click",
-      onClick
-    );
+      target.addEventListener("click", onClick);
+    }
 
-    return section;
+    return target;
   }
 
   /* =====================================
-     OFFICIAL RUNNER HEADER
+     RUNNER HEADER
      ===================================== */
 
   function header(subtitle) {
     return `
       <div class="hub-hero">
-
         <div class="hub-runner">
           <img
             src="${RUNNER}"
@@ -588,8 +690,7 @@
           >
         </div>
 
-        <div class="hub-brand">
-
+        <div>
           <div class="hub-kicker">
             MANA MOVEMENT · COACH OPERATIONS
           </div>
@@ -599,172 +700,186 @@
           </h2>
 
           <div class="hub-sub">
-            ${html(subtitle)}
+            ${escapeHTML(subtitle)}
           </div>
-
         </div>
-
       </div>
     `;
   }
+
+  /* =====================================
+     HOME DASHBOARD
+     ===================================== */
+
+  function homeHTML() {
+    const all = clients();
+
+    return `
+      ${header(
+        "Your clients. Your programs. Your coaching."
+      )}
+
+      <section class="hub-panel">
+        <div class="hub-section-heading">
+          <h3>Needs Your Attention</h3>
+          <span class="hub-section-tag">
+            COACH PRIORITIES
+          </span>
+        </div>
+
+        <div class="hub-alert-grid">
+
+          <div class="hub-alert">
+            <div class="hub-alert-icon">♧</div>
+            <div class="hub-alert-number">—</div>
+            <strong>Chats</strong>
+            <small>Inbox connection pending</small>
+          </div>
+
+          <button
+            type="button"
+            class="hub-alert"
+            data-action="checkins"
+          >
+            <div class="hub-alert-icon">☷</div>
+            <div class="hub-alert-number">
+              ${escapeHTML(liveCount(
+                "alertCountCheckin"
+              ))}
+            </div>
+            <strong>Check-ins</strong>
+            <small>Review client updates</small>
+          </button>
+
+          <button
+            type="button"
+            class="hub-alert"
+            data-action="requests"
+          >
+            <div class="hub-alert-icon">▣</div>
+            <div class="hub-alert-number">
+              ${escapeHTML(liveCount(
+                "alertCountStrength"
+              ))}
+            </div>
+            <strong>Block Requests</strong>
+            <small>Strength training alerts</small>
+          </button>
+
+        </div>
+      </section>
+
+      <section class="hub-panel">
+        <div class="hub-section-heading">
+          <h3>Your Programs</h3>
+          <span class="hub-section-tag">
+            THREE PATHWAYS
+          </span>
+        </div>
+
+        <div class="hub-program-grid">
+          ${PROGRAMS.map(program => `
+            <button
+              type="button"
+              class="hub-program"
+              data-program="${program.id}"
+            >
+              <span class="hub-program-symbol">
+                ${program.symbol}
+              </span>
+
+              <strong>
+                ${escapeHTML(program.name)}
+              </strong>
+
+              <small>
+                ${escapeHTML(program.description)}
+              </small>
+            </button>
+          `).join("")}
+        </div>
+
+        <p class="hub-help">
+          ${all.length} existing client records
+          found. Verified program assignments
+          appear inside individual client profiles.
+        </p>
+      </section>
+
+      <section class="hub-panel">
+        <div class="hub-section-heading">
+          <h3>Quick Actions</h3>
+          <span class="hub-section-tag">
+            COACH TOOLS
+          </span>
+        </div>
+
+        <div class="hub-quick-grid">
+
+          <button
+            type="button"
+            class="hub-quick"
+            data-action="clients"
+          >
+            <span class="hub-quick-icon">♙</span>
+
+            <span class="hub-quick-content">
+              <strong>Manage Clients</strong>
+              <small>
+                Search and open coaching profiles
+              </small>
+            </span>
+
+            <span class="hub-quick-arrow">›</span>
+          </button>
+
+          <button
+            type="button"
+            class="hub-quick"
+            data-action="builder"
+          >
+            <span class="hub-quick-icon">＋</span>
+
+            <span class="hub-quick-content">
+              <strong>Create Program</strong>
+              <small>
+                Open the existing Program Builder
+              </small>
+            </span>
+
+            <span class="hub-quick-arrow">›</span>
+          </button>
+
+        </div>
+      </section>
+    `;
+  }
+
+  /* =====================================
+     PROGRAM CLIENT DIRECTORY
+     ===================================== */
 
   function clientButton(client) {
     return `
       <button
         type="button"
-        class="hub-item"
-        data-client="${html(client.id)}"
+        class="hub-client"
+        data-client="${escapeHTML(client.id)}"
       >
-        <strong>
-          ${html(client.name)}
-        </strong>
-
-        <span>
-          Open profile →
-        </span>
+        <strong>${escapeHTML(client.name)}</strong>
+        <span>Open Profile →</span>
       </button>
     `;
   }
 
-  /* =====================================
-     DRAW DASHBOARD
-     ===================================== */
-
-  function draw() {
-    const target = root();
-
-    if (!target) return;
+  function programHTML() {
+    const program = PROGRAMS.find(
+      item => item.id === currentProgram
+    ) || PROGRAMS[0];
 
     const all = clients();
 
-    if (page === "home") {
-      target.innerHTML =
-        header(
-          "Your clients. Your programs. Your coaching."
-        ) +
-
-        `
-        <div class="hub-panel">
-
-          <h3>Needs Your Attention</h3>
-
-          <div class="hub-grid">
-
-            <button
-              type="button"
-              class="hub-alert"
-              data-action="strengthChats"
-            >
-              <div class="hub-figure">—</div>
-              <strong>Strength Chats</strong>
-              <small>Inbox connection pending</small>
-            </button>
-
-            <button
-              type="button"
-              class="hub-alert"
-              data-action="requests"
-            >
-              <div class="hub-figure">
-                ${html(count("alertCountStrength"))}
-              </div>
-              <strong>Block Requests</strong>
-              <small>Current Strength alerts</small>
-            </button>
-
-            <button
-              type="button"
-              class="hub-alert"
-              data-action="lyfeChats"
-            >
-              <div class="hub-figure">—</div>
-              <strong>ManaLyfe Chats</strong>
-              <small>Inbox connection pending</small>
-            </button>
-
-          </div>
-
-        </div>
-
-        <div class="hub-panel">
-
-          <h3>Your Programs</h3>
-
-          <div class="hub-grid">
-
-            ${programs.map(program => {
-
-              const assigned = all.filter(
-                client =>
-                  client.program === program.id
-              ).length;
-
-              const verified =
-                all.length > 0 &&
-                all.every(client => client.program);
-
-              const metric =
-                program.id === "lyfe"
-                  ? "Active chats"
-                  : "Verified clients";
-
-              const number =
-                verified && program.id !== "lyfe"
-                  ? assigned
-                  : "—";
-
-              return `
-                <button
-                  type="button"
-                  class="hub-card"
-                  data-program="${program.id}"
-                >
-
-                  <span class="hub-symbol">
-                    ${program.icon}
-                  </span>
-
-                  <strong>
-                    ${html(program.name)}
-                  </strong>
-
-                  <span class="hub-figure">
-                    ${html(number)}
-                  </span>
-
-                  <small>
-                    ${metric} · Open →
-                  </small>
-
-                </button>
-              `;
-
-            }).join("")}
-
-          </div>
-
-          <p class="hub-help">
-            ${all.length} existing client records
-            available. Program-specific totals
-            will appear when assignments are
-            connected.
-          </p>
-
-        </div>
-      `;
-
-      return;
-    }
-
-    /* =====================================
-       INDIVIDUAL PROGRAM DIRECTORY
-       ===================================== */
-
-    const program = programs.find(
-      item => item.id === currentProgram
-    ) || programs[0];
-
-    const verified = all.filter(
+    const assigned = all.filter(
       client => client.program === currentProgram
     );
 
@@ -772,65 +887,56 @@
       client => !client.program
     );
 
-    target.innerHTML =
-      header(
+    return `
+      ${header(
         program.name + " · Client Management"
-      ) +
+      )}
 
-      `
-      <div class="hub-panel">
+      <section class="hub-panel">
 
-        <div class="hub-heading">
+        <button
+          type="button"
+          class="hub-back"
+          data-action="back"
+        >
+          ← Coach Hub
+        </button>
 
-          <button
-            type="button"
-            class="hub-back"
-            data-action="back"
-          >
-            ← Coach Hub
-          </button>
+        <h3 class="hub-directory-title">
+          ${escapeHTML(program.name)}
+        </h3>
 
-          <h3>
-            ${html(program.name)}
-          </h3>
+        <p class="hub-help">
+          Open a client profile to review
+          their real saved programs,
+          training activity and coaching tools.
+        </p>
 
-        </div>
-
-        ${
-          currentProgram === "lyfe"
-            ? `
-              <p class="hub-help">
-                The dedicated ManaLyfe inbox
-                requires a verified conversation
-                source. No messages are copied
-                into this directory.
-              </p>
-            `
-            : ""
-        }
-
-        <h3>Assigned Clients</h3>
+        <h3 class="hub-directory-title">
+          Assigned Clients
+        </h3>
 
         ${
-          verified.length
-            ? verified.map(clientButton).join("")
+          assigned.length
+            ? assigned.map(clientButton).join("")
             : `
               <p class="hub-help">
-                No program assignment is confirmed
-                in the current dashboard data yet.
+                No assignment for this pathway
+                is confirmed in the current
+                dashboard directory.
               </p>
             `
         }
 
-        <h3 style="margin-top:23px">
+        <h3 class="hub-directory-title">
           Existing Client Directory
         </h3>
 
         <p class="hub-help">
-          Clients below are not yet classified
-          by program. You can still open their
-          coaching profiles without changing
-          their membership or training program.
+          Clients without confirmed pathway
+          classifications remain available
+          here. Opening their profile does not
+          change their training program.
         </p>
 
         ${
@@ -838,27 +944,81 @@
             ? unclassified.map(clientButton).join("")
             : `
               <p class="hub-help">
-                No unclassified clients
-                in the current list.
+                No unclassified client records.
               </p>
             `
         }
 
-        <button
-          type="button"
-          class="hub-secondary"
-          style="margin-top:17px"
-          data-action="refresh"
-        >
-          Refresh Client Directory
-        </button>
-
-      </div>
+      </section>
     `;
   }
 
   /* =====================================
-     PRESERVE EXISTING ACTIONS
+     RENDER
+     ===================================== */
+
+  function draw() {
+    const target = root();
+
+    if (!target) return;
+
+    target.innerHTML =
+      page === "program"
+        ? programHTML()
+        : homeHTML();
+  }
+
+  /* =====================================
+     EXISTING COACH NAVIGATION
+     ===================================== */
+
+  function openCoachTab(tab) {
+    const button = document.querySelector(
+      `#${NAV_ID} [data-coach-page="${tab}"]`
+    );
+
+    if (button) {
+      button.click();
+      return true;
+    }
+
+    if (
+      typeof window.showCoachPage ===
+      "function"
+    ) {
+      window.showCoachPage(tab);
+      return true;
+    }
+
+    return false;
+  }
+
+  function openClientProfile(clientId) {
+    const client = clients().find(
+      item => item.id === clientId
+    );
+
+    if (!client) return;
+
+    if (
+      typeof window.openCoachClientDetail !==
+      "function"
+    ) {
+      alert(
+        "Client detail is not available. " +
+        "Please refresh the app."
+      );
+      return;
+    }
+
+    window.openCoachClientDetail(
+      client.id,
+      client.name
+    );
+  }
+
+  /* =====================================
+     DASHBOARD BUTTON ACTIONS
      ===================================== */
 
   function onClick(event) {
@@ -866,69 +1026,67 @@
 
     if (!button) return;
 
-    if (button.dataset.program) {
-      currentProgram = button.dataset.program;
+    const program = button.dataset.program;
+    const client = button.dataset.client;
+    const action = button.dataset.action;
+
+    if (program) {
+      currentProgram = program;
       page = "program";
 
       draw();
-      window.scrollTo(0,0);
-
+      window.scrollTo(0, 0);
       return;
     }
 
-    if (button.dataset.client) {
-      const client = clients().find(
-        item => item.id === button.dataset.client
-      );
-
-      if (
-        client &&
-        typeof window.openCoachClientDetail ===
-          "function"
-      ) {
-        lastClientId = client.id;
-
-        window.openCoachClientDetail(
-          client.id,
-          client.name
-        );
-      } else {
-        alert(
-          "Client detail is not available. " +
-          "Refresh the app and try again."
-        );
-      }
-
+    if (client) {
+      openClientProfile(client);
       return;
     }
-
-    const action = button.dataset.action;
 
     if (action === "back") {
       page = "home";
-
       draw();
-      window.scrollTo(0,0);
+      window.scrollTo(0, 0);
+      return;
+    }
 
-    } else if (action === "refresh") {
-      draw();
+    if (action === "clients") {
+      openCoachTab("fuel");
+      return;
+    }
 
-    } else if (action === "requests") {
+    if (action === "builder") {
+      if (
+        typeof window.openManaProgramBuilder ===
+        "function"
+      ) {
+        window.openManaProgramBuilder();
+      } else {
+        alert(
+          "The Program Builder is unavailable. " +
+          "Please refresh the app."
+        );
+      }
+      return;
+    }
+
+    if (action === "checkins") {
+      if (
+        !openCoachTab("progress")
+      ) {
+        alert(
+          "Coach Progress is unavailable."
+        );
+      }
+      return;
+    }
+
+    if (action === "requests") {
+      page = "program";
       currentProgram = "strength";
-      page = "program";
       draw();
-
-    } else if (
-      action === "strengthChats" ||
-      action === "lyfeChats"
-    ) {
-      currentProgram =
-        action === "lyfeChats"
-          ? "lyfe"
-          : "strength";
-
-      page = "program";
-      draw();
+      window.scrollTo(0, 0);
     }
   }
 
@@ -939,35 +1097,30 @@
   function init() {
     if (!$(HOME_ID)) return;
 
+    installStyles();
     root();
     draw();
+
+    /* Return to dashboard when the
+       existing Coach Home tab is selected. */
 
     document.addEventListener(
       "click",
       event => {
-        if (
-          event.target.closest(
-            "#" + ID
-          )
-        ) {
-          return;
-        }
+        const homeButton = event.target.closest(
+          `#${NAV_ID} [data-coach-page="home"]`
+        );
 
-        if (
-          event.target.closest(
-            "[data-coach-page]," +
-            "#backToCoachClients"
-          )
-        ) {
-          setTimeout(draw,300);
-        }
+        if (!homeButton) return;
+
+        page = "home";
+
+        draw();
       }
     );
 
-    window.addEventListener(
-      "focus",
-      draw
-    );
+    /* Existing client-detail Back button
+       retains its original functionality. */
 
     window.refreshManaCoachHubClean = draw;
     window.MANA_COACH_HUB_BUILD = BUILD;
@@ -981,7 +1134,7 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {once:true}
+      { once: true }
     );
   } else {
     init();
