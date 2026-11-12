@@ -1,43 +1,65 @@
 
 /* =====================================================
    MANA MOVEMENT TRAINING
-   COACH PROFILE — TILE & DROPDOWN REFINEMENT
-   BUILD 104850
+   COACH PROFILE — RIGHT ALIGNED ARROWS
+   BUILD 104851
 
    COMPLETE REPLACEMENT:
    mana_coach_checkin_clarity_104800.js
 
-   - All four top action tiles match
-   - Prominent centred dropdown arrows
-   - Orange / white / silver colours
+   FIXES:
+   - All dropdown arrows aligned right
+   - Arrows fully inside card borders
+   - Thicker orange arrow lines
+   - Thicker orange arrow-box outlines
+   - Matching charcoal top coaching tiles
    - Three Fuel targets only
-   - Concise Program Builder explanation
-   - Collapsible Coach Tools and Coach Notes
-   - Original coaching actions preserved
-   - No data or database changes
+   - Short Program Builder description
+   - Collapsible Coach Tools and Notes
+
+   PRESERVES:
+   - Existing Coach Hub navigation
+   - Client profiles and coaching actions
+   - Generated workout connection
+   - Custom program assignment
+   - Check-in requests
+   - Coach notes and sessions
+   - Supabase records and workout history
+
+   No database changes.
+   No continuous subtree observers.
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104850";
+  const BUILD = "104851";
   const VIEW = "coachClientDetailView";
-  const STYLE = "manaCoachClarityStyle104850";
+  const STYLE = "manaCoachClarityStyle104851";
+
   const TOOLS = "manaCoachToolsFold104840";
   const NOTES = "manaCoachNotesFold104840";
 
-  if (window.MANA_COACH_CLARITY_104850) return;
-  window.MANA_COACH_CLARITY_104850 = true;
+  if (window.MANA_COACH_CLARITY_104851) return;
+  window.MANA_COACH_CLARITY_104851 = true;
 
   const $ = id => document.getElementById(id);
+
   let timers = [];
 
   function isOpen() {
     const view = $(VIEW);
-    return !!view &&
+
+    return !!(
+      view &&
       !view.hidden &&
-      !view.classList.contains("hide");
+      !view.classList.contains("hide")
+    );
   }
+
+  /* =====================================
+     PREMIUM DESIGN
+     ===================================== */
 
   function installStyles() {
     if ($(STYLE)) return;
@@ -48,7 +70,7 @@
     style.textContent = `
 
       /* =================================
-         ALL FOUR TOP TILES MATCH
+         FOUR MATCHING TOP ACTION TILES
          ================================= */
 
       #${VIEW} #manaV1010ClientActions
@@ -83,21 +105,15 @@
       .m1010-action-icon,
       #${VIEW} #manaV1010ClientActions
       .m1010-action.primary .m1010-action-icon {
-        color: #FF7927 !important;
-        -webkit-text-fill-color: #FF7927 !important;
         background: #101216 !important;
         border: 1px solid #FF7927 !important;
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
       }
 
       #${VIEW} #manaV1010ClientActions
       .m1010-action:hover {
         border-color: #FF7927 !important;
-      }
-
-      #${VIEW} #manaV1010ClientActions
-      .m1010-actions-name strong {
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
       }
 
       /* =================================
@@ -121,7 +137,7 @@
       }
 
       /* =================================
-         GENERATED TRAINING / FUEL
+         THREE FUEL TARGETS ONLY
          ================================= */
 
       #${VIEW} #manaCoachGenerated104750
@@ -136,6 +152,10 @@
           repeat(3,minmax(0,1fr)) !important;
       }
 
+      /* =================================
+         SHORT PROGRAM BUILDER TEXT
+         ================================= */
+
       #${VIEW}
       #manaGeneratedOpenBuilder104750
       + .mg-desc {
@@ -147,6 +167,7 @@
       + .mg-desc::after {
         content:
           "Customise this client's training. Previous workout history is preserved.";
+
         display: block;
         color: #C1C6CE !important;
         font-size: 12px !important;
@@ -154,20 +175,28 @@
       }
 
       /* =================================
-         CENTRED WORKOUT DAY ARROWS
+         WORKOUT DAY ARROWS
+
+         Day name LEFT
+         Thick orange arrow RIGHT
+         Completely inside the border
          ================================= */
 
       #${VIEW} #manaCoachGenerated104750
       .mg-day > summary {
         display: flex !important;
-        flex-direction: column !important;
+        flex-direction: row !important;
         align-items: center !important;
-        justify-content: center !important;
-        gap: 9px !important;
-        text-align: center !important;
+        justify-content: space-between !important;
+
+        gap: 14px !important;
+        padding: 13px 16px !important;
+
+        text-align: left !important;
         list-style: none !important;
+
         cursor: pointer !important;
-        padding: 15px !important;
+        box-sizing: border-box !important;
       }
 
       #${VIEW} #manaCoachGenerated104750
@@ -177,101 +206,247 @@
 
       #${VIEW} #manaCoachGenerated104750
       .mg-day > summary::after {
-        content: "⌄";
-        display: grid;
-        place-items: center;
-        width: 62px;
-        height: 28px;
-        border: 1px solid #FF7927;
-        border-radius: 9px;
-        color: #FF7927;
-        font-size: 27px;
-        font-weight: 800;
-        line-height: 1;
-        transition: transform .15s ease;
+        content: "⌄" !important;
+
+        display: grid !important;
+        place-items: center !important;
+
+        flex: 0 0 44px !important;
+        width: 44px !important;
+        height: 39px !important;
+        min-width: 44px !important;
+
+        box-sizing: border-box !important;
+
+        background: #101216 !important;
+
+        border: 2px solid #FF7927 !important;
+        border-radius: 10px !important;
+
+        color: #FF7927 !important;
+
+        font-family: Arial, sans-serif !important;
+        font-size: 32px !important;
+        font-weight: 900 !important;
+        line-height: 1 !important;
+
+        margin: 0 !important;
+        transform: none !important;
+        transition: none !important;
       }
 
       #${VIEW} #manaCoachGenerated104750
       .mg-day[open] > summary::after {
-        transform: rotate(180deg);
+        content: "⌃" !important;
+        transform: none !important;
       }
 
       /* =================================
-         ALL COLLAPSIBLE SECTION HEADERS
+         COLLAPSIBLE COACH PANELS
          ================================= */
 
       #${VIEW} #${TOOLS},
       #${VIEW} #${NOTES} {
         display: block !important;
+
         margin: 14px 0 !important;
+
         background: #15171A !important;
+
         border: 1px solid #626973 !important;
         border-radius: 19px !important;
+
         overflow: hidden !important;
       }
 
+      /* =================================
+         ALL SECTION HEADERS
+
+         Text LEFT
+         Arrow RIGHT
+         ================================= */
+
       #${VIEW} #${TOOLS} > summary,
       #${VIEW} #${NOTES} > summary,
-      #${VIEW} #manaCoachSavedPrograms104820 > summary,
-      #${VIEW} #manaCoachHistory104790 > summary {
+      #${VIEW}
+      #manaCoachSavedPrograms104820 > summary,
+      #${VIEW}
+      #manaCoachHistory104790 > summary {
+
         display: flex !important;
-        flex-direction: column !important;
+
+        flex-direction: row !important;
         align-items: center !important;
-        justify-content: center !important;
-        gap: 10px !important;
-        padding: 17px 18px !important;
-        text-align: center !important;
+        justify-content: space-between !important;
+
+        gap: 14px !important;
+
+        padding: 16px 19px !important;
+
+        text-align: left !important;
+
         list-style: none !important;
         cursor: pointer !important;
+
+        box-sizing: border-box !important;
+        min-width: 0 !important;
       }
 
-      #${VIEW} #${TOOLS} > summary::-webkit-details-marker,
-      #${VIEW} #${NOTES} > summary::-webkit-details-marker,
-      #${VIEW} #manaCoachSavedPrograms104820
+      #${VIEW} #${TOOLS}
       > summary::-webkit-details-marker,
-      #${VIEW} #manaCoachHistory104790
+      #${VIEW} #${NOTES}
+      > summary::-webkit-details-marker,
+      #${VIEW}
+      #manaCoachSavedPrograms104820
+      > summary::-webkit-details-marker,
+      #${VIEW}
+      #manaCoachHistory104790
       > summary::-webkit-details-marker {
         display: none !important;
+      }
+
+      /* Text stays left. */
+
+      #${VIEW} #${TOOLS} > summary > span:first-child,
+      #${VIEW} #${NOTES} > summary > span:first-child,
+      #${VIEW}
+      #manaCoachSavedPrograms104820
+      > summary > span:first-child,
+      #${VIEW}
+      #manaCoachHistory104790
+      > summary > span:first-child {
+        flex: 1 1 auto !important;
+
+        min-width: 0 !important;
+
+        text-align: left !important;
       }
 
       #${VIEW} .mana-fold-title-104840,
       #${VIEW} .mcp-summary-title,
       #${VIEW} .mcf-heading {
+        display: block;
+
         color: #FFFFFF !important;
+
         font-size: 16px !important;
         font-weight: 900 !important;
-        text-align: center !important;
+
+        text-align: left !important;
       }
 
       #${VIEW} .mana-fold-sub-104840,
       #${VIEW} .mcp-summary-help,
       #${VIEW} .mcf-description {
         display: block;
+
         margin-top: 5px;
+
         color: #C1C6CE !important;
+
         font-size: 11px !important;
         line-height: 1.5 !important;
-        text-align: center !important;
+
+        text-align: left !important;
       }
+
+      /* =================================
+         LARGE THICK RIGHT ARROWS
+
+         Button stays INSIDE the card.
+         Chevron is drawn with 3px lines.
+         ================================= */
 
       #${VIEW} .mana-fold-arrow-104840,
       #${VIEW} .mcp-arrow,
       #${VIEW} .mcf-chevron {
-        display: grid !important;
-        place-items: center !important;
+
+        position: relative !important;
+
+        display: flex !important;
+
+        align-items: center !important;
+        justify-content: center !important;
+
         align-self: center !important;
-        flex: 0 0 31px !important;
-        width: 62px !important;
-        height: 31px !important;
-        min-width: 62px !important;
-        border: 1px solid #FF7927 !important;
-        border-radius: 9px !important;
-        color: #FF7927 !important;
+
+        flex: 0 0 44px !important;
+
+        width: 44px !important;
+        min-width: 44px !important;
+
+        height: 40px !important;
+        min-height: 40px !important;
+
+        box-sizing: border-box !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
         background: #101216 !important;
-        font-size: 27px !important;
-        line-height: 1 !important;
-        transition: transform .15s ease;
+
+        border: 2px solid #FF7927 !important;
+        border-radius: 10px !important;
+
+        color: transparent !important;
+        -webkit-text-fill-color: transparent !important;
+
+        font-size: 0 !important;
+
+        transform: none !important;
       }
+
+      /* Real thick-line chevron */
+
+      #${VIEW} .mana-fold-arrow-104840::after,
+      #${VIEW} .mcp-arrow::after,
+      #${VIEW} .mcf-chevron::after {
+
+        content: "" !important;
+
+        display: block !important;
+
+        position: absolute !important;
+
+        left: 50% !important;
+        top: 44% !important;
+
+        width: 12px !important;
+        height: 12px !important;
+
+        border-right:
+          3px solid #FF7927 !important;
+
+        border-bottom:
+          3px solid #FF7927 !important;
+
+        border-left: 0 !important;
+        border-top: 0 !important;
+
+        box-sizing: border-box !important;
+
+        transform:
+          translate(-50%,-50%)
+          rotate(45deg) !important;
+      }
+
+      /* Upwards arrow when expanded */
+
+      #${VIEW} details[open] > summary
+      .mana-fold-arrow-104840::after,
+      #${VIEW} details[open] > summary
+      .mcp-arrow::after,
+      #${VIEW} details[open] > summary
+      .mcf-chevron::after {
+
+        top: 58% !important;
+
+        transform:
+          translate(-50%,-50%)
+          rotate(225deg) !important;
+      }
+
+      /* Keep arrow boxes upright */
 
       #${VIEW} details[open] > summary
       .mana-fold-arrow-104840,
@@ -279,8 +454,10 @@
       .mcp-arrow,
       #${VIEW} details[open] > summary
       .mcf-chevron {
-        transform: rotate(180deg) !important;
+        transform: none !important;
       }
+
+      /* Keyboard accessibility */
 
       #${VIEW} details > summary:focus-visible {
         outline: 2px solid #FF7927 !important;
@@ -288,59 +465,85 @@
       }
 
       /* =================================
-         COACH TOOLS / NOTES CONTENT
+         COACH TOOLS AND NOTES CONTENT
          ================================= */
 
       #${VIEW} #${TOOLS} > .card,
       #${VIEW} #${NOTES} > .card {
         margin: 0 !important;
         padding: 17px !important;
+
         background: #15171A !important;
+
         border: none !important;
         border-top: 1px solid #39414A !important;
+
         border-radius: 0 !important;
         box-shadow: none !important;
       }
 
-      #${VIEW} #${TOOLS} > .card
-      > .row:first-child,
-      #${VIEW} #${NOTES} > .card
-      > h3:first-child {
+      #${VIEW} #${TOOLS}
+      > .card > .row:first-child,
+      #${VIEW} #${NOTES}
+      > .card > h3:first-child {
         display: none !important;
       }
 
-      #${VIEW} [data-mana-duplicate-builder] {
+      #${VIEW}
+      [data-mana-duplicate-builder] {
         display: none !important;
       }
 
-      #${VIEW} .mana-checkin-explain-104800 {
+      /* =================================
+         CLIENT CHECK-IN REQUEST
+         ================================= */
+
+      #${VIEW}
+      .mana-checkin-explain-104800 {
         margin: 12px 0;
         padding: 12px 14px;
+
         background: #101216 !important;
-        border-left: 3px solid #FF7927 !important;
+
+        border-left:
+          3px solid #FF7927 !important;
+
         border-radius: 9px;
+
         color: #C1C6CE !important;
+
         font-size: 12px;
         line-height: 1.6;
       }
 
-      #${VIEW} .mana-checkin-explain-104800 strong {
+      #${VIEW}
+      .mana-checkin-explain-104800 strong {
         color: #FFFFFF !important;
       }
 
       #${VIEW} #requestCheckinBtn {
         background: #FF7927 !important;
         background-image: none !important;
+
         border: 1px solid #FF7927 !important;
         border-radius: 12px !important;
+
         color: #090A0C !important;
-        -webkit-text-fill-color: #090A0C !important;
+        -webkit-text-fill-color:
+          #090A0C !important;
+
         box-shadow: none !important;
         font-weight: 900 !important;
       }
 
-      @media(max-width:600px) {
-        #${VIEW} #manaCoachGenerated104750
+      /* =================================
+         MOBILE
+         ================================= */
+
+      @media (max-width:600px) {
+
+        #${VIEW}
+        #manaCoachGenerated104750
         .mg-kicker + .mg-grid {
           grid-template-columns:
             repeat(2,minmax(0,1fr)) !important;
@@ -348,15 +551,39 @@
 
         #${VIEW} #${TOOLS} > summary,
         #${VIEW} #${NOTES} > summary,
-        #${VIEW} #manaCoachSavedPrograms104820 > summary,
-        #${VIEW} #manaCoachHistory104790 > summary {
-          padding: 14px !important;
+        #${VIEW}
+        #manaCoachSavedPrograms104820
+        > summary,
+        #${VIEW}
+        #manaCoachHistory104790
+        > summary {
+          padding: 13px 14px !important;
+        }
+
+        #${VIEW}
+        #manaCoachGenerated104750
+        .mg-day > summary {
+          padding: 12px 13px !important;
+        }
+
+        #${VIEW}
+        .mana-fold-arrow-104840,
+        #${VIEW}
+        .mcp-arrow,
+        #${VIEW}
+        .mcf-chevron {
+          flex-basis: 42px !important;
+          width: 42px !important;
+          min-width: 42px !important;
+          height: 38px !important;
+          min-height: 38px !important;
         }
 
         #${VIEW} #${TOOLS} > .card,
         #${VIEW} #${NOTES} > .card {
           padding: 13px !important;
         }
+
       }
 
     `;
@@ -365,7 +592,10 @@
   }
 
   /* =====================================
-     KEEP ORIGINAL COACHING FUNCTIONS
+     COLLAPSIBLE CONTAINERS
+
+     Move ORIGINAL existing cards.
+     Preserve buttons, data and handlers.
      ===================================== */
 
   function createFold(id, title, subtitle) {
@@ -376,21 +606,41 @@
     fold = document.createElement("details");
     fold.id = id;
 
-    const summary = document.createElement("summary");
+    const summary =
+      document.createElement("summary");
 
-    const words = document.createElement("span");
+    const words =
+      document.createElement("span");
 
-    words.innerHTML =
-      '<span class="mana-fold-title-104840">' +
-      title +
-      '</span>' +
-      '<span class="mana-fold-sub-104840">' +
-      subtitle +
-      '</span>';
+    const heading =
+      document.createElement("span");
 
-    const arrow = document.createElement("span");
-    arrow.className = "mana-fold-arrow-104840";
-    arrow.setAttribute("aria-hidden", "true");
+    heading.className =
+      "mana-fold-title-104840";
+
+    heading.textContent = title;
+
+    const description =
+      document.createElement("span");
+
+    description.className =
+      "mana-fold-sub-104840";
+
+    description.textContent = subtitle;
+
+    words.append(heading, description);
+
+    const arrow =
+      document.createElement("span");
+
+    arrow.className =
+      "mana-fold-arrow-104840";
+
+    arrow.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
     arrow.textContent = "⌄";
 
     summary.append(words, arrow);
@@ -399,13 +649,22 @@
     return fold;
   }
 
+  /* =====================================
+     COACH TOOLS
+     ===================================== */
+
   function organiseTools() {
     const view = $(VIEW);
 
-    const card = $("quickRecordSessionBtn")
-      ?.closest(".card");
+    const card =
+      $("quickRecordSessionBtn")
+        ?.closest(".card");
 
-    if (!view || !card || !view.contains(card)) return;
+    if (
+      !view ||
+      !card ||
+      !view.contains(card)
+    ) return;
 
     const fold = createFold(
       TOOLS,
@@ -414,37 +673,62 @@
     );
 
     if (card.parentElement !== fold) {
-      card.insertAdjacentElement("beforebegin", fold);
+      card.insertAdjacentElement(
+        "beforebegin",
+        fold
+      );
+
       fold.appendChild(card);
     }
 
-    card.querySelectorAll("button").forEach(button => {
-      if (
-        button.textContent.trim().toLowerCase() ===
-        "build custom program"
-      ) {
-        button.setAttribute(
-          "data-mana-duplicate-builder",
-          ""
-        );
-      }
-    });
+    card.querySelectorAll("button")
+      .forEach(button => {
+        if (
+          button.textContent.trim()
+            .toLowerCase() ===
+          "build custom program"
+        ) {
+          button.setAttribute(
+            "data-mana-duplicate-builder",
+            ""
+          );
+        }
+      });
 
-    const request = $("requestCheckinBtn");
+    const request =
+      $("requestCheckinBtn");
 
     if (request) {
-      request.textContent = "Request New Client Check-in";
+      request.textContent =
+        "Request New Client Check-in";
 
-      if (!card.querySelector(
-        ".mana-checkin-explain-104800"
-      )) {
-        const info = document.createElement("div");
-        info.className = "mana-checkin-explain-104800";
+      if (
+        !card.querySelector(
+          ".mana-checkin-explain-104800"
+        )
+      ) {
+        const info =
+          document.createElement("div");
 
-        info.innerHTML =
-          "<strong>Client Check-in</strong>" +
-          "<div>Ask this client to submit a new " +
-          "weight, energy and wellbeing update.</div>";
+        info.className =
+          "mana-checkin-explain-104800";
+
+        const heading =
+          document.createElement("strong");
+
+        heading.textContent =
+          "Client Check-in";
+
+        const description =
+          document.createElement("div");
+
+        description.textContent =
+          "Ask this client to submit a new weight, energy and wellbeing update.";
+
+        info.append(
+          heading,
+          description
+        );
 
         request.insertAdjacentElement(
           "beforebegin",
@@ -454,11 +738,19 @@
     }
   }
 
+  /* =====================================
+     COACH NOTES
+     ===================================== */
+
   function organiseNotes() {
     const view = $(VIEW);
     const card = $("coachNotesCard");
 
-    if (!view || !card || !view.contains(card)) return;
+    if (
+      !view ||
+      !card ||
+      !view.contains(card)
+    ) return;
 
     const fold = createFold(
       NOTES,
@@ -467,20 +759,34 @@
     );
 
     if (card.parentElement !== fold) {
-      card.insertAdjacentElement("beforebegin", fold);
+      card.insertAdjacentElement(
+        "beforebegin",
+        fold
+      );
+
       fold.appendChild(card);
     }
   }
+
+  /* =====================================
+     TOP COACHING TILES
+     ===================================== */
 
   function tidyTopCheckin() {
     const tile = $("manaV1010Checkin");
 
     if (!tile) return;
 
-    const title = tile.querySelector("strong");
-    const description = tile.querySelector("small");
+    const title =
+      tile.querySelector("strong");
 
-    if (title) title.textContent = "CLIENT CHECK-INS";
+    const description =
+      tile.querySelector("small");
+
+    if (title) {
+      title.textContent =
+        "CLIENT CHECK-INS";
+    }
 
     if (description) {
       description.textContent =
@@ -497,11 +803,7 @@
   }
 
   /* =====================================
-     TOP TILE BEHAVIOUR
-
-     Leave the original handlers intact,
-     apart from the existing check-in
-     navigation, which opens the request.
+     PRESERVE WORKING TILE ACTIONS
      ===================================== */
 
   function onClick(event) {
@@ -509,40 +811,62 @@
 
     const target = event.target;
 
-    if (!(target instanceof Element)) return;
+    if (!(target instanceof Element)) {
+      return;
+    }
 
-    if (target.closest("#manaV1010Checkin")) {
-      if ($(TOOLS)) $(TOOLS).open = true;
+    if (
+      target.closest(
+        "#manaV1010Checkin"
+      )
+    ) {
+      if ($(TOOLS)) {
+        $(TOOLS).open = true;
+      }
 
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
 
       requestAnimationFrame(() => {
-        $("requestCheckinBtn")?.scrollIntoView({
-          block: "center",
-          behavior: "smooth"
-        });
+        $("requestCheckinBtn")
+          ?.scrollIntoView({
+            block: "center",
+            behavior: "smooth"
+          });
       });
 
       return;
     }
 
     if (
-      target.closest("#manaV1010Sessions") ||
-      target.closest("#manaV1010Message")
+      target.closest(
+        "#manaV1010Sessions"
+      ) ||
+      target.closest(
+        "#manaV1010Message"
+      )
     ) {
-      if ($(TOOLS)) $(TOOLS).open = true;
+      if ($(TOOLS)) {
+        $(TOOLS).open = true;
+      }
     }
 
-    if (target.closest("#quickAddNoteBtn")) {
-      if ($(NOTES)) $(NOTES).open = true;
+    if (
+      target.closest(
+        "#quickAddNoteBtn"
+      )
+    ) {
+      if ($(NOTES)) {
+        $(NOTES).open = true;
+      }
     }
   }
 
   function onFocus(event) {
     if (
-      event.target?.id === "coachNoteDraft" &&
+      event.target?.id ===
+        "coachNoteDraft" &&
       $(NOTES)
     ) {
       $(NOTES).open = true;
@@ -550,8 +874,7 @@
   }
 
   /* =====================================
-     INITIALISE WITHOUT CONTINUOUS
-     PAGE REBUILDING
+     LIMITED INITIALISATION
      ===================================== */
 
   function clearTimers() {
@@ -562,8 +885,15 @@
   function schedule() {
     clearTimers();
 
-    [100, 400, 900, 1800].forEach(delay => {
-      timers.push(setTimeout(tidy, delay));
+    [
+      100,
+      400,
+      900,
+      1800
+    ].forEach(delay => {
+      timers.push(
+        setTimeout(tidy, delay)
+      );
     });
   }
 
@@ -571,10 +901,20 @@
     installStyles();
 
     const view = $(VIEW);
+
     if (!view) return;
 
-    document.addEventListener("click", onClick, true);
-    document.addEventListener("focusin", onFocus, true);
+    document.addEventListener(
+      "click",
+      onClick,
+      true
+    );
+
+    document.addEventListener(
+      "focusin",
+      onFocus,
+      true
+    );
 
     new MutationObserver(() => {
       if (isOpen()) {
@@ -587,15 +927,19 @@
       attributeFilter: ["class"]
     });
 
-    if (isOpen()) schedule();
+    if (isOpen()) {
+      schedule();
+    }
 
     console.log(
-      "[Mana Movement] Coach tile/dropdown refine " +
+      "[Mana Movement] Right-aligned arrows " +
       BUILD
     );
   }
 
-  if (document.readyState === "loading") {
+  if (
+    document.readyState === "loading"
+  ) {
     document.addEventListener(
       "DOMContentLoaded",
       init,
