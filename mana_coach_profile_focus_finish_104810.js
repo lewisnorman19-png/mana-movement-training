@@ -1,71 +1,69 @@
 
-/* =====================================================
+/* ============================================================
    MANA MOVEMENT TRAINING
-   COACH PROFILE — ONE TRAINING PROGRAM
-   BUILD 104820
+   STABLE COACH CLIENT PROFILE
+   BUILD 104830
 
    COMPLETE REPLACEMENT FILE:
    mana_coach_profile_focus_finish_104810.js
 
-   CHANGES:
-   - Generated workouts remain visible
-   - Saved custom programs become an accordion
-   - One clear training-program workspace
-   - No misleading separate Assigned Programs panel
-   - Keep existing custom-program assignment controls
-   - Keep the working Program Builder
-   - Keep History & Results collapsed
-   - Move Latest Check-in and Coach Summary to history
+   FIX:
+   - Keep coaching action cards directly below client name
+   - Recover missing cards using existing action functions
+   - Prevent action cards moving below other sections
+   - Keep three coaching statistics
+   - Keep generated workouts first
+   - Keep saved assignments in an optional accordion
+   - Keep check-ins and summaries in History & Results
 
    PRESERVES:
-   - Supabase data and permissions
-   - Generated workout snapshots
-   - Client program assignments
-   - All exercise data
-   - Coaching history
-   - Existing click handlers
-   - Client and coach navigation
+   - Supabase data
+   - All original button functions
+   - Program Builder
+   - Workout snapshots
+   - Client assignments
+   - Coaching sessions and notes
+   - Existing login and navigation
 
-   No database changes.
-   No cloning of program controls.
-   No continuous subtree observers.
-   ===================================================== */
+   No database writes.
+   No duplicate action buttons.
+   No continuous subtree observation.
+   ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "104820";
+  const BUILD = "104830";
 
-  const VIEW_ID = "coachClientDetailView";
+  if (window.MANA_COACH_STABLE_104830) return;
+  window.MANA_COACH_STABLE_104830 = true;
 
-  const GENERATED_ID =
-    "manaCoachGenerated104750";
+  const VIEW = "coachClientDetailView";
+  const HERO = "manaV998ClientHero";
+  const ACTIONS = "manaV1010ClientActions";
+  const SUMMARY = "manaV998ClientSummary";
 
-  const ASSIGNMENT_ID =
-    "manaCoachAssignments104720";
+  const GENERATED = "manaCoachGenerated104750";
+  const ASSIGNED = "manaCoachAssignments104720";
+  const SAVED = "manaCoachSavedPrograms104820";
 
-  const SAVED_ID =
-    "manaCoachSavedPrograms104820";
-
-  const HISTORY_CONTENT_ID =
+  const HISTORY = "manaCoachHistory104790";
+  const HISTORY_CONTENT =
     "manaCoachHistoryContent104790";
 
-  const STYLE_ID =
-    "manaCoachProfileFinishStyle104820";
+  const STYLE = "manaCoachStableStyle104830";
 
-  const $ = id =>
-    document.getElementById(id);
+  const $ = id => document.getElementById(id);
 
+  let scheduled = false;
+  let recoveryAttempts = 0;
+  let wasOpen = false;
   let timers = [];
 
-  /* =====================================
-     PROFILE STATE
-     ===================================== */
+  function open() {
+    const view = $(VIEW);
 
-  function profileOpen() {
-    const view = $(VIEW_ID);
-
-    return Boolean(
+    return !!(
       view &&
       !view.hidden &&
       !view.classList.contains("hide")
@@ -73,341 +71,288 @@
   }
 
   /* =====================================
-     STYLES
+     DESIGN
      ===================================== */
 
   function installStyles() {
-    if ($(STYLE_ID)) return;
+    if ($(STYLE)) return;
 
-    const style =
-      document.createElement("style");
-
-    style.id = STYLE_ID;
+    const style = document.createElement("style");
+    style.id = STYLE;
 
     style.textContent = `
 
-      /* =================================
-         GENERATED TRAINING PLAN
+      /* The four coaching actions belong
+         directly below the client header. */
 
-         This is the primary program
-         information for the coach.
-         ================================= */
-
-      #${VIEW_ID}
-      #${GENERATED_ID} {
-        margin-bottom: 0 !important;
-
-        background: #15171A !important;
-
-        border: 1px solid #626973 !important;
-        border-radius: 20px !important;
-
-        box-shadow: none !important;
-      }
-
-      /* When a real generated plan exists,
-         use one clear section heading. */
-
-      #${VIEW_ID}
-      #${GENERATED_ID}:has(.mg-grid) > h3 {
-        font-size: 0 !important;
-      }
-
-      #${VIEW_ID}
-      #${GENERATED_ID}:has(.mg-grid) > h3::after {
-        content: "Training Program";
-
-        color: #FFFFFF !important;
-
-        font-size: 22px !important;
-        font-weight: 900 !important;
-        line-height: 1.4 !important;
-      }
-
-      /* =================================
-         SAVED PROGRAMS ACCORDION
-         ================================= */
-
-      #${VIEW_ID}
-      #${SAVED_ID} {
+      #${VIEW} #${ACTIONS} {
         display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
 
-        margin: -1px 0 16px !important;
-
-        padding: 0 !important;
-
-        background: #15171A !important;
-
-        border: 1px solid #626973 !important;
-        border-radius: 0 0 20px 20px !important;
-
-        overflow: hidden !important;
-        box-shadow: none !important;
+        margin: 0 0 14px !important;
+        position: relative !important;
       }
 
-      #${VIEW_ID}
-      #${GENERATED_ID}:has(+ #${SAVED_ID}) {
-        border-radius: 20px 20px 0 0 !important;
+      /* Keep the original action buttons
+         and their existing click handlers. */
+
+      #${VIEW} #${ACTIONS}
+      .m1010-action {
+        visibility: visible !important;
+        opacity: 1 !important;
       }
 
-      #${VIEW_ID}
-      #${SAVED_ID} > summary {
-        display: flex !important;
+      /* Three useful statistics only. */
 
-        justify-content: space-between !important;
-        align-items: center !important;
-
-        gap: 12px !important;
-
-        padding: 17px 19px !important;
-
-        list-style: none !important;
-
-        background: #101216 !important;
-
-        color: #FFFFFF !important;
-
-        cursor: pointer !important;
+      #${VIEW} #${SUMMARY} {
+        display: grid !important;
+        grid-template-columns:
+          repeat(3,minmax(0,1fr)) !important;
+        gap: 10px !important;
       }
 
-      #${VIEW_ID}
-      #${SAVED_ID} > summary::-webkit-details-marker {
+      #${VIEW} #${SUMMARY}
+      .mana-v998-stat:has(#manaV998Adherence) {
         display: none !important;
       }
 
-      #${VIEW_ID}
-      #${SAVED_ID} .mcp-summary-title {
-        display: block;
+      /* No unnecessary program-suite bar. */
 
+      #${VIEW} #manaV998ProgramSuite {
+        display: none !important;
+      }
+
+      /* Current generated workouts. */
+
+      #${VIEW} #${GENERATED} {
+        background: #15171A !important;
+        border: 1px solid #626973 !important;
+        border-radius: 20px 20px 0 0 !important;
+        margin-bottom: 0 !important;
+      }
+
+      #${VIEW} #${GENERATED}:has(.mg-grid)
+      > h3 {
+        font-size: 0 !important;
+      }
+
+      #${VIEW} #${GENERATED}:has(.mg-grid)
+      > h3::after {
+        content: "Training Program";
+        display: inline;
         color: #FFFFFF !important;
+        font-size: 22px !important;
+        font-weight: 900 !important;
+      }
 
+      /* Saved custom-program options are
+         inside the same training section. */
+
+      #${VIEW} #${SAVED} {
+        display: block !important;
+        margin: -1px 0 16px !important;
+        background: #15171A !important;
+        border: 1px solid #626973 !important;
+        border-radius: 0 0 20px 20px !important;
+        overflow: hidden !important;
+      }
+
+      #${VIEW} #${SAVED} > summary {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 12px !important;
+        padding: 16px 19px !important;
+        background: #101216 !important;
+        color: #FFFFFF !important;
+        cursor: pointer !important;
+        list-style: none !important;
+      }
+
+      #${VIEW} #${SAVED}
+      > summary::-webkit-details-marker {
+        display: none !important;
+      }
+
+      #${VIEW} #${SAVED}
+      .mcp-summary-title {
+        color: #FFFFFF !important;
         font-size: 14px !important;
         font-weight: 900 !important;
       }
 
-      #${VIEW_ID}
-      #${SAVED_ID} .mcp-summary-help {
+      #${VIEW} #${SAVED}
+      .mcp-summary-help {
         display: block;
-
         margin-top: 4px;
-
         color: #C1C6CE !important;
-
         font-size: 11px !important;
-        line-height: 1.5 !important;
       }
 
-      #${VIEW_ID}
-      #${SAVED_ID} .mcp-arrow {
-        flex: 0 0 34px;
-
-        width: 34px;
-        height: 34px;
-
-        display: grid;
-        place-items: center;
-
+      #${VIEW} #${SAVED}
+      .mcp-arrow {
         color: #FF7927 !important;
-
-        border: 1px solid #FF7927 !important;
-        border-radius: 10px;
-
-        font-size: 18px;
+        font-size: 20px !important;
       }
 
-      #${VIEW_ID}
-      #${SAVED_ID}[open] .mcp-arrow {
+      #${VIEW} #${SAVED}[open]
+      .mcp-arrow {
         transform: rotate(180deg);
       }
 
-      #${VIEW_ID}
-      #${SAVED_ID} > summary:focus-visible {
-        outline: 2px solid #FF7927;
-        outline-offset: -3px;
-      }
-
-      /* Existing assignment panel is now
-         the content of the accordion,
-         not a competing main card. */
-
-      #${VIEW_ID}
-      #${SAVED_ID}
-      #${ASSIGNMENT_ID} {
+      #${VIEW} #${SAVED}
+      #${ASSIGNED} {
         display: block !important;
-
         margin: 0 !important;
-        padding: 16px 19px 19px !important;
-
+        padding: 17px !important;
+        background: #15171A !important;
         border: none !important;
         border-top: 1px solid #39414A !important;
-
         border-radius: 0 !important;
-
-        background: #15171A !important;
-
-        box-shadow: none !important;
       }
 
-      /* Hide the repeated panel title.
-         Accordion summary gives its name. */
+      #${VIEW} #${SAVED}
+      #${ASSIGNED} > h3,
 
-      #${VIEW_ID}
-      #${SAVED_ID}
-      #${ASSIGNMENT_ID} > .mca-kicker,
-
-      #${VIEW_ID}
-      #${SAVED_ID}
-      #${ASSIGNMENT_ID} > h3 {
+      #${VIEW} #${SAVED}
+      #${ASSIGNED} > .mca-kicker {
         display: none !important;
       }
 
-      /* One primary Program Builder action,
-         visible in the generated workout
-         panel when that button exists. */
+      /* One primary Create Updated Program
+         action, when available. */
 
-      #${VIEW_ID}:has(
-        #manaGeneratedOpenBuilder104750
-      )
-      #${SAVED_ID}
-      #mcaBuild104720 {
+      #${VIEW}:has(#manaGeneratedOpenBuilder104750)
+      #${SAVED} #mcaBuild104720 {
         display: none !important;
       }
 
-      /* =================================
-         COACH HISTORY
+      /* Keep additional historical panels
+         inside the existing accordion. */
 
-         Hide duplicated current screen
-         check-in and summary cards until
-         moved into History & Results.
-         ================================= */
-
-      #${VIEW_ID}
-      > .card:has(#detailLatestCheckin),
-
-      #${VIEW_ID}
-      > .card:has(#detailCoachSummary) {
-        display: none !important;
-      }
-
-      #${VIEW_ID}
-      #${HISTORY_CONTENT_ID}
-      > .card:has(#detailLatestCheckin),
-
-      #${VIEW_ID}
-      #${HISTORY_CONTENT_ID}
-      > .card:has(#detailCoachSummary) {
-        display: block !important;
-
+      #${VIEW}
+      #${HISTORY_CONTENT} > .card {
+        display: block;
+        margin-top: 13px !important;
         background: #101216 !important;
-
-        border: 1px solid #48515B !important;
-        border-radius: 15px !important;
-
-        box-shadow: none !important;
+        border-color: #48515B !important;
       }
-
-      /* =================================
-         MOBILE
-         ================================= */
 
       @media(max-width:600px) {
+        #${VIEW} #${SUMMARY} {
+          grid-template-columns:
+            repeat(3,minmax(0,1fr)) !important;
+          gap: 6px !important;
+        }
 
-        #${VIEW_ID}
-        #${SAVED_ID} > summary {
+        #${VIEW} #${SAVED} > summary {
           padding: 14px !important;
         }
 
-        #${VIEW_ID}
-        #${SAVED_ID}
-        #${ASSIGNMENT_ID} {
+        #${VIEW} #${SAVED} #${ASSIGNED} {
           padding: 14px !important;
         }
-
-        #${VIEW_ID}
-        #${GENERATED_ID}:has(.mg-grid)
-        > h3::after {
-          font-size: 19px !important;
-        }
-
       }
-
     `;
 
     document.head.appendChild(style);
   }
 
   /* =====================================
-     CREATE SAVED PROGRAM ACCORDION
+     COACH ACTIONS
 
-     Do not recreate the assignment panel.
-     Move its ORIGINAL element only.
+     Existing v10.10 owns the buttons and
+     their functionality.
 
-     Its Supabase functions, dropdown and
-     click handlers remain attached.
+     We restore their correct position
+     instead of rebuilding them.
      ===================================== */
 
-  function ensureSavedAccordion() {
-    let saved = $(SAVED_ID);
+  function ensureActions() {
+    const view = $(VIEW);
+    const hero = $(HERO);
 
-    if (saved) return saved;
+    if (!view || !hero || !view.contains(hero)) {
+      return;
+    }
 
-    saved =
-      document.createElement("details");
+    let actions = $(ACTIONS);
 
-    saved.id = SAVED_ID;
+    if (
+      (!actions || !view.contains(actions)) &&
+      recoveryAttempts < 3
+    ) {
+      recoveryAttempts++;
 
-    saved.setAttribute(
+      if (
+        typeof window
+          .refreshManaCoachClientHubPolish ===
+        "function"
+      ) {
+        window.refreshManaCoachClientHubPolish();
+      }
+
+      actions = $(ACTIONS);
+    }
+
+    if (!actions || !view.contains(actions)) {
+      return;
+    }
+
+    /* The key fix: always immediately
+       after the client's header. */
+
+    if (hero.nextElementSibling !== actions) {
+      hero.insertAdjacentElement(
+        "afterend",
+        actions
+      );
+    }
+  }
+
+  /* =====================================
+     SAVED CUSTOM PROGRAMS
+
+     Preserve the existing assignment
+     form and all its event handlers.
+     ===================================== */
+
+  function savedAccordion() {
+    let wrapper = $(SAVED);
+
+    if (wrapper) return wrapper;
+
+    wrapper = document.createElement("details");
+    wrapper.id = SAVED;
+
+    wrapper.setAttribute(
       "aria-label",
       "Saved custom training programs"
     );
 
-    saved.innerHTML = `
+    wrapper.innerHTML = `
       <summary>
         <span>
           <span class="mcp-summary-title">
             Saved Custom Programs
           </span>
-
           <span class="mcp-summary-help">
-            Optional · Assign a previously
-            created training program
+            Optional · Assign an existing program
           </span>
         </span>
-
-        <span
-          class="mcp-arrow"
-          aria-hidden="true"
-        >
-          ⌄
-        </span>
+        <span class="mcp-arrow"
+              aria-hidden="true">⌄</span>
       </summary>
     `;
 
-    return saved;
+    return wrapper;
   }
 
-  /* =====================================
-     UNIFY TRAINING PROGRAM AREA
-
-     Generated workouts stay on top.
-
-     Saved programs follow inside an
-     accordion underneath.
-
-     Move nodes only when their position
-     is incorrect.
-     ===================================== */
-
   function organiseTraining() {
-    if (!profileOpen()) return;
-
-    const view = $(VIEW_ID);
-
-    const generated =
-      $(GENERATED_ID);
-
-    const assigned =
-      $(ASSIGNMENT_ID);
+    const view = $(VIEW);
+    const generated = $(GENERATED);
+    const assigned = $(ASSIGNED);
 
     if (
       !view ||
@@ -419,152 +364,205 @@
       return;
     }
 
-    const saved =
-      ensureSavedAccordion();
+    const wrapper = savedAccordion();
 
-    /* Place accordion immediately after
-       the generated program viewer. */
-
-    if (
-      saved.previousElementSibling !==
-      generated
-    ) {
+    if (generated.nextElementSibling !== wrapper) {
       generated.insertAdjacentElement(
         "afterend",
-        saved
+        wrapper
       );
     }
 
-    /* Keep original assignment form
-       and all its event handlers. */
-
-    if (assigned.parentElement !== saved) {
-      saved.appendChild(assigned);
+    if (assigned.parentElement !== wrapper) {
+      wrapper.appendChild(assigned);
     }
   }
 
   /* =====================================
-     KEEP CHECK-IN & COACH SUMMARY
-     IN HISTORY & RESULTS
+     HISTORY & RESULTS
 
-     Preserve original card elements.
+     Move the original cards without
+     duplicating or deleting their data.
      ===================================== */
 
-  function cardContaining(id) {
-    return $(id)?.closest(".card") || null;
-  }
-
   function organiseHistory() {
-    if (!profileOpen()) return;
-
-    const content =
-      $(HISTORY_CONTENT_ID);
+    const content = $(HISTORY_CONTENT);
 
     if (!content) return;
 
-    const cards = [
-      cardContaining("detailLatestCheckin"),
-      cardContaining("detailCoachSummary")
-    ];
+    [
+      "detailLatestCheckin",
+      "detailCoachSummary"
+    ].forEach(id => {
+      const card = $(id)?.closest(".card");
 
-    cards.forEach(card => {
-      if (
-        card &&
-        card.parentElement !== content
-      ) {
+      if (card && card.parentElement !== content) {
         content.appendChild(card);
       }
     });
   }
 
   /* =====================================
-     APPLY FOCUSED LAYOUT
+     STABLE LAYOUT PASS
+
+     No innerHTML rebuilding.
+     No new event handlers on action cards.
      ===================================== */
 
   function organise() {
-    if (!profileOpen()) return;
+    scheduled = false;
 
+    if (!open()) return;
+
+    ensureActions();
     organiseTraining();
     organiseHistory();
+
+    /* Recheck after other older modules
+       have finished their placement. */
+
+    const hero = $(HERO);
+    const actions = $(ACTIONS);
+
+    if (
+      hero &&
+      actions &&
+      hero.nextElementSibling !== actions
+    ) {
+      hero.insertAdjacentElement(
+        "afterend",
+        actions
+      );
+    }
   }
 
-  /* =====================================
-     LIMITED SETUP PASSES
+  function schedule() {
+    if (scheduled) return;
 
-     Program modules load at different
-     times after a profile opens.
+    scheduled = true;
 
-     Do not watch or rebuild the
-     entire profile continuously.
-     ===================================== */
+    requestAnimationFrame(organise);
+  }
 
-  function clearPending() {
+  function clearTimers() {
     timers.forEach(clearTimeout);
     timers = [];
   }
 
-  function scheduleOrganise() {
-    clearPending();
+  function onProfileOpen() {
+    recoveryAttempts = 0;
+    clearTimers();
 
     [
-      120,
-      450,
-      900,
-      1700,
-      2700
+      0,
+      100,
+      300,
+      650,
+      1200,
+      2400,
+      4200
     ].forEach(delay => {
       timers.push(
-        setTimeout(() => {
-          if (profileOpen()) {
-            organise();
-          }
-        }, delay)
+        setTimeout(schedule,delay)
       );
     });
   }
 
   /* =====================================
      INITIALISE
+
+     Observe only DIRECT children and
+     profile visibility, not the full
+     subtree or its data updates.
+
+     The observer only schedules a pass
+     when the profile's structure changes.
      ===================================== */
 
   function init() {
     installStyles();
 
-    const view = $(VIEW_ID);
+    const view = $(VIEW);
 
     if (!view) return;
 
-    /* Only watch the profile's
-       opening and closing state. */
+    wasOpen = open();
 
-    new MutationObserver(() => {
-      if (profileOpen()) {
-        scheduleOrganise();
-      } else {
-        clearPending();
+    const observer = new MutationObserver(
+      mutations => {
+        const nowOpen = open();
+
+        if (!nowOpen) {
+          wasOpen = false;
+          clearTimers();
+          return;
+        }
+
+        if (!wasOpen) {
+          wasOpen = true;
+          onProfileOpen();
+          return;
+        }
+
+        const structuralChange =
+          mutations.some(m =>
+            m.type === "childList"
+          );
+
+        if (structuralChange) {
+          schedule();
+        }
       }
-    }).observe(view, {
-      attributes: true,
-      attributeFilter: ["class"]
+    );
+
+    observer.observe(view,{
+      attributes:true,
+      attributeFilter:["class"],
+      childList:true,
+      subtree:false
     });
 
-    if (profileOpen()) {
-      scheduleOrganise();
+    /* Client may already be open. */
+
+    if (wasOpen) {
+      onProfileOpen();
     }
 
+    /* Catch client selection before
+       the profile finishes loading. */
+
+    document.addEventListener(
+      "click",
+      event => {
+        if (
+          event.target.closest(
+            ".client-open, " +
+            ".m10091-action.view, " +
+            "[data-client]"
+          )
+        ) {
+          setTimeout(() => {
+            if (open()) {
+              wasOpen = true;
+              onProfileOpen();
+            }
+          },100);
+        }
+      },
+      false
+    );
+
     console.log(
-      "[Mana Movement] Unified Training Program " +
+      "[Mana Movement] Stable Coach Profile " +
       BUILD
     );
   }
 
-  if (
-    document.readyState === "loading"
-  ) {
+  if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      { once: true }
+      {once:true}
     );
   } else {
     init();
