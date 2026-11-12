@@ -1,162 +1,152 @@
 
-/* ============================================================
+/* =====================================================
    MANA MOVEMENT TRAINING
-   COACH PROFILE — PREMIUM FINAL TIDY
-   BUILD 104840
+   COACH PROFILE — TILE & DROPDOWN REFINEMENT
+   BUILD 104850
 
-   COMPLETE REPLACEMENT FILE:
+   COMPLETE REPLACEMENT:
    mana_coach_checkin_clarity_104800.js
 
-   FIXES:
-   - Yellow/gold text and icons to orange / white
-   - Remove duplicate Fuel training-days tile
-   - Shorten Program Builder explanation
-   - Collapsible Coach Tools
-   - Collapsible Coach Notes
-   - Top check-in, session and message actions open tools
-   - Preserve the four stable top coaching tiles
-
-   PRESERVES:
-   - All original button event handlers
-   - Program Builder and saved assignments
-   - Generated workout snapshots
-   - Check-in requests and session records
-   - Coaching notes and messages
-   - All client and Supabase data
-   - History & Results
-   - Existing navigation
-
-   No database writes or data deletion.
-   No continuous observers.
-   ============================================================ */
+   - All four top action tiles match
+   - Prominent centred dropdown arrows
+   - Orange / white / silver colours
+   - Three Fuel targets only
+   - Concise Program Builder explanation
+   - Collapsible Coach Tools and Coach Notes
+   - Original coaching actions preserved
+   - No data or database changes
+   ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104840";
+  const BUILD = "104850";
+  const VIEW = "coachClientDetailView";
+  const STYLE = "manaCoachClarityStyle104850";
+  const TOOLS = "manaCoachToolsFold104840";
+  const NOTES = "manaCoachNotesFold104840";
 
-  const VIEW_ID = "coachClientDetailView";
-  const STYLE_ID = "manaCoachClarityStyle104840";
-
-  const TOOLS_ID = "manaCoachToolsFold104840";
-  const NOTES_ID = "manaCoachNotesFold104840";
-
-  if (window.MANA_COACH_CLARITY_104840) return;
-
-  window.MANA_COACH_CLARITY_104840 = true;
+  if (window.MANA_COACH_CLARITY_104850) return;
+  window.MANA_COACH_CLARITY_104850 = true;
 
   const $ = id => document.getElementById(id);
-
   let timers = [];
 
-  function profileOpen() {
-    const view = $(VIEW_ID);
-
-    return Boolean(
-      view &&
+  function isOpen() {
+    const view = $(VIEW);
+    return !!view &&
       !view.hidden &&
-      !view.classList.contains("hide")
-    );
+      !view.classList.contains("hide");
   }
 
-  /* =====================================
-     INSTALL PREMIUM STYLES
-     ===================================== */
-
   function installStyles() {
-    if ($(STYLE_ID)) return;
+    if ($(STYLE)) return;
 
     const style = document.createElement("style");
-    style.id = STYLE_ID;
+    style.id = STYLE;
 
     style.textContent = `
 
       /* =================================
-         BLACK / ORANGE / WHITE / SILVER
+         ALL FOUR TOP TILES MATCH
          ================================= */
 
-      #${VIEW_ID}
+      #${VIEW} #manaV1010ClientActions
+      .m1010-action,
+      #${VIEW} #manaV1010ClientActions
+      .m1010-action.primary {
+        background: #1B1E23 !important;
+        background-image: none !important;
+        border: 1px solid #59616C !important;
+        border-radius: 15px !important;
+        color: #FFFFFF !important;
+        box-shadow: none !important;
+      }
+
+      #${VIEW} #manaV1010ClientActions
+      .m1010-action strong,
+      #${VIEW} #manaV1010ClientActions
+      .m1010-action.primary strong {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+      }
+
+      #${VIEW} #manaV1010ClientActions
+      .m1010-action small,
+      #${VIEW} #manaV1010ClientActions
+      .m1010-action.primary small {
+        color: #C1C6CE !important;
+        -webkit-text-fill-color: #C1C6CE !important;
+      }
+
+      #${VIEW} #manaV1010ClientActions
+      .m1010-action-icon,
+      #${VIEW} #manaV1010ClientActions
+      .m1010-action.primary .m1010-action-icon {
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+        background: #101216 !important;
+        border: 1px solid #FF7927 !important;
+      }
+
+      #${VIEW} #manaV1010ClientActions
+      .m1010-action:hover {
+        border-color: #FF7927 !important;
+      }
+
+      #${VIEW} #manaV1010ClientActions
       .m1010-actions-name strong {
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
       }
 
-      #${VIEW_ID} .gold,
-      #${VIEW_ID} .pill {
+      /* =================================
+         ORANGE / WHITE / SILVER
+         ================================= */
+
+      #${VIEW} .gold,
+      #${VIEW} .pill {
         color: #FF7927 !important;
         -webkit-text-fill-color: #FF7927 !important;
       }
 
-      #${VIEW_ID} .pill {
+      #${VIEW} .pill {
         border-color: #FF7927 !important;
         background: #101216 !important;
       }
 
-      #${VIEW_ID} .quick-action-btn > span {
+      #${VIEW} .quick-action-btn > span {
         color: #FF7927 !important;
         -webkit-text-fill-color: #FF7927 !important;
       }
 
-      #${VIEW_ID}
-      .mana-checkin-explain-104800 {
-        border-left: 3px solid #FF7927 !important;
-        background: #101216 !important;
-        color: #C1C6CE !important;
-      }
-
-      #${VIEW_ID}
-      .mana-checkin-explain-104800 strong {
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-      }
-
-      #${VIEW_ID}
-      #requestCheckinBtn {
-        background: #FF7927 !important;
-        background-image: none !important;
-        border: 1px solid #FF7927 !important;
-        border-radius: 12px !important;
-        color: #08090B !important;
-        -webkit-text-fill-color: #08090B !important;
-        box-shadow: none !important;
-        font-weight: 900 !important;
-      }
-
       /* =================================
-         REMOVE DUPLICATE TRAINING DAYS
-         FROM FUEL TARGETS ONLY
+         GENERATED TRAINING / FUEL
          ================================= */
 
-      #${VIEW_ID}
-      #manaCoachGenerated104750
+      #${VIEW} #manaCoachGenerated104750
       .mg-kicker + .mg-grid
       .mg-stat:nth-child(4) {
         display: none !important;
       }
 
-      #${VIEW_ID}
-      #manaCoachGenerated104750
+      #${VIEW} #manaCoachGenerated104750
       .mg-kicker + .mg-grid {
         grid-template-columns:
           repeat(3,minmax(0,1fr)) !important;
       }
 
-      /* =================================
-         SHORTER PROGRAM BUILDER TEXT
-         ================================= */
-
-      #${VIEW_ID}
+      #${VIEW}
       #manaGeneratedOpenBuilder104750
       + .mg-desc {
         font-size: 0 !important;
       }
 
-      #${VIEW_ID}
+      #${VIEW}
       #manaGeneratedOpenBuilder104750
       + .mg-desc::after {
         content:
           "Customise this client's training. Previous workout history is preserved.";
-
         display: block;
         color: #C1C6CE !important;
         font-size: 12px !important;
@@ -164,148 +154,209 @@
       }
 
       /* =================================
-         COLLAPSIBLE COACH TOOLS
+         CENTRED WORKOUT DAY ARROWS
          ================================= */
 
-      #${VIEW_ID} #${TOOLS_ID},
-      #${VIEW_ID} #${NOTES_ID} {
+      #${VIEW} #manaCoachGenerated104750
+      .mg-day > summary {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 9px !important;
+        text-align: center !important;
+        list-style: none !important;
+        cursor: pointer !important;
+        padding: 15px !important;
+      }
+
+      #${VIEW} #manaCoachGenerated104750
+      .mg-day > summary::-webkit-details-marker {
+        display: none !important;
+      }
+
+      #${VIEW} #manaCoachGenerated104750
+      .mg-day > summary::after {
+        content: "⌄";
+        display: grid;
+        place-items: center;
+        width: 62px;
+        height: 28px;
+        border: 1px solid #FF7927;
+        border-radius: 9px;
+        color: #FF7927;
+        font-size: 27px;
+        font-weight: 800;
+        line-height: 1;
+        transition: transform .15s ease;
+      }
+
+      #${VIEW} #manaCoachGenerated104750
+      .mg-day[open] > summary::after {
+        transform: rotate(180deg);
+      }
+
+      /* =================================
+         ALL COLLAPSIBLE SECTION HEADERS
+         ================================= */
+
+      #${VIEW} #${TOOLS},
+      #${VIEW} #${NOTES} {
         display: block !important;
         margin: 14px 0 !important;
-
         background: #15171A !important;
         border: 1px solid #626973 !important;
         border-radius: 19px !important;
-
         overflow: hidden !important;
       }
 
-      #${VIEW_ID} #${TOOLS_ID} > summary,
-      #${VIEW_ID} #${NOTES_ID} > summary {
+      #${VIEW} #${TOOLS} > summary,
+      #${VIEW} #${NOTES} > summary,
+      #${VIEW} #manaCoachSavedPrograms104820 > summary,
+      #${VIEW} #manaCoachHistory104790 > summary {
         display: flex !important;
+        flex-direction: column !important;
         align-items: center !important;
-        justify-content: space-between !important;
-        gap: 12px !important;
-
-        padding: 17px 19px !important;
-
-        background: #15171A !important;
-        color: #FFFFFF !important;
-
-        cursor: pointer !important;
+        justify-content: center !important;
+        gap: 10px !important;
+        padding: 17px 18px !important;
+        text-align: center !important;
         list-style: none !important;
+        cursor: pointer !important;
       }
 
-      #${VIEW_ID} #${TOOLS_ID}
+      #${VIEW} #${TOOLS} > summary::-webkit-details-marker,
+      #${VIEW} #${NOTES} > summary::-webkit-details-marker,
+      #${VIEW} #manaCoachSavedPrograms104820
       > summary::-webkit-details-marker,
-      #${VIEW_ID} #${NOTES_ID}
+      #${VIEW} #manaCoachHistory104790
       > summary::-webkit-details-marker {
         display: none !important;
       }
 
-      #${VIEW_ID} .mana-fold-title-104840 {
-        display: block;
+      #${VIEW} .mana-fold-title-104840,
+      #${VIEW} .mcp-summary-title,
+      #${VIEW} .mcf-heading {
         color: #FFFFFF !important;
         font-size: 16px !important;
         font-weight: 900 !important;
+        text-align: center !important;
       }
 
-      #${VIEW_ID} .mana-fold-sub-104840 {
+      #${VIEW} .mana-fold-sub-104840,
+      #${VIEW} .mcp-summary-help,
+      #${VIEW} .mcf-description {
         display: block;
         margin-top: 5px;
         color: #C1C6CE !important;
         font-size: 11px !important;
         line-height: 1.5 !important;
+        text-align: center !important;
       }
 
-      #${VIEW_ID} .mana-fold-arrow-104840 {
-        display: grid;
-        place-items: center;
-        flex: 0 0 34px;
-
-        width: 34px;
-        height: 34px;
-
-        border: 1px solid #FF7927;
-        border-radius: 10px;
+      #${VIEW} .mana-fold-arrow-104840,
+      #${VIEW} .mcp-arrow,
+      #${VIEW} .mcf-chevron {
+        display: grid !important;
+        place-items: center !important;
+        align-self: center !important;
+        flex: 0 0 31px !important;
+        width: 62px !important;
+        height: 31px !important;
+        min-width: 62px !important;
+        border: 1px solid #FF7927 !important;
+        border-radius: 9px !important;
         color: #FF7927 !important;
-        font-size: 19px;
+        background: #101216 !important;
+        font-size: 27px !important;
+        line-height: 1 !important;
+        transition: transform .15s ease;
       }
 
-      #${VIEW_ID}
-      details[open] > summary
-      .mana-fold-arrow-104840 {
-        transform: rotate(180deg);
+      #${VIEW} details[open] > summary
+      .mana-fold-arrow-104840,
+      #${VIEW} details[open] > summary
+      .mcp-arrow,
+      #${VIEW} details[open] > summary
+      .mcf-chevron {
+        transform: rotate(180deg) !important;
       }
 
-      #${VIEW_ID} #${TOOLS_ID} > summary:focus-visible,
-      #${VIEW_ID} #${NOTES_ID} > summary:focus-visible {
+      #${VIEW} details > summary:focus-visible {
         outline: 2px solid #FF7927 !important;
         outline-offset: -3px !important;
       }
 
-      #${VIEW_ID}
-      #${TOOLS_ID} > .card,
-      #${VIEW_ID}
-      #${NOTES_ID} > .card {
+      /* =================================
+         COACH TOOLS / NOTES CONTENT
+         ================================= */
+
+      #${VIEW} #${TOOLS} > .card,
+      #${VIEW} #${NOTES} > .card {
         margin: 0 !important;
         padding: 17px !important;
-
+        background: #15171A !important;
         border: none !important;
         border-top: 1px solid #39414A !important;
         border-radius: 0 !important;
-
-        background: #15171A !important;
         box-shadow: none !important;
       }
 
-      /* Remove duplicated panel headings.
-         The accordion summary now names
-         each section clearly. */
-
-      #${VIEW_ID}
-      #${TOOLS_ID} > .card
-      > .row:first-child {
+      #${VIEW} #${TOOLS} > .card
+      > .row:first-child,
+      #${VIEW} #${NOTES} > .card
+      > h3:first-child {
         display: none !important;
       }
 
-      #${VIEW_ID}
-      #${NOTES_ID} > .card > h3:first-child {
+      #${VIEW} [data-mana-duplicate-builder] {
         display: none !important;
       }
 
-      /* Hide duplicate old builder buttons,
-         not their program functionality. */
-
-      #${VIEW_ID}
-      [data-mana-duplicate-builder] {
-        display: none !important;
+      #${VIEW} .mana-checkin-explain-104800 {
+        margin: 12px 0;
+        padding: 12px 14px;
+        background: #101216 !important;
+        border-left: 3px solid #FF7927 !important;
+        border-radius: 9px;
+        color: #C1C6CE !important;
+        font-size: 12px;
+        line-height: 1.6;
       }
 
-      /* =================================
-         MOBILE
-         ================================= */
+      #${VIEW} .mana-checkin-explain-104800 strong {
+        color: #FFFFFF !important;
+      }
+
+      #${VIEW} #requestCheckinBtn {
+        background: #FF7927 !important;
+        background-image: none !important;
+        border: 1px solid #FF7927 !important;
+        border-radius: 12px !important;
+        color: #090A0C !important;
+        -webkit-text-fill-color: #090A0C !important;
+        box-shadow: none !important;
+        font-weight: 900 !important;
+      }
 
       @media(max-width:600px) {
-
-        #${VIEW_ID}
-        #manaCoachGenerated104750
+        #${VIEW} #manaCoachGenerated104750
         .mg-kicker + .mg-grid {
           grid-template-columns:
             repeat(2,minmax(0,1fr)) !important;
         }
 
-        #${VIEW_ID} #${TOOLS_ID} > summary,
-        #${VIEW_ID} #${NOTES_ID} > summary {
+        #${VIEW} #${TOOLS} > summary,
+        #${VIEW} #${NOTES} > summary,
+        #${VIEW} #manaCoachSavedPrograms104820 > summary,
+        #${VIEW} #manaCoachHistory104790 > summary {
           padding: 14px !important;
         }
 
-        #${VIEW_ID}
-        #${TOOLS_ID} > .card,
-        #${VIEW_ID}
-        #${NOTES_ID} > .card {
+        #${VIEW} #${TOOLS} > .card,
+        #${VIEW} #${NOTES} > .card {
           padding: 13px !important;
         }
-
       }
 
     `;
@@ -314,26 +365,7 @@
   }
 
   /* =====================================
-     FIND ORIGINAL WORKING CARDS
-     ===================================== */
-
-  function toolsCard() {
-    return $("quickRecordSessionBtn")
-      ?.closest(".card") || null;
-  }
-
-  function notesCard() {
-    return $("coachNotesCard");
-  }
-
-  /* =====================================
-     CREATE ACCORDION CONTAINER
-
-     The actual existing card is MOVED.
-     It is never cloned or rebuilt.
-
-     All its click handlers and input
-     values are preserved.
+     KEEP ORIGINAL COACHING FUNCTIONS
      ===================================== */
 
   function createFold(id, title, subtitle) {
@@ -344,42 +376,39 @@
     fold = document.createElement("details");
     fold.id = id;
 
-    fold.innerHTML = `
-      <summary>
-        <span>
-          <span class="mana-fold-title-104840">
-            ${title}
-          </span>
+    const summary = document.createElement("summary");
 
-          <span class="mana-fold-sub-104840">
-            ${subtitle}
-          </span>
-        </span>
+    const words = document.createElement("span");
 
-        <span
-          class="mana-fold-arrow-104840"
-          aria-hidden="true"
-        >⌄</span>
-      </summary>
-    `;
+    words.innerHTML =
+      '<span class="mana-fold-title-104840">' +
+      title +
+      '</span>' +
+      '<span class="mana-fold-sub-104840">' +
+      subtitle +
+      '</span>';
+
+    const arrow = document.createElement("span");
+    arrow.className = "mana-fold-arrow-104840";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.textContent = "⌄";
+
+    summary.append(words, arrow);
+    fold.appendChild(summary);
 
     return fold;
   }
 
-  /* =====================================
-     COACH TOOLS
-     ===================================== */
-
   function organiseTools() {
-    if (!profileOpen()) return;
+    const view = $(VIEW);
 
-    const card = toolsCard();
-    const view = $(VIEW_ID);
+    const card = $("quickRecordSessionBtn")
+      ?.closest(".card");
 
-    if (!card || !view.contains(card)) return;
+    if (!view || !card || !view.contains(card)) return;
 
     const fold = createFold(
-      TOOLS_ID,
+      TOOLS,
       "Coach Tools",
       "Notes · Focus · Sessions · Messages · Check-in request"
     );
@@ -391,9 +420,7 @@
 
     card.querySelectorAll("button").forEach(button => {
       if (
-        button.textContent
-          .trim()
-          .toLowerCase() ===
+        button.textContent.trim().toLowerCase() ===
         "build custom program"
       ) {
         button.setAttribute(
@@ -406,26 +433,18 @@
     const request = $("requestCheckinBtn");
 
     if (request) {
-      request.textContent =
-        "Request New Client Check-in";
+      request.textContent = "Request New Client Check-in";
 
-      if (
-        !card.querySelector(
-          ".mana-checkin-explain-104800"
-        )
-      ) {
+      if (!card.querySelector(
+        ".mana-checkin-explain-104800"
+      )) {
         const info = document.createElement("div");
+        info.className = "mana-checkin-explain-104800";
 
-        info.className =
-          "mana-checkin-explain-104800";
-
-        info.innerHTML = `
-          <strong>Client Check-in</strong>
-          <div>
-            Ask this client to submit a new
-            weight, energy and wellbeing update.
-          </div>
-        `;
+        info.innerHTML =
+          "<strong>Client Check-in</strong>" +
+          "<div>Ask this client to submit a new " +
+          "weight, energy and wellbeing update.</div>";
 
         request.insertAdjacentElement(
           "beforebegin",
@@ -435,20 +454,14 @@
     }
   }
 
-  /* =====================================
-     COACH NOTES
-     ===================================== */
-
   function organiseNotes() {
-    if (!profileOpen()) return;
+    const view = $(VIEW);
+    const card = $("coachNotesCard");
 
-    const card = notesCard();
-    const view = $(VIEW_ID);
-
-    if (!card || !view.contains(card)) return;
+    if (!view || !card || !view.contains(card)) return;
 
     const fold = createFold(
-      NOTES_ID,
+      NOTES,
       "Coach Notes",
       "Private coaching notes and next steps"
     );
@@ -459,69 +472,47 @@
     }
   }
 
-  /* =====================================
-     KEEP TOP COACHING ACTIONS CLEAR
+  function tidyTopCheckin() {
+    const tile = $("manaV1010Checkin");
 
-     The existing v10.10 script owns the
-     button click handlers. We do not
-     replace or rebuild them.
-     ===================================== */
+    if (!tile) return;
 
-  function tidyTopCheckinLabel() {
-    const checkin = $("manaV1010Checkin");
+    const title = tile.querySelector("strong");
+    const description = tile.querySelector("small");
 
-    if (!checkin) return;
+    if (title) title.textContent = "CLIENT CHECK-INS";
 
-    const title = checkin.querySelector("strong");
-    const subtitle = checkin.querySelector("small");
-
-    if (title) {
-      title.textContent = "CLIENT CHECK-INS";
-    }
-
-    if (subtitle) {
-      subtitle.textContent =
+    if (description) {
+      description.textContent =
         "Review updates or request a check-in.";
     }
   }
 
+  function tidy() {
+    if (!isOpen()) return;
+
+    organiseTools();
+    organiseNotes();
+    tidyTopCheckin();
+  }
+
   /* =====================================
-     OPEN THE RIGHT SECTION WHEN
-     THE TOP TILES ARE USED
+     TOP TILE BEHAVIOUR
 
-     Run during event capture, BEFORE
-     the original click handlers.
-
-     The original actions are preserved.
+     Leave the original handlers intact,
+     apart from the existing check-in
+     navigation, which opens the request.
      ===================================== */
 
-  function onCapture(event) {
-    if (!profileOpen()) return;
+  function onClick(event) {
+    if (!isOpen()) return;
 
     const target = event.target;
 
     if (!(target instanceof Element)) return;
 
-    const checkin = target.closest(
-      "#manaV1010Checkin"
-    );
-
-    if (checkin) {
-      const fold = $(TOOLS_ID);
-
-      if (fold) {
-        fold.open = true;
-      }
-
-      /*
-       Existing check-in navigation may
-       target the historical check-in
-       inside the collapsed History panel.
-
-       Instead, bring the request action
-       into view while retaining the
-       original check-in data in History.
-      */
+    if (target.closest("#manaV1010Checkin")) {
+      if ($(TOOLS)) $(TOOLS).open = true;
 
       event.preventDefault();
       event.stopPropagation();
@@ -541,90 +532,53 @@
       target.closest("#manaV1010Sessions") ||
       target.closest("#manaV1010Message")
     ) {
-      if ($(TOOLS_ID)) {
-        $(TOOLS_ID).open = true;
-      }
+      if ($(TOOLS)) $(TOOLS).open = true;
     }
 
-    if (
-      target.closest("#quickAddNoteBtn")
-    ) {
-      if ($(NOTES_ID)) {
-        $(NOTES_ID).open = true;
-      }
+    if (target.closest("#quickAddNoteBtn")) {
+      if ($(NOTES)) $(NOTES).open = true;
     }
   }
-
-  /* =====================================
-     OPEN NOTES WHEN THE APP FOCUSES
-     ITS ORIGINAL COACH NOTE TEXTAREA
-     ===================================== */
 
   function onFocus(event) {
     if (
       event.target?.id === "coachNoteDraft" &&
-      $(NOTES_ID)
+      $(NOTES)
     ) {
-      $(NOTES_ID).open = true;
+      $(NOTES).open = true;
     }
   }
 
   /* =====================================
-     LIMITED INITIALISATION PASSES
-
-     No subtree observer.
-     No timers running indefinitely.
+     INITIALISE WITHOUT CONTINUOUS
+     PAGE REBUILDING
      ===================================== */
-
-  function tidy() {
-    if (!profileOpen()) return;
-
-    organiseTools();
-    organiseNotes();
-    tidyTopCheckinLabel();
-  }
 
   function clearTimers() {
     timers.forEach(clearTimeout);
     timers = [];
   }
 
-  function scheduleTidy() {
+  function schedule() {
     clearTimers();
 
     [100, 400, 900, 1800].forEach(delay => {
-      timers.push(
-        setTimeout(() => {
-          if (profileOpen()) {
-            tidy();
-          }
-        }, delay)
-      );
+      timers.push(setTimeout(tidy, delay));
     });
   }
 
   function init() {
     installStyles();
 
-    const view = $(VIEW_ID);
-
+    const view = $(VIEW);
     if (!view) return;
 
-    document.addEventListener(
-      "click",
-      onCapture,
-      true
-    );
-
-    document.addEventListener(
-      "focusin",
-      onFocus,
-      true
-    );
+    document.addEventListener("click", onClick, true);
+    document.addEventListener("focusin", onFocus, true);
 
     new MutationObserver(() => {
-      if (profileOpen()) {
-        scheduleTidy();
+      if (isOpen()) {
+        schedule();
       } else {
         clearTimers();
       }
@@ -633,12 +587,10 @@
       attributeFilter: ["class"]
     });
 
-    if (profileOpen()) {
-      scheduleTidy();
-    }
+    if (isOpen()) schedule();
 
     console.log(
-      "[Mana Movement] Premium Coach Tidy " +
+      "[Mana Movement] Coach tile/dropdown refine " +
       BUILD
     );
   }
