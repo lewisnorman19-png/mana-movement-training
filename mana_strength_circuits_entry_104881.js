@@ -1,87 +1,192 @@
 
-/* =====================================================
+/* =========================================================
    MANA MOVEMENT TRAINING
-   STRENGTH CIRCUITS — NAVIGATION REFINEMENT
-   BUILD 104882
+   STABLE MANA STRENGTH CIRCUITS
+   BUILD 104883
 
-   COMPLETE REPLACEMENT FILE:
+   COMPLETE REPLACEMENT:
    mana_strength_circuits_entry_104881.js
 
-   MANA STRENGTH TABS:
-   Overview | Workouts | Circuits | Fuel | Progress
-
-   - Moves Circuits immediately after Workouts
-   - Removes the duplicate Circuits Overview card
-   - Styles the Learning Overview banner orange
-   - Keeps all existing Learning content
-   - Preserves original Circuits timer and workouts
-   - Does not change Mana28 or ManaLyfe
-   - No Supabase or saved-data changes
-   ===================================================== */
+   FIXES:
+   - Circuits always appears next to Workouts
+   - Older branding cannot restore Learning label
+   - Old Learning watcher cannot overwrite Circuits
+   - Learning remains accessible from Overview
+   - Learning banner has premium orange border
+   - No duplicate Circuits card on Overview
+   - Other programs remain unchanged
+   - No database writes
+   ========================================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "104882";
-  const STYLE_ID = "manaCircuitsNavStyle104882";
-  const OLD_CARD_ID = "manaCircuitsEntry104881";
+  const BUILD = "104883";
+  const SHELL = "manaV83ProgramShell";
+  const TABS = "manaV83Tabs";
+  const CONTENT = "manaV83Content";
 
-  if (window.MANA_CIRCUITS_NAV_104882) return;
-  window.MANA_CIRCUITS_NAV_104882 = true;
+  const CLASS = "mana-circuits-active-104883";
+  const STYLE = "manaCircuitsStableStyle104883";
+  const SENTINEL = "manaCircuitsLearnGuard104883";
+  const OLD_CARD = "manaCircuitsEntry104881";
+
+  if (window.MANA_CIRCUITS_STABLE_104883) return;
+  window.MANA_CIRCUITS_STABLE_104883 = true;
 
   const $ = id => document.getElementById(id);
 
+  let learningRequested = false;
   let scheduled = false;
 
-  /* =====================================
-     CHECK CURRENT PROGRAM
-     ===================================== */
-
   function strengthOpen() {
-    const shell = $("manaV83ProgramShell");
+    return Boolean(
+      $(SHELL)?.classList.contains("open") &&
+      /strength/i.test(
+        $("manaV83Title")?.textContent || ""
+      )
+    );
+  }
 
-    if (!shell?.classList.contains("open")) {
-      return false;
-    }
-
-    const title = $("manaV83Title");
-
-    return /strength/i.test(
-      title?.textContent || ""
+  function circuitsSelected() {
+    return Boolean(
+      strengthOpen() &&
+      $(TABS)?.querySelector(
+        '[data-v83-tab="learn"].active'
+      )
     );
   }
 
   /* =====================================
-     PREMIUM STYLING
+     DESIGN — STABLE TAB POSITION
+
+     Do not repeatedly rewrite tab HTML.
+
+     CSS determines position and label,
+     even if the original app recreates
+     its navigation buttons.
      ===================================== */
 
-  function installStyle() {
-    if ($(STYLE_ID)) return;
+  function installStyles() {
+    if ($(STYLE)) return;
 
     const style = document.createElement("style");
-    style.id = STYLE_ID;
+    style.id = STYLE;
 
     style.textContent = `
 
-      /* Remove the unnecessary Circuits
-         card from the Overview. */
+      /* Remove old Circuits Overview card */
 
-      #${OLD_CARD_ID} {
+      #${OLD_CARD} {
         display: none !important;
       }
 
-      /* Learning banner now matches
-         the original Circuits banner. */
+      /* Only affect Mana Strength */
 
-      #manaV83Content .msc-overview-learn {
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="overview"] {
+        order: 1 !important;
+      }
+
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="program"] {
+        order: 2 !important;
+      }
+
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="learn"] {
+        order: 3 !important;
+      }
+
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="fuel"] {
+        order: 4 !important;
+      }
+
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="progress"] {
+        order: 5 !important;
+      }
+
+      /* Persistent Circuits label and
+         stopwatch icon.
+
+         Older navigation scripts may
+         recreate the underlying content.
+         CSS keeps the displayed label
+         and icon consistent. */
+
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="learn"] {
         display: flex !important;
         flex-direction: column !important;
-        align-items: flex-start !important;
-        justify-content: center !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+
+        padding: 5px 2px 7px !important;
+
+        font-size: 0 !important;
+
+        background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='13' r='8' fill='none' stroke='%23C1C6CE' stroke-width='2'/%3E%3Cpath d='M12 8v5l3 2M9 2h6M12 2v3' fill='none' stroke='%23C1C6CE' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+          !important;
+
+        background-position:
+          center 13px !important;
+
+        background-size:
+          25px 25px !important;
+
+        background-repeat:
+          no-repeat !important;
+      }
+
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="learn"] > * {
+        display: none !important;
+      }
+
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="learn"]::after {
+        content: "Circuits" !important;
+        display: block !important;
+
+        color: #C1C6CE !important;
+        -webkit-text-fill-color:
+          #C1C6CE !important;
+
+        font-size: 11px !important;
+        font-weight: 900 !important;
+        line-height: 1.2 !important;
+        text-align: center !important;
+
+        margin-top: auto !important;
+        padding-bottom: 1px !important;
+      }
+
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="learn"].active {
+        background-image:
+          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='13' r='8' fill='none' stroke='%23FF7927' stroke-width='2'/%3E%3Cpath d='M12 8v5l3 2M9 2h6M12 2v3' fill='none' stroke='%23FF7927' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+          !important;
+      }
+
+      #${SHELL}.${CLASS} #${TABS}
+      [data-v83-tab="learn"].active::after {
+        color: #FF7927 !important;
+        -webkit-text-fill-color:
+          #FF7927 !important;
+      }
+
+      /* Premium Learning banner */
+
+      #${SHELL}.${CLASS}
+      #${CONTENT} .msc-overview-learn {
+        display: block !important;
 
         width: 100% !important;
-        margin: 16px 0 !important;
         padding: 20px !important;
+        margin: 16px 0 !important;
 
         background: #15171A !important;
         background-image: none !important;
@@ -92,260 +197,223 @@
         color: #FFFFFF !important;
         text-align: left !important;
 
-        box-sizing: border-box !important;
-        cursor: pointer !important;
         box-shadow: none !important;
+        box-sizing: border-box !important;
       }
 
-      #manaV83Content
+      #${SHELL}.${CLASS}
+      #${CONTENT}
       .msc-overview-learn .msc-kicker {
         color: #FF7927 !important;
-
         font-size: 10px !important;
         font-weight: 900 !important;
         letter-spacing: .12em !important;
       }
 
-      #manaV83Content
-      .msc-overview-learn strong {
+      #${SHELL}.${CLASS}
+      #${CONTENT} .msc-overview-learn strong {
+        display: block !important;
         color: #FFFFFF !important;
-
-        margin-top: 6px !important;
-
         font-size: 21px !important;
         font-weight: 900 !important;
-        line-height: 1.3 !important;
+        margin-top: 6px !important;
       }
 
-      #manaV83Content
-      .msc-overview-learn small {
+      #${SHELL}.${CLASS}
+      #${CONTENT} .msc-overview-learn small {
         display: block !important;
-
         color: #C1C6CE !important;
-        margin-top: 7px !important;
-
         font-size: 12px !important;
-        line-height: 1.5 !important;
-      }
-
-      #manaV83Content
-      .msc-overview-learn:hover {
-        border-color: #FFFFFF !important;
-      }
-
-      #manaV83Content
-      .msc-overview-learn:focus-visible {
-        outline: 2px solid #FF7927 !important;
-        outline-offset: 3px !important;
-      }
-
-      /* Circuits bottom tab */
-
-      #manaV83Tabs
-      .mana-circuits-tab-104882 {
-        min-width: 0 !important;
-      }
-
-      #manaV83Tabs
-      .mana-circuits-tab-104882
-      .mana-circuits-icon {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-
-        margin: 0 auto 4px;
-
-        width: 23px;
-        height: 23px;
-
-        color: #C1C6CE;
-      }
-
-      #manaV83Tabs
-      .mana-circuits-tab-104882
-      .mana-circuits-icon svg {
-        display: block;
-
-        width: 21px;
-        height: 21px;
-
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-
-      #manaV83Tabs
-      .mana-circuits-tab-104882.active
-      .mana-circuits-icon {
-        color: #FF7927;
-      }
-
-      #manaV83Tabs
-      .mana-circuits-tab-104882
-      .mana-circuits-label {
-        display: block;
-
-        font-size: inherit;
-        font-weight: 900;
-        color: inherit;
+        margin-top: 7px !important;
       }
 
       @media(max-width:600px) {
-        #manaV83Content .msc-overview-learn {
+
+        #${SHELL}.${CLASS}
+        #${TABS}
+        [data-v83-tab="learn"]::after {
+          font-size: 10px !important;
+        }
+
+        #${SHELL}.${CLASS}
+        #${CONTENT} .msc-overview-learn {
           padding: 15px !important;
         }
 
-        #manaV83Content
-        .msc-overview-learn strong {
+        #${SHELL}.${CLASS}
+        #${CONTENT} .msc-overview-learn strong {
           font-size: 18px !important;
         }
 
-        #manaV83Tabs
-        .mana-circuits-tab-104882
-        .mana-circuits-label {
-          font-size: 10px;
-        }
       }
-
     `;
 
     document.head.appendChild(style);
   }
 
   /* =====================================
-     REMOVE EXTRA CIRCUITS CARD
+     STOP OLD LEARNING AUTO-RENDER
+
+     The original Learn module looks for
+     .mana-v9120-root anywhere in the
+     document, then recreates Learning if
+     that element is missing.
+
+     Keep a hidden compatibility marker
+     while Circuits is selected so that
+     its watcher does not overwrite the
+     working circuit interface.
+
+     The marker contains no lesson data,
+     inputs or app functionality.
      ===================================== */
 
-  function removeOldCard() {
-    $(OLD_CARD_ID)?.remove();
+  function ensureGuard() {
+    if ($(SENTINEL)) return;
+
+    const guard = document.createElement("div");
+
+    guard.id = SENTINEL;
+    guard.className = "mana-v9120-root";
+
+    guard.hidden = true;
+    guard.setAttribute("aria-hidden", "true");
+    guard.style.display = "none";
+
+    document.body.appendChild(guard);
+  }
+
+  function removeGuard() {
+    $(SENTINEL)?.remove();
   }
 
   /* =====================================
-     UPDATE FIFTH TAB TO CIRCUITS
-
-     Keep the original data-v83-tab="learn"
-     because the existing Circuits module
-     uses that slot to open its content.
-
-     Only change its appearance and position.
+     WORKSPACE-SCOPED SYNCHRONISATION
      ===================================== */
 
-  function updateCircuitsTab() {
-    if (!strengthOpen()) return;
-
-    const holder = $("manaV83Tabs");
-
-    if (!holder) return;
-
-    const workouts = holder.querySelector(
-      '[data-v83-tab="program"]'
-    );
-
-    const circuits = holder.querySelector(
-      '[data-v83-tab="learn"]'
-    );
-
-    if (!workouts || !circuits) return;
-
-    /* Place Circuits immediately after
-       Workouts, ahead of Fuel. */
-
-    if (
-      workouts.nextElementSibling !== circuits
-    ) {
-      workouts.insertAdjacentElement(
-        "afterend",
-        circuits
-      );
-    }
-
-    /* Restore its clock icon and label.
-       Do not replace the button or its
-       original click handler. */
-
-    const correctMarkup =
-      circuits.querySelector(
-        ".mana-circuits-label"
-      )?.textContent.trim() === "Circuits";
-
-    if (!correctMarkup) {
-      circuits.innerHTML = `
-        <span
-          class="mana-circuits-icon"
-          aria-hidden="true"
-        >
-          <svg viewBox="0 0 24 24">
-            <circle cx="12" cy="13" r="8"></circle>
-            <path d="M12 9v4l3 2"></path>
-            <path d="M9 2h6"></path>
-            <path d="M12 2v3"></path>
-          </svg>
-        </span>
-
-        <span class="mana-circuits-label">
-          Circuits
-        </span>
-      `;
-    }
-
-    circuits.classList.add(
-      "mana-circuits-tab-104882"
-    );
-
-    circuits.setAttribute(
-      "aria-label",
-      "Circuits"
-    );
-  }
-
-  /* =====================================
-     APPLY WHEN EXISTING NAV REBUILDS
-
-     The original app recreates tab
-     buttons when switching tabs.
-
-     Watch only direct children of the
-     bottom navigation, not the whole app.
-     ===================================== */
-
-  function refresh() {
+  function sync() {
     scheduled = false;
 
-    removeOldCard();
+    const shell = $(SHELL);
+    if (!shell) return;
 
-    if (!strengthOpen()) return;
+    const active = strengthOpen();
 
-    updateCircuitsTab();
+    shell.classList.toggle(CLASS, active);
+
+    $(OLD_CARD)?.remove();
+
+    if (!active) {
+      learningRequested = false;
+      removeGuard();
+      return;
+    }
+
+    if (circuitsSelected() && !learningRequested) {
+      ensureGuard();
+    } else {
+      removeGuard();
+    }
   }
 
   function schedule() {
     if (scheduled) return;
 
     scheduled = true;
-
-    requestAnimationFrame(refresh);
+    requestAnimationFrame(sync);
   }
 
+  /* =====================================
+     LEARNING CARD VS CIRCUITS TAB
+
+     Clicking Learning's Overview card
+     must still open the real lessons.
+
+     Clicking the fifth bottom tab must
+     open Circuits instead.
+     ===================================== */
+
+  function onCapture(event) {
+    const target = event.target;
+
+    if (!(target instanceof Element)) return;
+    if (!strengthOpen()) return;
+
+    if (
+      target.closest(
+        '[data-msc-action="learning"]'
+      )
+    ) {
+      learningRequested = true;
+      removeGuard();
+      return;
+    }
+
+    if (
+      target.closest(
+        '#manaV83Tabs [data-v83-tab="learn"]'
+      )
+    ) {
+      learningRequested = false;
+      ensureGuard();
+      return;
+    }
+
+    if (
+      target.closest(
+        '#manaV83Tabs [data-v83-tab]'
+      )
+    ) {
+      learningRequested = false;
+      removeGuard();
+    }
+  }
+
+  /* =====================================
+     INITIALISE
+
+     Only observe the program shell state
+     and its title, not the entire page.
+     No repeated rebuilding of tabs.
+     ===================================== */
+
   function init() {
-    installStyle();
+    installStyles();
 
-    const tabs = $("manaV83Tabs");
+    document.addEventListener(
+      "click",
+      onCapture,
+      true
+    );
 
-    if (tabs) {
+    const shell = $(SHELL);
+
+    if (shell) {
       new MutationObserver(schedule).observe(
-        tabs,
+        shell,
+        {
+          attributes: true,
+          attributeFilter: ["class"]
+        }
+      );
+    }
+
+    const title = $("manaV83Title");
+
+    if (title) {
+      new MutationObserver(schedule).observe(
+        title,
         {
           childList: true,
-          subtree: false
+          characterData: true,
+          subtree: true
         }
       );
     }
 
     window.addEventListener(
       "mana:program-tab-change",
-      schedule
+      sync
     );
 
     window.addEventListener(
@@ -358,7 +426,8 @@
       event => {
         if (
           event.target.closest(
-            "#manaV83Tabs .mana-v83-tab"
+            "#manaV83Tabs, " +
+            "#manaV80Strength"
           )
         ) {
           schedule();
@@ -366,11 +435,10 @@
       }
     );
 
-    schedule();
+    sync();
 
     console.log(
-      "[Mana Strength] Circuits navigation " +
-      BUILD
+      "[Mana Strength] Stable Circuits " + BUILD
     );
   }
 
