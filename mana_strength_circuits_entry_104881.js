@@ -1,59 +1,45 @@
 
-/* =========================================================
+/* =====================================================
    MANA MOVEMENT TRAINING
-   MANA STRENGTH — CIRCUITS STABILITY & DESIGN
-   BUILD 104884
+   CIRCUITS — FINAL NAVIGATION VISUAL TIDY
+   BUILD 104885
 
    COMPLETE REPLACEMENT:
    mana_strength_circuits_entry_104881.js
 
-   FIXES:
-   - Circuits remains next to Workouts
-   - All five bottom tabs aligned consistently
-   - All five tabs use orange/white/silver
-   - Removes old gold M header styling
-   - Restores runner image in Strength header
-   - Prevents old Learning auto-render replacing Circuits
-   - Preserves Learning through its Overview banner
-   - Removes duplicate Circuits Overview card
-   - Describes Circuits as included with membership
-
-   PRESERVES:
-   - Existing circuits renderer and timer (104880)
-   - EMOM, Tabata and Strength Circuit
-   - Other program navigation
-   - Coach/client switching
-   - Supabase data and training history
-
-   No billing or database changes.
-   ========================================================= */
+   - Five equal Strength navigation tabs
+   - Correct icon and label alignment
+   - No grey icon blocks
+   - Circuits immediately after Workouts
+   - Orange timer border
+   - Hide extra Profile header button
+   - Keep runner and Home button
+   - Keep Learning accessible from Overview
+   - Protect Circuits from old Learning renderer
+   - No database or workout changes
+   ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104884";
+  const BUILD = "104885";
 
-  if (window.MANA_CIRCUITS_STABLE_104884) return;
-  window.MANA_CIRCUITS_STABLE_104884 = true;
+  if (window.MANA_CIRCUITS_TIDY_104885) return;
+  window.MANA_CIRCUITS_TIDY_104885 = true;
 
   const SHELL = "manaV83ProgramShell";
   const TABS = "manaV83Tabs";
   const CONTENT = "manaV83Content";
 
-  const CLASS = "mana-strength-circuits-104884";
-  const STYLE = "manaStrengthCircuitsStyle104884";
-  const GUARD = "manaStrengthLearnGuard104884";
-  const OLD_CARD = "manaCircuitsEntry104881";
+  const SCOPE = "mana-strength-tidy-104885";
+  const STYLE = "manaStrengthTidyStyle104885";
+  const GUARD = "manaStrengthLearningGuard104885";
 
   const $ = id => document.getElementById(id);
 
   let learningRequested = false;
+  let savedCircuit = null;
   let queued = false;
-  let circuitRoot = null;
-
-  /* =====================================
-     IDENTIFY MANA STRENGTH
-     ===================================== */
 
   function strengthOpen() {
     return Boolean(
@@ -64,7 +50,7 @@
     );
   }
 
-  function learnTabSelected() {
+  function learnSelected() {
     return Boolean(
       strengthOpen() &&
       $(TABS)?.querySelector(
@@ -73,15 +59,64 @@
     );
   }
 
-  function circuitScreen() {
-    return (
-      learnTabSelected() &&
-      !learningRequested
-    );
+  function circuitSelected() {
+    return learnSelected() && !learningRequested;
   }
 
   /* =====================================
-     STRENGTH-ONLY STYLES
+     ICONS
+
+     All five are vector icons with
+     matching dimensions and line widths.
+     ===================================== */
+
+  function iconURL(paths) {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" ' +
+      'viewBox="0 0 24 24" fill="none" ' +
+      'stroke="#C1C6CE" stroke-width="2" ' +
+      'stroke-linecap="round" ' +
+      'stroke-linejoin="round">' +
+      paths +
+      '</svg>';
+
+    return 'url("data:image/svg+xml,' +
+      encodeURIComponent(svg) +
+      '")';
+  }
+
+  const icons = {
+    overview: iconURL(
+      '<rect x="3" y="3" width="7" height="7" rx="1"/>' +
+      '<rect x="14" y="3" width="7" height="7" rx="1"/>' +
+      '<rect x="3" y="14" width="7" height="7" rx="1"/>' +
+      '<rect x="14" y="14" width="7" height="7" rx="1"/>'
+    ),
+
+    program: iconURL(
+      '<path d="M3 9v6M6 7v10M18 7v10M21 9v6"/>' +
+      '<path d="M6 12h12"/>'
+    ),
+
+    learn: iconURL(
+      '<circle cx="12" cy="13" r="8"/>' +
+      '<path d="M12 9v4l3 2M9 2h6M12 2v3"/>'
+    ),
+
+    fuel: iconURL(
+      '<path d="M4 3v8M7 3v8M10 3v8"/>' +
+      '<path d="M7 11v10M17 3v18"/>' +
+      '<path d="M17 3c-4 3-4 9 0 10"/>'
+    ),
+
+    progress: iconURL(
+      '<path d="M4 20V13M10 20V9M16 20V5M22 20V2"/>' +
+      '<path d="M3 10l7-4 5 2 6-6"/>'
+    )
+  };
+
+  /* =====================================
+     STYLES
      ===================================== */
 
   function installStyles() {
@@ -90,248 +125,172 @@
     const style = document.createElement("style");
     style.id = STYLE;
 
+    const prefix = `#${SHELL}.${SCOPE}`;
+
     style.textContent = `
 
       /* =================================
-         REMOVE DUPLICATE OVERVIEW CARD
+         EXISTING HEADER
          ================================= */
 
-      #${OLD_CARD} {
-        display: none !important;
-      }
-
-      /* =================================
-         PREMIUM STRENGTH HEADER
-         ================================= */
-
-      #${SHELL}.${CLASS}
-      .mana-v83-head {
+      ${prefix} .mana-v83-head {
         background: #000000 !important;
         background-image: none !important;
-        border-color: #303640 !important;
       }
 
-      #${SHELL}.${CLASS}
-      .mana-v83-mark {
-        flex: 0 0 58px !important;
-        width: 58px !important;
-        height: 54px !important;
-
+      ${prefix} .mana-v83-mark {
         font-size: 0 !important;
         color: transparent !important;
-
-        border: 0 !important;
-        outline: 0 !important;
-        box-shadow: none !important;
 
         background-color: #000000 !important;
         background-image:
           url("ui/mana-runner-logo.png") !important;
 
-        background-position: center !important;
         background-repeat: no-repeat !important;
+        background-position: center !important;
         background-size: contain !important;
+
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
       }
 
-      #${SHELL}.${CLASS}
-      .mana-v83-kicker {
+      ${prefix} .mana-v83-kicker {
         color: #FF7927 !important;
-        -webkit-text-fill-color:
-          #FF7927 !important;
       }
 
-      #${SHELL}.${CLASS}
-      #manaV83Title {
+      ${prefix} #manaV83Title {
         color: #FFFFFF !important;
-        -webkit-text-fill-color:
-          #FFFFFF !important;
       }
 
-      #${SHELL}.${CLASS}
-      .mana-v83-sub {
+      ${prefix} .mana-v83-sub {
         color: #C1C6CE !important;
-        -webkit-text-fill-color:
-          #C1C6CE !important;
       }
 
-      #${SHELL}.${CLASS}
-      .mana-v83-back {
+      /* Remove the extra PROFILE button
+         from the program header only.
+
+         Keep the working Home button. */
+
+      ${prefix} .mana-v83-head
+      button:not(#manaV83Back) {
+        display: none !important;
+      }
+
+      ${prefix} .mana-v83-head
+      a:not(#manaV83Back) {
+        display: none !important;
+      }
+
+      ${prefix} #manaV83Back {
+        display: inline-flex !important;
+        color: #FFFFFF !important;
+
         background: #15171A !important;
         border: 1px solid #626973 !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color:
-          #FFFFFF !important;
       }
 
       /* =================================
-         FIVE EQUAL BOTTOM TABS
+         FIVE EQUAL TABS
          ================================= */
 
-      #${SHELL}.${CLASS}
-      #${TABS} {
+      ${prefix} #${TABS} {
         display: grid !important;
 
         grid-template-columns:
-          repeat(5,minmax(0,1fr)) !important;
+          repeat(5, minmax(0,1fr)) !important;
 
         align-items: stretch !important;
         gap: 5px !important;
+
+        padding:
+          7px 6px
+          calc(7px + env(safe-area-inset-bottom))
+          !important;
 
         background: #050607 !important;
         border-top: 1px solid #414852 !important;
       }
 
-      #${SHELL}.${CLASS}
-      #${TABS} .mana-v83-tab {
+      ${prefix} #${TABS}
+      .mana-v83-tab {
+        display: flex !important;
+
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+
         position: relative !important;
 
+        width: 100% !important;
         min-width: 0 !important;
-        min-height: 70px !important;
+        min-height: 72px !important;
 
-        padding: 6px 2px !important;
+        padding: 8px 3px !important;
+        margin: 0 !important;
 
         border: 1px solid transparent !important;
         border-radius: 12px !important;
 
         background-color: transparent !important;
+        background-image: none !important;
 
         color: #C1C6CE !important;
-        -webkit-text-fill-color:
-          #C1C6CE !important;
-
-        font-family: inherit !important;
-        font-size: 11px !important;
-        font-weight: 800 !important;
-
-        text-align: center !important;
-        box-sizing: border-box !important;
-
-        align-self: stretch !important;
-      }
-
-      #${SHELL}.${CLASS}
-      #${TABS} .mana-v83-tab.active {
-        background-color: #26170F !important;
-        border-color: #FF7927 !important;
-
-        color: #FF7927 !important;
-        -webkit-text-fill-color:
-          #FF7927 !important;
-      }
-
-      #${SHELL}.${CLASS}
-      #${TABS} .mana-v83-tab::before {
-        background: #59616C !important;
-      }
-
-      #${SHELL}.${CLASS}
-      #${TABS} .mana-v83-tab.active::before {
-        background: #FF7927 !important;
-      }
-
-      /* Remove old blue, green, yellow
-         and purple icon effects ONLY
-         within Mana Strength. */
-
-      #${SHELL}.${CLASS}
-      #${TABS} .mana-v83-tab img {
-        filter:
-          grayscale(1)
-          brightness(0)
-          invert(1) !important;
-
-        box-shadow: none !important;
-      }
-
-      #${SHELL}.${CLASS}
-      #${TABS} .mana-v83-tab.active img {
-        filter:
-          brightness(0)
-          saturate(100%)
-          invert(56%)
-          sepia(84%)
-          saturate(1242%)
-          hue-rotate(342deg)
-          brightness(105%)
-          contrast(101%) !important;
-      }
-
-      /* =================================
-         CORRECT TAB ORDER
-
-         1 Overview
-         2 Workouts
-         3 Circuits
-         4 Fuel
-         5 Progress
-         ================================= */
-
-      #${SHELL}.${CLASS}
-      #${TABS} [data-v83-tab="overview"] {
-        order: 1 !important;
-      }
-
-      #${SHELL}.${CLASS}
-      #${TABS} [data-v83-tab="program"] {
-        order: 2 !important;
-      }
-
-      #${SHELL}.${CLASS}
-      #${TABS} [data-v83-tab="learn"] {
-        order: 3 !important;
-      }
-
-      #${SHELL}.${CLASS}
-      #${TABS} [data-v83-tab="fuel"] {
-        order: 4 !important;
-      }
-
-      #${SHELL}.${CLASS}
-      #${TABS} [data-v83-tab="progress"] {
-        order: 5 !important;
-      }
-
-      /* =================================
-         CIRCUITS TAB
-
-         Use CSS for its visible icon
-         and label, so older branding
-         scripts cannot change it back.
-         ================================= */
-
-      #${SHELL}.${CLASS}
-      #${TABS} [data-v83-tab="learn"] {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: flex-end !important;
-
-        background-image:
-          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='13' r='8' fill='none' stroke='%23C1C6CE' stroke-width='2'/%3E%3Cpath d='M12 8v5l3 2M9 2h6M12 2v3' fill='none' stroke='%23C1C6CE' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
-          !important;
-
-        background-repeat: no-repeat !important;
-        background-size: 25px 25px !important;
-        background-position:
-          center 24px !important;
 
         font-size: 0 !important;
+        line-height: normal !important;
+
+        box-shadow: none !important;
+        box-sizing: border-box !important;
       }
 
-      #${SHELL}.${CLASS}
-      #${TABS} [data-v83-tab="learn"] > * {
+      /* Hide inconsistent icon artwork
+         and labels from older scripts.
+         The original button remains
+         functional and accessible. */
+
+      ${prefix} #${TABS}
+      .mana-v83-tab > * {
         display: none !important;
       }
 
-      #${SHELL}.${CLASS}
-      #${TABS} [data-v83-tab="learn"]::after {
-        content: "Circuits" !important;
+      /* Override old navigation dot.
+         Use it as a matching SVG icon. */
+
+      ${prefix} #${TABS}
+      .mana-v83-tab::before {
+        content: "" !important;
 
         display: block !important;
-        width: 100% !important;
 
-        margin-top: auto !important;
-        padding-bottom: 1px !important;
+        width: 26px !important;
+        height: 26px !important;
+
+        min-width: 26px !important;
+        min-height: 26px !important;
+
+        flex: 0 0 26px !important;
+
+        margin: 0 auto 6px !important;
+        padding: 0 !important;
+
+        background-color: transparent !important;
+        background-repeat: no-repeat !important;
+        background-position: center !important;
+        background-size: contain !important;
+
+        border: none !important;
+        border-radius: 0 !important;
+
+        filter: none !important;
+        box-shadow: none !important;
+      }
+
+      /* Matching labels under every icon */
+
+      ${prefix} #${TABS}
+      .mana-v83-tab::after {
+        display: block !important;
 
         color: #C1C6CE !important;
         -webkit-text-fill-color:
@@ -341,98 +300,185 @@
         font-size: 11px !important;
         font-weight: 800 !important;
         line-height: 1.2 !important;
-
         text-align: center !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        width: 100% !important;
       }
 
-      #${SHELL}.${CLASS}
-      #${TABS}
-      [data-v83-tab="learn"].active {
-        background-image:
-          url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='13' r='8' fill='none' stroke='%23FF7927' stroke-width='2'/%3E%3Cpath d='M12 8v5l3 2M9 2h6M12 2v3' fill='none' stroke='%23FF7927' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E")
+      /* Order and matching icons */
+
+      ${prefix} #${TABS}
+      [data-v83-tab="overview"] {
+        order: 1 !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="overview"]::before {
+        background-image: ${icons.overview} !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="overview"]::after {
+        content: "Overview" !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="program"] {
+        order: 2 !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="program"]::before {
+        background-image: ${icons.program} !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="program"]::after {
+        content: "Workouts" !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="learn"] {
+        order: 3 !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="learn"]::before {
+        background-image: ${icons.learn} !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="learn"]::after {
+        content: "Circuits" !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="fuel"] {
+        order: 4 !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="fuel"]::before {
+        background-image: ${icons.fuel} !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="fuel"]::after {
+        content: "Fuel" !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="progress"] {
+        order: 5 !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="progress"]::before {
+        background-image: ${icons.progress} !important;
+      }
+
+      ${prefix} #${TABS}
+      [data-v83-tab="progress"]::after {
+        content: "Progress" !important;
+      }
+
+      /* Selected tab */
+
+      ${prefix} #${TABS}
+      .mana-v83-tab.active {
+        border-color: #FF7927 !important;
+        background: #2B190F !important;
+      }
+
+      ${prefix} #${TABS}
+      .mana-v83-tab.active::before {
+        filter:
+          brightness(0)
+          saturate(100%)
+          invert(55%)
+          sepia(94%)
+          saturate(1295%)
+          hue-rotate(341deg)
+          brightness(104%)
+          contrast(103%)
           !important;
       }
 
-      #${SHELL}.${CLASS}
-      #${TABS}
-      [data-v83-tab="learn"].active::after {
+      ${prefix} #${TABS}
+      .mana-v83-tab.active::after {
         color: #FF7927 !important;
         -webkit-text-fill-color:
           #FF7927 !important;
       }
 
       /* =================================
-         PREMIUM CIRCUITS CONTENT
+         TIMER BORDER — ORANGE
          ================================= */
 
-      #${SHELL}.${CLASS}
-      #${CONTENT} .msc-root h2,
-      #${SHELL}.${CLASS}
-      #${CONTENT} .msc-root h3 {
+      ${prefix} #${CONTENT}
+      .msc-timer {
+        border: 1px solid #FF7927 !important;
+
+        background: #0C0E11 !important;
+        box-shadow: none !important;
+      }
+
+      ${prefix} #${CONTENT}
+      .msc-clock {
         color: #FFFFFF !important;
-        -webkit-text-fill-color:
-          #FFFFFF !important;
       }
 
-      #${SHELL}.${CLASS}
-      #${CONTENT} .msc-panel {
-        border-color: #535C68 !important;
-        background: #15171A !important;
-      }
-
-      #${SHELL}.${CLASS}
-      #${CONTENT} .msc-kicker,
-      #${SHELL}.${CLASS}
-      #${CONTENT} .msc-label {
+      ${prefix} #${CONTENT}
+      .msc-step,
+      ${prefix} #${CONTENT}
+      .msc-label {
         color: #FF7927 !important;
       }
 
-      /* =================================
-         LEARNING OVERVIEW BANNER
-         ================================= */
+      /* Circuits choice panels */
 
-      #${SHELL}.${CLASS}
-      #${CONTENT} .msc-overview-learn {
-        width: 100% !important;
-        padding: 20px !important;
-        margin: 16px 0 !important;
+      ${prefix} #${CONTENT}
+      .msc-panel {
+        border-color: #535C68 !important;
+      }
 
-        background: #15171A !important;
+      /* Learning banner on Overview */
 
+      ${prefix} #${CONTENT}
+      .msc-overview-learn {
         border: 1px solid #FF7927 !important;
-        border-radius: 19px !important;
-
+        background: #15171A !important;
         color: #FFFFFF !important;
-        text-align: left !important;
       }
 
-      #${SHELL}.${CLASS}
-      #${CONTENT} .msc-overview-learn strong {
-        color: #FFFFFF !important;
-        font-size: 20px !important;
-      }
+      /* Remove old duplicate circuit card */
 
-      #${SHELL}.${CLASS}
-      #${CONTENT} .msc-overview-learn span {
-        color: #C1C6CE !important;
+      #manaCircuitsEntry104881 {
+        display: none !important;
       }
 
       @media(max-width:600px) {
-        #${SHELL}.${CLASS}
-        #${TABS} .mana-v83-tab {
-          min-height: 67px !important;
-          font-size: 10px !important;
+        ${prefix} #${TABS}
+        .mana-v83-tab {
+          min-height: 68px !important;
+          padding: 7px 2px !important;
         }
 
-        #${SHELL}.${CLASS}
-        #${TABS}
-        [data-v83-tab="learn"]::after {
-          font-size: 10px !important;
+        ${prefix} #${TABS}
+        .mana-v83-tab::before {
+          width: 23px !important;
+          height: 23px !important;
+          min-width: 23px !important;
+          min-height: 23px !important;
+          flex-basis: 23px !important;
         }
 
-        #${SHELL}.${CLASS}
-        #${CONTENT} .msc-overview-learn {
-          padding: 15px !important;
+        ${prefix} #${TABS}
+        .mana-v83-tab::after {
+          font-size: 10px !important;
         }
       }
 
@@ -442,65 +488,55 @@
   }
 
   /* =====================================
-     PROTECT CIRCUITS FROM OLD LEARNING
+     OLD LEARNING RENDERER GUARD
 
-     The old Learning module has a
-     document-wide observer and delayed
-     rendering callbacks.
-
-     Keep its compatibility marker while
-     Circuits is active.
-
-     Additionally retain the actual
-     Circuit DOM if an older renderer
-     replaces it unexpectedly.
-
-     No full-page rebuilding or polling.
+     Preserve the existing workaround
+     that keeps Learning from replacing
+     Circuits unexpectedly.
      ===================================== */
 
   function ensureGuard() {
     if ($(GUARD)) return;
 
-    const guard = document.createElement("div");
+    const marker = document.createElement("div");
 
-    guard.id = GUARD;
-    guard.className = "mana-v9120-root";
-    guard.hidden = true;
+    marker.id = GUARD;
+    marker.className = "mana-v9120-root";
+    marker.hidden = true;
 
-    guard.setAttribute("aria-hidden", "true");
-    guard.style.display = "none";
+    marker.setAttribute("aria-hidden", "true");
+    marker.style.display = "none";
 
-    document.body.appendChild(guard);
+    document.body.appendChild(marker);
   }
 
-  function removeGuard() {
+  function clearGuard() {
     $(GUARD)?.remove();
   }
 
-  function protectCircuitContent() {
-    if (!circuitScreen()) {
-      circuitRoot = null;
+  function protectCircuits() {
+    if (!circuitSelected()) {
+      savedCircuit = null;
       return;
     }
 
     const holder = $(CONTENT);
     if (!holder) return;
 
-    const current = holder.querySelector(
-      ".msc-root"
-    );
+    const existing =
+      holder.querySelector(".msc-root");
 
-    if (current) {
-      circuitRoot = current;
+    if (existing) {
+      savedCircuit = existing;
 
-      const kicker = current.querySelector(
+      const kicker = existing.querySelector(
         ".msc-kicker"
       );
 
       if (
         kicker &&
         /PREMIUM CIRCUITS/i.test(
-          kicker.textContent
+          kicker.textContent || ""
         )
       ) {
         kicker.textContent =
@@ -510,23 +546,19 @@
       return;
     }
 
-    /* Restore the existing Circuit
-       element, including its event
-       delegation and timer display. */
-
     if (
-      circuitRoot &&
-      !holder.contains(circuitRoot)
+      savedCircuit &&
+      !holder.contains(savedCircuit)
     ) {
-      holder.replaceChildren(circuitRoot);
+      holder.replaceChildren(savedCircuit);
     }
   }
 
   /* =====================================
-     WORKSPACE-SCOPED STYLING
+     STRENGTH SCOPE
      ===================================== */
 
-  function sync() {
+  function synchronise() {
     queued = false;
 
     const shell = $(SHELL);
@@ -534,26 +566,26 @@
 
     const strength = strengthOpen();
 
-    shell.classList.toggle(CLASS, strength);
+    shell.classList.toggle(SCOPE, strength);
 
-    $(OLD_CARD)?.remove();
+    $( "manaCircuitsEntry104881" )?.remove();
 
     if (!strength) {
       learningRequested = false;
-      circuitRoot = null;
-      removeGuard();
+      savedCircuit = null;
+      clearGuard();
       return;
     }
 
-    if (circuitScreen()) {
+    if (circuitSelected()) {
       ensureGuard();
-      protectCircuitContent();
+      protectCircuits();
     } else {
-      removeGuard();
+      clearGuard();
 
-      if (!learnTabSelected()) {
+      if (!learnSelected()) {
         learningRequested = false;
-        circuitRoot = null;
+        savedCircuit = null;
       }
     }
   }
@@ -562,20 +594,14 @@
     if (queued) return;
 
     queued = true;
-    requestAnimationFrame(sync);
+    requestAnimationFrame(synchronise);
   }
 
   /* =====================================
-     LEARNING VS CIRCUITS
-
-     The Learning Overview card
-     explicitly opens Learning.
-
-     Selecting the bottom Circuits tab
-     explicitly returns to Circuits.
+     KEEP LEARNING ACCESSIBLE
      ===================================== */
 
-  function handleClick(event) {
+  function handleNavigation(event) {
     const target = event.target;
 
     if (!(target instanceof Element)) return;
@@ -587,8 +613,8 @@
       )
     ) {
       learningRequested = true;
-      circuitRoot = null;
-      removeGuard();
+      savedCircuit = null;
+      clearGuard();
       return;
     }
 
@@ -608,21 +634,17 @@
       )
     ) {
       learningRequested = false;
-      circuitRoot = null;
-      removeGuard();
+      savedCircuit = null;
+      clearGuard();
     }
   }
-
-  /* =====================================
-     INITIALISE
-     ===================================== */
 
   function init() {
     installStyles();
 
     document.addEventListener(
       "click",
-      handleClick,
+      handleNavigation,
       true
     );
 
@@ -655,10 +677,10 @@
 
     if (holder) {
       new MutationObserver(() => {
-        if (!circuitScreen()) return;
+        if (!circuitSelected()) return;
 
         ensureGuard();
-        protectCircuitContent();
+        protectCircuits();
       }).observe(holder, {
         childList: true
       });
@@ -674,11 +696,10 @@
       schedule
     );
 
-    sync();
+    synchronise();
 
     console.log(
-      "[Mana Strength] Circuits stability " +
-      BUILD
+      "[Mana Movement] Circuits tidy " + BUILD
     );
   }
 
