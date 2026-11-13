@@ -1,45 +1,49 @@
 
-/* =====================================================
+/* =========================================================
    MANA MOVEMENT TRAINING
-   CIRCUITS — FINAL NAVIGATION VISUAL TIDY
-   BUILD 104885
+   CIRCUITS — CONSISTENT NAVIGATION
+   BUILD 104886
 
-   COMPLETE REPLACEMENT:
+   COMPLETE REPLACEMENT FILE:
    mana_strength_circuits_entry_104881.js
 
-   - Five equal Strength navigation tabs
-   - Correct icon and label alignment
-   - No grey icon blocks
+   FIXES
+   - Matching tabs across ALL Mana Strength screens
+   - No grey square icons
    - Circuits immediately after Workouts
+   - White headings, orange highlights
+   - No Learning banner inside Circuits
+   - Learning banner retained on Overview
    - Orange timer border
-   - Hide extra Profile header button
-   - Keep runner and Home button
-   - Keep Learning accessible from Overview
-   - Protect Circuits from old Learning renderer
-   - No database or workout changes
-   ===================================================== */
+   - No extra Profile header button
+   - Preserves existing Circuits functionality
+
+   No database or workout-history changes.
+   ========================================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "104885";
+  const BUILD = "104886";
 
-  if (window.MANA_CIRCUITS_TIDY_104885) return;
-  window.MANA_CIRCUITS_TIDY_104885 = true;
+  if (window.MANA_CIRCUITS_NAV_104886) return;
+  window.MANA_CIRCUITS_NAV_104886 = true;
 
   const SHELL = "manaV83ProgramShell";
   const TABS = "manaV83Tabs";
   const CONTENT = "manaV83Content";
 
-  const SCOPE = "mana-strength-tidy-104885";
-  const STYLE = "manaStrengthTidyStyle104885";
-  const GUARD = "manaStrengthLearningGuard104885";
+  const SCOPE = "mana-strength-nav-104886";
+  const CIRCUIT = "mana-strength-circuit-open-104886";
+
+  const STYLE = "manaStrengthNavStyle104886";
+  const GUARD = "manaStrengthLearningGuard104886";
 
   const $ = id => document.getElementById(id);
 
   let learningRequested = false;
   let savedCircuit = null;
-  let queued = false;
+  let scheduled = false;
 
   function strengthOpen() {
     return Boolean(
@@ -64,59 +68,60 @@
   }
 
   /* =====================================
-     ICONS
+     MATCHING NAVIGATION ICONS
 
-     All five are vector icons with
-     matching dimensions and line widths.
+     SVG masks use a single foreground
+     colour. This avoids the grey image
+     backgrounds from older nav scripts.
      ===================================== */
 
-  function iconURL(paths) {
-    const svg =
+  function svgMask(paths) {
+    const source =
       '<svg xmlns="http://www.w3.org/2000/svg" ' +
-      'viewBox="0 0 24 24" fill="none" ' +
-      'stroke="#C1C6CE" stroke-width="2" ' +
-      'stroke-linecap="round" ' +
-      'stroke-linejoin="round">' +
+      'width="24" height="24" viewBox="0 0 24 24" ' +
+      'fill="none" stroke="black" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round">' +
       paths +
       '</svg>';
 
     return 'url("data:image/svg+xml,' +
-      encodeURIComponent(svg) +
+      encodeURIComponent(source) +
       '")';
   }
 
   const icons = {
-    overview: iconURL(
+    overview: svgMask(
       '<rect x="3" y="3" width="7" height="7" rx="1"/>' +
       '<rect x="14" y="3" width="7" height="7" rx="1"/>' +
       '<rect x="3" y="14" width="7" height="7" rx="1"/>' +
       '<rect x="14" y="14" width="7" height="7" rx="1"/>'
     ),
 
-    program: iconURL(
+    program: svgMask(
       '<path d="M3 9v6M6 7v10M18 7v10M21 9v6"/>' +
       '<path d="M6 12h12"/>'
     ),
 
-    learn: iconURL(
+    learn: svgMask(
       '<circle cx="12" cy="13" r="8"/>' +
-      '<path d="M12 9v4l3 2M9 2h6M12 2v3"/>'
+      '<path d="M12 9v4l3 2"/>' +
+      '<path d="M9 2h6M12 2v3"/>'
     ),
 
-    fuel: iconURL(
+    fuel: svgMask(
       '<path d="M4 3v8M7 3v8M10 3v8"/>' +
       '<path d="M7 11v10M17 3v18"/>' +
       '<path d="M17 3c-4 3-4 9 0 10"/>'
     ),
 
-    progress: iconURL(
-      '<path d="M4 20V13M10 20V9M16 20V5M22 20V2"/>' +
-      '<path d="M3 10l7-4 5 2 6-6"/>'
+    progress: svgMask(
+      '<path d="M4 20v-7M10 20V9M16 20V5M21 20V3"/>' +
+      '<path d="M3 11l7-5 5 2 6-6"/>'
     )
   };
 
   /* =====================================
-     STYLES
+     INSTALL CSS
      ===================================== */
 
   function installStyles() {
@@ -125,83 +130,75 @@
     const style = document.createElement("style");
     style.id = STYLE;
 
-    const prefix = `#${SHELL}.${SCOPE}`;
+    const root =
+      `#${SHELL}.${SCOPE}`;
+
+    const nav =
+      `${root} #${TABS}`;
 
     style.textContent = `
 
-      /* =================================
-         EXISTING HEADER
-         ================================= */
+      /* ==================================
+         MANA STRENGTH HEADER
+         ================================== */
 
-      ${prefix} .mana-v83-head {
+      ${root} .mana-v83-head {
         background: #000000 !important;
         background-image: none !important;
       }
 
-      ${prefix} .mana-v83-mark {
+      ${root} .mana-v83-mark {
         font-size: 0 !important;
         color: transparent !important;
 
-        background-color: #000000 !important;
-        background-image:
-          url("ui/mana-runner-logo.png") !important;
+        background: #000000
+          url("ui/mana-runner-logo.png")
+          center / contain no-repeat !important;
 
-        background-repeat: no-repeat !important;
-        background-position: center !important;
-        background-size: contain !important;
-
-        border: none !important;
-        outline: none !important;
+        border: 0 !important;
         box-shadow: none !important;
       }
 
-      ${prefix} .mana-v83-kicker {
+      ${root} .mana-v83-kicker {
         color: #FF7927 !important;
       }
 
-      ${prefix} #manaV83Title {
+      ${root} #manaV83Title {
         color: #FFFFFF !important;
       }
 
-      ${prefix} .mana-v83-sub {
+      ${root} .mana-v83-sub {
         color: #C1C6CE !important;
       }
 
-      /* Remove the extra PROFILE button
-         from the program header only.
+      /* Hide extra Profile in program
+         header, retain Home. */
 
-         Keep the working Home button. */
-
-      ${prefix} .mana-v83-head
-      button:not(#manaV83Back) {
-        display: none !important;
-      }
-
-      ${prefix} .mana-v83-head
+      ${root} .mana-v83-head
+      button:not(#manaV83Back),
+      ${root} .mana-v83-head
       a:not(#manaV83Back) {
         display: none !important;
       }
 
-      ${prefix} #manaV83Back {
+      ${root} #manaV83Back {
         display: inline-flex !important;
         color: #FFFFFF !important;
-
         background: #15171A !important;
         border: 1px solid #626973 !important;
       }
 
-      /* =================================
-         FIVE EQUAL TABS
-         ================================= */
+      /* ==================================
+         SAME NAV ON EVERY STRENGTH SCREEN
+         ================================== */
 
-      ${prefix} #${TABS} {
+      ${nav} {
         display: grid !important;
-
         grid-template-columns:
-          repeat(5, minmax(0,1fr)) !important;
+          repeat(5,minmax(0,1fr)) !important;
 
-        align-items: stretch !important;
         gap: 5px !important;
+        align-items: stretch !important;
 
         padding:
           7px 6px
@@ -212,15 +209,13 @@
         border-top: 1px solid #414852 !important;
       }
 
-      ${prefix} #${TABS}
-      .mana-v83-tab {
-        display: flex !important;
+      ${nav} button.mana-v83-tab {
+        position: relative !important;
 
+        display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-
-        position: relative !important;
 
         width: 100% !important;
         min-width: 0 !important;
@@ -232,65 +227,80 @@
         border: 1px solid transparent !important;
         border-radius: 12px !important;
 
-        background-color: transparent !important;
-        background-image: none !important;
+        background: transparent !important;
 
         color: #C1C6CE !important;
+        -webkit-text-fill-color:
+          #C1C6CE !important;
 
+        font-family: inherit !important;
         font-size: 0 !important;
-        line-height: normal !important;
+        text-align: center !important;
 
         box-shadow: none !important;
         box-sizing: border-box !important;
       }
 
-      /* Hide inconsistent icon artwork
-         and labels from older scripts.
-         The original button remains
-         functional and accessible. */
+      /* Hide inconsistent original artwork
+         but retain original buttons and
+         their click handlers. */
 
-      ${prefix} #${TABS}
-      .mana-v83-tab > * {
+      ${nav} button.mana-v83-tab > * {
         display: none !important;
       }
 
-      /* Override old navigation dot.
-         Use it as a matching SVG icon. */
+      /* Each icon gets the same
+         dimensions and visual treatment.
 
-      ${prefix} #${TABS}
-      .mana-v83-tab::before {
+         Background is the actual icon
+         colour, with a vector mask
+         defining the visible shape. */
+
+      ${nav} button.mana-v83-tab::before {
         content: "" !important;
 
         display: block !important;
 
-        width: 26px !important;
-        height: 26px !important;
+        width: 25px !important;
+        height: 25px !important;
+        min-width: 25px !important;
+        min-height: 25px !important;
 
-        min-width: 26px !important;
-        min-height: 26px !important;
-
-        flex: 0 0 26px !important;
+        flex: 0 0 25px !important;
 
         margin: 0 auto 6px !important;
         padding: 0 !important;
 
-        background-color: transparent !important;
-        background-repeat: no-repeat !important;
-        background-position: center !important;
-        background-size: contain !important;
+        background: #C1C6CE !important;
+        background-image: none !important;
 
-        border: none !important;
+        border: 0 !important;
         border-radius: 0 !important;
+        box-shadow: none !important;
+
+        -webkit-mask-repeat: no-repeat !important;
+        mask-repeat: no-repeat !important;
+
+        -webkit-mask-position: center !important;
+        mask-position: center !important;
+
+        -webkit-mask-size: contain !important;
+        mask-size: contain !important;
 
         filter: none !important;
-        box-shadow: none !important;
       }
 
-      /* Matching labels under every icon */
+      /* All labels sit at the same height. */
 
-      ${prefix} #${TABS}
-      .mana-v83-tab::after {
+      ${nav} button.mana-v83-tab::after {
         display: block !important;
+
+        width: 100% !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        background: transparent !important;
 
         color: #C1C6CE !important;
         -webkit-text-fill-color:
@@ -301,174 +311,233 @@
         font-weight: 800 !important;
         line-height: 1.2 !important;
         text-align: center !important;
-
-        margin: 0 !important;
-        padding: 0 !important;
-
-        width: 100% !important;
       }
 
-      /* Order and matching icons */
+      /* ==================================
+         TAB ORDER AND ICONS
+         ================================== */
 
-      ${prefix} #${TABS}
-      [data-v83-tab="overview"] {
+      ${nav} [data-v83-tab="overview"] {
         order: 1 !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="overview"]::before {
-        background-image: ${icons.overview} !important;
+        -webkit-mask-image:
+          ${icons.overview} !important;
+        mask-image:
+          ${icons.overview} !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="overview"]::after {
         content: "Overview" !important;
       }
 
-      ${prefix} #${TABS}
-      [data-v83-tab="program"] {
+      ${nav} [data-v83-tab="program"] {
         order: 2 !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="program"]::before {
-        background-image: ${icons.program} !important;
+        -webkit-mask-image:
+          ${icons.program} !important;
+        mask-image:
+          ${icons.program} !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="program"]::after {
         content: "Workouts" !important;
       }
 
-      ${prefix} #${TABS}
-      [data-v83-tab="learn"] {
+      ${nav} [data-v83-tab="learn"] {
         order: 3 !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="learn"]::before {
-        background-image: ${icons.learn} !important;
+        -webkit-mask-image:
+          ${icons.learn} !important;
+        mask-image:
+          ${icons.learn} !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="learn"]::after {
         content: "Circuits" !important;
       }
 
-      ${prefix} #${TABS}
-      [data-v83-tab="fuel"] {
+      ${nav} [data-v83-tab="fuel"] {
         order: 4 !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="fuel"]::before {
-        background-image: ${icons.fuel} !important;
+        -webkit-mask-image:
+          ${icons.fuel} !important;
+        mask-image:
+          ${icons.fuel} !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="fuel"]::after {
         content: "Fuel" !important;
       }
 
-      ${prefix} #${TABS}
-      [data-v83-tab="progress"] {
+      ${nav} [data-v83-tab="progress"] {
         order: 5 !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="progress"]::before {
-        background-image: ${icons.progress} !important;
+        -webkit-mask-image:
+          ${icons.progress} !important;
+        mask-image:
+          ${icons.progress} !important;
       }
 
-      ${prefix} #${TABS}
+      ${nav}
       [data-v83-tab="progress"]::after {
         content: "Progress" !important;
       }
 
-      /* Selected tab */
+      /* ==================================
+         ACTIVE TAB
+         ================================== */
 
-      ${prefix} #${TABS}
-      .mana-v83-tab.active {
+      ${nav} button.mana-v83-tab.active {
+        background: #29180F !important;
         border-color: #FF7927 !important;
-        background: #2B190F !important;
+
+        color: #FF7927 !important;
       }
 
-      ${prefix} #${TABS}
-      .mana-v83-tab.active::before {
-        filter:
-          brightness(0)
-          saturate(100%)
-          invert(55%)
-          sepia(94%)
-          saturate(1295%)
-          hue-rotate(341deg)
-          brightness(104%)
-          contrast(103%)
-          !important;
+      ${nav}
+      button.mana-v83-tab.active::before {
+        background: #FF7927 !important;
       }
 
-      ${prefix} #${TABS}
-      .mana-v83-tab.active::after {
+      ${nav}
+      button.mana-v83-tab.active::after {
         color: #FF7927 !important;
         -webkit-text-fill-color:
           #FF7927 !important;
       }
 
-      /* =================================
-         TIMER BORDER — ORANGE
-         ================================= */
+      /* ==================================
+         CIRCUITS — WHITE / ORANGE TEXT
+         ================================== */
 
-      ${prefix} #${CONTENT}
+      ${root} #${CONTENT}
+      .msc-root h2,
+      ${root} #${CONTENT}
+      .msc-root h3 {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color:
+          #FFFFFF !important;
+      }
+
+      ${root} #${CONTENT}
+      .msc-kicker,
+      ${root} #${CONTENT}
+      .msc-label,
+      ${root} #${CONTENT}
+      .msc-step {
+        color: #FF7927 !important;
+        -webkit-text-fill-color:
+          #FF7927 !important;
+      }
+
+      ${root} #${CONTENT}
+      .msc-choice strong {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color:
+          #FFFFFF !important;
+      }
+
+      ${root} #${CONTENT}
+      .msc-clock {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color:
+          #FFFFFF !important;
+      }
+
+      ${root} #${CONTENT}
+      .msc-panel {
+        border-color: #535C68 !important;
+        background: #15171A !important;
+      }
+
+      ${root} #${CONTENT}
       .msc-timer {
         border: 1px solid #FF7927 !important;
-
         background: #0C0E11 !important;
         box-shadow: none !important;
       }
 
-      ${prefix} #${CONTENT}
-      .msc-clock {
-        color: #FFFFFF !important;
+      /* ==================================
+         REMOVE LEARNING FROM CIRCUITS
+
+         Learning must be accessed through
+         the Overview banner instead.
+         ================================== */
+
+      #${SHELL}.${CIRCUIT}
+      #${CONTENT} .msc-learn {
+        display: none !important;
       }
 
-      ${prefix} #${CONTENT}
-      .msc-step,
-      ${prefix} #${CONTENT}
-      .msc-label {
+      #${SHELL}.${CIRCUIT}
+      #${CONTENT} .msc-overview-learn {
+        display: none !important;
+      }
+
+      /* ==================================
+         LEARNING BANNER — OVERVIEW ONLY
+         ================================== */
+
+      ${root} #${CONTENT}
+      .msc-overview-learn {
+        width: 100% !important;
+        margin: 16px 0 !important;
+        padding: 20px !important;
+
+        background: #15171A !important;
+        border: 1px solid #FF7927 !important;
+        border-radius: 19px !important;
+
+        color: #FFFFFF !important;
+        text-align: left !important;
+
+        box-shadow: none !important;
+      }
+
+      ${root} #${CONTENT}
+      .msc-overview-learn .msc-kicker {
         color: #FF7927 !important;
       }
 
-      /* Circuits choice panels */
-
-      ${prefix} #${CONTENT}
-      .msc-panel {
-        border-color: #535C68 !important;
-      }
-
-      /* Learning banner on Overview */
-
-      ${prefix} #${CONTENT}
-      .msc-overview-learn {
-        border: 1px solid #FF7927 !important;
-        background: #15171A !important;
+      ${root} #${CONTENT}
+      .msc-overview-learn strong {
         color: #FFFFFF !important;
+        -webkit-text-fill-color:
+          #FFFFFF !important;
       }
 
-      /* Remove old duplicate circuit card */
+      /* No duplicate Circuits Overview card */
 
       #manaCircuitsEntry104881 {
         display: none !important;
       }
 
       @media(max-width:600px) {
-        ${prefix} #${TABS}
-        .mana-v83-tab {
+        ${nav} button.mana-v83-tab {
           min-height: 68px !important;
           padding: 7px 2px !important;
         }
 
-        ${prefix} #${TABS}
-        .mana-v83-tab::before {
+        ${nav} button.mana-v83-tab::before {
           width: 23px !important;
           height: 23px !important;
           min-width: 23px !important;
@@ -476,9 +545,13 @@
           flex-basis: 23px !important;
         }
 
-        ${prefix} #${TABS}
-        .mana-v83-tab::after {
+        ${nav} button.mana-v83-tab::after {
           font-size: 10px !important;
+        }
+
+        ${root} #${CONTENT}
+        .msc-overview-learn {
+          padding: 15px !important;
         }
       }
 
@@ -488,31 +561,44 @@
   }
 
   /* =====================================
-     OLD LEARNING RENDERER GUARD
+     PREVENT OLD LEARNING AUTO-RENDER
 
-     Preserve the existing workaround
-     that keeps Learning from replacing
-     Circuits unexpectedly.
+     The original Learning module looks
+     for a .mana-v9120-root element.
+
+     Keep a hidden compatibility marker
+     when Circuits is active.
      ===================================== */
 
   function ensureGuard() {
     if ($(GUARD)) return;
 
-    const marker = document.createElement("div");
+    const guard = document.createElement("div");
 
-    marker.id = GUARD;
-    marker.className = "mana-v9120-root";
-    marker.hidden = true;
+    guard.id = GUARD;
+    guard.className = "mana-v9120-root";
 
-    marker.setAttribute("aria-hidden", "true");
-    marker.style.display = "none";
+    guard.hidden = true;
+    guard.style.display = "none";
 
-    document.body.appendChild(marker);
+    guard.setAttribute(
+      "aria-hidden",
+      "true"
+    );
+
+    document.body.appendChild(guard);
   }
 
   function clearGuard() {
     $(GUARD)?.remove();
   }
+
+  /* =====================================
+     RETAIN CIRCUIT CONTENT
+
+     Only restore if an older module
+     replaces the active circuit screen.
+     ===================================== */
 
   function protectCircuits() {
     if (!circuitSelected()) {
@@ -521,15 +607,16 @@
     }
 
     const holder = $(CONTENT);
+
     if (!holder) return;
 
-    const existing =
+    const current =
       holder.querySelector(".msc-root");
 
-    if (existing) {
-      savedCircuit = existing;
+    if (current) {
+      savedCircuit = current;
 
-      const kicker = existing.querySelector(
+      const kicker = current.querySelector(
         ".msc-kicker"
       );
 
@@ -555,20 +642,30 @@
   }
 
   /* =====================================
-     STRENGTH SCOPE
+     SYNCHRONISE PROGRAM STATE
      ===================================== */
 
-  function synchronise() {
-    queued = false;
+  function sync() {
+    scheduled = false;
 
     const shell = $(SHELL);
+
     if (!shell) return;
 
     const strength = strengthOpen();
+    const circuits = strength && circuitSelected();
 
-    shell.classList.toggle(SCOPE, strength);
+    shell.classList.toggle(
+      SCOPE,
+      strength
+    );
 
-    $( "manaCircuitsEntry104881" )?.remove();
+    shell.classList.toggle(
+      CIRCUIT,
+      circuits
+    );
+
+    $("manaCircuitsEntry104881")?.remove();
 
     if (!strength) {
       learningRequested = false;
@@ -577,7 +674,7 @@
       return;
     }
 
-    if (circuitSelected()) {
+    if (circuits) {
       ensureGuard();
       protectCircuits();
     } else {
@@ -591,17 +688,18 @@
   }
 
   function schedule() {
-    if (queued) return;
+    if (scheduled) return;
 
-    queued = true;
-    requestAnimationFrame(synchronise);
+    scheduled = true;
+
+    requestAnimationFrame(sync);
   }
 
   /* =====================================
-     KEEP LEARNING ACCESSIBLE
+     CIRCUITS VS LEARNING
      ===================================== */
 
-  function handleNavigation(event) {
+  function handleClick(event) {
     const target = event.target;
 
     if (!(target instanceof Element)) return;
@@ -615,6 +713,7 @@
       learningRequested = true;
       savedCircuit = null;
       clearGuard();
+      schedule();
       return;
     }
 
@@ -625,6 +724,7 @@
     ) {
       learningRequested = false;
       ensureGuard();
+      schedule();
       return;
     }
 
@@ -636,15 +736,25 @@
       learningRequested = false;
       savedCircuit = null;
       clearGuard();
+      schedule();
     }
   }
+
+  /* =====================================
+     INITIALISE
+
+     Observe only existing program-shell
+     state and content changes.
+
+     No page-wide DOM observer.
+     ===================================== */
 
   function init() {
     installStyles();
 
     document.addEventListener(
       "click",
-      handleNavigation,
+      handleClick,
       true
     );
 
@@ -696,10 +806,11 @@
       schedule
     );
 
-    synchronise();
+    sync();
 
     console.log(
-      "[Mana Movement] Circuits tidy " + BUILD
+      "[Mana Strength] Navigation fix " +
+      BUILD
     );
   }
 
