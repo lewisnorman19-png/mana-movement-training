@@ -1,41 +1,47 @@
 
-/* ==========================================================
-   MANA MOVEMENT — CIRCUIT AUDIO
-   BUILD 104890
+/* =====================================================
+   MANA MOVEMENT TRAINING
+   CIRCUITS AUDIO — STABLE COUNTDOWN
+   BUILD 104891
 
    COMPLETE REPLACEMENT:
    mana_strength_circuit_audio_104888.js
 
-   RESTORES:
-   - Spoken "Starting in five, four, three, two, one"
-   - Voice countdown on laptop AND phone
-   - Start and transition beeps
-   - EMOM / Tabata / Strength transitions
+   DESKTOP:
+   - Spoken 5 / 4 / 3 / 2 / 1
+   - No cancelling individual numbers
+
+   MOBILE:
+   - Pre-scheduled Web Audio countdown tones
+   - Separate GO signal
+   - No speech queue or catch-up
+
+   ALL DEVICES:
+   - EMOM / Tabata / Strength transition cues
    - Sound On / Off
-
-   IMPROVES:
-   - Shorter spoken numbers
-   - Reduced speech backlog
-   - Mobile audio unlocking
-   - No accumulated timer drift
    - Pause / Reset cancellation
-
-   Does not modify the workout timer or database.
-   ========================================================== */
+   - Existing workout timers unchanged
+   ===================================================== */
 
 (() => {
   "use strict";
 
-  const FLAG = "MANA_CIRCUIT_AUDIO_104890";
+  const BUILD = "104891";
+  const FLAG = "MANA_CIRCUIT_AUDIO_104891";
+  const TOGGLE = "manaCircuitAudioToggle104888";
+  const STYLE = "manaCircuitAudioStyle104891";
+  const PREF = "mana:circuits:sound";
+
   if (window[FLAG]) return;
   window[FLAG] = true;
 
-  const TOGGLE = "manaCircuitAudioToggle104888";
-  const STYLE = "manaCircuitAudioStyle104890";
-  const PREF = "mana:circuits:sound";
-
   const $ = selector =>
     document.querySelector(selector);
+
+  const mobile =
+    /Android|iPhone|iPad|iPod/i.test(
+      navigator.userAgent || ""
+    );
 
   let enabled = true;
 
@@ -43,24 +49,21 @@
     enabled = localStorage.getItem(PREF) !== "off";
   } catch (_) {}
 
-  let audioContext = null;
+  let audio = null;
   let countdown = null;
   let watcher = null;
   let watchedRoot = null;
+  let previousElapsed = null;
+  let previousCue = "";
 
-  let lastElapsed = null;
-  let lastCue = "";
-  let nativeStart = false;
+  let allowingNativeStart = false;
   let refreshQueued = false;
 
-  const mobile =
-    /Android|iPhone|iPad|iPod/i.test(
-      navigator.userAgent || ""
-    );
+  const scheduledTones = new Set();
 
-  /* ============================================
-     ACTIVE CIRCUIT
-     ============================================ */
+  /* =====================================
+     CIRCUIT DETECTION
+     ===================================== */
 
   function circuitRoot() {
     const shell = $("#manaV83ProgramShell");
@@ -83,12 +86,15 @@
     return $("#manaV83Content .msc-root");
   }
 
-  function clockSeconds(root) {
-    const text = root?.querySelector(
-      ".msc-clock"
-    )?.textContent?.trim() || "";
+  function remainingSeconds(root) {
+    const value = (
+      root?.querySelector(".msc-clock")
+        ?.textContent || ""
+    ).trim();
 
-    const match = /^(\d+):(\d{2})$/.exec(text);
+    const match = /^(\d+):(\d{2})$/.exec(
+      value
+    );
 
     if (!match) return null;
 
@@ -96,7 +102,7 @@
       Number(match[2]);
   }
 
-  function configuration(root) {
+  function settings(root) {
     const type = root.dataset.type || "emom";
 
     const selected = Number(
@@ -121,9 +127,9 @@
     };
   }
 
-  /* ============================================
-     SOUND ENGINE
-     ============================================ */
+  /* =====================================
+     AUDIO ENGINE
+     ===================================== */
 
   function unlockAudio() {
     if (!enabled) return null;
@@ -135,32 +141,35 @@
 
       if (!Engine) return null;
 
-      if (!audioContext) {
-        audioContext = new Engine();
+      if (!audio) {
+        audio = new Engine();
       }
 
-      if (audioContext.state === "suspended") {
-        audioContext.resume().catch(() => {});
+      if (audio.state === "suspended") {
+        audio.resume().catch(() => {});
       }
 
-      return audioContext;
+      return audio;
     } catch (_) {
       return null;
     }
   }
 
-  function beep(
-    frequency = 780,
+  function tone(
+    frequency = 750,
     duration = 130,
-    delay = 0
+    delay = 0,
+    track = false
   ) {
-    if (!enabled) return;
+    if (!enabled) return false;
 
     const context = unlockAudio();
-    if (!context) return;
+    if (!context) return false;
 
     try {
-      const start = context.currentTime + delay;
+      const at =
+        context.currentTime +
+        Math.max(0, delay);
 
       const oscillator =
         context.createOscillator();
@@ -171,46 +180,92 @@
 
       oscillator.frequency.setValueAtTime(
         frequency,
-        start
+        at
       );
 
       gain.gain.setValueAtTime(
         0.0001,
-        start
+        at
       );
 
       gain.gain.exponentialRampToValueAtTime(
-        0.17,
-        start + 0.015
+        0.20,
+        at + 0.012
       );
 
       gain.gain.exponentialRampToValueAtTime(
         0.0001,
-        start + duration / 1000
+        at + duration / 1000
       );
 
       oscillator.connect(gain);
       gain.connect(context.destination);
 
-      oscillator.start(start);
+      if (track) {
+        scheduledTones.add({
+          oscillator,
+          gain
+        });
+      }
+
+      oscillator.onended = () => {
+        try {
+          oscillator.disconnect();
+          gain.disconnect();
+        } catch (_) {}
+
+        for (const item of scheduledTones) {
+          if (item.oscillator === oscillator) {
+            scheduledTones.delete(item);
+            break;
+          }
+        }
+      };
+
+      oscillator.start(at);
       oscillator.stop(
-        start + duration / 1000 + 0.02
+        at + duration / 1000 + 0.02
       );
-    } catch (_) {}
+
+      return true;
+
+    } catch (_) {
+      return false;
+    }
   }
 
-  function silence() {
+  function cancelScheduledTones() {
+    for (const item of scheduledTones) {
+      try {
+        item.oscillator.stop();
+      } catch (_) {}
+
+      try {
+        item.gain.gain.setValueAtTime(
+          0.0001,
+          audio.currentTime
+        );
+      } catch (_) {}
+    }
+
+    scheduledTones.clear();
+  }
+
+  function stopSpeech() {
     try {
       window.speechSynthesis?.cancel();
     } catch (_) {}
   }
 
-  /* Speech remains available on BOTH
-     phones and laptops.
+  /* =====================================
+     DESKTOP VOICE
 
-     Mobile uses a quicker voice rate.
-     Clear stale speech so numbers cannot
-     keep playing after a transition. */
+     Never cancel speech between
+     individual countdown numbers.
+
+     This prevents losing "3" when
+     another number is requested.
+     ===================================== */
 
   function speak(words) {
     if (!enabled) return;
@@ -219,94 +274,121 @@
       !window.speechSynthesis ||
       !window.SpeechSynthesisUtterance
     ) {
-      beep(740, 110);
+      tone(750, 130);
       return;
     }
 
     try {
-      const engine = window.speechSynthesis;
-
-      /* Clear an old queued phrase.
-         Never let several numbers build
-         up behind the visible timer. */
-
-      if (engine.pending) {
-        engine.cancel();
-      }
-
-      const utterance =
+      const voice =
         new SpeechSynthesisUtterance(
           String(words)
         );
 
-      utterance.lang = "en-AU";
-      utterance.rate = mobile ? 1.35 : 1.2;
-      utterance.pitch = 1;
-      utterance.volume = 1;
+      voice.lang = "en-AU";
+      voice.rate = 1.55;
+      voice.pitch = 1;
+      voice.volume = 1;
 
-      engine.speak(utterance);
+      window.speechSynthesis.speak(voice);
 
     } catch (_) {
-      beep(740, 110);
+      tone(750, 130);
     }
   }
 
-  function transitionBeep() {
+  function goSignal() {
     if (!enabled) return;
 
-    silence();
-
-    beep(920, 145);
-    beep(1200, 215, 0.17);
+    tone(940, 145);
+    tone(1250, 220, 0.17);
   }
 
-  /* ============================================
-     WORKOUT TRANSITION TIMES
-     ============================================ */
+  /* =====================================
+     MOBILE FIVE-SECOND START CUES
 
-  function transitions(cfg) {
+     Pre-scheduling inside the Start
+     button interaction avoids speech
+     delays and timer callback drift.
+     ===================================== */
+
+  function scheduleMobileStart() {
+    if (!enabled) return;
+
+    const context = unlockAudio();
+
+    if (!context) {
+      /* Audio unavailable: try voice
+         during the visual countdown. */
+      return false;
+    }
+
+    const frequencies = [
+      650,
+      700,
+      750,
+      800,
+      850
+    ];
+
+    frequencies.forEach((hz, index) => {
+      tone(hz, 140, index, true);
+    });
+
+    /* Start signal at exactly 5 seconds. */
+
+    tone(940, 150, 5, true);
+    tone(1250, 220, 5.17, true);
+
+    return true;
+  }
+
+  /* =====================================
+     INTERVAL BOUNDARIES
+     ===================================== */
+
+  function transitionPoints(config) {
     const result = [];
 
-    if (cfg.type === "emom") {
+    if (config.type === "emom") {
       for (
         let t = 60;
-        t <= cfg.total;
+        t <= config.total;
         t += 60
       ) {
         result.push(t);
       }
 
-    } else if (cfg.type === "tabata") {
+    } else if (config.type === "tabata") {
       for (
         let t = 0;
-        t < cfg.total;
+        t < config.total;
         t += 30
       ) {
         result.push(t + 20, t + 30);
       }
 
     } else {
-      const stages = {
+      const minutes = {
         15: [3, 4, 4, 2, 2],
         30: [5, 9, 9, 4, 3],
         45: [5, 15, 15, 5, 5]
-      }[cfg.duration] ||
+      }[config.duration] ||
         [5, 15, 15, 5, 5];
 
-      let elapsed = 0;
+      let position = 0;
 
-      for (const minutes of stages) {
-        elapsed += minutes * 60;
-        result.push(elapsed);
-      }
+      minutes.forEach(value => {
+        position += value * 60;
+        result.push(position);
+      });
     }
 
     return result;
   }
 
-  /* ============================================
-     TRACK THE EXISTING CIRCUIT CLOCK
-     ============================================ */
+  /* =====================================
+     WORKOUT TRANSITION AUDIO
+     ===================================== */
 
   function stopWatcher() {
     if (watcher !== null) {
@@ -315,11 +397,11 @@
 
     watcher = null;
     watchedRoot = null;
-    lastElapsed = null;
-    lastCue = "";
+    previousElapsed = null;
+    previousCue = "";
   }
 
-  function checkTransitions() {
+  function watchTick() {
     const root = circuitRoot();
 
     if (!root || root !== watchedRoot) {
@@ -341,64 +423,70 @@
       return;
     }
 
-    const remaining = clockSeconds(root);
-    if (remaining === null) return;
+    const seconds = remainingSeconds(root);
 
-    const cfg = configuration(root);
+    if (seconds === null) return;
 
+    const config = settings(root);
     const elapsed = Math.max(
       0,
-      cfg.total - remaining
+      config.total - seconds
     );
 
-    const marks = transitions(cfg);
+    const points = transitionPoints(config);
 
-    /* Large jumps can occur after a
-       browser tab has been suspended.
-       Do not play missed cues. */
+    /* Don't play cues that were missed
+       while a phone was suspended. */
 
     if (
-      lastElapsed !== null &&
-      elapsed - lastElapsed > 2
+      previousElapsed !== null &&
+      elapsed - previousElapsed > 2
     ) {
-      lastElapsed = elapsed;
-      lastCue = "";
+      previousElapsed = elapsed;
+      previousCue = "";
       return;
     }
 
-    if (lastElapsed !== null) {
-      const crossed = marks.find(
-        mark =>
-          mark > lastElapsed &&
-          mark <= elapsed
+    if (previousElapsed !== null) {
+      const crossed = points.find(
+        point =>
+          point > previousElapsed &&
+          point <= elapsed
       );
 
       if (crossed !== undefined) {
-        transitionBeep();
-        lastCue = "";
+        if (!mobile) stopSpeech();
+
+        goSignal();
+        previousCue = "";
       }
     }
 
-    const next = marks.find(
-      mark => mark > elapsed
+    const next = points.find(
+      point => point > elapsed
     );
 
     if (next !== undefined) {
       const left = next - elapsed;
 
       if (left >= 1 && left <= 5) {
-        const key = `${next}:${left}`;
+        const key = next + ":" + left;
 
-        if (lastCue !== key) {
-          lastCue = key;
-          speak(String(left));
+        if (previousCue !== key) {
+          previousCue = key;
+
+          if (mobile) {
+            tone(720, 120);
+          } else {
+            speak(String(left));
+          }
         }
       } else {
-        lastCue = "";
+        previousCue = "";
       }
     }
 
-    lastElapsed = elapsed;
+    previousElapsed = elapsed;
   }
 
   function startWatcher() {
@@ -409,35 +497,43 @@
 
     watchedRoot = root;
 
-    const shown = clockSeconds(root);
+    const seconds = remainingSeconds(root);
 
-    if (shown !== null) {
-      lastElapsed = Math.max(
-        0,
-        configuration(root).total - shown
-      );
-    }
+    previousElapsed = seconds === null
+      ? null
+      : Math.max(
+          0,
+          settings(root).total - seconds
+        );
 
     watcher = setInterval(
-      checkTransitions,
+      watchTick,
       100
     );
 
-    checkTransitions();
+    watchTick();
   }
 
-  /* ============================================
-     FIVE-SECOND SESSION START
-     ============================================ */
+  /* =====================================
+     START COUNTDOWN
+     ===================================== */
 
-  function cancelCountdown(restore = true) {
+  function cancelCountdown(
+    restore = true,
+    cancelTones = true
+  ) {
     if (!countdown) return;
 
     const state = countdown;
     countdown = null;
 
     clearInterval(state.interval);
-    silence();
+
+    if (cancelTones) {
+      cancelScheduledTones();
+    }
+
+    stopSpeech();
 
     if (
       restore &&
@@ -450,33 +546,42 @@
 
   function stopAll() {
     cancelCountdown();
+    cancelScheduledTones();
     stopWatcher();
-    silence();
+    stopSpeech();
   }
 
   function prepareStart(button) {
     stopAll();
-
-    /* User interaction unlocks mobile
-       audio and the speech synthesiser. */
 
     unlockAudio();
 
     const root = circuitRoot();
     if (!root) return;
 
-    const end =
+    /* Start from the user click,
+       not from the first timer callback. */
+
+    const endsAt =
       performance.now() + 5000;
 
+    const mobileScheduled =
+      mobile && scheduleMobileStart();
+
     const state = {
-      root,
       button,
-      end,
-      last: null,
+      root,
+      endsAt,
+      lastNumber: null,
+      mobileScheduled,
       interval: null
     };
 
     countdown = state;
+
+    if (!mobile) {
+      stopSpeech();
+    }
 
     function update() {
       if (countdown !== state) return;
@@ -492,20 +597,30 @@
       const left = Math.max(
         0,
         Math.ceil(
-          (end - performance.now()) / 1000
+          (endsAt - performance.now()) /
+          1000
         )
       );
 
       if (left === 0) {
-        cancelCountdown(false);
-        transitionBeep();
+        /* Keep the already scheduled
+           mobile GO sound playing. */
 
-        nativeStart = true;
+        cancelCountdown(
+          false,
+          !state.mobileScheduled
+        );
+
+        if (!mobile || !state.mobileScheduled) {
+          goSignal();
+        }
+
+        allowingNativeStart = true;
 
         try {
           button.click();
         } finally {
-          nativeStart = false;
+          allowingNativeStart = false;
         }
 
         startWatcher();
@@ -513,33 +628,40 @@
       }
 
       button.textContent =
-        `Starting in ${left} · Cancel`;
+        "Starting in " +
+        left +
+        " · Cancel";
 
-      if (state.last !== left) {
-        state.last = left;
+      if (state.lastNumber !== left) {
+        state.lastNumber = left;
 
-        /* Restore spoken introduction
-           on both laptop and phone. */
-
-        speak(
-          left === 5
-            ? "Starting in five"
-            : String(left)
-        );
+        if (!mobile) {
+          speak(
+            left === 5
+              ? "Starting in five"
+              : String(left)
+          );
+        } else if (!state.mobileScheduled) {
+          speak(
+            left === 5
+              ? "Starting in five"
+              : String(left)
+          );
+        }
       }
     }
 
     state.interval = setInterval(
       update,
-      80
+      50
     );
 
     update();
   }
 
-  /* ============================================
+  /* =====================================
      SOUND TOGGLE
-     ============================================ */
+     ===================================== */
 
   function ensureToggle() {
     const root = circuitRoot();
@@ -555,7 +677,9 @@
     );
 
     if (!button) {
-      button = document.createElement("button");
+      button =
+        document.createElement("button");
+
       button.id = TOGGLE;
       button.type = "button";
       button.className = "msc-btn alt";
@@ -574,10 +698,12 @@
 
   function refresh() {
     if (refreshQueued) return;
+
     refreshQueued = true;
 
     requestAnimationFrame(() => {
       refreshQueued = false;
+
       ensureToggle();
 
       if (!circuitRoot()) {
@@ -613,21 +739,16 @@
     document.head.appendChild(style);
   }
 
-  /* ============================================
-     HANDLE TIMER BUTTONS
-
-     Capture before the existing circuit
-     renderer starts its own timer.
-     ============================================ */
+  /* =====================================
+     ORIGINAL TIMER INTEGRATION
+     ===================================== */
 
   document.addEventListener(
     "click",
     event => {
       const target = event.target;
 
-      if (!(target instanceof Element)) {
-        return;
-      }
+      if (!(target instanceof Element)) return;
 
       const button = target.closest("button");
       if (!button) return;
@@ -648,7 +769,8 @@
         if (enabled) {
           unlockAudio();
         } else {
-          silence();
+          stopSpeech();
+          cancelScheduledTones();
         }
 
         ensureToggle();
@@ -661,9 +783,9 @@
         ) &&
         circuitRoot()
       ) {
-        if (nativeStart) return;
+        if (allowingNativeStart) return;
 
-        const text =
+        const label =
           (button.textContent || "").trim();
 
         if (
@@ -679,7 +801,7 @@
 
         if (
           /^(start timer|start again)$/i.test(
-            text
+            label
           )
         ) {
           event.preventDefault();
@@ -689,11 +811,13 @@
           return;
         }
 
-        if (/pause timer/i.test(text)) {
+        if (/pause timer/i.test(label)) {
           stopWatcher();
-          silence();
+          stopSpeech();
 
-        } else if (/resume timer/i.test(text)) {
+        } else if (
+          /resume timer/i.test(label)
+        ) {
           unlockAudio();
 
           setTimeout(
@@ -713,6 +837,7 @@
         )
       ) {
         stopAll();
+
         setTimeout(refresh, 0);
         return;
       }
@@ -730,20 +855,16 @@
     true
   );
 
-  /* ============================================
-     INITIALISE
-     ============================================ */
-
   function init() {
     installStyles();
 
-    const holder =
+    const content =
       $("#manaV83Content");
 
-    if (holder) {
+    if (content) {
       new MutationObserver(
         refresh
-      ).observe(holder, {
+      ).observe(content, {
         childList: true
       });
     }
@@ -766,7 +887,7 @@
             cancelCountdown();
           }
 
-          silence();
+          stopSpeech();
         }
       }
     );
@@ -774,7 +895,8 @@
     refresh();
 
     console.log(
-      "[Mana Strength] Circuit audio 104890"
+      "[Mana Strength] Circuit Audio " +
+      BUILD
     );
   }
 
@@ -787,5 +909,4 @@
   } else {
     init();
   }
-
 })();
