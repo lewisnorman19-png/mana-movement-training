@@ -1,515 +1,649 @@
 
-/* MANA MOVEMENT — CIRCUITS AUDIO 104888
-   NEW complete file. Load after both Circuits scripts.
-   Does not modify the underlying circuit timer or workouts.
-*/
+/* ======================================================
+   MANA MOVEMENT — CIRCUIT AUDIO
+   BUILD 104889 — MOBILE SYNC FIX
+
+   COMPLETE REPLACEMENT:
+   mana_strength_circuit_audio_104888.js
+
+   - Desktop: spoken countdown with queue clearing
+   - Mobile: precise countdown tones
+   - Start countdown: 5, 4, 3, 2, 1, GO
+   - EMOM: minute transition cues
+   - Tabata: work/rest transition cues
+   - Strength: block transition cues
+   - Sound On / Off
+   - Pause and Reset cancel pending audio
+   - Follows existing circuit timer
+   - No database or workout changes
+   ====================================================== */
+
 (() => {
   "use strict";
-  if (window.MANA_CIRCUIT_AUDIO_104888) return;
-  window.MANA_CIRCUIT_AUDIO_104888 = true;
 
-  const ID = "manaCircuitAudioToggle104888";
-  const CSS_ID = "manaCircuitAudioStyle104888";
+  const BUILD = "104889";
+  const FLAG = "MANA_CIRCUIT_AUDIO_104889";
+  const TOGGLE = "manaCircuitAudioToggle104888";
+  const STYLE = "manaCircuitAudioStyle104889";
   const PREF = "mana:circuits:sound";
-  const $ = s => document.querySelector(s);
+
+  if (window[FLAG]) return;
+  window[FLAG] = true;
+
+  const $ = selector =>
+    document.querySelector(selector);
+
+  const isMobile =
+    /Android|iPhone|iPad|iPod/i.test(
+      navigator.userAgent || ""
+    );
 
   let enabled = true;
+
   try {
     enabled = localStorage.getItem(PREF) !== "off";
   } catch (_) {}
 
-  let audio = null;
-  let polling = null;
-  let countdown = null;
-  let lastCount = null;
+  let audioContext = null;
+
+  let preparation = null;
+  let watcher = null;
+  let watchedRoot = null;
+
   let lastElapsed = null;
-  let activeRoot = null;
-  let allowNativeClick = false;
-  let setupScheduled = false;
+  let lastCue = "";
+  let allowingNativeStart = false;
+  let setupQueued = false;
 
-  /* Identify the active Strength circuit. */
+  /* =====================================
+     CURRENT CIRCUIT
+     ===================================== */
 
-  function circuitRoot() {
+  function root() {
     const shell = $("#manaV83ProgramShell");
 
     if (!shell?.classList.contains("open")) {
       return null;
     }
 
-    if (!/strength/i.test(
-      $("#manaV83Title")?.textContent || ""
-    )) {
+    if (
+      !/strength/i.test(
+        $("#manaV83Title")?.textContent || ""
+      )
+    ) {
       return null;
     }
 
-    if (!$("#manaV83Tabs [data-v83-tab='learn'].active")) {
+    if (
+      !$("#manaV83Tabs " +
+        '[data-v83-tab="learn"].active')
+    ) {
       return null;
     }
 
     return $("#manaV83Content .msc-root");
   }
 
-  function getSettings(root) {
-    const type = root?.dataset.type || "emom";
+  function startButton(element) {
+    return element?.querySelector(
+      '[data-msc-action="start"]'
+    );
+  }
+
+  function shownSeconds(element) {
+    const value =
+      element?.querySelector(".msc-clock")
+        ?.textContent || "";
+
+    const match = /^(\d+):(\d{2})$/.exec(
+      value.trim()
+    );
+
+    if (!match) return null;
+
+    return (
+      Number(match[1]) * 60 +
+      Number(match[2])
+    );
+  }
+
+  function settings(element) {
+    const type =
+      element?.dataset.type || "emom";
 
     const value = Number(
-      root?.querySelector(
-        ".msc-setting[aria-pressed='true']"
+      element?.querySelector(
+        '.msc-setting[aria-pressed="true"]'
       )?.dataset.mscDuration
     );
 
-    const n =
+    const duration =
       Number.isFinite(value) && value > 0
         ? value
-        : type === "tabata"
-          ? 1
-          : type === "strength"
-            ? 45
-            : 15;
+        : type === "tabata" ? 1
+        : type === "strength" ? 45
+        : 15;
 
     return {
       type,
-      duration: n,
-      total: type === "tabata" ? n * 240 : n * 60
+      duration,
+      total: type === "tabata"
+        ? duration * 240
+        : duration * 60
     };
   }
 
-  function secondsShown(root) {
-    const match = /^\s*(\d+):(\d{2})\s*$/.exec(
-      root?.querySelector(".msc-clock")?.textContent || ""
-    );
+  /* =====================================
+     AUDIO ENGINE
 
-    return match
-      ? Number(match[1]) * 60 + Number(match[2])
-      : null;
-  }
+     Mobile tones use Web Audio rather
+     than queued text-to-speech.
 
-  /* Web Audio produces the interval beeps.
-     Audio is unlocked by the user's click. */
+     The audio context is unlocked by
+     pressing the workout Start button.
+     ===================================== */
 
-  function context() {
+  function getAudio() {
     if (!enabled) return null;
 
     try {
-      const Audio =
+      const Engine =
         window.AudioContext ||
         window.webkitAudioContext;
 
-      if (!Audio) return null;
+      if (!Engine) return null;
 
-      if (!audio) audio = new Audio();
-
-      if (audio.state === "suspended") {
-        audio.resume().catch(() => {});
+      if (!audioContext) {
+        audioContext = new Engine();
       }
 
-      return audio;
+      if (audioContext.state === "suspended") {
+        audioContext.resume().catch(() => {});
+      }
+
+      return audioContext;
     } catch (_) {
       return null;
     }
   }
 
-  function tone(hz = 740, ms = 125, delay = 0) {
-    const ctx = context();
-    if (!ctx) return;
+  function tone(
+    frequency = 760,
+    duration = 110,
+    delay = 0
+  ) {
+    const audio = getAudio();
+    if (!audio) return;
 
     try {
-      const start =
-        ctx.currentTime + Math.max(0, delay);
+      const at =
+        audio.currentTime + delay;
 
-      const oscillator = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const oscillator =
+        audio.createOscillator();
+
+      const gain = audio.createGain();
 
       oscillator.type = "sine";
-      oscillator.frequency.value = hz;
 
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(
-        0.19,
-        start + 0.015
+      oscillator.frequency.setValueAtTime(
+        frequency,
+        at
       );
+
+      gain.gain.setValueAtTime(
+        0.0001,
+        at
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.20,
+        at + 0.012
+      );
+
       gain.gain.exponentialRampToValueAtTime(
         0.0001,
-        start + ms / 1000
+        at + duration / 1000
       );
 
-      oscillator.connect(gain).connect(
-        ctx.destination
-      );
+      oscillator.connect(gain);
+      gain.connect(audio.destination);
 
-      oscillator.start(start);
+      oscillator.start(at);
       oscillator.stop(
-        start + ms / 1000 + 0.02
+        at + duration / 1000 + 0.02
       );
     } catch (_) {}
   }
 
-  function signal() {
-    if (!enabled) return;
-
-    tone(920, 150);
-    tone(1200, 220, 0.17);
-  }
-
-  /* Spoken countdown uses the browser's
-     available speech synthesis voice. */
-
-  function say(words) {
-    if (!enabled ||
-        !("speechSynthesis" in window)) {
-      return;
-    }
-
-    try {
-      const speech = new SpeechSynthesisUtterance(
-        String(words)
-      );
-
-      speech.lang = "en-AU";
-      speech.rate = 1.2;
-      speech.pitch = 1;
-      speech.volume = 0.9;
-
-      window.speechSynthesis.speak(speech);
-    } catch (_) {}
-  }
-
-  function silenceVoice() {
+  function stopSpeech() {
     try {
       window.speechSynthesis?.cancel();
     } catch (_) {}
   }
 
-  /* Build the transition points
-     for the selected session. */
+  function speak(number) {
+    if (!enabled) return;
 
-  function borders(cfg) {
-    const end = cfg.total;
-    const arr = [];
+    /* Mobile speech startup is often
+       delayed. Use accurate tones. */
 
-    if (cfg.type === "emom") {
-      for (let s = 60; s <= end; s += 60) {
-        arr.push(s);
+    if (isMobile) {
+      tone(740, 110);
+      return;
+    }
+
+    if (
+      !("speechSynthesis" in window) ||
+      !("SpeechSynthesisUtterance" in window)
+    ) {
+      tone(740, 110);
+      return;
+    }
+
+    try {
+      /* Never queue numbers behind
+         previously spoken numbers. */
+
+      stopSpeech();
+
+      const voice =
+        new SpeechSynthesisUtterance(
+          String(number)
+        );
+
+      voice.lang = "en-AU";
+      voice.rate = 1.45;
+      voice.pitch = 1;
+      voice.volume = 0.95;
+
+      window.speechSynthesis.speak(voice);
+    } catch (_) {
+      tone(740, 110);
+    }
+  }
+
+  function changeSignal() {
+    if (!enabled) return;
+
+    stopSpeech();
+
+    tone(920, 140);
+    tone(1250, 200, 0.16);
+  }
+
+  /* =====================================
+     TRANSITION BOUNDARIES
+     ===================================== */
+
+  function boundaries(config) {
+    const result = [];
+
+    if (config.type === "emom") {
+      for (
+        let t = 60;
+        t <= config.total;
+        t += 60
+      ) {
+        result.push(t);
       }
 
-    } else if (cfg.type === "tabata") {
-      for (let s = 0; s < end; s += 30) {
-        arr.push(s + 20, s + 30);
+    } else if (config.type === "tabata") {
+      for (
+        let t = 0;
+        t < config.total;
+        t += 30
+      ) {
+        result.push(t + 20, t + 30);
       }
 
     } else {
-      const blocks = {
+      const stages = {
         15: [3, 4, 4, 2, 2],
         30: [5, 9, 9, 4, 3],
         45: [5, 15, 15, 5, 5]
-      }[cfg.duration] || [5, 15, 15, 5, 5];
+      }[config.duration] ||
+        [5, 15, 15, 5, 5];
 
-      let s = 0;
+      let position = 0;
 
-      for (const length of blocks) {
-        s += length * 60;
-        arr.push(s);
+      for (const minutes of stages) {
+        position += minutes * 60;
+        result.push(position);
       }
     }
 
-    return arr;
+    return result;
   }
 
-  function stopPolling() {
-    if (polling !== null) {
-      clearInterval(polling);
+  /* =====================================
+     STOP SOUND TRACKING
+     ===================================== */
+
+  function stopWatcher() {
+    if (watcher !== null) {
+      clearInterval(watcher);
     }
 
-    polling = null;
+    watcher = null;
+    watchedRoot = null;
     lastElapsed = null;
-    lastCount = null;
-    activeRoot = null;
+    lastCue = "";
   }
 
-  /* Follow the REAL circuit timer display.
-     Avoid creating a second independent
-     workout countdown. */
+  function cancelPreparation(restore = true) {
+    if (!preparation) return;
 
-  function checkTransitions() {
-    const root = circuitRoot();
+    const current = preparation;
 
-    if (!root || root !== activeRoot) {
-      stopPolling();
+    clearInterval(current.interval);
+    preparation = null;
+
+    stopSpeech();
+
+    if (
+      restore &&
+      current.button?.isConnected
+    ) {
+      current.button.textContent =
+        "Start timer";
+    }
+  }
+
+  function stopEverything() {
+    cancelPreparation();
+    stopWatcher();
+    stopSpeech();
+  }
+
+  /* =====================================
+     REAL-TIME INTERVAL AUDIO
+
+     Read the SAME displayed clock
+     used by the circuit workout.
+
+     Never queue missed countdowns.
+     ===================================== */
+
+  function check() {
+    const element = root();
+
+    if (
+      !element ||
+      element !== watchedRoot
+    ) {
+      stopWatcher();
       return;
     }
 
-    const button = root.querySelector(
-      '[data-msc-action="start"]'
-    );
+    const button = startButton(element);
 
-    const seconds = secondsShown(root);
-    const cfg = getSettings(root);
-
-    if (seconds == null || !button) {
-      stopPolling();
+    if (
+      !button ||
+      !/pause timer/i.test(
+        button.textContent || ""
+      )
+    ) {
+      stopWatcher();
       return;
     }
+
+    const shown = shownSeconds(element);
+    if (shown === null) return;
+
+    const config = settings(element);
 
     const elapsed = Math.max(
       0,
-      cfg.total - seconds
+      config.total - shown
     );
 
-    const running = /pause timer/i.test(
-      button.textContent || ""
-    );
+    const marks = boundaries(config);
 
-    if (!running) {
-      stopPolling();
-      return;
-    }
-
-    const boundaries = borders(cfg);
-
-    /* Beep when an interval ends. */
+    /* Ignore large jumps caused by
+       backgrounded or suspended tabs. */
 
     if (
       lastElapsed !== null &&
-      elapsed > lastElapsed
+      elapsed - lastElapsed > 2
     ) {
-      const crossed = boundaries.filter(
-        b => b <= elapsed && b > lastElapsed
+      lastElapsed = elapsed;
+      lastCue = "";
+      return;
+    }
+
+    /* Signal a crossed transition. */
+
+    if (lastElapsed !== null) {
+      const crossed = marks.find(
+        mark =>
+          mark > lastElapsed &&
+          mark <= elapsed
       );
 
-      if (
-        crossed.length &&
-        elapsed - crossed[crossed.length - 1] <= 1
-      ) {
-        signal();
+      if (crossed !== undefined) {
+        changeSignal();
+        lastCue = "";
       }
     }
 
-    /* Spoken countdown for next change. */
+    /* Announce the final five seconds
+       until the next transition. */
 
-    const next = boundaries.find(
-      b => b > elapsed
+    const next = marks.find(
+      mark => mark > elapsed
     );
 
-    const left =
-      next == null ? null : next - elapsed;
+    if (next !== undefined) {
+      const secondsLeft =
+        next - elapsed;
 
-    if (
-      left !== null &&
-      left >= 1 &&
-      left <= 5
-    ) {
-      const key = `${next}:${left}`;
+      if (
+        secondsLeft >= 1 &&
+        secondsLeft <= 5
+      ) {
+        const key =
+          next + ":" + secondsLeft;
 
-      if (lastCount !== key) {
-        lastCount = key;
-        say(String(left));
-
-        if (!("speechSynthesis" in window)) {
-          tone(700, 100);
+        if (key !== lastCue) {
+          lastCue = key;
+          speak(secondsLeft);
         }
+      } else {
+        lastCue = "";
       }
-    } else {
-      lastCount = null;
     }
 
     lastElapsed = elapsed;
   }
 
-  function startPolling() {
-    stopPolling();
+  function watch() {
+    stopWatcher();
 
-    const root = circuitRoot();
-    if (!root) return;
+    const element = root();
+    if (!element) return;
 
-    activeRoot = root;
+    watchedRoot = element;
 
-    const cfg = getSettings(root);
-    const shown = secondsShown(root);
+    const config = settings(element);
+    const shown = shownSeconds(element);
 
-    lastElapsed = shown === null
-      ? null
-      : Math.max(0, cfg.total - shown);
-
-    polling = setInterval(
-      checkTransitions,
-      160
-    );
-
-    checkTransitions();
-  }
-
-  /* Five-second countdown BEFORE starting
-     the actual workout timer. */
-
-  function stopCountdown(restore = true) {
-    if (!countdown) return;
-
-    clearInterval(countdown.interval);
-
-    const button = countdown.button;
-    countdown = null;
-
-    silenceVoice();
-
-    if (restore && button?.isConnected) {
-      button.textContent = "Start timer";
+    if (shown !== null) {
+      lastElapsed = Math.max(
+        0,
+        config.total - shown
+      );
     }
+
+    watcher = setInterval(check, 90);
+    check();
   }
 
-  function startCountdown(button) {
-    stopCountdown();
-    stopPolling();
+  /* =====================================
+     FIVE-SECOND START COUNTDOWN
 
-    context();
-    silenceVoice();
+     Use performance.now() rather than
+     counting interval callbacks.
 
-    const root = circuitRoot();
-    if (!root) return;
+     This avoids accumulated timing drift.
+     ===================================== */
 
-    const ends = performance.now() + 5000;
+  function prepareStart(button) {
+    stopEverything();
+    getAudio();
+
+    const element = root();
+    if (!element) return;
+
+    const endsAt =
+      performance.now() + 5000;
 
     const state = {
+      element,
       button,
-      root,
-      ends,
-      shown: 0,
+      endsAt,
+      lastNumber: null,
       interval: null
     };
 
-    countdown = state;
+    preparation = state;
 
-    function step() {
-      if (countdown !== state) return;
+    function update() {
+      if (preparation !== state) return;
 
       if (
-        circuitRoot() !== root ||
-        !root.contains(button)
+        root() !== element ||
+        !element.contains(button)
       ) {
-        stopCountdown();
+        cancelPreparation();
         return;
       }
 
       const left = Math.max(
         0,
         Math.ceil(
-          (ends - performance.now()) / 1000
+          (endsAt - performance.now()) /
+          1000
         )
       );
 
       if (left === 0) {
-        stopCountdown(false);
-        signal();
+        cancelPreparation(false);
 
-        /* Let the original timer's
-           existing Start handler run. */
+        changeSignal();
 
-        allowNativeClick = true;
+        /* Activate the EXISTING
+           workout timer unchanged. */
+
+        allowingNativeStart = true;
 
         try {
           button.click();
         } finally {
-          allowNativeClick = false;
+          allowingNativeStart = false;
         }
 
-        setTimeout(startPolling, 0);
+        watch();
         return;
       }
 
       button.textContent =
-        `Starting in ${left} · Cancel`;
+        "Starting in " +
+        left +
+        " · Cancel";
 
-      if (state.shown !== left) {
-        state.shown = left;
-
-        say(
-          left === 5
-            ? "Starting in five"
-            : String(left)
-        );
-
-        if (!("speechSynthesis" in window)) {
-          tone(680, 105);
-        }
+      if (state.lastNumber !== left) {
+        state.lastNumber = left;
+        speak(left);
       }
     }
 
-    state.interval = setInterval(step, 90);
-    step();
+    state.interval = setInterval(
+      update,
+      50
+    );
+
+    update();
   }
 
-  /* Sound toggle inside the existing
-     timer action row. */
+  /* =====================================
+     SOUND CONTROL
+     ===================================== */
 
   function ensureToggle() {
-    const root = circuitRoot();
-    if (!root) return;
+    const element = root();
+    if (!element) return;
 
-    const actions = root.querySelector(
-      ".msc-actions"
-    );
+    const actions =
+      element.querySelector(
+        ".msc-actions"
+      );
 
-    if (!actions || actions.querySelector(
-      "#" + ID
-    )) {
-      return;
+    if (!actions) return;
+
+    let button =
+      actions.querySelector(
+        "#" + TOGGLE
+      );
+
+    if (!button) {
+      button = document.createElement(
+        "button"
+      );
+
+      button.id = TOGGLE;
+      button.type = "button";
+      button.className = "msc-btn alt";
+
+      actions.appendChild(button);
     }
 
-    const button = document.createElement(
-      "button"
-    );
-
-    button.type = "button";
-    button.id = ID;
-    button.className = "msc-btn alt";
+    button.textContent =
+      enabled ? "Sound On" : "Sound Off";
 
     button.setAttribute(
       "aria-pressed",
       String(enabled)
     );
-
-    button.textContent =
-      enabled ? "Sound On" : "Sound Off";
-
-    actions.appendChild(button);
   }
 
-  function scheduleSetup() {
-    if (setupScheduled) return;
+  function refresh() {
+    if (setupQueued) return;
 
-    setupScheduled = true;
+    setupQueued = true;
 
     requestAnimationFrame(() => {
-      setupScheduled = false;
+      setupQueued = false;
+
       ensureToggle();
 
-      if (!circuitRoot()) {
-        stopPolling();
-        stopCountdown();
+      if (!root()) {
+        stopEverything();
       }
     });
   }
 
   function installStyle() {
-    if (document.getElementById(CSS_ID)) {
+    if (document.getElementById(STYLE)) {
       return;
     }
 
-    const style = document.createElement(
-      "style"
-    );
+    const style =
+      document.createElement("style");
 
-    style.id = CSS_ID;
+    style.id = STYLE;
 
     style.textContent = `
-      #manaV83Content #${ID} {
-        border: 1px solid #FF7927 !important;
-        background: #121417 !important;
-        color: #FFFFFF !important;
+      #manaV83Content #${TOGGLE} {
         min-width: 96px;
+
+        background: #121417 !important;
+        border: 1px solid #FF7927 !important;
+        color: #FFFFFF !important;
       }
 
       #manaV83Content
-      #${ID}[aria-pressed="true"] {
+      #${TOGGLE}[aria-pressed="true"] {
         color: #FF7927 !important;
       }
     `;
@@ -517,8 +651,15 @@
     document.head.appendChild(style);
   }
 
-  /* Handle sound controls before the
-     original delegated timer handler. */
+  /* =====================================
+     BUTTON INTERCEPTION
+
+     Capture clicks before the original
+     timer's delegated handler.
+
+     Resume is immediate; only a fresh
+     session gets the five-second start.
+     ===================================== */
 
   document.addEventListener(
     "click",
@@ -529,19 +670,16 @@
         return;
       }
 
-      const button = target.closest("button");
+      const button =
+        target.closest("button");
+
       if (!button) return;
 
-      if (button.id === ID && circuitRoot()) {
+      if (
+        button.id === TOGGLE &&
+        root()
+      ) {
         enabled = !enabled;
-
-        button.setAttribute(
-          "aria-pressed",
-          String(enabled)
-        );
-
-        button.textContent =
-          enabled ? "Sound On" : "Sound Off";
 
         try {
           localStorage.setItem(
@@ -551,11 +689,12 @@
         } catch (_) {}
 
         if (enabled) {
-          context();
+          getAudio();
         } else {
-          silenceVoice();
+          stopSpeech();
         }
 
+        ensureToggle();
         return;
       }
 
@@ -563,47 +702,46 @@
         button.matches(
           '[data-msc-action="start"]'
         ) &&
-        circuitRoot()
+        root()
       ) {
-        if (allowNativeClick) return;
+        if (allowingNativeStart) return;
 
-        const text = (
-          button.textContent || ""
-        ).trim();
+        const label =
+          (button.textContent || "").trim();
 
         if (
-          countdown &&
-          button === countdown.button
+          preparation &&
+          preparation.button === button
         ) {
           event.preventDefault();
           event.stopImmediatePropagation();
-          stopCountdown();
+
+          cancelPreparation();
           return;
         }
 
         if (
-          /^start timer$|^start again$/i.test(
-            text
+          /^(start timer|start again)$/i.test(
+            label
           )
         ) {
           event.preventDefault();
           event.stopImmediatePropagation();
 
-          startCountdown(button);
+          prepareStart(button);
           return;
         }
 
-        if (/pause timer/i.test(text)) {
-          stopPolling();
-          silenceVoice();
+        if (/pause timer/i.test(label)) {
+          stopWatcher();
+          stopSpeech();
 
-        } else if (/resume timer/i.test(text)) {
-          context();
+        } else if (
+          /resume timer/i.test(label)
+        ) {
+          getAudio();
 
-          setTimeout(
-            startPolling,
-            0
-          );
+          setTimeout(watch, 0);
         }
 
         return;
@@ -616,13 +754,9 @@
           '[data-msc-duration]'
         )
       ) {
-        stopCountdown();
-        stopPolling();
+        stopEverything();
 
-        setTimeout(
-          scheduleSetup,
-          0
-        );
+        setTimeout(refresh, 0);
         return;
       }
 
@@ -632,26 +766,26 @@
           '[data-msc-action="learning"]'
         )
       ) {
-        stopCountdown();
-        stopPolling();
-
-        setTimeout(
-          scheduleSetup,
-          0
-        );
+        stopEverything();
+        setTimeout(refresh, 0);
       }
     },
     true
   );
 
+  /* =====================================
+     INITIALISE
+     ===================================== */
+
   function init() {
     installStyle();
 
-    const holder = $("#manaV83Content");
+    const holder =
+      $("#manaV83Content");
 
     if (holder) {
       new MutationObserver(
-        scheduleSetup
+        refresh
       ).observe(holder, {
         childList: true
       });
@@ -659,28 +793,36 @@
 
     window.addEventListener(
       "mana:program-tab-change",
-      scheduleSetup
+      refresh
     );
 
     window.addEventListener(
       "pageshow",
-      scheduleSetup
+      refresh
     );
 
     document.addEventListener(
       "visibilitychange",
       () => {
         if (document.hidden) {
-          if (countdown) stopCountdown();
-          silenceVoice();
+          if (preparation) {
+            cancelPreparation();
+          }
+
+          /* A background browser may
+             suspend audio. Don't queue
+             old spoken numbers. */
+
+          stopSpeech();
         }
       }
     );
 
-    scheduleSetup();
+    refresh();
 
     console.log(
-      "[Mana Strength] Circuit audio 104888"
+      "[Mana Strength] Circuit audio " +
+      BUILD
     );
   }
 
