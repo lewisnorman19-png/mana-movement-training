@@ -1,42 +1,41 @@
 
-/* ======================================================
+/* ==========================================================
    MANA MOVEMENT — CIRCUIT AUDIO
-   BUILD 104889 — MOBILE SYNC FIX
+   BUILD 104890
 
    COMPLETE REPLACEMENT:
    mana_strength_circuit_audio_104888.js
 
-   - Desktop: spoken countdown with queue clearing
-   - Mobile: precise countdown tones
-   - Start countdown: 5, 4, 3, 2, 1, GO
-   - EMOM: minute transition cues
-   - Tabata: work/rest transition cues
-   - Strength: block transition cues
+   RESTORES:
+   - Spoken "Starting in five, four, three, two, one"
+   - Voice countdown on laptop AND phone
+   - Start and transition beeps
+   - EMOM / Tabata / Strength transitions
    - Sound On / Off
-   - Pause and Reset cancel pending audio
-   - Follows existing circuit timer
-   - No database or workout changes
-   ====================================================== */
+
+   IMPROVES:
+   - Shorter spoken numbers
+   - Reduced speech backlog
+   - Mobile audio unlocking
+   - No accumulated timer drift
+   - Pause / Reset cancellation
+
+   Does not modify the workout timer or database.
+   ========================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104889";
-  const FLAG = "MANA_CIRCUIT_AUDIO_104889";
-  const TOGGLE = "manaCircuitAudioToggle104888";
-  const STYLE = "manaCircuitAudioStyle104889";
-  const PREF = "mana:circuits:sound";
-
+  const FLAG = "MANA_CIRCUIT_AUDIO_104890";
   if (window[FLAG]) return;
   window[FLAG] = true;
 
+  const TOGGLE = "manaCircuitAudioToggle104888";
+  const STYLE = "manaCircuitAudioStyle104890";
+  const PREF = "mana:circuits:sound";
+
   const $ = selector =>
     document.querySelector(selector);
-
-  const isMobile =
-    /Android|iPhone|iPad|iPod/i.test(
-      navigator.userAgent || ""
-    );
 
   let enabled = true;
 
@@ -45,81 +44,70 @@
   } catch (_) {}
 
   let audioContext = null;
-
-  let preparation = null;
+  let countdown = null;
   let watcher = null;
   let watchedRoot = null;
 
   let lastElapsed = null;
   let lastCue = "";
-  let allowingNativeStart = false;
-  let setupQueued = false;
+  let nativeStart = false;
+  let refreshQueued = false;
 
-  /* =====================================
-     CURRENT CIRCUIT
-     ===================================== */
+  const mobile =
+    /Android|iPhone|iPad|iPod/i.test(
+      navigator.userAgent || ""
+    );
 
-  function root() {
+  /* ============================================
+     ACTIVE CIRCUIT
+     ============================================ */
+
+  function circuitRoot() {
     const shell = $("#manaV83ProgramShell");
 
     if (!shell?.classList.contains("open")) {
       return null;
     }
 
-    if (
-      !/strength/i.test(
-        $("#manaV83Title")?.textContent || ""
-      )
-    ) {
+    if (!/strength/i.test(
+      $("#manaV83Title")?.textContent || ""
+    )) {
       return null;
     }
 
-    if (
-      !$("#manaV83Tabs " +
-        '[data-v83-tab="learn"].active')
-    ) {
+    if (!$("#manaV83Tabs " +
+      '[data-v83-tab="learn"].active')) {
       return null;
     }
 
     return $("#manaV83Content .msc-root");
   }
 
-  function startButton(element) {
-    return element?.querySelector(
-      '[data-msc-action="start"]'
-    );
-  }
+  function clockSeconds(root) {
+    const text = root?.querySelector(
+      ".msc-clock"
+    )?.textContent?.trim() || "";
 
-  function shownSeconds(element) {
-    const value =
-      element?.querySelector(".msc-clock")
-        ?.textContent || "";
-
-    const match = /^(\d+):(\d{2})$/.exec(
-      value.trim()
-    );
+    const match = /^(\d+):(\d{2})$/.exec(text);
 
     if (!match) return null;
 
-    return (
-      Number(match[1]) * 60 +
-      Number(match[2])
-    );
+    return Number(match[1]) * 60 +
+      Number(match[2]);
   }
 
-  function settings(element) {
-    const type =
-      element?.dataset.type || "emom";
+  function configuration(root) {
+    const type = root.dataset.type || "emom";
 
-    const value = Number(
-      element?.querySelector(
+    const selected = Number(
+      root.querySelector(
         '.msc-setting[aria-pressed="true"]'
       )?.dataset.mscDuration
     );
 
     const duration =
-      Number.isFinite(value) && value > 0
-        ? value
+      Number.isFinite(selected) && selected > 0
+        ? selected
         : type === "tabata" ? 1
         : type === "strength" ? 45
         : 15;
@@ -133,17 +121,11 @@
     };
   }
 
-  /* =====================================
-     AUDIO ENGINE
+  /* ============================================
+     SOUND ENGINE
+     ============================================ */
 
-     Mobile tones use Web Audio rather
-     than queued text-to-speech.
-
-     The audio context is unlocked by
-     pressing the workout Start button.
-     ===================================== */
-
-  function getAudio() {
+  function unlockAudio() {
     if (!enabled) return null;
 
     try {
@@ -167,131 +149,137 @@
     }
   }
 
-  function tone(
-    frequency = 760,
-    duration = 110,
+  function beep(
+    frequency = 780,
+    duration = 130,
     delay = 0
   ) {
-    const audio = getAudio();
-    if (!audio) return;
+    if (!enabled) return;
+
+    const context = unlockAudio();
+    if (!context) return;
 
     try {
-      const at =
-        audio.currentTime + delay;
+      const start = context.currentTime + delay;
 
       const oscillator =
-        audio.createOscillator();
+        context.createOscillator();
 
-      const gain = audio.createGain();
+      const gain = context.createGain();
 
       oscillator.type = "sine";
 
       oscillator.frequency.setValueAtTime(
         frequency,
-        at
+        start
       );
 
       gain.gain.setValueAtTime(
         0.0001,
-        at
+        start
       );
 
       gain.gain.exponentialRampToValueAtTime(
-        0.20,
-        at + 0.012
+        0.17,
+        start + 0.015
       );
 
       gain.gain.exponentialRampToValueAtTime(
         0.0001,
-        at + duration / 1000
+        start + duration / 1000
       );
 
       oscillator.connect(gain);
-      gain.connect(audio.destination);
+      gain.connect(context.destination);
 
-      oscillator.start(at);
+      oscillator.start(start);
       oscillator.stop(
-        at + duration / 1000 + 0.02
+        start + duration / 1000 + 0.02
       );
     } catch (_) {}
   }
 
-  function stopSpeech() {
+  function silence() {
     try {
       window.speechSynthesis?.cancel();
     } catch (_) {}
   }
 
-  function speak(number) {
+  /* Speech remains available on BOTH
+     phones and laptops.
+
+     Mobile uses a quicker voice rate.
+     Clear stale speech so numbers cannot
+     keep playing after a transition. */
+
+  function speak(words) {
     if (!enabled) return;
 
-    /* Mobile speech startup is often
-       delayed. Use accurate tones. */
-
-    if (isMobile) {
-      tone(740, 110);
-      return;
-    }
-
     if (
-      !("speechSynthesis" in window) ||
-      !("SpeechSynthesisUtterance" in window)
+      !window.speechSynthesis ||
+      !window.SpeechSynthesisUtterance
     ) {
-      tone(740, 110);
+      beep(740, 110);
       return;
     }
 
     try {
-      /* Never queue numbers behind
-         previously spoken numbers. */
+      const engine = window.speechSynthesis;
 
-      stopSpeech();
+      /* Clear an old queued phrase.
+         Never let several numbers build
+         up behind the visible timer. */
 
-      const voice =
+      if (engine.pending) {
+        engine.cancel();
+      }
+
+      const utterance =
         new SpeechSynthesisUtterance(
-          String(number)
+          String(words)
         );
 
-      voice.lang = "en-AU";
-      voice.rate = 1.45;
-      voice.pitch = 1;
-      voice.volume = 0.95;
+      utterance.lang = "en-AU";
+      utterance.rate = mobile ? 1.35 : 1.2;
+      utterance.pitch = 1;
+      utterance.volume = 1;
 
-      window.speechSynthesis.speak(voice);
+      engine.speak(utterance);
+
     } catch (_) {
-      tone(740, 110);
+      beep(740, 110);
     }
   }
 
-  function changeSignal() {
+  function transitionBeep() {
     if (!enabled) return;
 
-    stopSpeech();
+    silence();
 
-    tone(920, 140);
-    tone(1250, 200, 0.16);
+    beep(920, 145);
+    beep(1200, 215, 0.17);
   }
 
-  /* =====================================
-     TRANSITION BOUNDARIES
-     ===================================== */
+  /* ============================================
+     WORKOUT TRANSITION TIMES
+     ============================================ */
 
-  function boundaries(config) {
+  function transitions(cfg) {
     const result = [];
 
-    if (config.type === "emom") {
+    if (cfg.type === "emom") {
       for (
         let t = 60;
-        t <= config.total;
+        t <= cfg.total;
         t += 60
       ) {
         result.push(t);
       }
 
-    } else if (config.type === "tabata") {
+    } else if (cfg.type === "tabata") {
       for (
         let t = 0;
-        t < config.total;
+        t < cfg.total;
         t += 30
       ) {
         result.push(t + 20, t + 30);
@@ -302,23 +290,23 @@
         15: [3, 4, 4, 2, 2],
         30: [5, 9, 9, 4, 3],
         45: [5, 15, 15, 5, 5]
-      }[config.duration] ||
+      }[cfg.duration] ||
         [5, 15, 15, 5, 5];
 
-      let position = 0;
+      let elapsed = 0;
 
       for (const minutes of stages) {
-        position += minutes * 60;
-        result.push(position);
+        elapsed += minutes * 60;
+        result.push(elapsed);
       }
     }
 
     return result;
   }
 
-  /* =====================================
-     STOP SOUND TRACKING
-     ===================================== */
+  /* ============================================
+     TRACK THE EXISTING CIRCUIT CLOCK
+     ============================================ */
 
   function stopWatcher() {
     if (watcher !== null) {
@@ -331,52 +319,17 @@
     lastCue = "";
   }
 
-  function cancelPreparation(restore = true) {
-    if (!preparation) return;
+  function checkTransitions() {
+    const root = circuitRoot();
 
-    const current = preparation;
-
-    clearInterval(current.interval);
-    preparation = null;
-
-    stopSpeech();
-
-    if (
-      restore &&
-      current.button?.isConnected
-    ) {
-      current.button.textContent =
-        "Start timer";
-    }
-  }
-
-  function stopEverything() {
-    cancelPreparation();
-    stopWatcher();
-    stopSpeech();
-  }
-
-  /* =====================================
-     REAL-TIME INTERVAL AUDIO
-
-     Read the SAME displayed clock
-     used by the circuit workout.
-
-     Never queue missed countdowns.
-     ===================================== */
-
-  function check() {
-    const element = root();
-
-    if (
-      !element ||
-      element !== watchedRoot
-    ) {
+    if (!root || root !== watchedRoot) {
       stopWatcher();
       return;
     }
 
-    const button = startButton(element);
+    const button = root.querySelector(
+      '[data-msc-action="start"]'
+    );
 
     if (
       !button ||
@@ -388,20 +341,21 @@
       return;
     }
 
-    const shown = shownSeconds(element);
-    if (shown === null) return;
+    const remaining = clockSeconds(root);
+    if (remaining === null) return;
 
-    const config = settings(element);
+    const cfg = configuration(root);
 
     const elapsed = Math.max(
       0,
-      config.total - shown
+      cfg.total - remaining
     );
 
-    const marks = boundaries(config);
+    const marks = transitions(cfg);
 
-    /* Ignore large jumps caused by
-       backgrounded or suspended tabs. */
+    /* Large jumps can occur after a
+       browser tab has been suspended.
+       Do not play missed cues. */
 
     if (
       lastElapsed !== null &&
@@ -412,8 +366,6 @@
       return;
     }
 
-    /* Signal a crossed transition. */
-
     if (lastElapsed !== null) {
       const crossed = marks.find(
         mark =>
@@ -422,32 +374,24 @@
       );
 
       if (crossed !== undefined) {
-        changeSignal();
+        transitionBeep();
         lastCue = "";
       }
     }
-
-    /* Announce the final five seconds
-       until the next transition. */
 
     const next = marks.find(
       mark => mark > elapsed
     );
 
     if (next !== undefined) {
-      const secondsLeft =
-        next - elapsed;
+      const left = next - elapsed;
 
-      if (
-        secondsLeft >= 1 &&
-        secondsLeft <= 5
-      ) {
-        const key =
-          next + ":" + secondsLeft;
+      if (left >= 1 && left <= 5) {
+        const key = `${next}:${left}`;
 
-        if (key !== lastCue) {
+        if (lastCue !== key) {
           lastCue = key;
-          speak(secondsLeft);
+          speak(String(left));
         }
       } else {
         lastCue = "";
@@ -457,140 +401,161 @@
     lastElapsed = elapsed;
   }
 
-  function watch() {
+  function startWatcher() {
     stopWatcher();
 
-    const element = root();
-    if (!element) return;
+    const root = circuitRoot();
+    if (!root) return;
 
-    watchedRoot = element;
+    watchedRoot = root;
 
-    const config = settings(element);
-    const shown = shownSeconds(element);
+    const shown = clockSeconds(root);
 
     if (shown !== null) {
       lastElapsed = Math.max(
         0,
-        config.total - shown
+        configuration(root).total - shown
       );
     }
 
-    watcher = setInterval(check, 90);
-    check();
+    watcher = setInterval(
+      checkTransitions,
+      100
+    );
+
+    checkTransitions();
   }
 
-  /* =====================================
-     FIVE-SECOND START COUNTDOWN
+  /* ============================================
+     FIVE-SECOND SESSION START
+     ============================================ */
 
-     Use performance.now() rather than
-     counting interval callbacks.
+  function cancelCountdown(restore = true) {
+    if (!countdown) return;
 
-     This avoids accumulated timing drift.
-     ===================================== */
+    const state = countdown;
+    countdown = null;
+
+    clearInterval(state.interval);
+    silence();
+
+    if (
+      restore &&
+      state.button?.isConnected
+    ) {
+      state.button.textContent =
+        "Start timer";
+    }
+  }
+
+  function stopAll() {
+    cancelCountdown();
+    stopWatcher();
+    silence();
+  }
 
   function prepareStart(button) {
-    stopEverything();
-    getAudio();
+    stopAll();
 
-    const element = root();
-    if (!element) return;
+    /* User interaction unlocks mobile
+       audio and the speech synthesiser. */
 
-    const endsAt =
+    unlockAudio();
+
+    const root = circuitRoot();
+    if (!root) return;
+
+    const end =
       performance.now() + 5000;
 
     const state = {
-      element,
+      root,
       button,
-      endsAt,
-      lastNumber: null,
+      end,
+      last: null,
       interval: null
     };
 
-    preparation = state;
+    countdown = state;
 
     function update() {
-      if (preparation !== state) return;
+      if (countdown !== state) return;
 
       if (
-        root() !== element ||
-        !element.contains(button)
+        circuitRoot() !== root ||
+        !root.contains(button)
       ) {
-        cancelPreparation();
+        cancelCountdown();
         return;
       }
 
       const left = Math.max(
         0,
         Math.ceil(
-          (endsAt - performance.now()) /
-          1000
+          (end - performance.now()) / 1000
         )
       );
 
       if (left === 0) {
-        cancelPreparation(false);
+        cancelCountdown(false);
+        transitionBeep();
 
-        changeSignal();
-
-        /* Activate the EXISTING
-           workout timer unchanged. */
-
-        allowingNativeStart = true;
+        nativeStart = true;
 
         try {
           button.click();
         } finally {
-          allowingNativeStart = false;
+          nativeStart = false;
         }
 
-        watch();
+        startWatcher();
         return;
       }
 
       button.textContent =
-        "Starting in " +
-        left +
-        " · Cancel";
+        `Starting in ${left} · Cancel`;
 
-      if (state.lastNumber !== left) {
-        state.lastNumber = left;
-        speak(left);
+      if (state.last !== left) {
+        state.last = left;
+
+        /* Restore spoken introduction
+           on both laptop and phone. */
+
+        speak(
+          left === 5
+            ? "Starting in five"
+            : String(left)
+        );
       }
     }
 
     state.interval = setInterval(
       update,
-      50
+      80
     );
 
     update();
   }
 
-  /* =====================================
-     SOUND CONTROL
-     ===================================== */
+  /* ============================================
+     SOUND TOGGLE
+     ============================================ */
 
   function ensureToggle() {
-    const element = root();
-    if (!element) return;
+    const root = circuitRoot();
+    if (!root) return;
 
     const actions =
-      element.querySelector(
-        ".msc-actions"
-      );
+      root.querySelector(".msc-actions");
 
     if (!actions) return;
 
-    let button =
-      actions.querySelector(
-        "#" + TOGGLE
-      );
+    let button = actions.querySelector(
+      "#" + TOGGLE
+    );
 
     if (!button) {
-      button = document.createElement(
-        "button"
-      );
-
+      button = document.createElement("button");
       button.id = TOGGLE;
       button.type = "button";
       button.className = "msc-btn alt";
@@ -608,22 +573,20 @@
   }
 
   function refresh() {
-    if (setupQueued) return;
-
-    setupQueued = true;
+    if (refreshQueued) return;
+    refreshQueued = true;
 
     requestAnimationFrame(() => {
-      setupQueued = false;
-
+      refreshQueued = false;
       ensureToggle();
 
-      if (!root()) {
-        stopEverything();
+      if (!circuitRoot()) {
+        stopAll();
       }
     });
   }
 
-  function installStyle() {
+  function installStyles() {
     if (document.getElementById(STYLE)) {
       return;
     }
@@ -636,7 +599,6 @@
     style.textContent = `
       #manaV83Content #${TOGGLE} {
         min-width: 96px;
-
         background: #121417 !important;
         border: 1px solid #FF7927 !important;
         color: #FFFFFF !important;
@@ -651,15 +613,12 @@
     document.head.appendChild(style);
   }
 
-  /* =====================================
-     BUTTON INTERCEPTION
+  /* ============================================
+     HANDLE TIMER BUTTONS
 
-     Capture clicks before the original
-     timer's delegated handler.
-
-     Resume is immediate; only a fresh
-     session gets the five-second start.
-     ===================================== */
+     Capture before the existing circuit
+     renderer starts its own timer.
+     ============================================ */
 
   document.addEventListener(
     "click",
@@ -670,14 +629,12 @@
         return;
       }
 
-      const button =
-        target.closest("button");
-
+      const button = target.closest("button");
       if (!button) return;
 
       if (
         button.id === TOGGLE &&
-        root()
+        circuitRoot()
       ) {
         enabled = !enabled;
 
@@ -689,9 +646,9 @@
         } catch (_) {}
 
         if (enabled) {
-          getAudio();
+          unlockAudio();
         } else {
-          stopSpeech();
+          silence();
         }
 
         ensureToggle();
@@ -702,27 +659,27 @@
         button.matches(
           '[data-msc-action="start"]'
         ) &&
-        root()
+        circuitRoot()
       ) {
-        if (allowingNativeStart) return;
+        if (nativeStart) return;
 
-        const label =
+        const text =
           (button.textContent || "").trim();
 
         if (
-          preparation &&
-          preparation.button === button
+          countdown &&
+          countdown.button === button
         ) {
           event.preventDefault();
           event.stopImmediatePropagation();
 
-          cancelPreparation();
+          cancelCountdown();
           return;
         }
 
         if (
           /^(start timer|start again)$/i.test(
-            label
+            text
           )
         ) {
           event.preventDefault();
@@ -732,16 +689,17 @@
           return;
         }
 
-        if (/pause timer/i.test(label)) {
+        if (/pause timer/i.test(text)) {
           stopWatcher();
-          stopSpeech();
+          silence();
 
-        } else if (
-          /resume timer/i.test(label)
-        ) {
-          getAudio();
+        } else if (/resume timer/i.test(text)) {
+          unlockAudio();
 
-          setTimeout(watch, 0);
+          setTimeout(
+            startWatcher,
+            0
+          );
         }
 
         return;
@@ -754,8 +712,7 @@
           '[data-msc-duration]'
         )
       ) {
-        stopEverything();
-
+        stopAll();
         setTimeout(refresh, 0);
         return;
       }
@@ -766,19 +723,19 @@
           '[data-msc-action="learning"]'
         )
       ) {
-        stopEverything();
+        stopAll();
         setTimeout(refresh, 0);
       }
     },
     true
   );
 
-  /* =====================================
+  /* ============================================
      INITIALISE
-     ===================================== */
+     ============================================ */
 
   function init() {
-    installStyle();
+    installStyles();
 
     const holder =
       $("#manaV83Content");
@@ -805,15 +762,11 @@
       "visibilitychange",
       () => {
         if (document.hidden) {
-          if (preparation) {
-            cancelPreparation();
+          if (countdown) {
+            cancelCountdown();
           }
 
-          /* A background browser may
-             suspend audio. Don't queue
-             old spoken numbers. */
-
-          stopSpeech();
+          silence();
         }
       }
     );
@@ -821,8 +774,7 @@
     refresh();
 
     console.log(
-      "[Mana Strength] Circuit audio " +
-      BUILD
+      "[Mana Strength] Circuit audio 104890"
     );
   }
 
@@ -835,4 +787,5 @@
   } else {
     init();
   }
+
 })();
