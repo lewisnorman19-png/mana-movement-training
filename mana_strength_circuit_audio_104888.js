@@ -1,23 +1,26 @@
 
 /* ====================================================
    MANA MOVEMENT — CIRCUITS AUDIO
-   BUILD 104892 — IPHONE AUDIO RECOVERY
+   BUILD 104893 — IPHONE COUNTDOWN PACE
 
-   Complete replacement:
+   COMPLETE REPLACEMENT:
    mana_strength_circuit_audio_104888.js
 
-   Preserves original workout timer and navigation.
-   iPhone: one spoken start countdown from user tap.
-   Desktop: individual spoken countdown numbers.
-   Transition cues: Web Audio with speech fallback.
+   - Slower iPhone spoken countdown
+   - Desktop countdown retained
+   - EMOM, Tabata and Strength cues
+   - Sound On / Off
+   - Pause / Reset cancellation
+   - Existing workout timer unchanged
    ==================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104892";
-  if (window.MANA_CIRCUIT_AUDIO_104892) return;
-  window.MANA_CIRCUIT_AUDIO_104892 = true;
+  const BUILD = "104893";
+
+  if (window.MANA_CIRCUIT_AUDIO_104893) return;
+  window.MANA_CIRCUIT_AUDIO_104893 = true;
 
   const TOGGLE = "manaCircuitAudioToggle104888";
   const PREF = "mana:circuits:sound";
@@ -27,6 +30,7 @@
     /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   let sound = true;
+
   try {
     sound = localStorage.getItem(PREF) !== "off";
   } catch (_) {}
@@ -40,21 +44,31 @@
   let priorCue = "";
   let nativeClick = false;
   let setupQueued = false;
-  let voiceToken = 0;
 
   const activeOscillators = new Set();
 
+  /* ====================================
+     CIRCUIT DETECTION
+     ==================================== */
+
   function root() {
     const shell = $("#manaV83ProgramShell");
-    if (!shell?.classList.contains("open")) return null;
+
+    if (!shell?.classList.contains("open")) {
+      return null;
+    }
 
     if (!/strength/i.test(
       $("#manaV83Title")?.textContent || ""
-    )) return null;
+    )) {
+      return null;
+    }
 
     if (!$("#manaV83Tabs " +
       '[data-v83-tab="learn"].active'
-    )) return null;
+    )) {
+      return null;
+    }
 
     return $("#manaV83Content .msc-root");
   }
@@ -77,7 +91,8 @@
       type,
       duration,
       total: type === "tabata"
-        ? duration * 240 : duration * 60
+        ? duration * 240
+        : duration * 60
     };
   }
 
@@ -96,9 +111,6 @@
 
   /* ====================================
      AUDIO CONTEXT
-
-     Unlike previous builds, don't treat
-     a suspended context as ready.
      ==================================== */
 
   function unlock() {
@@ -139,7 +151,9 @@
 
   function tone(hz = 850, ms = 160, delay = 0) {
     if (!sound || !ctx ||
-        ctx.state !== "running") return false;
+        ctx.state !== "running") {
+      return false;
+    }
 
     try {
       const at = ctx.currentTime + delay;
@@ -162,8 +176,10 @@
       gain.connect(ctx.destination);
 
       activeOscillators.add(osc);
+
       osc.onended = () => {
         activeOscillators.delete(osc);
+
         try {
           osc.disconnect();
           gain.disconnect();
@@ -172,6 +188,7 @@
 
       osc.start(at);
       osc.stop(at + ms / 1000 + 0.02);
+
       return true;
 
     } catch (_) {
@@ -181,13 +198,19 @@
 
   function stopTones() {
     for (const osc of activeOscillators) {
-      try { osc.stop(); } catch (_) {}
+      try {
+        osc.stop();
+      } catch (_) {}
     }
+
     activeOscillators.clear();
   }
 
+  /* ====================================
+     SPEECH
+     ==================================== */
+
   function stopVoice() {
-    voiceToken++;
     try {
       window.speechSynthesis?.cancel();
     } catch (_) {}
@@ -225,20 +248,32 @@
       tone(950, 150);
       tone(1250, 210, 0.17);
     } else {
-      speak("Go", 1.4);
+      speak("Go", 1.0);
     }
   }
+
+  /* ====================================
+     INTERVAL BOUNDARIES
+     ==================================== */
 
   function marks(cfg) {
     const result = [];
 
     if (cfg.type === "emom") {
-      for (let t = 60; t <= cfg.total; t += 60) {
+      for (
+        let t = 60;
+        t <= cfg.total;
+        t += 60
+      ) {
         result.push(t);
       }
 
     } else if (cfg.type === "tabata") {
-      for (let t = 0; t < cfg.total; t += 30) {
+      for (
+        let t = 0;
+        t < cfg.total;
+        t += 30
+      ) {
         result.push(t + 20, t + 30);
       }
 
@@ -247,9 +282,11 @@
         15: [3, 4, 4, 2, 2],
         30: [5, 9, 9, 4, 3],
         45: [5, 15, 15, 5, 5]
-      }[cfg.duration] || [5, 15, 15, 5, 5];
+      }[cfg.duration] ||
+        [5, 15, 15, 5, 5];
 
       let t = 0;
+
       for (const minutes of stages) {
         t += minutes * 60;
         result.push(t);
@@ -259,8 +296,15 @@
     return result;
   }
 
+  /* ====================================
+     TIMER AUDIO TRACKING
+     ==================================== */
+
   function stopWatch() {
-    if (watcher !== null) clearInterval(watcher);
+    if (watcher !== null) {
+      clearInterval(watcher);
+    }
+
     watcher = null;
     watchRoot = null;
     priorElapsed = null;
@@ -293,8 +337,13 @@
     const elapsed = cfg.total - seconds;
     const points = marks(cfg);
 
-    if (priorElapsed !== null &&
-        elapsed - priorElapsed > 2) {
+    /* Skip missed cues if Safari
+       resumes after suspension. */
+
+    if (
+      priorElapsed !== null &&
+      elapsed - priorElapsed > 2
+    ) {
       priorElapsed = elapsed;
       priorCue = "";
       return;
@@ -307,12 +356,15 @@
 
       if (transition !== undefined) {
         if (!iphone) stopVoice();
+
         signal();
         priorCue = "";
       }
     }
 
-    const next = points.find(t => t > elapsed);
+    const next = points.find(
+      t => t > elapsed
+    );
 
     if (next !== undefined) {
       const left = next - elapsed;
@@ -324,16 +376,19 @@
           priorCue = key;
 
           if (iphone) {
-            /* One announcement per transition,
-               not five queued utterances. */
+            /* One spoken countdown on iPhone
+               to avoid queued individual
+               numbers catching up later. */
+
             if (left === 5) {
               if (!speak(
                 "Five, four, three, two, one",
-                1.4
+                0.85
               )) {
                 tone(750, 120);
               }
             }
+
           } else {
             speak(String(left), 1.55);
           }
@@ -356,13 +411,19 @@
     watchRoot = el;
 
     const shown = remaining(el);
+
     if (shown !== null) {
-      priorElapsed = config(el).total - shown;
+      priorElapsed =
+        config(el).total - shown;
     }
 
     watcher = setInterval(check, 100);
     check();
   }
+
+  /* ====================================
+     START COUNTDOWN
+     ==================================== */
 
   function cancelStart(restore = true) {
     if (!countdown) return;
@@ -373,8 +434,12 @@
     clearInterval(state.interval);
     stopVoice();
 
-    if (restore && state.button.isConnected) {
-      state.button.textContent = "Start timer";
+    if (
+      restore &&
+      state.button.isConnected
+    ) {
+      state.button.textContent =
+        "Start timer";
     }
   }
 
@@ -385,13 +450,6 @@
     stopTones();
   }
 
-  /* ====================================
-     START COUNTDOWN
-
-     iPhone requests speech immediately
-     within the actual user click.
-     ==================================== */
-
   function prepare(button) {
     stopAll();
 
@@ -400,15 +458,15 @@
 
     const end = performance.now() + 5000;
 
-    /* Both are requested directly in
-       the Start button's user gesture. */
+    /* Unlock iPhone audio and request
+       speech directly from the Start tap. */
 
     unlock();
 
     if (iphone && sound) {
       speak(
         "Starting in five, four, three, two, one",
-        1.35
+        0.85
       );
     }
 
@@ -425,7 +483,10 @@
     function update() {
       if (countdown !== state) return;
 
-      if (root() !== el || !el.contains(button)) {
+      if (
+        root() !== el ||
+        !el.contains(button)
+      ) {
         cancelStart();
         return;
       }
@@ -438,12 +499,11 @@
       );
 
       if (left === 0) {
-        /* Don't cancel the completed iPhone
-           utterance during the transition. */
         clearInterval(state.interval);
         countdown = null;
 
         if (!iphone) stopVoice();
+
         signal();
 
         nativeClick = true;
@@ -475,47 +535,70 @@
       }
     }
 
-    state.interval = setInterval(update, 75);
+    state.interval = setInterval(
+      update,
+      75
+    );
+
     update();
   }
 
+  /* ====================================
+     SOUND TOGGLE
+     ==================================== */
+
   function toggle() {
     const el = root();
-    const actions = el?.querySelector(".msc-actions");
+
+    const actions =
+      el?.querySelector(".msc-actions");
+
     if (!actions) return;
 
-    let button = actions.querySelector("#" + TOGGLE);
+    let button =
+      actions.querySelector("#" + TOGGLE);
 
     if (!button) {
-      button = document.createElement("button");
+      button =
+        document.createElement("button");
+
       button.id = TOGGLE;
       button.type = "button";
       button.className = "msc-btn alt";
+
       actions.appendChild(button);
     }
 
-    button.textContent = sound
-      ? "Sound On" : "Sound Off";
+    button.textContent =
+      sound ? "Sound On" : "Sound Off";
 
     button.setAttribute(
-      "aria-pressed", String(sound)
+      "aria-pressed",
+      String(sound)
     );
   }
 
   function refresh() {
     if (setupQueued) return;
+
     setupQueued = true;
 
     requestAnimationFrame(() => {
       setupQueued = false;
+
       toggle();
 
       if (!root()) stopAll();
     });
   }
 
+  /* ====================================
+     INITIALISE
+     ==================================== */
+
   function init() {
-    const style = document.createElement("style");
+    const style =
+      document.createElement("style");
 
     style.textContent = `
       #manaV83Content #${TOGGLE} {
@@ -534,102 +617,138 @@
     document.head.appendChild(style);
 
     const holder = $("#manaV83Content");
+
     if (holder) {
-      new MutationObserver(refresh).observe(holder, {
-        childList: true
-      });
+      new MutationObserver(refresh).observe(
+        holder,
+        { childList: true }
+      );
     }
 
-    document.addEventListener("click", event => {
-      const target = event.target;
-      if (!(target instanceof Element)) return;
+    document.addEventListener(
+      "click",
+      event => {
+        const target = event.target;
 
-      const button = target.closest("button");
-      if (!button) return;
-
-      if (button.id === TOGGLE && root()) {
-        sound = !sound;
-
-        try {
-          localStorage.setItem(
-            PREF, sound ? "on" : "off"
-          );
-        } catch (_) {}
-
-        if (sound) {
-          unlock();
-        } else {
-          stopVoice();
-          stopTones();
-        }
-
-        toggle();
-        return;
-      }
-
-      if (button.matches(
-        '[data-msc-action="start"]'
-      ) && root()) {
-        if (nativeClick) return;
-
-        const label = (
-          button.textContent || ""
-        ).trim();
-
-        if (countdown &&
-            countdown.button === button) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          cancelStart();
+        if (!(target instanceof Element)) {
           return;
         }
 
-        if (/^(start timer|start again)$/i.test(
-          label
-        )) {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          prepare(button);
+        const button =
+          target.closest("button");
+
+        if (!button) return;
+
+        if (
+          button.id === TOGGLE &&
+          root()
+        ) {
+          sound = !sound;
+
+          try {
+            localStorage.setItem(
+              PREF,
+              sound ? "on" : "off"
+            );
+          } catch (_) {}
+
+          if (sound) {
+            unlock();
+          } else {
+            stopVoice();
+            stopTones();
+          }
+
+          toggle();
           return;
         }
 
-        if (/pause timer/i.test(label)) {
-          stopWatch();
-          stopVoice();
-          stopTones();
+        if (
+          button.matches(
+            '[data-msc-action="start"]'
+          ) &&
+          root()
+        ) {
+          if (nativeClick) return;
 
-        } else if (/resume timer/i.test(label)) {
-          unlock();
-          setTimeout(startWatch, 0);
+          const label = (
+            button.textContent || ""
+          ).trim();
+
+          if (
+            countdown &&
+            countdown.button === button
+          ) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            cancelStart();
+            return;
+          }
+
+          if (
+            /^(start timer|start again)$/i.test(
+              label
+            )
+          ) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+
+            prepare(button);
+            return;
+          }
+
+          if (/pause timer/i.test(label)) {
+            stopWatch();
+            stopVoice();
+            stopTones();
+
+          } else if (
+            /resume timer/i.test(label)
+          ) {
+            unlock();
+
+            setTimeout(startWatch, 0);
+          }
+
+          return;
         }
 
-        return;
-      }
+        if (
+          button.matches(
+            '[data-msc-action="reset"],' +
+            '[data-msc-type],' +
+            '[data-msc-duration]'
+          )
+        ) {
+          stopAll();
 
-      if (button.matches(
-        '[data-msc-action="reset"],' +
-        '[data-msc-type],' +
-        '[data-msc-duration]'
-      )) {
-        stopAll();
-        setTimeout(refresh, 0);
-        return;
-      }
+          setTimeout(refresh, 0);
+          return;
+        }
 
-      if (button.closest("#manaV83Tabs") ||
+        if (
+          button.closest("#manaV83Tabs") ||
           button.matches(
             '[data-msc-action="learning"]'
-          )) {
-        stopAll();
-        setTimeout(refresh, 0);
-      }
-    }, true);
-
-    window.addEventListener(
-      "mana:program-tab-change", refresh
+          )
+        ) {
+          stopAll();
+          setTimeout(refresh, 0);
+        }
+      },
+      true
     );
 
-    window.addEventListener("pageshow", refresh);
+    window.addEventListener(
+      "mana:program-tab-change",
+      refresh
+    );
+
+    window.addEventListener(
+      "pageshow",
+      refresh
+    );
 
     document.addEventListener(
       "visibilitychange",
@@ -650,9 +769,12 @@
 
   if (document.readyState === "loading") {
     document.addEventListener(
-      "DOMContentLoaded", init, { once: true }
+      "DOMContentLoaded",
+      init,
+      { once: true }
     );
   } else {
     init();
   }
+
 })();
