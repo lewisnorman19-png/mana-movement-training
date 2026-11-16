@@ -1,60 +1,90 @@
 
-/* ==========================================================
+/* =========================================================
    MANA MOVEMENT TRAINING
-   COACH / CLIENT SWITCH — STABLE NAVIGATION
-   BUILD 104871
+   COACH ↔ CLIENT WORKSPACE SWITCH
+   BUILD 104872 — COACH NAVIGATION RESTORE
 
-   COMPLETE REPLACEMENT FILE:
+   COMPLETE REPLACEMENT:
    mana_coach_client_switch_104870.js
 
-   PURPOSE:
-   - Persistent workspace switch for authorised coaches
-   - Available throughout Coach Hub and Client App
-   - Hide Coach Hub navigation in Client App
-   - Hide legacy Client navigation in Coach Hub
-   - Preserve existing app screens and functions
-   - No extra login required
-   - Never grant coach access using localStorage
-   - No database changes
-   - No continuous polling or subtree observers
-   ========================================================== */
+   FIXES:
+   - Coach bottom tabs reappear after switching back
+   - Correct Coach / Client navigation separation
+   - Switch remains visible on every program screen
+   - No sign-out or second login
+
+   PRESERVES:
+   - Supabase coach authorisation
+   - Existing Coach Hub navigation and click handlers
+   - Client app navigation
+   - Current workouts, Circuits and Progress
+   - Mobile layout
+
+   No database changes.
+   ========================================================= */
 
 (() => {
   "use strict";
 
-  const BUILD = "104871";
+  const BUILD = "104872";
+  const FLAG = "MANA_WORKSPACE_SWITCH_104872";
 
-  const BUTTON_ID = "manaWorkspaceSwitch104870";
-  const STYLE_ID = "manaWorkspaceSwitchStyle104871";
+  if (window[FLAG]) return;
+  window[FLAG] = true;
 
-  const PREFERENCE_PREFIX = "mana:workspace:";
+  const BUTTON = "manaWorkspaceSwitch104870";
+  const STYLE = "manaWorkspaceSwitchStyle104872";
 
-  const CLASS_COACH = "mana-workspace-coach";
-  const CLASS_CLIENT = "mana-workspace-client";
+  const COACH = "mana-workspace-coach";
+  const CLIENT = "mana-workspace-client";
 
-  if (window.MANA_WORKSPACE_SWITCH_104871) return;
-
-  window.MANA_WORKSPACE_SWITCH_104871 = true;
+  const PREFERENCE = "mana:workspace:";
 
   const $ = id => document.getElementById(id);
 
   let authorisedUser = null;
   let authorisedProfile = null;
-
   let busy = false;
-  let refreshScheduled = false;
+  let scheduled = false;
 
-  /* ======================================================
+  /* ============================================
      WORKSPACE DETECTION
+     ============================================ */
 
-     The original app already maintains a mode variable.
-     Read it first so that switching views cannot confuse
-     the navigation.
+  function visible(id) {
+    const element = $(id);
 
-     Fallback to visible screens when necessary.
-     ====================================================== */
+    return Boolean(
+      element &&
+      !element.hidden &&
+      !element.classList.contains("hide")
+    );
+  }
 
-  function modeValue() {
+  function coachVisible() {
+    return (
+      visible("coachView") ||
+      visible("coachClientDetailView")
+    );
+  }
+
+  function clientVisible() {
+    return (
+      visible("clientView") ||
+      visible("clientProgramsView") ||
+      visible("clientFuelView") ||
+      visible("clientProgressView") ||
+      visible("clientProfileView") ||
+      $("manaV83ProgramShell")
+        ?.classList.contains("open") ||
+      $("manaProfileScreen")
+        ?.classList.contains("open") ||
+      $("manaV80Home")
+        ?.classList.contains("open")
+    );
+  }
+
+  function workspace() {
     try {
       if (
         typeof mode !== "undefined" &&
@@ -64,73 +94,18 @@
       }
     } catch (_) {}
 
-    return null;
-  }
-
-  function visible(id) {
-    const el = $(id);
-
-    if (!el || el.hidden) return false;
-
-    if (el.classList.contains("hide")) {
-      return false;
-    }
-
-    return true;
-  }
-
-  function overlayOpen(id) {
-    return Boolean(
-      $(id)?.classList.contains("open")
-    );
-  }
-
-  function coachScreenOpen() {
-    return (
-      visible("coachView") ||
-      visible("coachClientDetailView")
-    );
-  }
-
-  function clientScreenOpen() {
-    return (
-      visible("clientView") ||
-      visible("clientProgramsView") ||
-      visible("clientFuelView") ||
-      visible("clientProgressView") ||
-      visible("clientProfileView") ||
-      overlayOpen("manaV83ProgramShell") ||
-      overlayOpen("manaProfileScreen") ||
-      overlayOpen("manaV80Home")
-    );
-  }
-
-  function workspace() {
-    const currentMode = modeValue();
-
-    if (currentMode) return currentMode;
-
-    if (coachScreenOpen()) return "coach";
-
-    if (clientScreenOpen()) return "client";
+    if (coachVisible()) return "coach";
+    if (clientVisible()) return "client";
 
     return null;
   }
 
-  function signedInScreen() {
-    return (
-      !visible("authView") &&
-      workspace() !== null
-    );
-  }
+  /* ============================================
+     COACH AUTHORISATION
 
-  /* ======================================================
-     AUTHENTICATED COACH AUTHORISATION
-
-     Verify the actual Supabase account and profile.
-     Never determine coach access from the button,
-     saved workspace, URL or email address.
-     ====================================================== */
+     A saved preference never grants
+     permission to use Coach Hub.
+     ============================================ */
 
   async function verifyCoach() {
     try {
@@ -140,109 +115,114 @@
         return false;
       }
 
-      const supa = await window.supabaseClient();
+      const db = await window.supabaseClient();
 
-      const response = await supa.auth.getUser();
+      const { data, error } =
+        await db.auth.getUser();
 
-      const user = response?.data?.user;
-
-      if (!user?.id) {
+      if (error || !data?.user?.id) {
         authorisedUser = null;
         authorisedProfile = null;
         return false;
       }
 
       if (
-        authorisedUser?.id === user.id &&
+        authorisedUser?.id === data.user.id &&
         authorisedProfile?.role === "coach"
       ) {
         return true;
       }
 
-      const result = await supa
+      const profile = await db
         .from("profiles")
         .select(
           "id,full_name,role,program_start_date"
         )
-        .eq("id", user.id)
+        .eq("id", data.user.id)
         .single();
 
-      if (result.error) {
-        throw result.error;
-      }
-
       if (
-        result.data?.id !== user.id ||
-        result.data?.role !== "coach"
+        profile.error ||
+        profile.data?.id !== data.user.id ||
+        profile.data?.role !== "coach"
       ) {
         authorisedUser = null;
         authorisedProfile = null;
         return false;
       }
 
-      authorisedUser = user;
-      authorisedProfile = result.data;
+      authorisedUser = data.user;
+      authorisedProfile = profile.data;
 
       return true;
 
     } catch (error) {
       console.warn(
-        "[Mana] Coach workspace verification:",
+        "[Mana] Coach verification:",
         error
       );
 
       authorisedUser = null;
       authorisedProfile = null;
-
       return false;
     }
   }
 
-  /* ======================================================
-     CSS
-
-     Crucial fix:
-     The Coach Hub navigation must never appear
-     while the client workspace is active.
-
-     The switch itself stays fixed above both apps.
-     ====================================================== */
+  /* ============================================
+     PREMIUM STYLING
+     ============================================ */
 
   function installStyles() {
-    if ($(STYLE_ID)) return;
+    if ($(STYLE)) return;
 
-    const style = document.createElement("style");
+    const style = document.createElement(
+      "style"
+    );
 
-    style.id = STYLE_ID;
+    style.id = STYLE;
 
     style.textContent = `
 
-      /* =========================================
-         COACH NAVIGATION MUST NOT FOLLOW CLIENT
-         ========================================= */
+      /* Client workspace:
+         hide Coach Hub navigation. */
 
-      body.${CLASS_CLIENT} #manaV97CoachNav,
-      body.${CLASS_CLIENT} #manaV97CoachLogout {
+      body.${CLIENT} #manaV97CoachNav,
+      body.${CLIENT} #manaV97CoachLogout {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
       }
 
-      /* =========================================
-         COACH HUB HAS ITS OWN NAVIGATION
-         ========================================= */
+      /* Coach workspace:
+         hide the legacy Client nav. */
 
-      body.${CLASS_COACH} #bottomNav {
+      body.${COACH} #bottomNav {
         display: none !important;
         visibility: hidden !important;
         pointer-events: none !important;
       }
 
-      /* =========================================
-         PERSISTENT WORKSPACE SWITCH
-         ========================================= */
+      /* Restore the actual Coach Hub
+         five-tab navigation when open. */
 
-      #${BUTTON_ID} {
+      body.${COACH}
+      #manaV97CoachNav.open {
+        display: block !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+      }
+
+      body.${COACH}
+      #manaV97CoachNav.open
+      .mana-v970-nav-inner {
+        display: grid !important;
+        grid-template-columns:
+          repeat(5,minmax(0,1fr)) !important;
+      }
+
+      /* Persistent workspace switch */
+
+      #${BUTTON} {
         position: fixed !important;
 
         top: 176px !important;
@@ -257,8 +237,8 @@
 
         width: auto !important;
         max-width: calc(100vw - 32px) !important;
-
         min-height: 40px !important;
+
         padding: 9px 13px !important;
 
         background: #101216 !important;
@@ -269,56 +249,39 @@
 
         color: #FFFFFF !important;
 
-        font-family: inherit !important;
-        font-size: 12px !important;
-        font-weight: 900 !important;
-        line-height: 1.2 !important;
-
+        font: 900 12px/1.2 inherit !important;
         cursor: pointer !important;
-        box-shadow: none !important;
 
+        box-shadow: none !important;
         white-space: nowrap !important;
       }
 
-      #${BUTTON_ID}[hidden] {
+      #${BUTTON}[hidden] {
         display: none !important;
       }
 
-      #${BUTTON_ID} .mana-switch-icon {
+      #${BUTTON} .mana-switch-icon {
         color: #FF7927 !important;
         font-size: 17px !important;
         font-weight: 900 !important;
-        line-height: 1 !important;
       }
 
-      #${BUTTON_ID} .mana-switch-label {
+      #${BUTTON} .mana-switch-label {
         color: #FFFFFF !important;
       }
 
-      #${BUTTON_ID}:hover {
-        border-color: #FFFFFF !important;
-        background: #202329 !important;
-      }
-
-      #${BUTTON_ID}:focus-visible {
+      #${BUTTON}:focus-visible {
         outline: 2px solid #FF7927 !important;
         outline-offset: 3px !important;
       }
 
-      #${BUTTON_ID}:disabled {
+      #${BUTTON}:disabled {
         opacity: .6 !important;
         cursor: wait !important;
       }
 
-      /* =========================================
-         PHONE LAYOUT
-
-         Switch stays accessible throughout
-         all client program screens.
-         ========================================= */
-
       @media(max-width:700px) {
-        #${BUTTON_ID} {
+        #${BUTTON} {
           top: 145px !important;
           right: 10px !important;
 
@@ -330,41 +293,27 @@
         }
       }
 
-      /* No login workspace selector */
-
       #manaLoginRoles103880,
       #manaLoginRoleNote103880 {
         display: none !important;
       }
-
     `;
 
     document.head.appendChild(style);
   }
 
-  /* ======================================================
+  /* ============================================
      SWITCH BUTTON
-
-     Create once and retain the original element
-     through all client and coach screen changes.
-     ====================================================== */
+     ============================================ */
 
   function ensureButton() {
-    let button = $(BUTTON_ID);
-
+    let button = $(BUTTON);
     if (button) return button;
 
     button = document.createElement("button");
-
-    button.id = BUTTON_ID;
+    button.id = BUTTON;
     button.type = "button";
-
     button.hidden = true;
-
-    button.setAttribute(
-      "aria-label",
-      "Switch between Client App and Coach Hub"
-    );
 
     const icon = document.createElement("span");
     icon.className = "mana-switch-icon";
@@ -373,7 +322,7 @@
 
     const label = document.createElement("span");
     label.className = "mana-switch-label";
-    label.textContent = "Switch workspace";
+    label.textContent = "Coach Hub";
 
     button.append(icon, label);
 
@@ -383,127 +332,121 @@
     );
 
     document.body.appendChild(button);
-
     return button;
   }
 
-  /* ======================================================
-     NAVIGATION SEPARATION
+  /* ============================================
+     COACH NAVIGATION RESTORATION
 
-     Only change the visibility of the
-     TWO DIFFERENT navigation systems.
+     Only restore while the real coach
+     screen is visible.
 
-     Do not rebuild either navigation bar.
-     Do not change active tabs.
-     ====================================================== */
+     Never rebuild or duplicate tabs.
+     ============================================ */
 
-  function synchroniseNavigation() {
+  function restoreCoachNav() {
+    if (
+      workspace() !== "coach" ||
+      !coachVisible()
+    ) {
+      return;
+    }
+
+    const nav = $("manaV97CoachNav");
+
+    if (!nav) return;
+
+    document.body.classList.add(
+      "mana-v970-coach-active"
+    );
+
+    nav.classList.add("open");
+
+    /* Keep the existing Coach Hub
+       five-tab structure and handlers. */
+  }
+
+  function syncNavigation() {
     const current = workspace();
 
     document.body.classList.toggle(
-      CLASS_COACH,
+      COACH,
       current === "coach"
     );
 
     document.body.classList.toggle(
-      CLASS_CLIENT,
+      CLIENT,
       current === "client"
     );
 
-    if (current === "client") {
+    if (current === "coach") {
+      restoreCoachNav();
+
+    } else if (current === "client") {
+      document.body.classList.remove(
+        "mana-v970-coach-active"
+      );
+
       $("manaV97CoachNav")
         ?.classList.remove("open");
     }
-
-    /* CSS handles the actual visibility.
-       Existing app scripts retain control
-       of the correct navigation system. */
   }
-
-  /* ======================================================
-     DISPLAY BUTTON
-
-     Do not rely on clientView being visible.
-     That view is hidden when the client opens
-     workouts, Fuel, Progress and other screens.
-     ====================================================== */
 
   function updateButton() {
     const button = ensureButton();
 
-    synchroniseNavigation();
+    syncNavigation();
 
     const current = workspace();
 
-    const allowed =
-      authorisedProfile?.role === "coach";
-
     button.hidden = !(
-      allowed &&
-      signedInScreen() &&
-      current !== null
+      authorisedProfile?.role === "coach" &&
+      current !== null &&
+      !visible("authView")
     );
 
     if (button.hidden) return;
 
-    const label = button.querySelector(
-      ".mana-switch-label"
-    );
-
-    const goingTo =
+    const destination =
       current === "coach"
         ? "Client App"
         : "Coach Hub";
 
-    if (label) {
-      label.textContent = goingTo;
-    }
+    button.querySelector(
+      ".mana-switch-label"
+    ).textContent = destination;
 
-    button.title = "Switch to " + goingTo;
+    button.title = "Switch to " + destination;
 
     button.setAttribute(
       "aria-label",
-      "Switch to " + goingTo
+      "Switch to " + destination
     );
   }
 
   function scheduleRefresh() {
-    if (refreshScheduled) return;
+    if (scheduled) return;
 
-    refreshScheduled = true;
+    scheduled = true;
 
     requestAnimationFrame(() => {
-      refreshScheduled = false;
+      scheduled = false;
       updateButton();
     });
   }
 
-  /* ======================================================
-     REMEMBER WORKSPACE
-
-     Save preference only.
-     This never grants permissions.
-     ====================================================== */
-
-  function savePreference(next) {
+  function savePreference(value) {
     if (!authorisedUser?.id) return;
 
     try {
       localStorage.setItem(
-        PREFERENCE_PREFIX + authorisedUser.id,
-        next
+        PREFERENCE + authorisedUser.id,
+        value
       );
     } catch (_) {}
   }
 
-  /* ======================================================
-     LEAVE CLIENT OVERLAYS CLEANLY
-
-     Do not remove any workout information.
-     Only close presentation overlays.
-     ====================================================== */
-
-  function closeClientOverlays() {
+  function closeClientScreens() {
     [
       "manaV83ProgramShell",
       "manaProfileScreen"
@@ -514,27 +457,22 @@
     document.body.style.overflow = "";
   }
 
-  /* ======================================================
-     SWITCH
-
-     Use the existing application functions.
-     Preserve the current login session.
-     ====================================================== */
+  /* ============================================
+     SWITCH WORKSPACES
+     ============================================ */
 
   async function switchWorkspace() {
     if (busy) return;
 
-    const button = ensureButton();
+    busy = true;
 
+    const button = ensureButton();
     const previous = workspace();
 
-    busy = true;
     button.disabled = true;
 
     try {
-      const allowed = await verifyCoach();
-
-      if (!allowed) {
+      if (!(await verifyCoach())) {
         throw new Error(
           "Coach authorisation could not be verified."
         );
@@ -550,8 +488,6 @@
           );
         }
 
-        savePreference("client");
-
         $("coachClientDetailView")
           ?.classList.add("hide");
 
@@ -562,11 +498,13 @@
           authorisedProfile
         );
 
-        const clientHome = $("manaV80Home");
+        const home = $("manaV80Home");
 
-        if (clientHome) {
-          clientHome.style.display = "";
+        if (home) {
+          home.style.display = "";
         }
+
+        savePreference("client");
 
       } else if (previous === "client") {
         if (
@@ -578,29 +516,38 @@
           );
         }
 
-        savePreference("coach");
-
-        closeClientOverlays();
+        closeClientScreens();
 
         await window.openConnectedCoach();
 
+        savePreference("coach");
+
+        /* FIX:
+           Reopen the actual Coach Hub
+           nav after the app changes mode. */
+
+        restoreCoachNav();
+
+        /* Let existing Coach Hub scripts
+           settle without a permanent
+           polling loop. */
+
+        setTimeout(restoreCoachNav, 120);
+        setTimeout(restoreCoachNav, 350);
+
       } else {
         throw new Error(
-          "The current workspace could not be identified."
+          "Workspace could not be identified."
         );
       }
 
-      synchroniseNavigation();
+      syncNavigation();
       updateButton();
 
     } catch (error) {
       console.error(
         "[Mana] Workspace switch:",
         error
-      );
-
-      savePreference(
-        previous === "coach" ? "coach" : "client"
       );
 
       window.alert(
@@ -616,64 +563,56 @@
     }
   }
 
-  /* ======================================================
-     AUTH CHANGES
-     ====================================================== */
+  /* ============================================
+     AUTH EVENTS
+     ============================================ */
 
   async function refreshAuthorisation() {
     await verifyCoach();
     scheduleRefresh();
   }
 
-  async function connectAuthListener() {
+  async function connectAuth() {
     try {
       if (
-        typeof window.supabaseClient !== "function"
-      ) {
-        return;
-      }
+        typeof window.supabaseClient !==
+        "function"
+      ) return;
 
-      const supa = await window.supabaseClient();
+      const db = await window.supabaseClient();
 
-      supa.auth.onAuthStateChange(
-        event => {
-
-          if (event === "SIGNED_OUT") {
-            authorisedUser = null;
-            authorisedProfile = null;
-
-            updateButton();
-            return;
-          }
-
-          if (
-            event === "SIGNED_IN" ||
-            event === "INITIAL_SESSION"
-          ) {
-            setTimeout(
-              refreshAuthorisation,
-              0
-            );
-          }
-
+      db.auth.onAuthStateChange(event => {
+        if (event === "SIGNED_OUT") {
+          authorisedUser = null;
+          authorisedProfile = null;
+          scheduleRefresh();
         }
-      );
+
+        if (
+          event === "SIGNED_IN" ||
+          event === "INITIAL_SESSION"
+        ) {
+          setTimeout(
+            refreshAuthorisation,
+            0
+          );
+        }
+      });
 
     } catch (error) {
       console.warn(
-        "[Mana] Workspace auth listener:",
+        "[Mana] Workspace auth:",
         error
       );
     }
   }
 
-  /* ======================================================
-     TARGETED SCREEN WATCH
+  /* ============================================
+     TARGETED OBSERVATION
 
-     Watch only screen class changes.
-     No body-wide observer.
-     No repeated screen rebuilding.
-     ====================================================== */
+     No document-wide observer.
+     No new navigation elements.
+     ============================================ */
 
   function observeScreens() {
     const ids = [
@@ -690,14 +629,15 @@
       "manaV80Home"
     ];
 
-    const observer = new MutationObserver(
-      scheduleRefresh
-    );
+    const observer =
+      new MutationObserver(
+        scheduleRefresh
+      );
 
-    ids.forEach(id => {
+    for (const id of ids) {
       const element = $(id);
 
-      if (!element) return;
+      if (!element) continue;
 
       observer.observe(element, {
         attributes: true,
@@ -706,19 +646,15 @@
           "hidden"
         ]
       });
-    });
+    }
   }
-
-  /* ======================================================
-     INITIALISE
-     ====================================================== */
 
   function init() {
     installStyles();
     ensureButton();
 
     observeScreens();
-    connectAuthListener();
+    connectAuth();
 
     [250, 900, 1800].forEach(delay => {
       setTimeout(
@@ -726,29 +662,6 @@
         delay
       );
     });
-
-    document.addEventListener(
-      "click",
-      event => {
-        const target = event.target;
-
-        if (!(target instanceof Element)) return;
-
-        if (
-          target.closest(
-            "#manaWorkspaceSwitch104870"
-          )
-        ) {
-          return;
-        }
-
-        setTimeout(
-          scheduleRefresh,
-          100
-        );
-      },
-      false
-    );
 
     window.addEventListener(
       "pageshow",
@@ -758,6 +671,24 @@
     window.addEventListener(
       "mana:program-tab-change",
       scheduleRefresh
+    );
+
+    document.addEventListener(
+      "click",
+      event => {
+        const target = event.target;
+
+        if (!(target instanceof Element)) return;
+
+        if (target.closest("#" + BUTTON)) {
+          return;
+        }
+
+        setTimeout(
+          scheduleRefresh,
+          100
+        );
+      }
     );
 
     scheduleRefresh();
