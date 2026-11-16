@@ -1,42 +1,71 @@
 
-/* MANA MOVEMENT — CIRCUIT COMPLETION HISTORY 104894
-   NEW COMPLETE FILE. Load AFTER Circuits audio.
-   Records genuine timer completions in Supabase and displays
-   sessions in Mana Strength Progress and Coach Hub.
-   Does not modify existing workouts, timers, or navigation.
-*/
+/* ====================================================
+   MANA MOVEMENT — CIRCUIT COMPLETION HISTORY
+   BUILD 104895 — PREMIUM COLOUR FINISH
+
+   COMPLETE REPLACEMENT:
+   mana_circuit_history_104894.js
+
+   Preserves:
+   - Supabase completed-circuit recording
+   - Client Progress history
+   - Coach Hub circuit history
+   - EMOM / Tabata / Strength circuit support
+   - Retry save on error
+
+   Corrects:
+   - Gold borders to Mana orange
+   - Gold headings to white
+   - Orange completion totals
+   - Silver secondary text
+   - Strength Progress weight action colour
+   ==================================================== */
+
 (() => {
   "use strict";
-  if (window.MANA_CIRCUIT_HISTORY_104894) return;
-  window.MANA_CIRCUIT_HISTORY_104894 = true;
+
+  const BUILD = "104895";
+  const FLAG = "MANA_CIRCUIT_HISTORY_104895";
+
+  if (window[FLAG]) return;
+  window[FLAG] = true;
 
   const TABLE = "mana_circuit_sessions";
-  const STYLE = "manaCircuitHistoryStyle104894";
+
+  const STYLE = "manaCircuitHistoryStyle104895";
   const PROGRESS = "manaCircuitClientHistory104894";
   const COACH = "manaCircuitCoachHistory104894";
+
   const $ = id => document.getElementById(id);
 
   let observedRoot = null;
   let session = null;
   let saving = false;
+
   let selectedCoachId = "";
   let clientRequest = 0;
   let coachRequest = 0;
 
-  const escape = x => String(x ?? "").replace(
-    /[&<>"']/g,
-    c => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    }[c])
-  );
+  const escape = value =>
+    String(value ?? "").replace(
+      /[&<>"']/g,
+      character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[character]
+    );
+
+  /* ====================================
+     PROGRAM DETECTION
+     ==================================== */
 
   function strengthOpen() {
     return Boolean(
-      $("manaV83ProgramShell")?.classList.contains("open") &&
+      $("manaV83ProgramShell")
+        ?.classList.contains("open") &&
       /strength/i.test(
         $("manaV83Title")?.textContent || ""
       )
@@ -53,7 +82,9 @@
 
   function circuitRoot() {
     return currentTab("learn")
-      ? $("manaV83Content")?.querySelector(".msc-root")
+      ? $("manaV83Content")?.querySelector(
+          ".msc-root"
+        )
       : null;
   }
 
@@ -61,6 +92,7 @@
     if (!root) return null;
 
     const type = root.dataset.type;
+
     const value = Number(
       root.querySelector(
         '.msc-setting[aria-pressed="true"]'
@@ -71,9 +103,12 @@
       !Number.isFinite(value) ||
       value <= 0 ||
       !["emom", "tabata", "strength"].includes(type)
-    ) return null;
+    ) {
+      return null;
+    }
 
-    const minutes = type === "tabata" ? value * 4 : value;
+    const minutes =
+      type === "tabata" ? value * 4 : value;
 
     const accepted = {
       emom: [10, 15, 20],
@@ -81,19 +116,27 @@
       strength: [15, 30, 45]
     };
 
-    if (!accepted[type].includes(minutes)) return null;
+    if (!accepted[type].includes(minutes)) {
+      return null;
+    }
 
     const shown = (
-      root.querySelector(".msc-clock")?.textContent || ""
+      root.querySelector(".msc-clock")
+        ?.textContent || ""
     ).trim();
 
-    const match = /^(\d+):(\d{2})$/.exec(shown);
+    const match = /^(\d+):(\d{2})$/.exec(
+      shown
+    );
+
     if (!match) return null;
 
     return {
       type,
       minutes,
-      seconds: Number(match[1]) * 60 + Number(match[2])
+      seconds:
+        Number(match[1]) * 60 +
+        Number(match[2])
     };
   }
 
@@ -108,95 +151,148 @@
   function formatDate(value) {
     const date = new Date(value);
 
-    return Number.isNaN(date.getTime())
-      ? ""
-      : date.toLocaleString("en-AU", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          hour: "numeric",
-          minute: "2-digit"
-        });
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    return date.toLocaleString("en-AU", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
   }
 
+  /* ====================================
+     STATUS MESSAGE
+     ==================================== */
+
   function status(root, message, error = false) {
-    const timer = root?.querySelector(".msc-timer");
+    const timer = root?.querySelector(
+      ".msc-timer"
+    );
+
     if (!timer) return;
 
-    let line = timer.querySelector(".mch-status");
+    let line = timer.querySelector(
+      ".mch-status"
+    );
 
     if (!line) {
       line = document.createElement("p");
       line.className = "mch-status";
+
       line.setAttribute("role", "status");
       timer.appendChild(line);
     }
 
     line.textContent = message;
-    line.style.color = error ? "#FFB4A8" : "#FF7927";
+
+    line.style.color = error
+      ? "#FFB4A8"
+      : "#FF7927";
   }
 
+  /* ====================================
+     AUTHENTICATED CLOUD ACCESS
+     ==================================== */
+
   async function dbAndUser() {
-    if (typeof window.supabaseClient !== "function") {
-      throw Error("Sign in to save circuit history.");
+    if (
+      typeof window.supabaseClient !== "function"
+    ) {
+      throw Error(
+        "Sign in to save circuit history."
+      );
     }
 
     const db = await window.supabaseClient();
-    const { data, error } = await db.auth.getUser();
+
+    const { data, error } =
+      await db.auth.getUser();
 
     if (error || !data?.user) {
-      throw Error("Please sign in to save circuit history.");
+      throw Error(
+        "Please sign in to save circuit history."
+      );
     }
 
-    return { db, user: data.user };
+    return {
+      db,
+      user: data.user
+    };
   }
 
-  /* ========================================
-     RECORD A COMPLETED CIRCUIT
-     ======================================== */
+  /* ====================================
+     SAVE COMPLETED CIRCUITS
+     ==================================== */
 
   async function recordCompleted(root, snapshot) {
     if (
       saving ||
       snapshot.saved ||
       snapshot.failed
-    ) return;
+    ) {
+      return;
+    }
 
     saving = true;
     snapshot.saved = true;
 
-    status(root, "Saving completed circuit…");
+    status(
+      root,
+      "Saving completed circuit…"
+    );
 
     try {
-      const { db, user } = await dbAndUser();
+      const { db, user } =
+        await dbAndUser();
 
-      const { error } = await db.from(TABLE).insert({
-        user_id: user.id,
-        circuit_type: snapshot.type,
-        duration_minutes: snapshot.minutes,
-        started_at: new Date(snapshot.startedAt).toISOString(),
-        completed_at: new Date().toISOString()
-      });
+      const { error } = await db
+        .from(TABLE)
+        .insert({
+          user_id: user.id,
+          circuit_type: snapshot.type,
+          duration_minutes: snapshot.minutes,
+          started_at: new Date(
+            snapshot.startedAt
+          ).toISOString(),
+          completed_at:
+            new Date().toISOString()
+        });
 
       if (error) throw error;
 
-      status(root, "Circuit complete · Saved to Progress ✓");
+      status(
+        root,
+        "Circuit complete · Saved to Progress ✓"
+      );
+
       setTimeout(mountClient, 150);
 
-    } catch (err) {
+    } catch (error) {
       snapshot.saved = false;
       snapshot.failed = true;
 
       status(
         root,
-        `Not saved: ${err?.message || String(err)}. Tap Retry save.`,
+        "Not saved: " +
+        (error?.message || String(error)) +
+        ". Tap Retry save.",
         true
       );
 
-      const line = root.querySelector(".mch-status");
+      const line = root.querySelector(
+        ".mch-status"
+      );
 
-      if (line && !line.querySelector("button")) {
-        const retry = document.createElement("button");
+      if (
+        line &&
+        !line.querySelector("button")
+      ) {
+        const retry =
+          document.createElement("button");
 
         retry.type = "button";
         retry.className = "mch-retry";
@@ -205,22 +301,27 @@
         retry.onclick = () => {
           retry.remove();
           snapshot.failed = false;
-          recordCompleted(root, snapshot);
+
+          recordCompleted(
+            root,
+            snapshot
+          );
         };
 
         line.appendChild(retry);
       }
+
     } finally {
       saving = false;
     }
   }
 
-  /* ========================================
-     WATCH EXISTING TIMER
+  /* ====================================
+     MONITOR EXISTING CIRCUIT TIMER
 
-     A completion is only saved after
-     the original timer reaches 00:00.
-     ======================================== */
+     Never mark an incomplete circuit
+     as a finished session.
+     ==================================== */
 
   function monitor() {
     const root = circuitRoot();
@@ -231,10 +332,12 @@
       return;
     }
 
-    const d = details(root);
-    if (!d) return;
+    const detail = details(root);
 
-    const key = `${d.type}:${d.minutes}`;
+    if (!detail) return;
+
+    const key =
+      `${detail.type}:${detail.minutes}`;
 
     if (
       observedRoot !== root ||
@@ -248,22 +351,32 @@
       '[data-msc-action="start"]'
     );
 
-    const label = button?.textContent?.trim() || "";
-    const isRunning = /^Pause timer$/i.test(label);
+    const label =
+      button?.textContent?.trim() || "";
 
-    if (isRunning && d.seconds > 0) {
+    const running =
+      /^Pause timer$/i.test(label);
+
+    if (
+      running &&
+      detail.seconds > 0
+    ) {
       if (!session || session.saved) {
         session = {
           key,
-          type: d.type,
-          minutes: d.minutes,
+          type: detail.type,
+          minutes: detail.minutes,
           startedAt:
             Date.now() -
-            (d.minutes * 60 - d.seconds) * 1000,
+            (
+              detail.minutes * 60 -
+              detail.seconds
+            ) * 1000,
           saved: false,
           failed: false
         };
       }
+
       return;
     }
 
@@ -272,34 +385,44 @@
       !session.saved &&
       !session.failed &&
       !saving &&
-      d.seconds === 0 &&
+      detail.seconds === 0 &&
       /Session complete/i.test(
-        root.querySelector(".msc-step")?.textContent || ""
+        root.querySelector(".msc-step")
+          ?.textContent || ""
       )
     ) {
-      recordCompleted(root, session);
+      recordCompleted(
+        root,
+        session
+      );
     }
   }
 
-  /* ========================================
-     HISTORY COMPONENTS
-     ======================================== */
+  /* ====================================
+     HISTORY PANELS
+     ==================================== */
 
   function panel(id, title, parent) {
     if (!parent) return null;
 
     let node = $(id);
 
-    if (node && node.parentElement !== parent) {
+    if (
+      node &&
+      node.parentElement !== parent
+    ) {
       node.remove();
+      node = null;
     }
 
-    node = $(id);
-
     if (!node) {
-      node = document.createElement("section");
+      node = document.createElement(
+        "section"
+      );
+
       node.id = id;
-      node.className = "mch-panel";
+      node.className =
+        "mch-panel";
 
       node.innerHTML = `
         <h3>${title}</h3>
@@ -324,7 +447,9 @@
     }
 
     const total = items.reduce(
-      (n, s) => n + Number(s.duration_minutes || 0),
+      (sum, item) =>
+        sum +
+        Number(item.duration_minutes || 0),
       0
     );
 
@@ -332,29 +457,47 @@
       <div class="mch-summary">
         <strong>${items.length}</strong>
         completed circuits
-        <span>· ${total} minutes</span>
+        <span>
+          · ${total} minutes
+        </span>
       </div>
-    ` + items.map(s => `
-      <div class="mch-row">
-        <div>
-          <strong>
-            ${escape(formatType(s.circuit_type))}
-          </strong>
-          <small>
-            ${escape(formatDate(s.completed_at))}
-          </small>
+
+      ${items.map(item => `
+        <div class="mch-row">
+
+          <div class="mch-row-info">
+            <strong>
+              ${escape(formatType(
+                item.circuit_type
+              ))}
+            </strong>
+
+            <small>
+              ${escape(formatDate(
+                item.completed_at
+              ))}
+            </small>
+          </div>
+
+          <b>
+            ${Number(
+              item.duration_minutes
+            )} min
+          </b>
+
         </div>
-        <b>${Number(s.duration_minutes)} min</b>
-      </div>
-    `).join("");
+      `).join("")}
+    `;
   }
 
-  /* ========================================
+  /* ====================================
      CLIENT — MANA STRENGTH PROGRESS
-     ======================================== */
+     ==================================== */
 
   async function mountClient() {
-    if (!currentTab("progress")) return;
+    if (!currentTab("progress")) {
+      return;
+    }
 
     const holder = $("manaV83Content");
     if (!holder) return;
@@ -370,7 +513,8 @@
     const token = ++clientRequest;
 
     try {
-      const { db, user } = await dbAndUser();
+      const { db, user } =
+        await dbAndUser();
 
       const { data, error } = await db
         .from(TABLE)
@@ -389,41 +533,60 @@
         token !== clientRequest ||
         !currentTab("progress") ||
         !host.isConnected
-      ) return;
+      ) {
+        return;
+      }
 
       host.innerHTML = `
         <h3>Completed Circuits</h3>
         ${rows(data || [])}
       `;
 
-    } catch (err) {
-      if (token === clientRequest && host.isConnected) {
+    } catch (error) {
+      if (
+        token === clientRequest &&
+        host.isConnected
+      ) {
         host.innerHTML = `
           <h3>Completed Circuits</h3>
           <p class="mch-muted">
-            ${escape(err?.message || "History unavailable")}
+            ${escape(
+              error?.message ||
+              "History unavailable"
+            )}
           </p>
         `;
       }
     }
   }
 
-  /* ========================================
-     COACH HUB — CLIENT PROFILE
-     ======================================== */
+  /* ====================================
+     COACH HUB — CIRCUIT HISTORY
+     ==================================== */
 
   function coachVisible() {
     return Boolean(
       $("coachClientDetailView") &&
-      !$("coachClientDetailView").classList.contains("hide")
+      !$("coachClientDetailView")
+        .classList.contains("hide")
     );
   }
 
   async function mountCoach() {
-    if (!coachVisible() || !selectedCoachId) return;
+    if (
+      !coachVisible() ||
+      !selectedCoachId
+    ) {
+      return;
+    }
 
-    const anchor = $("detailWorkoutHistory");
-    if (!anchor?.parentElement) return;
+    const anchor = $(
+      "detailWorkoutHistory"
+    );
+
+    if (!anchor?.parentElement) {
+      return;
+    }
 
     const host = panel(
       COACH,
@@ -443,7 +606,10 @@
         .select(
           "circuit_type,duration_minutes,completed_at"
         )
-        .eq("user_id", selectedCoachId)
+        .eq(
+          "user_id",
+          selectedCoachId
+        )
         .order("completed_at", {
           ascending: false
         })
@@ -455,152 +621,306 @@
         token !== coachRequest ||
         !coachVisible() ||
         !host.isConnected
-      ) return;
+      ) {
+        return;
+      }
 
       host.innerHTML = `
         <h3>Circuit Session History</h3>
         ${rows(data || [])}
       `;
 
-    } catch (err) {
-      if (token === coachRequest && host.isConnected) {
+    } catch (error) {
+      if (
+        token === coachRequest &&
+        host.isConnected
+      ) {
         host.innerHTML = `
           <h3>Circuit Session History</h3>
           <p class="mch-muted">
-            ${escape(err?.message || "History unavailable")}
+            ${escape(
+              error?.message ||
+              "History unavailable"
+            )}
           </p>
         `;
       }
     }
   }
 
-  /* ========================================
-     PREMIUM MANA STYLING
-     ======================================== */
+  /* ====================================
+     PREMIUM BLACK / ORANGE / WHITE / SILVER
+
+     More specific selectors override
+     older gold Strength Progress styles.
+     ==================================== */
 
   function styles() {
     if ($(STYLE)) return;
 
-    const style = document.createElement("style");
+    const style = document.createElement(
+      "style"
+    );
+
     style.id = STYLE;
 
     style.textContent = `
+
+      /* Main client and coach cards */
+
+      #manaV83ProgramShell
+      #manaV83Content
       #${PROGRESS},
+
+      #coachClientDetailView
       #${COACH} {
+        display: block !important;
+
+        width: 100% !important;
+
         background: #15171A !important;
-        color: #FFFFFF !important;
+        background-image: none !important;
+
         border: 1px solid #FF7927 !important;
+        border-color: #FF7927 !important;
+
         border-radius: 17px !important;
+
+        color: #FFFFFF !important;
+        -webkit-text-fill-color:
+          #FFFFFF !important;
+
         padding: 17px !important;
         margin: 18px 0 !important;
+
+        outline: 0 !important;
+        box-shadow: none !important;
+
         box-sizing: border-box !important;
       }
 
+      /* Headings must be WHITE,
+         not inherited gold. */
+
+      #manaV83ProgramShell
+      #manaV83Content
       #${PROGRESS} h3,
+
+      #coachClientDetailView
       #${COACH} h3 {
         color: #FFFFFF !important;
-        margin: 0 0 12px !important;
+
+        -webkit-text-fill-color:
+          #FFFFFF !important;
+
         font-size: 18px !important;
+        font-weight: 900 !important;
+
+        margin: 0 0 12px !important;
+
+        text-shadow: none !important;
       }
 
-      .mch-summary {
-        color: #C1C6CE;
-        font-size: 13px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #363D46;
+      /* Total recorded circuits */
+
+      #${PROGRESS} .mch-summary,
+      #${COACH} .mch-summary {
+        color: #C1C6CE !important;
+
+        -webkit-text-fill-color:
+          #C1C6CE !important;
+
+        font-size: 13px !important;
+
+        padding-bottom: 12px !important;
+
+        border-bottom:
+          1px solid #363D46 !important;
       }
 
-      .mch-summary strong {
-        color: #FF7927;
-        font-size: 21px;
+      #${PROGRESS} .mch-summary strong,
+      #${COACH} .mch-summary strong {
+        color: #FF7927 !important;
+
+        -webkit-text-fill-color:
+          #FF7927 !important;
+
+        font-size: 21px !important;
+        font-weight: 900 !important;
+
+        text-shadow: none !important;
       }
 
-      .mch-summary span {
-        color: #C1C6CE;
+      #${PROGRESS} .mch-summary span,
+      #${COACH} .mch-summary span {
+        color: #C1C6CE !important;
+
+        -webkit-text-fill-color:
+          #C1C6CE !important;
       }
 
-      .mch-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 12px;
-        align-items: center;
-        border-bottom: 1px solid #363D46;
-        padding: 12px 0;
-        color: #FFFFFF;
+      /* Individual session rows */
+
+      #${PROGRESS} .mch-row,
+      #${COACH} .mch-row {
+        display: flex !important;
+
+        justify-content:
+          space-between !important;
+
+        align-items: center !important;
+        gap: 12px !important;
+
+        padding: 12px 0 !important;
+
+        border-bottom:
+          1px solid #363D46 !important;
+
+        color: #FFFFFF !important;
+
+        background: transparent !important;
       }
 
-      .mch-row:last-child {
-        border-bottom: 0;
+      #${PROGRESS} .mch-row:last-child,
+      #${COACH} .mch-row:last-child {
+        border-bottom: 0 !important;
       }
 
-      .mch-row strong {
-        display: block;
-        font-size: 13px;
-        color: #FFFFFF;
+      #${PROGRESS} .mch-row strong,
+      #${COACH} .mch-row strong {
+        display: block !important;
+
+        color: #FFFFFF !important;
+
+        -webkit-text-fill-color:
+          #FFFFFF !important;
+
+        font-size: 13px !important;
+        font-weight: 800 !important;
       }
 
-      .mch-row small {
-        display: block;
-        color: #C1C6CE;
-        font-size: 11px;
-        margin-top: 4px;
+      #${PROGRESS} .mch-row small,
+      #${COACH} .mch-row small {
+        display: block !important;
+
+        color: #C1C6CE !important;
+
+        -webkit-text-fill-color:
+          #C1C6CE !important;
+
+        font-size: 11px !important;
+        margin-top: 4px !important;
       }
 
-      .mch-row b {
-        color: #FF7927;
-        white-space: nowrap;
-        font-size: 13px;
+      #${PROGRESS} .mch-row b,
+      #${COACH} .mch-row b {
+        color: #FF7927 !important;
+
+        -webkit-text-fill-color:
+          #FF7927 !important;
+
+        font-size: 13px !important;
+        font-weight: 900 !important;
+
+        white-space: nowrap !important;
       }
 
-      .mch-muted {
-        color: #C1C6CE;
-        font-size: 12px;
-        line-height: 1.5;
+      #${PROGRESS} .mch-muted,
+      #${COACH} .mch-muted {
+        color: #C1C6CE !important;
+
+        -webkit-text-fill-color:
+          #C1C6CE !important;
+
+        font-size: 12px !important;
+        line-height: 1.5 !important;
       }
+
+      /* Save confirmation and retry */
 
       .mch-status {
-        font-size: 12px;
-        font-weight: 700;
-        line-height: 1.5;
+        color: #FF7927 !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
       }
 
       .mch-retry {
-        display: block;
-        margin: 8px auto 0;
-        padding: 8px 14px;
-        border-radius: 10px;
-        border: 1px solid #FF7927;
-        background: #15171A;
-        color: #FFFFFF;
-        font-weight: 800;
+        display: block !important;
+
+        margin: 8px auto 0 !important;
+        padding: 9px 15px !important;
+
+        background: #15171A !important;
+
+        border: 1px solid #FF7927 !important;
+        border-radius: 10px !important;
+
+        color: #FFFFFF !important;
+
+        -webkit-text-fill-color:
+          #FFFFFF !important;
+
+        font-weight: 800 !important;
       }
+
+      /* Progress screen accent cleanup:
+         remove inherited gold/yellow
+         from the weight update action. */
+
+      #manaV83ProgramShell
+      #manaV83Content
+      a[href],
+      #manaV83ProgramShell
+      #manaV83Content
+      button {
+        accent-color: #FF7927;
+      }
+
+      /* Scope the old gold text to Mana
+         Strength Progress only. */
+
+      #manaV83ProgramShell.mana-strength-nav-104886
+      #manaV83Content .gold {
+        color: #FF7927 !important;
+
+        -webkit-text-fill-color:
+          #FF7927 !important;
+      }
+
+      /* Never recolour the existing
+         bottom navigation or coach switch. */
+
     `;
 
     document.head.appendChild(style);
   }
 
-  /* ========================================
-     NAVIGATION INTEGRATION
-     ======================================== */
+  /* ====================================
+     NAVIGATION AND VIEW REFRESH
+     ==================================== */
 
   function scheduleViews() {
-    [80, 280, 620].forEach(t => {
+    [80, 280, 620].forEach(delay => {
       setTimeout(() => {
         mountClient();
 
         if (coachVisible()) {
           mountCoach();
         }
-      }, t);
+      }, delay);
     });
   }
 
   function init() {
     styles();
 
-    /* Follow the existing clock only.
-       No competing timer is created. */
-    setInterval(monitor, 350);
+    /* Read the existing timer.
+       Do not create a competing clock. */
+
+    setInterval(
+      monitor,
+      350
+    );
 
     window.addEventListener(
       "mana:program-tab-change",
@@ -617,7 +937,9 @@
       event => {
         const target = event.target;
 
-        if (!(target instanceof Element)) return;
+        if (!(target instanceof Element)) {
+          return;
+        }
 
         if (target.closest(
           '[data-msc-action="reset"],' +
@@ -627,11 +949,12 @@
           session = null;
         }
 
-        const coachButton = target.closest(
-          ".client-open[data-client-id]," +
-          "[data-coach-client-id]," +
-          "[data-client]"
-        );
+        const coachButton =
+          target.closest(
+            ".client-open[data-client-id]," +
+            "[data-coach-client-id]," +
+            "[data-client]"
+          );
 
         if (coachButton) {
           const next =
@@ -644,18 +967,25 @@
             /^[0-9a-f-]{36}$/i.test(next)
           ) {
             selectedCoachId = next;
+
             ++coachRequest;
 
             $(COACH)?.remove();
 
-            [250, 650, 1200].forEach(t => {
-              setTimeout(mountCoach, t);
-            });
+            [250, 650, 1200].forEach(
+              delay => {
+                setTimeout(
+                  mountCoach,
+                  delay
+                );
+              }
+            );
           }
         }
 
         if (target.closest(
-          '#manaV83Tabs [data-v83-tab="progress"]'
+          '#manaV83Tabs ' +
+          '[data-v83-tab="progress"]'
         )) {
           scheduleViews();
         }
@@ -669,8 +999,13 @@
       let queued = false;
 
       new MutationObserver(() => {
-        if (!currentTab("progress") || queued) return;
-        if ($(PROGRESS)) return;
+        if (
+          !currentTab("progress") ||
+          queued ||
+          $(PROGRESS)
+        ) {
+          return;
+        }
 
         queued = true;
 
@@ -686,7 +1021,8 @@
     scheduleViews();
 
     console.log(
-      "[Mana Strength] Circuit history 104894"
+      "[Mana Strength] Circuit history " +
+      BUILD
     );
   }
 
@@ -699,4 +1035,5 @@
   } else {
     init();
   }
+
 })();
