@@ -1,49 +1,44 @@
 
 /* =====================================================
    MANA MOVEMENT — COACH HUB
-   BUILD 104704 — LIVE CLIENT DATA FIX
+   BUILD 104705
 
    COMPLETE REPLACEMENT:
    mana_coach_navigation_104700.js
 
-   - Real client list from coach_clients_summary RPC
-   - Actual program assignments from Supabase
-   - Expandable Mana Strength / Mana28 / ManaLyfe
-   - Unclassified and Unassigned clients
-   - Functional client profile links
+   - White logout text, orange border
+   - Compact Summary spacing
+   - Assigned-client counts on program cards
+   - Orange chevrons showing expandable sections
+   - Live client directory and assignments
    - Summary / Clients / Chat / Payments / Settings
-   - No competing navigation or database changes
+   - Original client profile and Program Builder
    ===================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "104704";
-  const FLAG = "MANA_COACH_NAV_104704";
-
-  if (window[FLAG]) return;
-  window[FLAG] = true;
+  const BUILD = "104705";
+  if (window.MANA_COACH_NAV_104705) return;
+  window.MANA_COACH_NAV_104705 = true;
 
   const $ = id => document.getElementById(id);
-
   const HOME = "coachHomePage";
   const NAV = "manaV97CoachNav";
   const HUB = "manaCoachHubClean103760";
-  const SUITE = "manaCoachSuite104704";
-  const STYLE = "manaCoachSuiteStyle104704";
+  const SUITE = "manaCoachSuite104705";
+  const STYLE = "manaCoachSuiteStyle104705";
 
   let page = "summary";
   let clients = [];
   let assignments = [];
-
   let clientsLoaded = false;
   let assignmentsLoaded = false;
   let clientsError = "";
-  let assignmentsError = "";
-
+  let assignmentError = "";
   let loading = false;
-  let requestNumber = 0;
   let coachWasVisible = false;
+  let request = 0;
 
   const tabs = [
     ["summary", "home", "Summary", "▦"],
@@ -53,7 +48,7 @@
     ["settings", "profile", "Settings", "⚙"]
   ];
 
-  const pathways = [
+  const programs = [
     ["strength", "Mana Strength", "Strength & performance", "◆"],
     ["mana28", "Mana28", "28-day training", "▦"],
     ["lyfe", "ManaLyfe", "Lifestyle & wellbeing", "♡"]
@@ -73,17 +68,15 @@
   }
 
   function coachVisible() {
-    const view = $("coachView");
     return Boolean(
-      view &&
-      !view.classList.contains("hide")
+      $("coachView") &&
+      !$("coachView").classList.contains("hide")
     );
   }
 
-  function pathwayKey(name) {
+  function classify(name) {
     const value = String(name || "")
-      .toLowerCase()
-      .replace(/[\s_-]/g, "");
+      .toLowerCase().replace(/[\s_-]/g, "");
 
     if (
       value.includes("manastrength") ||
@@ -100,37 +93,27 @@
     return "";
   }
 
-  /* ========================================
-     LIVE CLIENT DATA
-
-     Uses the exact RPC already used by
-     the original Coach Hub dashboard.
-     ======================================== */
+  /* ====================================
+     CLIENTS AND ASSIGNMENTS
+     ==================================== */
 
   async function loadData() {
     if (loading || !coachVisible()) return;
 
     loading = true;
-    const ticket = ++requestNumber;
+    const ticket = ++request;
 
     try {
-      if (
-        typeof window.supabaseClient !== "function"
-      ) {
-        throw new Error("Cloud connection unavailable");
-      }
-
       const db = await window.supabaseClient();
 
       const auth = await db.auth.getUser();
       const user = auth.data?.user;
 
-      if (auth.error || !user) {
-        throw new Error("Coach sign-in required");
+      if (!user || auth.error) {
+        throw Error("Coach sign-in required");
       }
 
-      const profile = await db
-        .from("profiles")
+      const profile = await db.from("profiles")
         .select("role")
         .eq("id", user.id)
         .single();
@@ -138,100 +121,77 @@
       if (
         profile.error ||
         profile.data?.role !== "coach"
-      ) {
-        throw new Error("Coach access required");
-      }
+      ) throw Error("Coach access required");
 
-      const [clientResult, assignmentResult] =
-        await Promise.allSettled([
-          db.rpc("coach_clients_summary"),
-          db.from("client_program_assignments")
-            .select(
-              "client_id,status,custom_programs(name)"
-            )
-            .eq("coach_id", user.id)
-            .eq("status", "active")
-        ]);
+      const results = await Promise.allSettled([
+        db.rpc("coach_clients_summary"),
+        db.from("client_program_assignments")
+          .select(
+            "client_id,status,custom_programs(name)"
+          )
+          .eq("coach_id", user.id)
+          .eq("status", "active")
+      ]);
 
-      if (ticket !== requestNumber) return;
+      if (ticket !== request) return;
 
-      if (clientResult.status === "fulfilled") {
-        const result = clientResult.value;
+      if (results[0].status === "fulfilled" &&
+          !results[0].value.error) {
+        const map = new Map();
 
-        if (result.error) {
-          clientsLoaded = false;
-          clientsError = result.error.message;
-        } else {
-          const unique = new Map();
-
-          (result.data || []).forEach(row => {
-            const id = String(
-              row.user_id || ""
-            ).trim();
-
-            if (!id || unique.has(id)) return;
-
-            unique.set(id, {
-              id,
-              name: String(
-                row.full_name || "Client"
-              ).trim()
+        (results[0].value.data || []).forEach(r => {
+          if (r.user_id && !map.has(r.user_id)) {
+            map.set(r.user_id, {
+              id: r.user_id,
+              name: String(r.full_name || "Client")
             });
-          });
+          }
+        });
 
-          clients = [...unique.values()].sort(
-            (a, b) => a.name.localeCompare(b.name)
-          );
+        clients = [...map.values()].sort(
+          (a, b) => a.name.localeCompare(b.name)
+        );
 
-          clientsLoaded = true;
-          clientsError = "";
-        }
+        clientsLoaded = true;
+        clientsError = "";
       } else {
         clientsLoaded = false;
-        clientsError = "Could not load clients";
+        clientsError =
+          "Client records could not be loaded.";
       }
 
-      if (assignmentResult.status === "fulfilled") {
-        const result = assignmentResult.value;
-
-        if (result.error) {
-          assignmentsLoaded = false;
-          assignmentsError = result.error.message;
-        } else {
-          assignments = result.data || [];
-          assignmentsLoaded = true;
-          assignmentsError = "";
-        }
+      if (results[1].status === "fulfilled" &&
+          !results[1].value.error) {
+        assignments = results[1].value.data || [];
+        assignmentsLoaded = true;
+        assignmentError = "";
       } else {
         assignmentsLoaded = false;
-        assignmentsError =
-          "Could not load program assignments";
+        assignmentError =
+          "Program assignments could not be loaded.";
       }
 
     } catch (error) {
-      console.warn(
-        "[Mana Coach] Dashboard:",
-        error
-      );
-
       clientsLoaded = false;
       assignmentsLoaded = false;
+
       clientsError =
-        error?.message || "Cloud connection unavailable";
-      assignmentsError = clientsError;
+        error?.message || "Cloud unavailable";
+
+      assignmentError = clientsError;
 
     } finally {
       loading = false;
 
-      if (ticket === requestNumber) {
+      if (ticket === request) {
         renderSummary();
         renderClients();
       }
     }
   }
 
-  function groupedClients() {
-    const groups = {
+  function groups() {
+    const result = {
       strength: [],
       mana28: [],
       lyfe: [],
@@ -240,177 +200,33 @@
     };
 
     if (!clientsLoaded || !assignmentsLoaded) {
-      return groups;
+      return result;
     }
 
     clients.forEach(client => {
-      const records = assignments.filter(
-        item => item.client_id === client.id
+      const matching = assignments.filter(
+        a => a.client_id === client.id
       );
 
-      if (!records.length) {
-        groups.unassigned.push(client);
+      if (!matching.length) {
+        result.unassigned.push(client);
         return;
       }
 
-      const keys = new Set();
+      const unique = new Set();
 
-      records.forEach(item => {
-        const program = item.custom_programs;
-
+      matching.forEach(a => {
+        const program = a.custom_programs;
         const name = Array.isArray(program)
-          ? program[0]?.name
-          : program?.name;
+          ? program[0]?.name : program?.name;
 
-        keys.add(pathwayKey(name) || "unclassified");
+        unique.add(classify(name) || "unclassified");
       });
 
-      keys.forEach(key => {
-        groups[key].push(client);
-      });
+      unique.forEach(key => result[key].push(client));
     });
 
-    return groups;
-  }
-
-  /* ========================================
-     THE FIVE VIEWS LIVE IN ONE CONTAINER
-
-     Avoids the original app hiding Chat
-     and Payments on legacy page routes.
-     ======================================== */
-
-  function ensureSuite() {
-    const home = $(HOME);
-    if (!home) return null;
-
-    let suite = $(SUITE);
-
-    if (suite) return suite;
-
-    suite = document.createElement("section");
-    suite.id = SUITE;
-
-    suite.innerHTML = `
-      <section data-mcn-view="summary">
-        <div id="mcnSummary104704"></div>
-      </section>
-
-      <section data-mcn-view="clients">
-        <div class="mcn-kicker">
-          MANA MOVEMENT · CLIENT MANAGEMENT
-        </div>
-
-        <h2>Clients</h2>
-
-        <p class="mcn-muted">
-          Search your clients and open their
-          existing coaching profiles.
-        </p>
-
-        <input
-          id="mcnSearch104704"
-          type="search"
-          placeholder="Search clients..."
-          aria-label="Search clients"
-        >
-
-        <div id="mcnList104704"></div>
-      </section>
-
-      <section data-mcn-view="chat">
-        <div class="mcn-kicker">
-          COACH COMMUNICATION
-        </div>
-
-        <h2>Chat</h2>
-
-        <div class="mcn-panel">
-          <h3>Coaching Inbox</h3>
-
-          <p class="mcn-muted">
-            Your client conversations and
-            coaching messages will appear here.
-          </p>
-
-          <div class="mcn-notice">
-            Messaging connection pending.
-            No messages are being invented.
-          </div>
-        </div>
-      </section>
-
-      <section data-mcn-view="payments">
-        <div class="mcn-kicker">
-          MEMBERSHIPS & BILLING
-        </div>
-
-        <h2>Payments</h2>
-
-        <div class="mcn-panel">
-          <h3>Membership Management</h3>
-
-          <div class="mcn-pay-grid">
-            <div>
-              <strong>Mana Strength</strong>
-              <small>Membership subscriptions</small>
-            </div>
-
-            <div>
-              <strong>Mana28</strong>
-              <small>Program payments</small>
-            </div>
-
-            <div>
-              <strong>ManaLyfe</strong>
-              <small>Wellbeing memberships</small>
-            </div>
-          </div>
-
-          <div class="mcn-notice">
-            Stripe billing dashboard is not yet
-            connected. Revenue and payment
-            totals will appear only after
-            the real billing integration.
-          </div>
-        </div>
-      </section>
-
-      <section data-mcn-view="settings">
-        <div class="mcn-kicker">
-          COACH ADMINISTRATION
-        </div>
-
-        <h2>Settings</h2>
-
-        <div class="mcn-panel">
-          <h3>Coaching Tools</h3>
-
-          <div class="mcn-actions">
-            <button type="button"
-              data-mcn-builder="1">
-              <strong>Program Builder</strong>
-              <small>Create and edit programs</small>
-            </button>
-
-            <button type="button"
-              data-mcn-route="clients">
-              <strong>Manage Clients</strong>
-              <small>Profiles and assignments</small>
-            </button>
-          </div>
-        </div>
-      </section>
-    `;
-
-    home.appendChild(suite);
-
-    $("mcnSearch104704")?.addEventListener(
-      "input",
-      renderClients
-    );
-
-    return suite;
+    return result;
   }
 
   function clientButton(client) {
@@ -422,36 +238,38 @@
         data-client-name="${esc(client.name)}"
       >
         <span>${esc(client.name)}</span>
-        <span class="mcn-chevron">›</span>
+        <span class="mcn-client-arrow">›</span>
       </button>
     `;
   }
 
-  /* ========================================
-     SUMMARY PROGRAM GROUPS
-     ======================================== */
+  /* ====================================
+     PROGRAM CARDS
+     ==================================== */
 
-  function groupCard(
-    title,
-    subtitle,
-    icon,
-    members,
-    count
+  function programCard(
+    title, subtitle, symbol, members, count
   ) {
     return `
       <details class="mcn-program">
         <summary>
-          <span class="mcn-program-icon">
-            ${icon}
-          </span>
+          <span class="mcn-symbol">${symbol}</span>
 
-          <span class="mcn-program-info">
+          <span class="mcn-program-text">
             <strong>${esc(title)}</strong>
             <small>${esc(subtitle)}</small>
           </span>
 
-          <span class="mcn-program-count">
-            ${count}
+          <span class="mcn-card-end">
+            <span class="mcn-assigned">
+              <strong>${count}</strong>
+              <small>Assigned</small>
+            </span>
+
+            <span
+              class="mcn-expand-arrow"
+              aria-hidden="true"
+            >›</span>
           </span>
         </summary>
 
@@ -460,9 +278,9 @@
             ? members.map(clientButton).join("")
             : `
               <p class="mcn-muted">
-                ${assignmentsLoaded && clientsLoaded
-                  ? "No confirmed clients yet."
-                  : "Client assignments unavailable."}
+                ${clientsLoaded && assignmentsLoaded
+                  ? "No confirmed assignments yet."
+                  : "Checking assignments…"}
               </p>
             `
           }
@@ -472,26 +290,20 @@
   }
 
   function renderSummary() {
-    const target = $("mcnSummary104704");
+    const target = $("mcnSummary104705");
     if (!target) return;
 
-    const groups = groupedClients();
+    const data = groups();
     const ready =
       clientsLoaded && assignmentsLoaded;
 
-    const displayCount = key =>
-      ready ? groups[key].length : "—";
-
     target.innerHTML = `
-      <div class="mcn-kicker">
-        COACH OVERVIEW
-      </div>
+      <div class="mcn-kicker">COACH OVERVIEW</div>
 
       <h2>Your Programs & Clients</h2>
 
       <p class="mcn-muted">
-        Confirmed assignments grouped by Mana pathway.
-        Select a program to view its clients.
+        Select a program to see its assigned clients.
       </p>
 
       <div class="mcn-stats">
@@ -516,43 +328,35 @@
         </div>
       </div>
 
-      ${clientsError || assignmentsError ? `
+      ${clientsError || assignmentError ? `
         <p class="mcn-muted">
-          ${esc(clientsError || assignmentsError)}
+          ${esc(clientsError || assignmentError)}
         </p>
       ` : ""}
 
-      ${pathways.map(program =>
-        groupCard(
-          program[1],
-          program[2],
-          program[3],
-          groups[program[0]],
-          displayCount(program[0])
-        )
-      ).join("")}
+      ${programs.map(p => programCard(
+        p[1], p[2], p[3],
+        data[p[0]],
+        ready ? data[p[0]].length : "—"
+      )).join("")}
 
-      ${ready && groups.unclassified.length
-        ? groupCard(
+      ${ready && data.unclassified.length
+        ? programCard(
             "Unclassified Program",
-            "Saved program awaiting a Mana pathway label",
+            "Assignment awaiting pathway identification",
             "?",
-            groups.unclassified,
-            groups.unclassified.length
-          )
-        : ""
-      }
+            data.unclassified,
+            data.unclassified.length
+          ) : ""}
 
-      ${ready && groups.unassigned.length
-        ? groupCard(
+      ${ready && data.unassigned.length
+        ? programCard(
             "Unassigned Clients",
             "No active program assignment",
             "○",
-            groups.unassigned,
-            groups.unassigned.length
-          )
-        : ""
-      }
+            data.unassigned,
+            data.unassigned.length
+          ) : ""}
 
       <div class="mcn-actions">
         <button
@@ -560,7 +364,7 @@
           data-mcn-route="clients"
         >
           <strong>Manage Clients</strong>
-          <small>Open coaching profiles</small>
+          <small>Open client profiles</small>
         </button>
 
         <button
@@ -568,53 +372,163 @@
           data-mcn-builder="1"
         >
           <strong>Create Program</strong>
-          <small>Launch Program Builder</small>
+          <small>Open Program Builder</small>
         </button>
       </div>
     `;
   }
 
-  /* ========================================
-     CLIENT DIRECTORY
-     ======================================== */
-
   function renderClients() {
-    const target = $("mcnList104704");
+    const target = $("mcnList104705");
     if (!target) return;
 
-    const search = String(
-      $("mcnSearch104704")?.value || ""
-    ).trim().toLowerCase();
+    const query = String(
+      $("mcnSearch104705")?.value || ""
+    ).toLowerCase().trim();
 
-    const shown = clients.filter(
-      client =>
-        client.name.toLowerCase().includes(search)
+    const filtered = clients.filter(
+      c => c.name.toLowerCase().includes(query)
     );
 
-    if (!clientsLoaded) {
-      target.innerHTML = `
-        <div class="mcn-notice">
-          ${esc(clientsError ||
-            "Loading client records…")}
-        </div>
-      `;
-      return;
-    }
-
-    target.innerHTML = shown.length
-      ? shown.map(clientButton).join("")
-      : `
-        <div class="mcn-notice">
-          ${clients.length
-            ? "No matching clients."
-            : "No client accounts found."}
-        </div>
-      `;
+    target.innerHTML = !clientsLoaded
+      ? `<p class="mcn-muted">
+          ${esc(clientsError || "Loading clients…")}
+         </p>`
+      : filtered.length
+        ? filtered.map(clientButton).join("")
+        : `<p class="mcn-muted">
+            No matching clients.
+           </p>`;
   }
 
-  /* ========================================
-     COACH NAVIGATION
-     ======================================== */
+  /* ====================================
+     WORKSPACE VIEWS
+     ==================================== */
+
+  function ensureSuite() {
+    const home = $(HOME);
+    if (!home) return null;
+
+    if ($(SUITE)) return $(SUITE);
+
+    const suite = document.createElement("section");
+    suite.id = SUITE;
+
+    suite.innerHTML = `
+      <section data-mcn-view="summary">
+        <div id="mcnSummary104705"></div>
+      </section>
+
+      <section data-mcn-view="clients">
+        <div class="mcn-kicker">
+          CLIENT MANAGEMENT
+        </div>
+
+        <h2>Clients</h2>
+
+        <p class="mcn-muted">
+          Search your clients and open their profiles.
+        </p>
+
+        <input
+          id="mcnSearch104705"
+          type="search"
+          placeholder="Search clients..."
+        >
+
+        <div id="mcnList104705"></div>
+      </section>
+
+      <section data-mcn-view="chat">
+        <div class="mcn-kicker">
+          COACH COMMUNICATION
+        </div>
+
+        <h2>Chat</h2>
+
+        <div class="mcn-panel">
+          <h3>Coaching Inbox</h3>
+          <p class="mcn-muted">
+            Client messaging connection pending.
+          </p>
+          <div class="mcn-notice">
+            Conversations will appear when messaging
+            has been connected.
+          </div>
+        </div>
+      </section>
+
+      <section data-mcn-view="payments">
+        <div class="mcn-kicker">
+          MEMBERSHIPS & BILLING
+        </div>
+
+        <h2>Payments</h2>
+
+        <div class="mcn-panel">
+          <h3>Membership Management</h3>
+
+          <div class="mcn-pay-grid">
+            <div>
+              <strong>Mana Strength</strong>
+              <small>Subscription memberships</small>
+            </div>
+            <div>
+              <strong>Mana28</strong>
+              <small>Program payments</small>
+            </div>
+            <div>
+              <strong>ManaLyfe</strong>
+              <small>Wellbeing pathway</small>
+            </div>
+          </div>
+
+          <div class="mcn-notice">
+            Stripe connection pending. Payment
+            totals will come from actual billing data.
+          </div>
+        </div>
+      </section>
+
+      <section data-mcn-view="settings">
+        <div class="mcn-kicker">
+          COACH ADMINISTRATION
+        </div>
+
+        <h2>Settings</h2>
+
+        <div class="mcn-panel">
+          <h3>Coaching Tools</h3>
+
+          <div class="mcn-actions">
+            <button type="button"
+              data-mcn-builder="1">
+              <strong>Program Builder</strong>
+              <small>Create and edit programs</small>
+            </button>
+            <button type="button"
+              data-mcn-route="clients">
+              <strong>Manage Clients</strong>
+              <small>Profiles and assignments</small>
+            </button>
+          </div>
+        </div>
+      </section>
+    `;
+
+    home.appendChild(suite);
+
+    $("mcnSearch104705")?.addEventListener(
+      "input",
+      renderClients
+    );
+
+    return suite;
+  }
+
+  /* ====================================
+     NAVIGATION
+     ==================================== */
 
   function updateNav() {
     const nav = $(NAV);
@@ -630,25 +544,15 @@
       button.dataset.mcnTab = tab[0];
       button.style.order = String(index + 1);
 
-      let icon = button.querySelector(
+      const icon = button.querySelector(
         ".mana-v970-tab-icon"
       );
 
-      if (!icon) {
-        icon = document.createElement("span");
-        icon.className = "mana-v970-tab-icon";
-        button.prepend(icon);
-      }
-
-      if (icon.textContent !== tab[3]) {
-        icon.textContent = tab[3];
-      }
+      if (icon) icon.textContent = tab[3];
 
       Array.from(button.childNodes)
         .filter(node => node.nodeType === 3)
-        .forEach(node => {
-          node.textContent = "";
-        });
+        .forEach(node => node.textContent = "");
 
       let label = button.querySelector(
         ".mcn-tab-label"
@@ -670,10 +574,7 @@
   }
 
   function display() {
-    const suite = ensureSuite();
-    if (!suite) return;
-
-    suite.querySelectorAll(
+    ensureSuite()?.querySelectorAll(
       "[data-mcn-view]"
     ).forEach(view => {
       view.hidden = view.dataset.mcnView !== page;
@@ -688,9 +589,8 @@
   function go(next) {
     if (!coachVisible()) return;
 
-    page = tabs.some(
-      tab => tab[0] === next
-    ) ? next : "summary";
+    page = tabs.some(t => t[0] === next)
+      ? next : "summary";
 
     if (
       typeof window.showCoachPage === "function"
@@ -701,16 +601,11 @@
     display();
     updateNav();
 
-    if (page === "summary") {
-      renderSummary();
-    }
-
-    if (page === "clients") {
-      renderClients();
-    }
+    if (page === "summary") renderSummary();
+    if (page === "clients") renderClients();
 
     if (
-      (page === "summary" || page === "clients") &&
+      ["summary", "clients"].includes(page) &&
       !loading
     ) {
       loadData();
@@ -719,9 +614,9 @@
     window.scrollTo(0, 0);
   }
 
-  /* ========================================
+  /* ====================================
      STYLES
-     ======================================== */
+     ==================================== */
 
   function installStyles() {
     if ($(STYLE)) return;
@@ -730,22 +625,46 @@
     style.id = STYLE;
 
     style.textContent = `
-      /* Override legacy Coach Hub
-         direct-child hiding rule. */
+
+      /* WHITE LOGOUT / ORANGE BORDER */
+
+      #manaV97CoachLogout {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color:
+          #FFFFFF !important;
+
+        border: 1px solid #FF7927 !important;
+        background: #15171A !important;
+        box-shadow: none !important;
+
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+      }
+
+      /* REMOVE THE OLD 115PX SUMMARY GAP */
+
+      #${HOME}.mcn-summary-active
+      > #${HUB} {
+        margin-bottom: 10px !important;
+        padding-bottom: 0 !important;
+      }
+
+      #${HOME}.mcn-summary-active
+      > #${HUB} .hub-panel:last-child {
+        margin-bottom: 0 !important;
+      }
 
       #${HOME} > #${SUITE} {
         display: block !important;
         width: 100% !important;
-        margin: 0 auto 115px !important;
+        margin: 0 auto 90px !important;
       }
 
       #${HOME} > :not(#${HUB}):not(#${SUITE}) {
         display: none !important;
       }
-
-      /* Keep original Coach Hub header and
-         Needs Your Attention, not duplicate
-         Programs / Quick Actions sections. */
 
       #${HUB} > .hub-panel:not(:first-of-type) {
         display: none !important;
@@ -765,14 +684,15 @@
         color: #FFFFFF;
       }
 
-      #${SUITE} [data-mcn-view][hidden] {
+      #${SUITE}
+      [data-mcn-view][hidden] {
         display: none !important;
       }
 
       #${SUITE} [data-mcn-view] {
         max-width: 980px;
         margin: 0 auto;
-        padding: 14px 0 22px;
+        padding: 8px 0 20px;
       }
 
       #${SUITE} .mcn-kicker {
@@ -780,14 +700,14 @@
         font-size: 11px;
         font-weight: 900;
         letter-spacing: .1em;
-        margin-bottom: 10px;
+        margin-bottom: 9px;
       }
 
       #${SUITE} h2 {
         color: #FFFFFF !important;
         font-size: clamp(26px,4vw,35px);
         font-weight: 900;
-        margin: 0 0 12px;
+        margin: 0 0 10px;
       }
 
       #${SUITE} h3 {
@@ -798,7 +718,7 @@
       #${SUITE} .mcn-muted {
         color: #C1C6CE;
         font-size: 13px;
-        line-height: 1.55;
+        line-height: 1.5;
       }
 
       #${SUITE} .mcn-stats {
@@ -806,15 +726,15 @@
         grid-template-columns:
           repeat(3,minmax(0,1fr));
         gap: 10px;
-        margin: 20px 0;
+        margin: 18px 0;
       }
 
       #${SUITE} .mcn-stat,
       #${SUITE} .mcn-panel {
-        padding: 18px;
         background: #15171A;
         border: 1px solid #48515B;
         border-radius: 16px;
+        padding: 17px;
       }
 
       #${SUITE} .mcn-stat strong {
@@ -829,11 +749,13 @@
         font-size: 11px;
       }
 
+      /* PROGRAM CARDS */
+
       #${SUITE} .mcn-program {
-        margin: 10px 0;
         background: #15171A;
         border: 1px solid #48515B;
         border-radius: 16px;
+        margin: 10px 0;
         overflow: hidden;
       }
 
@@ -842,9 +764,10 @@
       }
 
       #${SUITE} .mcn-program summary {
-        display: flex;
-        align-items: center;
+        display: flex !important;
+        align-items: center !important;
         gap: 13px;
+
         padding: 16px;
         cursor: pointer;
         list-style: none;
@@ -855,43 +778,84 @@
         display: none;
       }
 
-      #${SUITE} .mcn-program-icon {
+      #${SUITE} .mcn-symbol {
         display: grid;
         place-items: center;
+
         flex: 0 0 42px;
         width: 42px;
         height: 42px;
 
-        background: #221710;
+        background: #241910;
         border: 1px solid #FF7927;
         border-radius: 12px;
 
         color: #FF7927;
-        font-size: 23px;
+        font-size: 22px;
       }
 
-      #${SUITE} .mcn-program-info {
+      #${SUITE} .mcn-program-text {
         flex: 1;
         min-width: 0;
       }
 
-      #${SUITE} .mcn-program-info strong {
+      #${SUITE} .mcn-program-text strong {
         display: block;
-        color: #FFFFFF;
+        color: #FFFFFF !important;
         font-size: 15px;
       }
 
-      #${SUITE} .mcn-program-info small {
+      #${SUITE} .mcn-program-text small {
         display: block;
         color: #C1C6CE;
         font-size: 11px;
         margin-top: 5px;
       }
 
-      #${SUITE} .mcn-program-count {
-        color: #FF7927;
-        font-size: 22px;
+      /* COUNT + ORANGE RIGHT ARROW */
+
+      #${SUITE} .mcn-card-end {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 17px;
+        margin-left: auto;
+      }
+
+      #${SUITE} .mcn-assigned {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 54px;
+      }
+
+      #${SUITE} .mcn-assigned strong {
+        color: #FF7927 !important;
+        font-size: 23px;
         font-weight: 900;
+        line-height: 1;
+      }
+
+      #${SUITE} .mcn-assigned small {
+        color: #C1C6CE;
+        font-size: 9px;
+        margin-top: 5px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+      }
+
+      #${SUITE} .mcn-expand-arrow {
+        color: #FF7927 !important;
+        font-size: 32px;
+        font-weight: 700;
+        line-height: 1;
+        transition: transform .2s ease;
+      }
+
+      #${SUITE}
+      .mcn-program[open]
+      .mcn-expand-arrow {
+        transform: rotate(90deg);
       }
 
       #${SUITE} .mcn-program-body {
@@ -901,10 +865,10 @@
 
       #${SUITE} .mcn-client {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        width: 100%;
+        justify-content: space-between;
 
+        width: 100%;
         padding: 14px;
         margin: 0 0 8px;
 
@@ -923,7 +887,7 @@
         border-color: #FF7927;
       }
 
-      #${SUITE} .mcn-chevron {
+      #${SUITE} .mcn-client-arrow {
         color: #FF7927;
         font-size: 23px;
       }
@@ -933,7 +897,7 @@
         grid-template-columns:
           repeat(2,minmax(0,1fr));
         gap: 10px;
-        margin: 20px 0;
+        margin: 18px 0;
       }
 
       #${SUITE} .mcn-actions button {
@@ -957,16 +921,17 @@
         display: block;
         color: #C1C6CE;
         font-size: 11px;
-        margin-top: 6px;
+        margin-top: 5px;
       }
 
-      #${SUITE} #mcnSearch104704 {
+      #${SUITE} #mcnSearch104705 {
         width: 100%;
         padding: 14px;
         margin: 16px 0;
 
-        background: #15171A;
         color: #FFFFFF;
+        background: #15171A;
+
         border: 1px solid #535C68;
         border-radius: 12px;
         font-size: 14px;
@@ -982,7 +947,6 @@
 
         color: #C1C6CE;
         font-size: 13px;
-        line-height: 1.6;
       }
 
       #${SUITE} .mcn-pay-grid {
@@ -995,12 +959,12 @@
 
       #${SUITE} .mcn-pay-grid > div {
         padding: 15px;
+        background: #101216;
         border: 1px solid #444C55;
         border-radius: 12px;
-        background: #101216;
       }
 
-      /* Five Coach Hub bottom tabs */
+      /* COACH HUB BOTTOM NAVIGATION */
 
       #${NAV} .mana-v970-nav-inner {
         display: grid !important;
@@ -1024,9 +988,6 @@
         border-radius: 13px !important;
 
         color: #C1C6CE !important;
-        -webkit-text-fill-color:
-          #C1C6CE !important;
-
         font-size: 0 !important;
       }
 
@@ -1047,10 +1008,7 @@
       #${NAV} .mana-v970-tab.active {
         background: #321D12 !important;
         border-color: #FF7927 !important;
-
         color: #FF7927 !important;
-        -webkit-text-fill-color:
-          #FF7927 !important;
       }
 
       @media(max-width:600px) {
@@ -1059,9 +1017,20 @@
           gap: 6px;
         }
 
-        #${SUITE} .mcn-stat,
-        #${SUITE} .mcn-pay-grid > div {
+        #${SUITE} .mcn-stat {
           padding: 11px;
+        }
+
+        #${SUITE} .mcn-card-end {
+          gap: 9px;
+        }
+
+        #${SUITE} .mcn-assigned {
+          min-width: 43px;
+        }
+
+        #${SUITE} .mcn-expand-arrow {
+          font-size: 27px;
         }
 
         #${SUITE} .mcn-actions {
@@ -1077,42 +1046,27 @@
     document.head.appendChild(style);
   }
 
-  /* ========================================
+  /* ====================================
      EVENTS
-     ======================================== */
-
-  function openBuilder() {
-    if (
-      typeof window.openManaProgramBuilder ===
-      "function"
-    ) {
-      window.openManaProgramBuilder();
-    } else {
-      window.alert(
-        "Program Builder is unavailable."
-      );
-    }
-  }
+     ==================================== */
 
   function handleClick(event) {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
-    const navButton = target.closest(
+    const nav = target.closest(
       `#${NAV} [data-coach-page]`
     );
 
-    if (navButton && coachVisible()) {
+    if (nav && coachVisible()) {
       const tab = tabs.find(
-        item =>
-          item[0] === navButton.dataset.mcnTab
+        t => t[0] === nav.dataset.mcnTab
       );
 
       if (!tab) return;
 
       event.preventDefault();
       event.stopImmediatePropagation();
-
       go(tab[0]);
       return;
     }
@@ -1133,23 +1087,29 @@
 
     if (builder && coachVisible()) {
       event.preventDefault();
-      openBuilder();
+
+      if (
+        typeof window.openManaProgramBuilder ===
+        "function"
+      ) {
+        window.openManaProgramBuilder();
+      }
     }
 
-    /* Existing .client-open event handler
-       opens the existing coaching profile. */
+    /* Original .client-open handler
+       continues to open client profiles. */
   }
 
   function checkWorkspace() {
-    const now = coachVisible();
+    const visible = coachVisible();
 
-    if (now && !coachWasVisible) {
+    if (visible && !coachWasVisible) {
       coachWasVisible = true;
       page = "summary";
       display();
       updateNav();
       loadData();
-    } else if (!now) {
+    } else if (!visible) {
       coachWasVisible = false;
     }
   }
@@ -1201,5 +1161,4 @@
   } else {
     init();
   }
-
 })();
