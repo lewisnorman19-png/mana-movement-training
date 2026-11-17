@@ -1,67 +1,79 @@
 
 /* ============================================================
    MANA MOVEMENT TRAINING
-   COMPLETE COACH PROFILE REPAIR
-   BUILD 104970
+   COACH PROFILE STABILITY & TRAINING DATA
+   BUILD 104971
+
+   COMPLETE REPLACEMENT:
+   mana_coach_profile_complete_104970.js
 
    FIXES
-   - Missing training and goal information
-   - Missing available nutrition information
-   - Oversized client detail boxes
-   - Profile reverting to older presentation
-   - Compact and consistent client sections
-   - Retains starting and progress photos
-   - Keeps original Coach Hub navigation
+   - Training details missing from Coach Hub
+   - Old profile returning after redraw
+   - Oversized personal information cards
+   - Inconsistent client profile layout
+   - Display of available shared Fuel information
 
-   DATABASE
-   READ ONLY:
-   - client_extended_profiles
-   - profile_settings
+   PRESERVES
+   - Working View Client navigation
+   - Original client contact information
+   - Starting and progress photographs
+   - Coaching actions and chat
+   - Saved programs and Program Builder
+   - Supabase security and permissions
 
+   READ-ONLY CLOUD QUERIES
    NO DATABASE WRITES
-   NO AUTHENTICATION CHANGES
-   NO VIEW CLIENT FUNCTION REPLACEMENT
-   NO PROGRAM BUILDER CHANGES
-   NO CHAT CHANGES
+   NO AUTHENTICATION REPLACEMENT
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "104970";
+  const BUILD = "104971";
 
-  if (window.MANA_PROFILE_COMPLETE_104970) return;
-
-  window.MANA_PROFILE_COMPLETE_104970 = true;
+  if (window.MANA_PROFILE_COMPLETE_104971) return;
+  window.MANA_PROFILE_COMPLETE_104971 = true;
 
   const $ = id => document.getElementById(id);
 
   const VIEW = "coachClientDetailView";
   const PROFILE = "manaCoachProfile104950";
-  const STYLE = "manaProfileCompleteStyle104970";
+  const TRAINING = "manaTrainingDetails104971";
+  const STYLE = "manaProfileStyle104971";
 
-  let activeId = "";
-  let generation = 0;
-  let pending = [];
-  let lastData = null;
-  let lastClientId = "";
+  let selectedId = "";
+  let selectedName = "";
+  let requestNumber = 0;
+  let loadedId = "";
+  let cachedProfile = null;
+  let observedPanel = null;
+  let panelObserver = null;
 
-  const escapeHTML = value =>
+  const escapeHtml = value =>
     String(value ?? "").replace(
       /[&<>"']/g,
-      c => ({
+      character => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#39;"
-      })[c]
+      })[character]
     );
+
+  function hasValue(value) {
+    return (
+      value !== undefined &&
+      value !== null &&
+      String(value).trim() !== ""
+    );
+  }
 
   function isOpen() {
     const view = $(VIEW);
 
-    return !!(
+    return Boolean(
       view &&
       !view.hidden &&
       !view.classList.contains("hide")
@@ -83,23 +95,19 @@
       }
     } catch (_) {}
 
-    if (activeId) {
-      return {
-        id: activeId,
-        name:
-          $("detailClientName")?.textContent?.trim() ||
-          "Client"
-      };
-    }
+    if (!selectedId) return null;
 
-    return null;
+    return {
+      id: selectedId,
+      name: selectedName || "Client"
+    };
   }
 
   /* ============================================================
      PREMIUM COMPACT STYLING
      ============================================================ */
 
-  function installStyle() {
+  function installStyles() {
     if ($(STYLE)) return;
 
     const style = document.createElement("style");
@@ -107,231 +115,135 @@
     style.id = STYLE;
 
     style.textContent = `
-
       #${VIEW} #${PROFILE} {
+        padding: 15px !important;
+        margin: 11px 0 !important;
+        border-radius: 16px !important;
         background: #15171B !important;
         border: 1px solid #4B535E !important;
-        border-radius: 18px !important;
-        padding: 16px !important;
-        margin: 12px 0 !important;
-        color: #FFFFFF !important;
-        box-sizing: border-box !important;
       }
 
-      #${PROFILE} *,
-      #${PROFILE} *::before,
-      #${PROFILE} *::after {
-        box-sizing: border-box !important;
-      }
-
-      #${PROFILE} .mcp-kicker,
-      #${PROFILE} .mpc-kicker {
-        font-size: 10px !important;
-        color: #FF7927 !important;
-        letter-spacing: .12em !important;
-        font-weight: 900 !important;
-        text-transform: uppercase !important;
-      }
-
-      #${PROFILE} h3 {
-        font-size: 17px !important;
-        line-height: 1.25 !important;
-        margin: 5px 0 10px !important;
-        color: white !important;
-      }
-
-      #${PROFILE} .mpc-section {
-        margin: 13px 0 0 !important;
-      }
-
-      #${PROFILE} .mpc-grid {
+      #${PROFILE} .mcp-grid {
         display: grid !important;
         grid-template-columns:
-          repeat(2, minmax(0,1fr)) !important;
-        grid-auto-rows: auto !important;
-        gap: 8px !important;
+          repeat(2, minmax(0, 1fr)) !important;
+        gap: 7px !important;
         align-items: stretch !important;
       }
 
-      #${PROFILE} .mpc-item,
       #${PROFILE} .mcp-detail {
         display: flex !important;
         flex-direction: column !important;
         align-items: flex-start !important;
         justify-content: center !important;
 
-        width: auto !important;
-        height: auto !important;
         min-height: 0 !important;
+        height: auto !important;
         max-height: none !important;
 
-        padding: 10px 12px !important;
+        width: 100% !important;
+        padding: 8px 11px !important;
         margin: 0 !important;
         gap: 3px !important;
 
         background: #101215 !important;
-        border: 1px solid #444C57 !important;
+        border: 1px solid #424A55 !important;
         border-radius: 10px !important;
-
         text-align: left !important;
-        overflow-wrap: anywhere !important;
       }
 
-      #${PROFILE} .mpc-item small,
       #${PROFILE} .mcp-detail small {
+        color: #ADB6C1 !important;
         display: block !important;
         width: 100% !important;
-
+        font-size: 10px !important;
+        line-height: 1.3 !important;
         margin: 0 !important;
         padding: 0 !important;
-
-        color: #ADB6C1 !important;
-        font-size: 10px !important;
-        font-weight: 500 !important;
-        line-height: 1.3 !important;
         text-align: left !important;
       }
 
-      #${PROFILE} .mpc-item strong,
       #${PROFILE} .mcp-detail strong {
+        color: #FFFFFF !important;
         display: block !important;
         width: 100% !important;
-
-        margin: 0 !important;
-        padding: 0 !important;
-
-        color: #FFFFFF !important;
         font-size: 13px !important;
         font-weight: 750 !important;
         line-height: 1.4 !important;
+        margin: 0 !important;
+        padding: 0 !important;
         text-align: left !important;
         white-space: pre-wrap !important;
         overflow-wrap: anywhere !important;
       }
 
-      #${PROFILE} .mpc-line {
-        height: 1px;
-        background: #343C46;
-        margin: 13px 0;
-      }
-
-      #${PROFILE} .mpc-note {
-        color: #B6BEC8;
-        font-size: 11px;
-        line-height: 1.5;
-        margin: 8px 0;
-      }
-
-      /* PHOTOS */
-
-      #${PROFILE} .mpc-photo-fold {
-        background: #111317 !important;
-        border: 1px solid #454D57 !important;
-        border-radius: 12px !important;
+      #${PROFILE} #${TRAINING} {
         margin-top: 14px !important;
-        overflow: hidden !important;
+        padding-top: 12px !important;
+        border-top: 1px solid #383F49 !important;
       }
 
-      #${PROFILE} .mpc-photo-fold > summary {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        cursor: pointer;
-        list-style: none;
-        padding: 13px;
-        font-size: 14px;
-        font-weight: 800;
+      #${TRAINING} .mpt-title {
+        color: #FF7927 !important;
+        font-size: 11px !important;
+        font-weight: 900 !important;
+        letter-spacing: .11em !important;
+        margin: 0 0 9px !important;
       }
 
-      #${PROFILE} .mpc-photo-fold
-      > summary::-webkit-details-marker {
-        display: none;
-      }
-
-      #${PROFILE} .mpc-photo-fold
-      > summary::after {
-        content: "⌄";
-        color: #FF7927;
-        font-size: 22px;
-      }
-
-      #${PROFILE} .mpc-photo-fold[open]
-      > summary::after {
-        transform: rotate(180deg);
-      }
-
-      #${PROFILE} .mpc-photo-content {
-        padding: 0 12px 13px;
-      }
-
-      #${PROFILE} .mcp-photos {
+      #${TRAINING} .mpt-grid {
         display: grid !important;
         grid-template-columns:
-          repeat(3,minmax(0,1fr)) !important;
-        gap: 8px !important;
+          repeat(2, minmax(0, 1fr)) !important;
+        gap: 7px !important;
       }
 
-      #${PROFILE} .mcp-photo {
-        padding: 7px !important;
-        border-radius: 9px !important;
-        background: #0E1013 !important;
-        min-width: 0 !important;
+      #${TRAINING} .mpt-item {
+        background: #101215 !important;
+        border: 1px solid #424A55 !important;
+        border-radius: 10px !important;
+        padding: 9px 11px !important;
+        min-height: 0 !important;
+        height: auto !important;
+      }
+
+      #${TRAINING} .mpt-item small {
+        color: #ADB6C1 !important;
+        display: block !important;
+        font-size: 10px !important;
+        margin-bottom: 4px !important;
+      }
+
+      #${TRAINING} .mpt-item strong {
+        color: white !important;
+        display: block !important;
+        font-size: 13px !important;
+        font-weight: 750 !important;
+        overflow-wrap: anywhere !important;
+      }
+
+      #${TRAINING} .mpt-note {
+        color: #ABB4C0 !important;
+        font-size: 11px !important;
+        line-height: 1.5 !important;
+        margin: 8px 0 0 !important;
       }
 
       #${PROFILE} .mcp-photo img,
       #${PROFILE} .mcp-empty-photo {
-        width: 100% !important;
-        max-width: 150px !important;
-        height: auto !important;
-        max-height: 180px !important;
-        aspect-ratio: 3/4 !important;
+        max-height: 175px !important;
         object-fit: cover !important;
-        margin: 0 auto 6px !important;
       }
 
-      #${PROFILE} .mcp-empty-photo {
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        color: #AAB3BF !important;
-        border: 1px dashed #59616C !important;
-        border-radius: 8px !important;
-      }
-
-      /* OTHER COACH SECTIONS */
-
-      #${VIEW} #manaCoachAssignments104720,
-      #${VIEW} #manaV998ClientSummary {
-        padding: 14px !important;
-        margin: 11px 0 !important;
-        border-radius: 15px !important;
-      }
-
-      #${VIEW} .mct-chat-card {
-        padding: 14px !important;
-        border-radius: 14px !important;
-      }
-
-      @media (max-width:600px) {
+      @media(max-width:600px) {
         #${VIEW} #${PROFILE} {
           padding: 12px !important;
         }
 
-        #${PROFILE} .mpc-grid {
+        #${PROFILE} .mcp-grid,
+        #${TRAINING} .mpt-grid {
           grid-template-columns: 1fr !important;
           gap: 6px !important;
-        }
-
-        #${PROFILE} .mpc-item {
-          padding: 9px 11px !important;
-        }
-
-        #${PROFILE} .mcp-photos {
-          gap: 5px !important;
-        }
-
-        #${PROFILE} .mcp-photo {
-          padding: 4px !important;
         }
       }
     `;
@@ -340,299 +252,127 @@
   }
 
   /* ============================================================
-     DATE FORMATTING
+     DISPLAY HELPERS
      ============================================================ */
-
-  function dateText(value) {
-    const raw = String(value || "");
-
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-      return raw;
-    }
-
-    const [year, month, day] =
-      raw.split("-").map(Number);
-
-    const date = new Date(
-      Date.UTC(year, month - 1, day)
-    );
-
-    if (
-      date.getUTCFullYear() !== year ||
-      date.getUTCMonth() !== month - 1 ||
-      date.getUTCDate() !== day
-    ) {
-      return raw;
-    }
-
-    return new Intl.DateTimeFormat(
-      "en-AU",
-      {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        timeZone: "UTC"
-      }
-    ).format(date);
-  }
-
-  /* ============================================================
-     DATA DISPLAY HELPERS
-     ============================================================ */
-
-  function valuePresent(value) {
-    return (
-      value !== null &&
-      value !== undefined &&
-      String(value).trim() !== ""
-    );
-  }
 
   function item(label, value) {
-    if (!valuePresent(value)) return "";
+    if (!hasValue(value)) return "";
 
     return `
-      <div class="mpc-item">
-        <small>${escapeHTML(label)}</small>
-        <strong>${escapeHTML(value)}</strong>
+      <div class="mpt-item">
+        <small>${escapeHtml(label)}</small>
+        <strong>${escapeHtml(value)}</strong>
       </div>
     `;
   }
 
-  function section(title, contents) {
-    if (!contents.trim()) return "";
+  function section(title, content) {
+    if (!content.trim()) return "";
 
     return `
-      <section class="mpc-section">
-        <div class="mpc-kicker">
-          ${escapeHTML(title)}
+      <section>
+        <div class="mpt-title">
+          ${escapeHtml(title)}
         </div>
 
-        <div class="mpc-grid">
-          ${contents}
+        <div class="mpt-grid">
+          ${content}
         </div>
       </section>
     `;
   }
 
-  function numberText(value, unit = "") {
-    if (!valuePresent(value)) return "";
+  function numberWithUnit(value, unit) {
+    if (!hasValue(value)) return "";
 
-    const n = Number(value);
+    const number = Number(value);
 
-    return Number.isFinite(n)
-      ? `${n}${unit}`
+    return Number.isFinite(number)
+      ? `${number} ${unit}`
       : String(value);
   }
 
   /* ============================================================
-     LOAD BOTH PROFILE SOURCES
-
-     Existing contact information:
-       client_extended_profiles
-
-     Original training information:
-       profile_settings
-
-     Missing or permission-restricted data
-     is never guessed.
+     READ ORIGINAL CLIENT TRAINING PROFILE
      ============================================================ */
 
-  async function fetchProfile(id) {
+  async function fetchTraining(clientId) {
     if (
       typeof window.supabaseClient !== "function"
     ) {
-      throw Error("Cloud connection unavailable");
+      throw Error("Mana cloud is unavailable");
     }
 
     const db = await window.supabaseClient();
 
-    const { data: auth, error: authError } =
-      await db.auth.getUser();
+    const results = await Promise.all([
+      db.from("profile_settings")
+        .select(
+          "name,age,height_cm,weight_kg," +
+          "training_days,goal,experience,equipment"
+        )
+        .eq("user_id", clientId)
+        .maybeSingle(),
 
-    if (authError || !auth?.user) {
-      throw Error("Please sign in");
-    }
-
-    const [extended, training] =
-      await Promise.all([
-        db.from("client_extended_profiles")
-          .select("details,share_with_coach")
-          .eq("user_id", id)
-          .maybeSingle(),
-
-        db.from("profile_settings")
-          .select(
-            "name,age,height_cm,weight_kg," +
-            "training_days,goal,experience,equipment"
-          )
-          .eq("user_id", id)
-          .maybeSingle()
-      ]);
+      db.from("client_extended_profiles")
+        .select("details,share_with_coach")
+        .eq("user_id", clientId)
+        .maybeSingle()
+    ]);
 
     return {
-      extended: extended.error
-        ? null
-        : extended.data,
-
-      training: training.error
-        ? null
-        : training.data,
-
-      extendedError: extended.error,
-      trainingError: training.error
+      training: results[0].data || null,
+      trainingError: results[0].error || null,
+      extended: results[1].data || null,
+      extendedError: results[1].error || null
     };
   }
 
   /* ============================================================
-     PHOTO PRESERVATION
-
-     These photo grids are created by 104950.
-     We move the existing nodes, preserving
-     signed URLs and loaded photographs.
+     BUILD TRAINING AND NUTRITION PRESENTATION
      ============================================================ */
 
-  function retainPhotoElements(panel) {
-    const oldFold = $("manaCoachPhotoFold104960");
-
-    const baseline = $("mcpBaseline104950");
-    const progress = $("mcpHistory104950");
-
-    return {
-      baseline,
-      progress,
-      wasOpen: !!oldFold?.open,
-      valid:
-        !!baseline &&
-        !!progress &&
-        panel.contains(baseline) &&
-        panel.contains(progress)
-    };
-  }
-
-  function insertPhotoSection(panel, photos) {
-    if (!photos.valid) return;
-
-    const fold = document.createElement("details");
-
-    fold.className = "mpc-photo-fold";
-    fold.id = "manaCompletePhotoFold104970";
-
-    fold.open = photos.wasOpen;
-
-    fold.innerHTML = `
-      <summary>
-        Starting &amp; Progress Photos
-      </summary>
-
-      <div class="mpc-photo-content">
-        <h3>Starting Photos</h3>
-
-        <div id="mpcStartingSlot104970"></div>
-
-        <div class="mpc-line"></div>
-
-        <h3>Progress Check-ins</h3>
-
-        <div id="mpcProgressSlot104970"></div>
-      </div>
-    `;
-
-    panel.appendChild(fold);
-
-    $("mpcStartingSlot104970")
-      .appendChild(photos.baseline);
-
-    $("mpcProgressSlot104970")
-      .appendChild(photos.progress);
-  }
-
-  /* ============================================================
-     RENDER COMPACT CLIENT PROFILE
-     ============================================================ */
-
-  function render(person, data) {
-    if (!isOpen()) return;
-
-    const panel = $(PROFILE);
-
-    if (!panel) return;
-
-    const live = currentClient();
-
-    if (!live || live.id !== person.id) return;
+  function buildMarkup(data) {
+    const training = data.training || {};
 
     const details =
       data.extended?.share_with_coach
         ? data.extended.details || {}
         : {};
 
-    const training = data.training || {};
-
-    const personal = [
-      item(
-        "Full name",
-        [
-          details.first_name,
-          details.last_name
-        ].filter(Boolean).join(" ") ||
-        training.name ||
-        person.name
-      ),
-
-      item("Email", details.contact_email),
-
-      item(
-        "Date of birth",
-        dateText(details.dob)
-      ),
-
-      item("Age", training.age),
-
-      item("Mobile phone", details.phone),
-
-      item("Country", details.country),
-
-      item("State / Province", details.state),
-
-      item("City / Suburb", details.city),
-
-      item("Postcode", details.postcode)
-    ].join("");
-
-    const goals = [
+    const trainingItems = [
       item("Training goal", training.goal),
 
       item(
         "Training days",
-        valuePresent(training.training_days)
-          ? numberText(training.training_days, " days")
-          : ""
+        numberWithUnit(
+          training.training_days,
+          "days"
+        )
       ),
 
-      item(
-        "Experience",
-        training.experience
-      ),
+      item("Experience", training.experience),
 
-      item(
-        "Equipment",
-        training.equipment
-      ),
+      item("Equipment", training.equipment),
 
       item(
         "Current weight",
-        numberText(training.weight_kg, " kg")
+        numberWithUnit(training.weight_kg, "kg")
       ),
 
       item(
         "Height",
-        numberText(training.height_cm, " cm")
+        numberWithUnit(training.height_cm, "cm")
       ),
+
+      item("Age", training.age),
 
       item(
         "Target weight",
-        numberText(details.target_weight, " kg")
+        numberWithUnit(
+          details.target_weight,
+          "kg"
+        )
       ),
 
       item(
@@ -646,20 +386,11 @@
       )
     ].join("");
 
-    const nutrition = [
-      item(
-        "Dietary preferences",
-        details.dietary_preferences
-      ),
-
-      item(
-        "Water target",
-        numberText(details.water_target, " L")
-      ),
-
+    const fuelItems = [
       item(
         "Food goal",
-        details.fuelGoal || details.food_goal
+        details.fuelGoal ||
+        details.food_goal
       ),
 
       item(
@@ -672,281 +403,293 @@
         "Daily protein",
         details.protein_target ||
         details.daily_protein
-      )
-    ].join("");
-
-    const emergency = [
-      item(
-        "Emergency contact",
-        details.emergency_name
       ),
 
       item(
-        "Emergency phone",
-        details.emergency_phone
+        "Dietary preferences",
+        details.dietary_preferences
+      ),
+
+      item(
+        "Water target",
+        numberWithUnit(
+          details.water_target,
+          "L"
+        )
       )
     ].join("");
 
-    const photoElements =
-      retainPhotoElements(panel);
-
-    /*
-     Old HTML is replaced only after both
-     cloud queries have settled.
-
-     Never open or close client screens here.
-    */
-
-    panel.innerHTML = `
-      <div class="mpc-kicker">
-        MANA MOVEMENT · CLIENT PROFILE
-      </div>
-
-      <h3>${escapeHTML(person.name)}</h3>
-
-      ${section("Personal & Contact", personal)}
-
-      <div class="mpc-line"></div>
-
-      ${section("Training & Goals", goals)}
-
-      <div class="mpc-line"></div>
-
-      ${section("Fuel & Nutrition", nutrition)}
-
-      ${
-        !nutrition.trim()
-          ? `
-            <p class="mpc-note">
-              Nutrition targets have not been
-              shared with Coach Hub yet.
-            </p>
-          `
-          : `
-            <p class="mpc-note">
-              Daily Fuel targets are displayed
-              when saved to the shared profile.
-            </p>
-          `
-      }
-
-      ${
-        emergency.trim()
-          ? `
-            <div class="mpc-line"></div>
-            ${section("Emergency Details", emergency)}
-          `
-          : ""
-      }
+    return `
+      ${section("TRAINING & GOALS", trainingItems)}
 
       ${
         data.trainingError
           ? `
-            <p class="mpc-note">
-              Training settings could not be loaded
-              for this account.
+            <p class="mpt-note">
+              Training settings could not be
+              retrieved for this client.
             </p>
           `
           : ""
       }
 
+      <div style="
+        height:1px;
+        background:#383F49;
+        margin:14px 0;
+      "></div>
+
+      ${section("FUEL & NUTRITION", fuelItems)}
+
       ${
-        data.extendedError
+        !fuelItems.trim()
           ? `
-            <p class="mpc-note">
-              Extended contact details are
-              unavailable for this account.
+            <p class="mpt-note">
+              Fuel settings have not yet been
+              synchronised to the coach-readable
+              cloud profile.
             </p>
           `
           : ""
       }
     `;
-
-    insertPhotoSection(panel, photoElements);
-
-    panel.dataset.mpcClientId = person.id;
-    panel.dataset.mpcBuild = BUILD;
   }
 
   /* ============================================================
-     APPLY SELECTED CLIENT INFORMATION
+     APPLY CONTENT WITHOUT REBUILDING PROFILE
      ============================================================ */
 
-  async function refresh(force = false) {
+  function applyProfile() {
+    if (!isOpen()) return;
+
+    const panel = $(PROFILE);
+    const person = currentClient();
+
+    if (!panel || !person?.id) return;
+
+    if (
+      !cachedProfile ||
+      loadedId !== person.id
+    ) {
+      return;
+    }
+
+    let target = $(TRAINING);
+
+    if (!target) {
+      target = document.createElement("section");
+      target.id = TRAINING;
+    }
+
+    /*
+     Retain the existing photo and contact nodes.
+     Insert Training before the photo section.
+    */
+
+    const photo =
+      $("manaCoachPhotoFold104960") ||
+      $("manaCompletePhotoFold104970") ||
+      $("mcpBaseline104950");
+
+    if (photo && panel.contains(photo)) {
+      if (target.nextElementSibling !== photo) {
+        photo.insertAdjacentElement(
+          "beforebegin",
+          target
+        );
+      }
+    } else if (!panel.contains(target)) {
+      panel.appendChild(target);
+    }
+
+    const signature =
+      loadedId + "|" + JSON.stringify(cachedProfile);
+
+    if (
+      target.dataset.signature !== signature ||
+      !target.hasChildNodes()
+    ) {
+      target.innerHTML = buildMarkup(cachedProfile);
+      target.dataset.signature = signature;
+    }
+
+    panel.dataset.mptClientId = person.id;
+  }
+
+  /* ============================================================
+     WATCH ONLY THE PROFILE PANEL
+
+     104950 may redraw the panel after an
+     asynchronous cloud response.
+
+     We observe only its immediate children.
+     When it removes our section, restore it.
+
+     Our own insertion causes one callback,
+     but does not trigger another insertion
+     when the section already exists.
+     ============================================================ */
+
+  function observePanel() {
+    const panel = $(PROFILE);
+
+    if (!panel) return;
+
+    if (observedPanel === panel) return;
+
+    if (panelObserver) {
+      panelObserver.disconnect();
+    }
+
+    observedPanel = panel;
+
+    panelObserver = new MutationObserver(() => {
+      if (!isOpen()) return;
+
+      if (
+        loadedId &&
+        currentClient()?.id === loadedId &&
+        !$(TRAINING)
+      ) {
+        applyProfile();
+      }
+    });
+
+    panelObserver.observe(panel, {
+      childList: true
+    });
+  }
+
+  /* ============================================================
+     LOAD SELECTED CLIENT ONCE
+
+     No repeated Supabase fetches every
+     time the page becomes visible.
+     ============================================================ */
+
+  async function loadClient() {
     if (!isOpen()) return;
 
     const person = currentClient();
 
     if (!person?.id) return;
 
-    const ticket = ++generation;
+    const ticket = ++requestNumber;
 
-    installStyle();
+    try {
+      const data = await fetchTraining(person.id);
 
-    const panel = $(PROFILE);
+      if (ticket !== requestNumber) return;
+      if (!isOpen()) return;
 
-    if (!panel) return;
+      if (
+        currentClient()?.id !== person.id
+      ) {
+        return;
+      }
 
-    if (
-      !force &&
-      lastClientId === person.id &&
-      lastData &&
-      panel.dataset.mpcBuild !== BUILD
-    ) {
-      render(person, lastData);
-      return;
-    }
+      loadedId = person.id;
+      cachedProfile = data;
 
-    if (
-      !force &&
-      lastClientId === person.id &&
-      panel.dataset.mpcBuild === BUILD
-    ) {
-      return;
-    }
+      observePanel();
+      applyProfile();
 
-    const data = await fetchProfile(person.id);
-
-    if (ticket !== generation) return;
-
-    if (!isOpen()) return;
-
-    const latest = currentClient();
-
-    if (!latest || latest.id !== person.id) return;
-
-    lastClientId = person.id;
-    lastData = data;
-
-    render(person, data);
-  }
-
-  /* ============================================================
-     BOUNDED UPDATES
-
-     104950 can finish loading after the
-     original client screen opens.
-
-     These limited checks reapply the
-     finished presentation without
-     repeatedly rebuilding the whole app.
-     ============================================================ */
-
-  function cancelPending() {
-    pending.forEach(clearTimeout);
-    pending = [];
-  }
-
-  function scheduleRefresh() {
-    cancelPending();
-
-    [250, 850, 1700, 2800].forEach(delay => {
-      pending.push(
-        setTimeout(() => {
-          if (isOpen()) {
-            void refresh().catch(error => {
-              console.warn(
-                "[Mana Profile 104970]",
-                error
-              );
-            });
-          }
-        }, delay)
+    } catch (error) {
+      console.warn(
+        "[Mana Profile Training]",
+        error
       );
-    });
+    }
   }
 
   /* ============================================================
-     CLIENT SELECTION
+     SELECT CLIENT
 
-     We only read the client ID.
-
-     Do not interfere with the existing
-     View Client click handler.
+     Never intercept original navigation.
      ============================================================ */
 
-  function clientClicked(event) {
+  function onClick(event) {
     const button = event.target.closest?.(
       ".client-open[data-client-id]"
     );
 
     if (!button) return;
 
-    activeId = String(button.dataset.clientId);
+    selectedId = String(button.dataset.clientId);
+    selectedName = String(
+      button.dataset.clientName || "Client"
+    );
 
-    lastClientId = "";
-    lastData = null;
+    loadedId = "";
+    cachedProfile = null;
+    requestNumber++;
 
-    generation++;
+    if (panelObserver) {
+      panelObserver.disconnect();
+      panelObserver = null;
+      observedPanel = null;
+    }
 
-    scheduleRefresh();
+    /*
+     Original View Client code runs normally.
+     Wait until its screen has opened.
+    */
+
+    setTimeout(() => {
+      if (isOpen()) {
+        observePanel();
+        void loadClient();
+      }
+    }, 350);
   }
 
   /* ============================================================
-     SCREEN RESTORATION
-
-     When Edge becomes visible again,
-     restore only the presentation.
-
-     Never navigate to Summary.
-     Never restart Coach Hub.
+     RESTORE PRESENTATION WITHOUT NAVIGATING
      ============================================================ */
 
-  function restoreView() {
+  function restore() {
     if (!isOpen()) return;
 
-    const panel = $(PROFILE);
+    observePanel();
 
     if (
-      panel &&
-      panel.dataset.mpcBuild === BUILD
+      loadedId &&
+      currentClient()?.id === loadedId
     ) {
+      applyProfile();
       return;
     }
 
-    if (lastData && lastClientId) {
-      const person = currentClient();
-
-      if (person?.id === lastClientId) {
-        render(person, lastData);
-        return;
-      }
-    }
-
-    scheduleRefresh();
+    void loadClient();
   }
 
   function init() {
-    installStyle();
+    installStyles();
 
     document.addEventListener(
       "click",
-      clientClicked,
+      onClick,
       true
     );
 
     document.addEventListener(
       "visibilitychange",
       () => {
-        if (!document.hidden) {
-          restoreView();
-        }
+        if (!document.hidden) restore();
       }
     );
 
     window.addEventListener(
       "pageshow",
-      restoreView
+      restore
     );
 
     if (isOpen()) {
-      scheduleRefresh();
+      setTimeout(restore, 350);
     }
 
-    window.MANA_PROFILE_COMPLETE_BUILD = BUILD;
-
     console.log(
-      "[Mana Movement] Complete Coach Profile " +
+      "[Mana Movement] Coach Profile " +
       BUILD +
       " active"
     );
