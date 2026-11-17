@@ -1,38 +1,39 @@
 
 /* ============================================================
    MANA MOVEMENT — SHARED COACH CHAT
-   BUILD 104092
+   BUILD 104093
 
-   COMPLETE FILE REPLACEMENT:
+   COMPLETE REPLACEMENT:
    mana_strength_chat_104090.js
 
-   FEATURES
-   - Shared Mana Strength / Mana28 messaging
-   - Existing conversation history
-   - Coach Hub client inbox
-   - Real unread-message counts
-   - Orange unread indicators
-   - Mark received messages as read
-   - Inbox refresh
-   - Original public chat functions and modal IDs
-   - No new messaging tables
+   - Existing coach/client messaging
+   - Coach Hub inbox
+   - Coach unread counts
+   - Working Summary Chats card
+   - Client unread badges on Mana28 and Strength
+   - Read confirmation through Supabase
+   - Existing messages and modal IDs preserved
+   - No database schema changes
    ============================================================ */
 
 (() => {
   "use strict";
 
-  if (window.MANA_STRENGTH_CHAT_104092) return;
-  window.MANA_STRENGTH_CHAT_104092 = true;
+  const BUILD = "104093";
+  if (window.MANA_STRENGTH_CHAT_104093) return;
+  window.MANA_STRENGTH_CHAT_104093 = true;
 
-  const BUILD = "104092";
+  const $ = id => document.getElementById(id);
   const MODAL = "manaV95ChatModal";
-  const STYLE = "manaStrengthChatStyle104092";
-  const INBOX = "manaCoachInbox104092";
-
+  const STYLE = "manaStrengthChatStyle104093";
+  const INBOX = "manaCoachInbox104093";
   const CHAT_VIEW =
     '#manaCoachSuite104707 [data-mcn-view="chat"]';
 
-  const $ = id => document.getElementById(id);
+  const CLIENT_CARDS = [
+    "mana28OverviewCoachChat104411",
+    "manaV964CoachChat"
+  ];
 
   let active = {
     role: "client",
@@ -43,42 +44,33 @@
   let sending = false;
   let loading = false;
   let inboxLoading = false;
-
-  let chatRequest = 0;
-  let inboxRequest = 0;
-
+  let opening = 0;
   let chatTimer = null;
   let inboxTimer = null;
-
-  let currentInbox = [];
-  let inboxUnreadTotal = 0;
+  let unreadBusy = false;
 
   const escapeHTML = value =>
     String(value ?? "").replace(
       /[&<>"']/g,
-      char => ({
+      c => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
+        "'": "&#39;",
         "'": "&#39;"
-      })[char]
+      })[c]
     );
 
   function coachVisible() {
     const view = $("coachView");
-
     return Boolean(
-      view &&
-      !view.classList.contains("hide")
+      view && !view.classList.contains("hide")
     );
   }
 
   function inboxVisible() {
-    const view = document.querySelector(
-      CHAT_VIEW
-    );
-
+    const view = document.querySelector(CHAT_VIEW);
     return Boolean(
       coachVisible() &&
       view &&
@@ -87,88 +79,63 @@
     );
   }
 
-  /* ======================================
-     CLOUD CONNECTION
-     ====================================== */
+  function conversationOpen() {
+    return Boolean($(MODAL)?.classList.contains("open"));
+  }
 
   async function connection() {
-    if (
-      typeof window.supabaseClient !== "function"
-    ) {
-      throw Error(
-        "Chat connection unavailable. Sign in again."
-      );
-    }
-
-    const db = await window.supabaseClient();
-
-    if (!db?.from || !db?.auth?.getUser) {
+    if (typeof window.supabaseClient !== "function") {
       throw Error("Chat connection unavailable.");
     }
-
+    const db = await window.supabaseClient();
+    if (!db?.from || !db?.auth?.getUser) {
+      throw Error("Please sign in again.");
+    }
     return db;
   }
 
-  async function authenticated(db) {
-    const { data, error } =
-      await db.auth.getUser();
-
+  async function account(db) {
+    const {data, error} = await db.auth.getUser();
     if (error || !data?.user?.id) {
-      throw Error(
-        "Your session has expired. Log in again."
-      );
+      throw Error("Your session has expired.");
     }
-
     return data.user;
   }
 
-  function coachSelection() {
-    try {
-      if (
-        typeof selectedCoachClient !== "undefined" &&
-        selectedCoachClient?.userId
-      ) {
-        return {
-          id: String(selectedCoachClient.userId),
-          name: String(
-            selectedCoachClient.clientName ||
-            "Client"
-          )
-        };
-      }
-    } catch (_) {}
+  async function accountRole(db, id) {
+    const {data, error} = await db
+      .from("profiles")
+      .select("role")
+      .eq("id", id)
+      .single();
 
-    return null;
+    if (error) throw error;
+    return data?.role || "";
   }
 
   function timeLabel(value) {
     const date = new Date(value);
-
-    if (!Number.isFinite(date.getTime())) {
-      return "";
-    }
-
-    return date.toLocaleString([], {
-      day: "numeric",
-      month: "short",
-      hour: "numeric",
-      minute: "2-digit"
-    });
+    return Number.isFinite(date.getTime())
+      ? date.toLocaleString([], {
+          day: "numeric",
+          month: "short",
+          hour: "numeric",
+          minute: "2-digit"
+        })
+      : "";
   }
 
-  /* ======================================
-     STYLES
-     ====================================== */
+  /* =================================================
+     PREMIUM STYLING
+     ================================================= */
 
-  function installStyles() {
+  function styles() {
     if ($(STYLE)) return;
 
-    const style = document.createElement("style");
-    style.id = STYLE;
+    const sheet = document.createElement("style");
+    sheet.id = STYLE;
 
-    style.textContent = `
-      /* Shared conversation modal */
-
+    sheet.textContent = `
       #${MODAL} {
         position:fixed;
         inset:0;
@@ -177,53 +144,50 @@
         flex-direction:column;
         width:100%;
         height:100dvh;
-        max-height:100dvh;
         background:#08090B;
         color:#FFFFFF;
-        box-sizing:border-box;
         overflow:hidden;
+        box-sizing:border-box;
       }
 
-      #${MODAL}.open {
-        display:flex;
-      }
+      #${MODAL}.open {display:flex}
 
       #${MODAL} .mana-v950-header {
-        flex:0 0 auto;
         padding:15px 18px;
+        flex:0 0 auto;
         display:flex;
-        justify-content:space-between;
         align-items:center;
-        gap:16px;
-        border-bottom:1px solid #515A65;
+        justify-content:space-between;
+        gap:15px;
         background:#111317;
+        border-bottom:1px solid #515A65;
       }
 
       #${MODAL} .mana-v950-header-kicker {
         color:#FF7927;
         font-size:11px;
-        font-weight:850;
+        font-weight:900;
         letter-spacing:.12em;
       }
 
       #${MODAL} .mana-v950-header-title {
+        color:#FFFFFF;
         font-size:23px;
         font-weight:900;
-        color:#FFFFFF;
       }
 
       #${MODAL} .mana-v950-header-sub {
         color:#C1C6CE;
         font-size:12px;
-        line-height:1.45;
       }
 
       #${MODAL} .mana-v950-close {
-        min-width:44px;
-        min-height:44px;
-        background:#171A1F;
+        width:44px;
+        height:44px;
+        flex:0 0 44px;
         border:1px solid #707780;
         border-radius:12px;
+        background:#171A1F;
         color:#FFFFFF;
         font-size:27px;
         cursor:pointer;
@@ -240,8 +204,8 @@
       }
 
       #${MODAL} .mana-v950-empty {
-        color:#C1C6CE;
         padding:18px;
+        color:#C1C6CE;
         line-height:1.5;
       }
 
@@ -249,9 +213,9 @@
         max-width:min(82%,600px);
         align-self:flex-start;
         padding:12px 15px;
-        border-radius:15px;
         background:#1B2025;
         border:1px solid #515A65;
+        border-radius:15px;
         overflow-wrap:anywhere;
       }
 
@@ -269,77 +233,69 @@
       }
 
       #${MODAL} .mana-v950-message-body {
-        white-space:pre-wrap;
         color:#FFFFFF;
         font-size:14px;
         line-height:1.5;
+        white-space:pre-wrap;
       }
 
       #${MODAL} .mana-v950-message-time {
         color:#C1C6CE;
         font-size:10px;
-        margin-top:5px;
+        margin-top:6px;
       }
 
       #${MODAL} .mana-v950-compose {
         flex:0 0 auto;
         padding:12px 16px
           max(14px,env(safe-area-inset-bottom));
-        border-top:1px solid #515A65;
         background:#111317;
+        border-top:1px solid #515A65;
       }
 
       #${MODAL} .mana-v950-compose-inner {
         display:flex;
         gap:10px;
-        align-items:stretch;
-        width:100%;
       }
 
       #${MODAL} .mana-v950-input {
         flex:1 1 auto;
         min-width:0;
         height:56px;
-        min-height:56px;
-        max-height:56px;
         resize:none;
         box-sizing:border-box;
         padding:14px;
-        border-radius:12px;
         background:#08090B;
         border:1px solid #697686;
+        border-radius:12px;
         color:#FFFFFF;
         font:500 16px/1.4 system-ui;
       }
 
       #${MODAL} .mana-v950-input:focus {
         outline:2px solid #FF7927;
-        outline-offset:1px;
       }
 
       #${MODAL} .mana-v950-send {
         flex:0 0 110px;
         min-height:56px;
         background:#FF7927;
+        color:#08090B;
         border:1px solid #FF7927;
         border-radius:12px;
-        color:#08090B;
         font:900 14px system-ui;
         cursor:pointer;
       }
 
       #${MODAL} .mana-v950-send:disabled {
         opacity:.65;
-        cursor:wait;
       }
 
       #${MODAL} .mana-v950-status {
         min-height:20px;
         padding-top:8px;
-        font-size:13px;
-        font-weight:750;
+        font-size:12px;
         color:#C1C6CE;
-        line-height:1.4;
       }
 
       #${MODAL}
@@ -375,17 +331,24 @@
       }
 
       #${INBOX} .mci-subtitle {
+        margin-top:5px;
         color:#C1C6CE;
         font-size:12px;
-        margin-top:5px;
+      }
+
+      #${INBOX} .mci-total {
+        margin-top:7px;
+        color:#FF7927;
+        font-size:12px;
+        font-weight:850;
       }
 
       #${INBOX} .mci-refresh {
-        border:1px solid #FF7927;
-        border-radius:10px;
+        padding:10px 15px;
         color:#FF7927;
         background:#21170F;
-        padding:10px 15px;
+        border:1px solid #FF7927;
+        border-radius:10px;
         font-size:12px;
         font-weight:850;
         cursor:pointer;
@@ -417,13 +380,6 @@
         min-width:0;
       }
 
-      #${INBOX} .mci-name-line {
-        display:flex;
-        align-items:center;
-        flex-wrap:wrap;
-        gap:9px;
-      }
-
       #${INBOX} .mci-name {
         color:#FFFFFF;
         font-size:15px;
@@ -433,7 +389,6 @@
       #${INBOX} .mci-preview {
         color:#C1C6CE;
         font-size:12px;
-        line-height:1.5;
         margin-top:6px;
         overflow-wrap:anywhere;
       }
@@ -446,63 +401,93 @@
 
       #${INBOX} .mci-open {
         flex:0 0 auto;
+        padding:12px 15px;
+        background:#271A12;
         border:1px solid #FF7927;
         border-radius:10px;
-        background:#271A12;
         color:#FF7927;
-        padding:12px 15px;
         font-size:11px;
         font-weight:900;
         cursor:pointer;
       }
 
       #${INBOX} .mci-empty {
-        padding:20px;
+        padding:18px;
         border:1px solid #48515B;
-        border-radius:14px;
+        border-radius:12px;
         color:#C1C6CE;
         font-size:13px;
-        line-height:1.6;
       }
 
-      /* Unread badges */
+      /* Orange unread badges */
 
-      #${INBOX} .mci-unread,
-      #manaV97CoachNav .mci-tab-unread {
+      .mci-unread,
+      #manaV97CoachNav .mci-tab-unread,
+      .mana-client-chat-unread {
         display:inline-flex;
         align-items:center;
         justify-content:center;
-        min-width:23px;
-        height:23px;
+        min-width:22px;
+        height:22px;
         padding:0 6px;
         box-sizing:border-box;
         border-radius:999px;
         background:#FF7927;
-        color:#08090B;
-        -webkit-text-fill-color:#08090B;
+        color:#08090B!important;
+        -webkit-text-fill-color:#08090B!important;
         font-size:11px;
         font-weight:950;
         line-height:1;
-        font-variant-numeric:tabular-nums;
       }
 
       #manaV97CoachNav .mci-tab-unread {
         min-width:19px;
         height:19px;
-        font-size:10px;
         margin-top:3px;
+        font-size:10px;
       }
 
-      #manaV97CoachNav
-      .mci-tab-unread[hidden] {
+      .mci-tab-unread[hidden],
+      .mana-client-chat-unread[hidden] {
         display:none!important;
       }
 
-      #${INBOX} .mci-total {
-        color:#FF7927;
-        font-size:12px;
-        font-weight:850;
-        margin-top:7px;
+      /* Client Overview Chat cards */
+
+      #mana28OverviewCoachChat104411,
+      #manaV964CoachChat {
+        position:relative!important;
+      }
+
+      #mana28OverviewCoachChat104411
+      .mana-client-chat-unread,
+      #manaV964CoachChat
+      .mana-client-chat-unread {
+        position:absolute;
+        top:9px;
+        right:12px;
+        z-index:3;
+        box-shadow:0 0 0 2px #102024;
+      }
+
+      /* Original Summary Chats card */
+
+      #manaCoachHubClean103760
+      .hub-alert-grid > .hub-alert:first-child {
+        cursor:pointer!important;
+        border-color:#FF7927!important;
+      }
+
+      #manaCoachHubClean103760
+      .hub-alert-grid > .hub-alert:first-child
+      .hub-alert-number {
+        color:#FF7927!important;
+      }
+
+      #manaCoachHubClean103760
+      .hub-alert-grid > .hub-alert:first-child:focus-visible {
+        outline:2px solid #FF7927!important;
+        outline-offset:3px!important;
       }
 
       @media(max-width:600px) {
@@ -527,7 +512,6 @@
         #${INBOX} .mci-client {
           flex-direction:column;
           align-items:stretch;
-          gap:12px;
         }
 
         #${INBOX} .mci-open {
@@ -536,12 +520,12 @@
       }
     `;
 
-    document.head.appendChild(style);
+    document.head.appendChild(sheet);
   }
 
-  /* ======================================
-     MODAL
-     ====================================== */
+  /* =================================================
+     CHAT MODAL
+     ================================================= */
 
   function ensureModal() {
     let modal = $(MODAL);
@@ -554,8 +538,8 @@
 
     if (
       $("manaV95Input") &&
-      $("manaV95Send") &&
       $("manaV95Messages") &&
+      $("manaV95Send") &&
       $("manaV95ChatClose")
     ) {
       return modal;
@@ -580,12 +564,12 @@
           </div>
         </div>
 
-        <button
-          type="button"
+        <button type="button"
           class="mana-v950-close"
           id="manaV95ChatClose"
-          aria-label="Close chat"
-        >×</button>
+          aria-label="Close chat">
+          ×
+        </button>
       </div>
 
       <div class="mana-v950-messages"
@@ -595,18 +579,18 @@
       <div class="mana-v950-compose">
         <div class="mana-v950-compose-inner">
           <textarea
-            class="mana-v950-input"
             id="manaV95Input"
+            class="mana-v950-input"
             rows="1"
             maxlength="2000"
             placeholder="Write a message..."
           ></textarea>
 
-          <button
-            type="button"
-            class="mana-v950-send"
+          <button type="button"
             id="manaV95Send"
-          >SEND</button>
+            class="mana-v950-send">
+            SEND
+          </button>
         </div>
 
         <div class="mana-v950-status"
@@ -621,35 +605,216 @@
 
   function status(message, kind = "normal") {
     const node = $("manaV95Status");
-
     if (!node) return;
 
     node.textContent = message;
     node.dataset.kind = kind;
   }
 
-  function label(value) {
-    const node = $("manaV95Send");
-    if (node) node.textContent = value;
+  function sendLabel(value) {
+    const button = $("manaV95Send");
+    if (button) button.textContent = value;
   }
 
-  /* ======================================
-     OPEN SHARED CONVERSATION
-     ====================================== */
+  /* =================================================
+     LIVE UNREAD COUNTS
+     ================================================= */
+
+  function coachChatTab() {
+    return document.querySelector(
+      '#manaV97CoachNav [data-coach-page="progress"]'
+    );
+  }
+
+  function summaryCard() {
+    return document.querySelector(
+      "#manaCoachHubClean103760 " +
+      ".hub-alert-grid > .hub-alert:first-child"
+    );
+  }
+
+  function updateSummary(count) {
+    const card = summaryCard();
+    if (!card) return;
+
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+    card.setAttribute(
+      "aria-label",
+      count
+        ? `Open Chat. ${count} unread messages`
+        : "Open Chat. No unread messages"
+    );
+
+    const number = card.querySelector(
+      ".hub-alert-number"
+    );
+
+    const description = card.querySelector("small");
+
+    if (number) {
+      const value = String(count);
+      if (number.textContent !== value) {
+        number.textContent = value;
+      }
+    }
+
+    if (description) {
+      const text = count
+        ? `${count} unread message${count === 1 ? "" : "s"} · Open inbox →`
+        : "All caught up · Open inbox →";
+
+      if (description.textContent !== text) {
+        description.textContent = text;
+      }
+    }
+  }
+
+  function updateCoachBadge(count) {
+    const tab = coachChatTab();
+
+    if (!tab) return;
+
+    let badge = tab.querySelector(
+      ".mci-tab-unread"
+    );
+
+    if (!badge) {
+      badge = document.createElement("span");
+      badge.className = "mci-tab-unread";
+      badge.setAttribute(
+        "aria-label",
+        "Unread messages"
+      );
+      tab.appendChild(badge);
+    }
+
+    badge.textContent =
+      count > 99 ? "99+" : String(count);
+
+    badge.hidden = count === 0;
+  }
+
+  function updateClientBadges(count) {
+    const selectors = [
+      "#mana28OverviewCoachChat104411",
+      "#manaV964CoachChat",
+      ".mana-hub-chat"
+    ];
+
+    const found = new Set();
+
+    selectors.forEach(selector => {
+      document.querySelectorAll(selector).forEach(card => {
+        if (found.has(card)) return;
+        found.add(card);
+
+        let badge = card.querySelector(
+          ".mana-client-chat-unread"
+        );
+
+        if (!badge) {
+          badge = document.createElement("span");
+          badge.className = "mana-client-chat-unread";
+          badge.setAttribute(
+            "aria-label",
+            "Unread coach messages"
+          );
+          card.appendChild(badge);
+        }
+
+        badge.textContent =
+          count > 99 ? "99+" : String(count);
+
+        badge.hidden = count === 0;
+      });
+    });
+  }
+
+  async function refreshUnread() {
+    if (unreadBusy) return;
+    unreadBusy = true;
+
+    try {
+      const db = await connection();
+      const user = await account(db);
+      const role = await accountRole(db, user.id);
+
+      if (role === "coach") {
+        const {count, error} = await db
+          .from("strength_messages")
+          .select("id", {
+            count: "exact",
+            head: true
+          })
+          .eq("sender_role", "client")
+          .is("read_at", null);
+
+        if (error) throw error;
+
+        const unread = count || 0;
+        updateCoachBadge(unread);
+        updateSummary(unread);
+
+      } else if (role === "client") {
+        const {count, error} = await db
+          .from("strength_messages")
+          .select("id", {
+            count: "exact",
+            head: true
+          })
+          .eq("client_id", user.id)
+          .eq("sender_role", "coach")
+          .is("read_at", null);
+
+        if (error) throw error;
+
+        updateClientBadges(count || 0);
+      }
+    } catch (error) {
+      console.warn(
+        "[Mana Chat] Unread:",
+        error?.message || error
+      );
+    } finally {
+      unreadBusy = false;
+    }
+  }
+
+  /* =================================================
+     SHARED CONVERSATIONS
+     ================================================= */
+
+  function coachSelection() {
+    try {
+      if (
+        typeof selectedCoachClient !== "undefined" &&
+        selectedCoachClient?.userId
+      ) {
+        return {
+          id: String(selectedCoachClient.userId),
+          name: String(
+            selectedCoachClient.clientName || "Client"
+          )
+        };
+      }
+    } catch (_) {}
+
+    return null;
+  }
 
   async function open(
     role,
-    chosenId = "",
-    chosenName = "Client"
+    clientId = "",
+    clientName = "Client"
   ) {
-    const ticket = ++chatRequest;
-
+    const ticket = ++opening;
     ensureModal();
 
     active = {
       role,
-      id: String(chosenId || ""),
-      name: String(chosenName || "Client")
+      id: String(clientId || ""),
+      name: String(clientName || "Client")
     };
 
     $("manaV95ChatKicker").textContent =
@@ -657,7 +822,7 @@
 
     $("manaV95ChatTitle").textContent =
       role === "coach"
-        ? active.name + " • Chat"
+        ? `${active.name} • Chat`
         : "Coach Chat";
 
     $("manaV95ChatSub").textContent =
@@ -667,30 +832,32 @@
 
     $("manaV95Input").placeholder =
       role === "coach"
-        ? "Message " + active.name + "..."
+        ? `Message ${active.name}...`
         : "Message your coach...";
 
     $(MODAL).classList.add("open");
     document.body.style.overflow = "hidden";
 
-    status("Connecting to chat...");
-    label("SEND");
-
-    $("manaV95Send").disabled = false;
-
     $("manaV95Messages").innerHTML =
       '<div class="mana-v950-empty">' +
-      'Loading your conversation...</div>';
+      'Loading conversation...</div>';
+
+    $("manaV95Send").disabled = false;
+    sendLabel("SEND");
+    status("Connecting...");
 
     try {
       const db = await connection();
-      const user = await authenticated(db);
+      const user = await account(db);
 
-      if (
-        ticket !== chatRequest ||
-        !$(MODAL)?.classList.contains("open")
-      ) {
+      if (ticket !== opening || !conversationOpen()) {
         return;
+      }
+
+      const actualRole = await accountRole(db, user.id);
+
+      if (actualRole !== role) {
+        throw Error("Incorrect chat account role.");
       }
 
       if (role === "client") {
@@ -698,65 +865,41 @@
       }
 
       if (!active.id) {
-        throw Error(
-          "No conversation selected."
-        );
+        throw Error("No client selected.");
       }
 
       status("");
-
-      await refresh();
-
-      if (ticket === chatRequest) {
-        startChatRefresh();
-      }
+      await refreshConversation();
+      startChatRefresh();
 
     } catch (error) {
-      if (ticket !== chatRequest) return;
+      if (ticket !== opening) return;
 
       status(
-        error?.message ||
-        "Could not connect to chat.",
+        error?.message || "Unable to connect.",
         "error"
       );
-
-      $("manaV95Messages").innerHTML =
-        '<div class="mana-v950-empty">' +
-        'Chat is unavailable until you sign in.</div>';
     }
-
-    $("manaV95Input")?.focus({
-      preventScroll: true
-    });
   }
 
   function close() {
-    chatRequest++;
-
+    opening++;
     $(MODAL)?.classList.remove("open");
     document.body.style.overflow = "";
-
     stopChatRefresh();
+
+    refreshUnread();
 
     if (inboxVisible()) {
       loadInbox();
     }
   }
 
-  /* ======================================
-     MARK RECEIVED MESSAGES AS READ
-
-     Coach reads CLIENT messages.
-     Client reads COACH messages.
-     ====================================== */
-
   async function markRead(db, clientId, role) {
     const senderRole =
-      role === "coach"
-        ? "client"
-        : "coach";
+      role === "coach" ? "client" : "coach";
 
-    const { error } = await db
+    const {error} = await db
       .from("strength_messages")
       .update({
         read_at: new Date().toISOString()
@@ -765,14 +908,7 @@
       .eq("sender_role", senderRole)
       .is("read_at", null);
 
-    if (error) {
-      console.warn(
-        "[Mana Chat] Mark read:",
-        error.message
-      );
-      return false;
-    }
-
+    if (error) throw error;
     return true;
   }
 
@@ -783,27 +919,21 @@
     if (!messages.length) {
       host.innerHTML =
         '<div class="mana-v950-empty">' +
-        'No messages yet. Start a conversation ' +
-        'with your coach.</div>';
+        'No messages yet. Start a conversation.</div>';
       return;
     }
 
     const html = messages.map(item => {
-      const mine =
-        String(item.sender_id) === String(myId);
-
-      const name = mine
-        ? "You"
-        : item.sender_role === "coach"
-          ? "Coach"
-          : active.name;
+      const mine = String(item.sender_id) ===
+        String(myId);
 
       return `
-        <div class="mana-v950-message${
-          mine ? " mine" : ""
-        }">
+        <div class="mana-v950-message${mine ? " mine" : ""}">
           <div class="mana-v950-message-name">
-            ${escapeHTML(name)}
+            ${mine ? "You" :
+              item.sender_role === "coach"
+                ? "Coach"
+                : escapeHTML(active.name)}
           </div>
 
           <div class="mana-v950-message-body">
@@ -811,9 +941,7 @@
           </div>
 
           <div class="mana-v950-message-time">
-            ${escapeHTML(
-              timeLabel(item.created_at)
-            )}
+            ${escapeHTML(timeLabel(item.created_at))}
           </div>
         </div>
       `;
@@ -825,23 +953,20 @@
     }
   }
 
-  async function refresh() {
-    if (
-      loading ||
-      !active.id ||
-      !$(MODAL)?.classList.contains("open")
-    ) return;
+  async function refreshConversation() {
+    if (loading || !active.id || !conversationOpen()) {
+      return;
+    }
 
     loading = true;
-
     const id = active.id;
     const role = active.role;
 
     try {
       const db = await connection();
-      const user = await authenticated(db);
+      const user = await account(db);
 
-      const { data, error } = await db
+      const {data, error} = await db
         .from("strength_messages")
         .select(
           "id,client_id,sender_id,sender_role,body,created_at,read_at"
@@ -855,43 +980,30 @@
       if (error) throw error;
 
       if (
+        !conversationOpen() ||
         active.id !== id ||
-        active.role !== role ||
-        !$(MODAL)?.classList.contains("open")
+        active.role !== role
       ) return;
 
-      renderMessages(
-        data || [],
-        user.id
-      );
+      renderMessages(data || [], user.id);
 
-      const hasUnread = (data || []).some(
-        msg =>
-          msg.read_at === null &&
-          msg.sender_role === (
-            role === "coach"
-              ? "client"
-              : "coach"
-          )
-      );
+      const senderRole = role === "coach"
+        ? "client"
+        : "coach";
 
-      if (hasUnread) {
-        const marked = await markRead(
-          db,
-          id,
-          role
-        );
-
-        if (marked && role === "coach") {
-          refreshUnreadCount();
-        }
+      if ((data || []).some(msg =>
+        msg.sender_role === senderRole &&
+        msg.read_at === null
+      )) {
+        await markRead(db, id, role);
+        await refreshUnread();
       }
 
     } catch (error) {
-      if ($(MODAL)?.classList.contains("open")) {
+      if (conversationOpen()) {
         status(
-          "Conversation load error: " +
-          (error?.message || "Try again."),
+          "Chat error: " +
+          (error?.message || "Please retry."),
           "error"
         );
       }
@@ -901,99 +1013,56 @@
     }
   }
 
-  /* ======================================
-     SEND MESSAGE
-     ====================================== */
+  let sending = false;
 
   async function send() {
-    if (
-      sending ||
-      !$(MODAL)?.classList.contains("open")
-    ) return;
+    if (sending || !conversationOpen()) return;
 
     const input = $("manaV95Input");
+    const text = String(input?.value || "").trim();
 
-    const message = String(
-      input?.value || ""
-    ).trim();
-
-    if (!message) {
-      status(
-        "Write a message before sending.",
-        "error"
-      );
+    if (!text) {
+      status("Write a message first.", "error");
       return;
     }
 
     sending = true;
-
     $("manaV95Send").disabled = true;
-    label("SENDING…");
-    status("Sending message…");
-
-    let inserted = false;
+    sendLabel("SENDING...");
+    status("Sending...");
 
     try {
       const db = await connection();
-      const user = await authenticated(db);
+      const user = await account(db);
 
-      const id = active.role === "client"
+      const clientId = active.role === "client"
         ? user.id
         : active.id;
 
-      if (!id) {
-        throw Error(
-          "No conversation selected."
-        );
-      }
-
-      const { error } = await db
+      const {error} = await db
         .from("strength_messages")
         .insert({
-          client_id: id,
+          client_id: clientId,
           sender_id: user.id,
           sender_role: active.role,
-          body: message
+          body: text
         });
 
       if (error) throw error;
 
-      inserted = true;
+      input.value = "";
+      sendLabel("SENT ✓");
+      status("Sent ✓ — saved successfully.", "sent");
 
-      if (input) input.value = "";
-
-      label("SENT ✓");
-
-      status(
-        "Sent ✓ — message saved successfully.",
-        "sent"
-      );
-
-      await refresh();
+      await refreshConversation();
 
     } catch (error) {
-      console.error(
-        "[Mana Coach Chat]",
-        error
+      sendLabel("SEND");
+      status(
+        "Not sent: " +
+        (error?.message || "Please retry."),
+        "error"
       );
-
-      if (!inserted) {
-        label("SEND");
-
-        status(
-          "Not sent: " +
-          (error?.message || "Please retry."),
-          "error"
-        );
-
-      } else {
-        label("SENT ✓");
-
-        status(
-          "Sent ✓ — message saved; refresh unavailable.",
-          "sent"
-        );
-      }
 
     } finally {
       sending = false;
@@ -1005,11 +1074,8 @@
     stopChatRefresh();
 
     chatTimer = setInterval(() => {
-      if (
-        $(MODAL)?.classList.contains("open") &&
-        !sending
-      ) {
-        refresh();
+      if (conversationOpen() && !sending) {
+        refreshConversation();
       }
     }, 15000);
   }
@@ -1018,96 +1084,16 @@
     if (chatTimer !== null) {
       clearInterval(chatTimer);
     }
-
     chatTimer = null;
   }
 
-  /* ======================================
-     COACH HUB UNREAD BADGE
-     ====================================== */
-
-  function chatTab() {
-    return document.querySelector(
-      '#manaV97CoachNav [data-coach-page="progress"]'
-    );
-  }
-
-  function updateTabBadge(total) {
-    const tab = chatTab();
-    if (!tab) return;
-
-    let badge = tab.querySelector(
-      ".mci-tab-unread"
-    );
-
-    if (!badge) {
-      badge = document.createElement("span");
-      badge.className = "mci-tab-unread";
-      badge.setAttribute(
-        "aria-label",
-        "Unread client messages"
-      );
-
-      tab.appendChild(badge);
-    }
-
-    badge.textContent =
-      total > 99 ? "99+" : String(total);
-
-    badge.hidden = total === 0;
-  }
-
-  async function refreshUnreadCount() {
-    if (!coachVisible()) return;
-
-    try {
-      const db = await connection();
-      const user = await authenticated(db);
-
-      const { data: profile } = await db
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role !== "coach") {
-        return;
-      }
-
-      const { count, error } = await db
-        .from("strength_messages")
-        .select("id", {
-          count: "exact",
-          head: true
-        })
-        .eq("sender_role", "client")
-        .is("read_at", null);
-
-      if (error) throw error;
-
-      inboxUnreadTotal = count || 0;
-
-      updateTabBadge(inboxUnreadTotal);
-
-    } catch (error) {
-      console.warn(
-        "[Mana Chat] Unread count:",
-        error?.message || error
-      );
-    }
-  }
-
-  /* ======================================
-     COACH INBOX
-     ====================================== */
+  /* =================================================
+     COACH HUB INBOX
+     ================================================= */
 
   function ensureInbox() {
-    const view = document.querySelector(
-      CHAT_VIEW
-    );
-
-    const panel = view?.querySelector(
-      ".mcn-panel"
+    const panel = document.querySelector(
+      CHAT_VIEW + " .mcn-panel"
     );
 
     if (!panel) return null;
@@ -1116,111 +1102,34 @@
 
     if (!inbox) {
       panel.innerHTML = "";
-
       inbox = document.createElement("div");
       inbox.id = INBOX;
-
       panel.appendChild(inbox);
     }
 
     return inbox;
   }
 
-  function inboxRow(client) {
-    return `
-      <div class="mci-client${
-        client.unread ? " has-unread" : ""
-      }">
-
-        <div class="mci-copy">
-          <div class="mci-name-line">
-            <span class="mci-name">
-              ${escapeHTML(client.name)}
-            </span>
-
-            ${client.unread ? `
-              <span
-                class="mci-unread"
-                aria-label="${client.unread} unread messages"
-              >
-                ${client.unread > 99
-                  ? "99+"
-                  : client.unread}
-              </span>
-            ` : ""}
-          </div>
-
-          <div class="mci-preview">
-            ${escapeHTML(
-              client.preview ||
-              "No messages yet"
-            )}
-          </div>
-
-          ${client.lastAt ? `
-            <div class="mci-time">
-              ${escapeHTML(
-                timeLabel(client.lastAt)
-              )}
-            </div>
-          ` : ""}
-        </div>
-
-        <button
-          type="button"
-          class="mci-open"
-          data-mci-client="${escapeHTML(client.id)}"
-          data-mci-name="${escapeHTML(client.name)}"
-        >
-          OPEN CHAT →
-        </button>
-
-      </div>
-    `;
-  }
-
   async function loadInbox() {
-    if (
-      !inboxVisible() ||
-      inboxLoading
-    ) return;
+    if (!inboxVisible() || inboxLoading) return;
 
-    const inbox = ensureInbox();
-    if (!inbox) return;
+    const host = ensureInbox();
+    if (!host) return;
 
     inboxLoading = true;
-    const ticket = ++inboxRequest;
-
-    inbox.innerHTML = `
-      <div class="mci-empty">
-        Loading your coaching conversations…
-      </div>
-    `;
 
     try {
       const db = await connection();
-      const user = await authenticated(db);
+      const user = await account(db);
+      const role = await accountRole(db, user.id);
 
-      const { data: profile, error: roleError } =
-        await db
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-      if (
-        roleError ||
-        profile?.role !== "coach"
-      ) {
-        throw Error(
-          "Coach access required."
-        );
+      if (role !== "coach") {
+        throw Error("Coach access required.");
       }
 
       const [clientResult, messageResult] =
         await Promise.all([
           db.rpc("coach_clients_summary"),
-
           db.from("strength_messages")
             .select(
               "id,client_id,sender_role,body,created_at,read_at"
@@ -1239,49 +1148,35 @@
         throw messageResult.error;
       }
 
-      if (ticket !== inboxRequest) return;
-
-      const unique = new Map();
+      const map = new Map();
 
       (clientResult.data || []).forEach(row => {
-        const id = String(
-          row.user_id || ""
-        );
+        const id = String(row.user_id || "");
+        if (!id) return;
 
-        if (id && !unique.has(id)) {
-          unique.set(id, {
-            id,
-            name: String(
-              row.full_name || "Client"
-            ),
-            preview: "",
-            lastAt: "",
-            unread: 0
-          });
-        }
+        map.set(id, {
+          id,
+          name: String(row.full_name || "Client"),
+          unread: 0,
+          preview: "No messages yet",
+          lastAt: ""
+        });
       });
 
       (messageResult.data || []).forEach(msg => {
-        const id = String(
-          msg.client_id || ""
+        const client = map.get(
+          String(msg.client_id || "")
         );
 
-        const client = unique.get(id);
         if (!client) return;
 
         if (!client.lastAt) {
           client.lastAt = msg.created_at;
-
           client.preview =
-            (
-              msg.sender_role === "coach"
-                ? "Coach: "
-                : "Client: "
-            ) +
-            String(msg.body || "").slice(
-              0,
-              140
-            );
+            (msg.sender_role === "coach"
+              ? "Coach: "
+              : "Client: ") +
+            String(msg.body || "").slice(0, 140);
         }
 
         if (
@@ -1292,36 +1187,23 @@
         }
       });
 
-      currentInbox = [...unique.values()];
+      const clients = [...map.values()].sort(
+        (a, b) =>
+          b.unread - a.unread ||
+          (b.lastAt ? new Date(b.lastAt).getTime() : 0) -
+          (a.lastAt ? new Date(a.lastAt).getTime() : 0) ||
+          a.name.localeCompare(b.name)
+      );
 
-      currentInbox.sort((a, b) => {
-        if (a.unread && !b.unread) return -1;
-        if (b.unread && !a.unread) return 1;
-
-        if (a.lastAt && !b.lastAt) return -1;
-        if (b.lastAt && !a.lastAt) return 1;
-
-        if (a.lastAt && b.lastAt) {
-          const difference =
-            new Date(b.lastAt).getTime() -
-            new Date(a.lastAt).getTime();
-
-          if (difference) return difference;
-        }
-
-        return a.name.localeCompare(b.name);
-      });
-
-      const unread = currentInbox.reduce(
-        (total, client) =>
-          total + client.unread,
+      const total = clients.reduce(
+        (sum, client) => sum + client.unread,
         0
       );
 
-      inboxUnreadTotal = unread;
-      updateTabBadge(unread);
+      updateSummary(total);
+      updateCoachBadge(total);
 
-      inbox.innerHTML = `
+      host.innerHTML = `
         <div class="mci-header">
           <div>
             <div class="mci-title">
@@ -1329,98 +1211,84 @@
             </div>
 
             <div class="mci-subtitle">
-              ${currentInbox.length}
-              client${
-                currentInbox.length === 1
-                  ? ""
-                  : "s"
-              } · Shared Mana Movement messages
+              ${clients.length} clients · Shared Mana Movement messages
             </div>
 
-            ${unread ? `
+            ${total ? `
               <div class="mci-total">
-                ${unread} unread message${
-                  unread === 1 ? "" : "s"
-                }
+                ${total} unread message${total === 1 ? "" : "s"}
               </div>
             ` : ""}
           </div>
 
           <button
-            type="button"
             class="mci-refresh"
-            data-mci-refresh="1"
-          >
+            type="button"
+            data-mci-refresh="1">
             REFRESH
           </button>
         </div>
 
         <div class="mci-list">
-          ${currentInbox.length
-            ? currentInbox.map(
-                inboxRow
-              ).join("")
-            : `
-              <div class="mci-empty">
-                No client records found.
+          ${clients.map(client => `
+            <div class="mci-client${client.unread ? " has-unread" : ""}">
+              <div class="mci-copy">
+                <div class="mci-name">
+                  ${escapeHTML(client.name)}
+                  ${client.unread ? `
+                    <span class="mci-unread">
+                      ${client.unread}
+                    </span>
+                  ` : ""}
+                </div>
+
+                <div class="mci-preview">
+                  ${escapeHTML(client.preview)}
+                </div>
+
+                <div class="mci-time">
+                  ${escapeHTML(timeLabel(client.lastAt))}
+                </div>
               </div>
-            `}
+
+              <button
+                class="mci-open"
+                type="button"
+                data-mci-client="${escapeHTML(client.id)}"
+                data-mci-name="${escapeHTML(client.name)}">
+                OPEN CHAT →
+              </button>
+            </div>
+          `).join("")}
         </div>
       `;
 
     } catch (error) {
-      if (ticket !== inboxRequest) return;
-
-      inbox.innerHTML = `
-        <div class="mci-header">
-          <span class="mci-title">
-            Coaching Inbox
-          </span>
+      host.innerHTML = `
+        <div class="mci-empty">
+          ${escapeHTML(
+            error?.message || "Could not load inbox."
+          )}
 
           <button
             type="button"
             class="mci-refresh"
-            data-mci-refresh="1"
-          >
+            data-mci-refresh="1">
             RETRY
           </button>
         </div>
-
-        <div class="mci-empty">
-          ${escapeHTML(
-            error?.message ||
-            "Could not load conversations."
-          )}
-        </div>
       `;
-
-      console.warn(
-        "[Mana Coach Inbox]",
-        error
-      );
 
     } finally {
       inboxLoading = false;
     }
   }
 
-  function refreshAfterNavigation() {
-    setTimeout(() => {
-      if (!coachVisible()) return;
+  /* =================================================
+     COACH CLIENT PROFILE LAUNCHER
+     ================================================= */
 
-      refreshUnreadCount();
-
-      if (inboxVisible()) {
-        loadInbox();
-      }
-    }, 0);
-  }
-
-  /* ======================================
-     ORIGINAL CLIENT DETAIL CHAT
-     ====================================== */
-
-  function syncLaunchCards() {
+  function syncCoachClientCard() {
     const detail = $("coachClientDetailView");
     const selected = coachSelection();
 
@@ -1437,15 +1305,10 @@
       card.id = "manaV95CoachChatCard";
       card.className = "card";
 
-      const anchor = $(
-        "clientSessionSummaryCard"
-      );
+      const anchor = $("clientSessionSummaryCard");
 
-      if (anchor) {
-        anchor.before(card);
-      } else {
-        detail.appendChild(card);
-      }
+      if (anchor) anchor.before(card);
+      else detail.appendChild(card);
     }
 
     if (
@@ -1453,7 +1316,6 @@
       !card.querySelector("#manaV95CoachOpen")
     ) {
       card.dataset.clientId = selected.id;
-
       card.innerHTML = `
         <div class="mana-v950-card-kicker">
           COACHING
@@ -1464,104 +1326,94 @@
         </div>
 
         <div class="mana-v950-card-preview">
-          Message ${escapeHTML(
-            selected.name
-          )} directly inside Mana.
+          Message ${escapeHTML(selected.name)}
+          directly inside Mana.
         </div>
 
-        <button
-          type="button"
+        <button type="button"
           class="mana-v950-open"
-          id="manaV95CoachOpen"
-        >
+          id="manaV95CoachOpen">
           OPEN CLIENT CHAT →
         </button>
       `;
     }
   }
 
-  /* ======================================
+  /* =================================================
      EVENTS
-     ====================================== */
+     ================================================= */
+
+  function openCoachTab() {
+    const button = coachChatTab();
+    if (button) button.click();
+  }
 
   function onClick(event) {
     const target = event.target;
-
     if (!(target instanceof Element)) return;
 
-    const inboxClient = target.closest(
-      "[data-mci-client]"
-    );
+    if (target.closest("[data-mci-client]")) {
+      const button = target.closest(
+        "[data-mci-client]"
+      );
 
-    if (inboxClient) {
       event.preventDefault();
-      event.stopPropagation();
 
       open(
         "coach",
-        inboxClient.dataset.mciClient,
-        inboxClient.dataset.mciName
+        button.dataset.mciClient,
+        button.dataset.mciName
       );
-
       return;
     }
 
-    if (
-      target.closest(
-        "[data-mci-refresh]"
-      )
-    ) {
+    if (target.closest("[data-mci-refresh]")) {
       event.preventDefault();
       loadInbox();
       return;
     }
 
-    if (
-      target.closest("#manaV95ClientOpen")
-    ) {
+    const card = summaryCard();
+
+    if (card && card.contains(target)) {
+      event.preventDefault();
+      openCoachTab();
+      return;
+    }
+
+    if (target.closest("#manaV95ClientOpen")) {
       open("client");
+      return;
+    }
 
-    } else if (
-      target.closest("#manaV95CoachOpen")
-    ) {
+    if (target.closest("#manaV95CoachOpen")) {
       const selected = coachSelection();
-
       if (selected) {
-        open(
-          "coach",
-          selected.id,
-          selected.name
-        );
+        open("coach", selected.id, selected.name);
       }
+      return;
+    }
 
-    } else if (
-      target.closest("#manaV95ChatClose")
-    ) {
+    if (target.closest("#manaV95ChatClose")) {
       close();
+      return;
+    }
 
-    } else if (
-      target.closest("#manaV95Send")
-    ) {
+    if (target.closest("#manaV95Send")) {
       send();
     }
   }
 
-  function onInput(event) {
-    if (
-      event.target?.id !== "manaV95Input"
-    ) return;
-
-    if (
-      $("manaV95Send")?.textContent.includes(
-        "SENT"
-      )
-    ) {
-      label("SEND");
-      status("");
-    }
-  }
-
   function onKeyDown(event) {
+    if (
+      (event.key === "Enter" || event.key === " ") &&
+      document.activeElement === summaryCard()
+    ) {
+      event.preventDefault();
+      openCoachTab();
+      return;
+    }
+
     if (
       event.target?.id === "manaV95Input" &&
       event.key === "Enter" &&
@@ -1570,127 +1422,121 @@
     ) {
       event.preventDefault();
       send();
+      return;
+    }
 
-    } else if (
+    if (
       event.key === "Escape" &&
-      $(MODAL)?.classList.contains("open")
+      conversationOpen()
     ) {
       close();
     }
   }
 
-  /* ======================================
+  function onInput(event) {
+    if (event.target?.id !== "manaV95Input") {
+      return;
+    }
+
+    if (
+      $("manaV95Send")?.textContent.includes("SENT")
+    ) {
+      sendLabel("SEND");
+      status("");
+    }
+  }
+
+  /* =================================================
      INITIALISE
-     ====================================== */
+     ================================================= */
 
   function init() {
-    installStyles();
+    styles();
     ensureModal();
 
-    document.addEventListener(
-      "click",
-      onClick
-    );
+    document.addEventListener("click", onClick);
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("input", onInput);
 
-    document.addEventListener(
-      "input",
-      onInput
-    );
-
-    document.addEventListener(
-      "keydown",
-      onKeyDown
-    );
-
-    /* Preserve public functions used by
-       Mana28 and Mana Strength. */
-
-    window.openManaStrengthClientChat = () =>
-      open("client");
+    window.openManaStrengthClientChat =
+      () => open("client");
 
     window.openManaStrengthCoachChat =
-      (id, name) =>
-        open("coach", id, name);
+      (id, name) => open("coach", id, name);
 
-    window.refreshManaStrengthChat = () => {
-      syncLaunchCards();
-      return refresh();
-    };
+    window.refreshManaStrengthChat =
+      () => {
+        syncCoachClientCard();
+        return refreshConversation();
+      };
 
-    window.refreshManaCoachInbox =
-      loadInbox;
-
-    syncLaunchCards();
-
-    [
-      "mana:program-tab-change",
-      "mana:profile-synced",
-      "mana:strength-synced"
-    ].forEach(name =>
-      window.addEventListener(
-        name,
-        syncLaunchCards
-      )
-    );
+    window.refreshManaCoachInbox = loadInbox;
 
     document.addEventListener(
       "click",
       event => {
-        if (
-          !(event.target instanceof Element)
-        ) return;
+        if (!(event.target instanceof Element)) return;
 
         if (
           event.target.closest(
             "#manaV97CoachNav," +
-            "#manaCoachClientSwitch104870," +
-            ".client-open"
+            ".client-open," +
+            "#manaV80Mana28," +
+            "#manaV83Tabs"
           )
         ) {
-          refreshAfterNavigation();
-        }
+          setTimeout(() => {
+            syncCoachClientCard();
+            refreshUnread();
 
-        if (
-          event.target.closest(
-            ".client-open,[data-client-id]"
-          )
-        ) {
-          requestAnimationFrame(
-            syncLaunchCards
-          );
+            if (inboxVisible()) {
+              loadInbox();
+            }
+          }, 60);
         }
       },
       true
     );
 
+    window.addEventListener("pageshow", () => {
+      refreshUnread();
+    });
+
     window.addEventListener(
-      "pageshow",
-      refreshAfterNavigation
+      "mana:program-tab-change",
+      () => {
+        refreshUnread();
+      }
     );
 
-    /* Only check the inbox while Coach Hub
-       is visible, avoiding a second
-       constantly running chat connection. */
+    window.addEventListener(
+      "mana:profile-synced",
+      refreshUnread
+    );
+
+    syncCoachClientCard();
+
+    /* Check for new messages only while
+       the application is open. */
 
     inboxTimer = setInterval(() => {
-      if (!coachVisible()) return;
+      if (document.visibilityState === "hidden") {
+        return;
+      }
 
-      refreshUnreadCount();
+      refreshUnread();
 
-      if (inboxVisible() && !inboxLoading) {
+      if (inboxVisible()) {
         loadInbox();
       }
     }, 30000);
 
-    if (coachVisible()) {
-      refreshUnreadCount();
-    }
+    refreshUnread();
 
     window.MANA_STRENGTH_CHAT_BUILD = BUILD;
 
     console.log(
-      "[Mana Movement] Shared Coach Chat " +
-      BUILD
+      "[Mana Movement] Shared Chat 104093"
     );
   }
 
@@ -1698,7 +1544,7 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      { once: true }
+      {once:true}
     );
   } else {
     init();
