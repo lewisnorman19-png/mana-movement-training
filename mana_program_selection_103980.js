@@ -52,7 +52,7 @@
       heading: "Reset. Rebuild. Move Forward.",
       summary:
         "Daily routines, reflection and positive habits to strengthen your wellbeing.",
-      price: "Pricing to be confirmed",
+      price: "",
       action: "Explore ManaLyfe →",
       accent: "#FFFFFF",
       border: "#FFFFFF",
