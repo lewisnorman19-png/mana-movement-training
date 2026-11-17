@@ -1013,7 +1013,6 @@
     }
   }
 
-  let sending = false;
 
   async function send() {
     if (sending || !conversationOpen()) return;
