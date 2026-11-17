@@ -4090,85 +4090,29 @@ window.MANA28_PROGRAM = {"1": {"category": "Strength", "title": "Full Body Stren
     console.warn("persistent auth init", e);
   }
 })();
+
 /* =========================================
-   HOME v6.2.2 — PROGRAM ROW WATCHER
+   MANA MOVEMENT TRAINING
+   HOME PROGRAM WATCHER REMOVED
+   BUILD 104940
+
+   The Mana28 program card already has
+   its own navigation and arrow.
+
+   No global MutationObserver required.
+   No document-wide element scanning.
+   No repeated DOM processing.
    ========================================= */
 
 (function () {
+  "use strict";
 
-  function wireMana28HomeRow() {
+  window.MANA_HOME_WATCHER_BUILD = "104940";
 
-    const labels =
-      Array.from(
-        document.querySelectorAll("*")
-      );
+})();
 
-    const mana28Label =
-      labels.find(el =>
-        el.textContent?.trim() === "MANA 28"
-      );
 
-    if (!mana28Label) return false;
-
-    const mana28Row =
-      mana28Label.closest(".day");
-
-    if (!mana28Row) return false;
-
-    mana28Row.classList.add(
-      "mana-home-program"
-    );
-
-    if (
-      !mana28Row.querySelector(
-        ".mana-home-arrow"
-      )
-    ) {
-      const arrow =
-        document.createElement("div");
-
-      arrow.className =
-        "mana-home-arrow";
-
-      arrow.textContent =
-        "›";
-
-      mana28Row.appendChild(arrow);
-    }
-
-    if (
-      !mana28Row.dataset.homeProgramReady
-    ) {
-      mana28Row.dataset.homeProgramReady =
-        "true";
-
-      mana28Row.addEventListener(
-        "click",
-        () => {
-          showClientProgramsView();
-        }
-      );
-    }
-
-    return true;
-  }
-
-  wireMana28HomeRow();
-
-  const homeProgramObserver =
-    new MutationObserver(() => {
-      wireMana28HomeRow();
-    });
-
-  homeProgramObserver.observe(
-    document.body,
-    {
-      childList: true,
-      subtree: true
-    }
-  );
-
-})();</script>
+</script>
 <script src="v5_8_nutrition_targets.js?v=5802"></script>
   <script src="v6_1_quick_meals.js?v=6120"></script>
   <script src="v6_2_mana_strength.js?v=6203"></script>
