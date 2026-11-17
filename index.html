@@ -4072,7 +4072,7 @@ window.MANA28_PROGRAM = {"1": {"category": "Strength", "title": "Full Body Stren
           ["clientProgramsView","clientFuelView","clientProgressView","clientProfileView"]
             .some(id => !document.getElementById(id)?.classList.contains("hide"));
 
-        if(appAlreadyOpen && event === "TOKEN_REFRESHED") return;
+        if(appAlreadyOpen) return;
 
         const profile = await getProfile(currentUser.id);
         if(profile.role === "coach"){
