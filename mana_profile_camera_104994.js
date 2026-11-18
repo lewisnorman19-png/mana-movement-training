@@ -1,199 +1,202 @@
 
-/* =========================================================
+/* =====================================================
    MANA MOVEMENT TRAINING
-   PROFILE CAMERA UPGRADE
-   BUILD 104994
+   PROFILE CAMERA — RELIABLE MOUNT FIX
+   BUILD 104995
 
-   FEATURES
-   - Take Photo using phone or laptop camera
-   - Front camera by default
-   - Switch camera where supported
-   - Live camera preview
-   - Capture and retake
-   - Choose existing photograph
-   - Use original Profile photo upload
-   - Works with existing Save & Continue
+   COMPLETE REPLACEMENT:
+   mana_profile_camera_104994.js
 
-   DOES NOT CHANGE
-   - Supabase photo storage
-   - Profile save functions
-   - Coach Hub
-   - Training / Fuel calculations
-   - Progress photograph uploads
-   ========================================================= */
+   - Waits for the Profile photo field
+   - Works with dynamically loaded Profiles
+   - Take Photo: phone or laptop camera
+   - Choose Photo: existing device files
+   - Front/rear camera switching
+   - Capture, review and retake
+   - Uses existing Profile upload input
+   - Saves through existing Save & Continue
+
+   Does not modify Coach Hub, Supabase,
+   training goals or nutrition calculations.
+   ===================================================== */
 
 (() => {
   "use strict";
 
-  if (window.MANA_CAMERA_104994) return;
-  window.MANA_CAMERA_104994 = true;
+  if (window.MANA_CAMERA_104995) return;
+  window.MANA_CAMERA_104995 = true;
 
-  const INPUT_ID = "me-file-avatar";
-  const PREVIEW_ID = "me-preview-avatar";
-  const ROOT_ID = "manaCameraControls104994";
-  const MODAL_ID = "manaCameraModal104994";
+  const INPUT = "me-file-avatar";
+  const CONTROLS = "manaCameraControls104995";
+  const MODAL = "manaCameraModal104995";
+  const STYLE = "manaCameraStyle104995";
+  const PROFILE = "manaProfileScreen";
+
+  const $ = id => document.getElementById(id);
 
   let stream = null;
   let facing = "user";
   let capturedFile = null;
+  let photoURL = null;
+  let mountObserver = null;
+  let profileObserver = null;
 
-  const $ = id => document.getElementById(id);
+  /* =====================================================
+     STYLES
+     ===================================================== */
 
-  function installStyles() {
-    if ($("manaCameraStyle104994")) return;
+  function styles() {
+    if ($(STYLE)) return;
 
     const style = document.createElement("style");
-    style.id = "manaCameraStyle104994";
+    style.id = STYLE;
 
     style.textContent = `
-      #${ROOT_ID} {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin: 9px 0;
+      #${PROFILE} #${INPUT} {
+        display: none !important;
       }
 
-      #${ROOT_ID} button {
-        appearance: none;
-        background: #15171B;
-        color: #FF7927;
-        border: 1px solid #FF7927;
-        border-radius: 10px;
-        padding: 11px 14px;
+      #${CONTROLS} {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin: 10px 0;
+        width: 100%;
+      }
+
+      #${CONTROLS} button {
+        flex: 1 1 145px;
         min-height: 44px;
+        padding: 11px 13px;
+        border-radius: 10px;
+        background: #15171B;
+        border: 1px solid #FF7927;
+        color: #FF7927;
         font: 800 12px system-ui, sans-serif;
         cursor: pointer;
       }
 
-      #${ROOT_ID} button:first-child {
+      #${CONTROLS} button:first-child {
         background: #FF7927;
         color: #101114;
       }
 
-      #manaProfileScreen
-      #me-file-avatar {
-        display: none !important;
-      }
-
-      #manaProfileScreen
-      #me-preview-avatar {
-        overflow: hidden;
-      }
-
-      #manaProfileScreen
-      #me-preview-avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      #${MODAL_ID} {
+      #${MODAL} {
         position: fixed;
         inset: 0;
         z-index: 999999;
-        background: rgba(0,0,0,.94);
+        padding: 14px;
+        background: rgba(0,0,0,.95);
         display: flex;
-        align-items: center;
         justify-content: center;
-        padding: 16px;
+        align-items: center;
         box-sizing: border-box;
       }
 
-      #${MODAL_ID} .mc-card {
+      #${MODAL} .mana-camera-card {
+        box-sizing: border-box;
+        width: min(450px,100%);
+        max-height: 94dvh;
+        overflow-y: auto;
+        padding: 16px;
+        border: 1px solid #505862;
+        border-radius: 16px;
         background: #15171B;
-        border: 1px solid #555E69;
-        border-radius: 18px;
-        padding: 16px;
-        width: min(440px,100%);
-        max-height: 95dvh;
-        overflow: auto;
         color: white;
-        box-sizing: border-box;
       }
 
-      #${MODAL_ID} h3 {
-        font: 850 19px system-ui;
+      #${MODAL} h3 {
+        font: 850 19px system-ui,sans-serif;
         color: white;
-        margin: 0 0 12px;
+        margin: 0 0 13px;
       }
 
-      #${MODAL_ID} video,
-      #${MODAL_ID} .mc-captured {
-        display: block;
+      #${MODAL} video,
+      #${MODAL} #manaCameraCaptured104995 {
         width: 100%;
-        max-height: 55dvh;
+        max-height: 54dvh;
         aspect-ratio: 3/4;
         object-fit: cover;
+        display: block;
         background: #08090B;
-        border-radius: 12px;
-        border: 1px solid #454D56;
+        border-radius: 11px;
       }
 
-      #${MODAL_ID} .mc-actions {
+      #${MODAL} .mana-camera-actions {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns:
+          repeat(2,minmax(0,1fr));
         gap: 9px;
         margin-top: 13px;
       }
 
-      #${MODAL_ID} button {
-        background: #171A1F;
-        color: #FFFFFF;
-        border: 1px solid #59616C;
+      #${MODAL} button {
+        border: 1px solid #5A626E;
+        background: #191C20;
+        color: white;
         border-radius: 10px;
-        padding: 12px 8px;
         min-height: 44px;
-        font: 750 12px system-ui;
+        padding: 10px;
+        font: 750 12px system-ui,sans-serif;
         cursor: pointer;
       }
 
-      #${MODAL_ID} button.mc-primary {
+      #${MODAL} button.primary {
         background: #FF7927;
         border-color: #FF7927;
         color: #101114;
         font-weight: 900;
       }
 
-      #${MODAL_ID} .mc-note {
-        color: #B7C0CC;
-        font: 12px/1.5 system-ui;
-        margin: 11px 0 0;
+      #${MODAL} p {
+        font: 12px/1.5 system-ui,sans-serif;
+        color: #ADB7C2;
+        margin: 12px 0 0;
       }
 
-      @media(max-width:600px) {
-        #${ROOT_ID} {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-        }
-
-        #${ROOT_ID} button {
-          padding: 10px 7px;
-        }
+      #${MODAL} button:disabled {
+        opacity: .45;
+        cursor: not-allowed;
       }
     `;
 
     document.head.appendChild(style);
   }
 
+  /* =====================================================
+     CAMERA LIFECYCLE
+     ===================================================== */
+
   function stopCamera() {
-    if (!stream) return;
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        track.stop();
+      });
+      stream = null;
+    }
 
-    stream.getTracks().forEach(track => {
-      track.stop();
-    });
+    const video = $("manaCameraVideo104995");
 
-    stream = null;
+    if (video) video.srcObject = null;
+  }
+
+  function clearCapturedURL() {
+    if (photoURL) {
+      URL.revokeObjectURL(photoURL);
+      photoURL = null;
+    }
   }
 
   function closeCamera() {
     stopCamera();
-    $(MODAL_ID)?.remove();
+    clearCapturedURL();
     capturedFile = null;
+    $(MODAL)?.remove();
   }
 
   async function startCamera() {
-    const video = $("manaCameraVideo104994");
-    const message = $("manaCameraMessage104994");
+    const video = $("manaCameraVideo104995");
+    const note = $("manaCameraNote104995");
 
     if (!video) return;
 
@@ -201,177 +204,70 @@
 
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error(
-          "Camera access is not available in this browser."
-        );
+        throw new Error("Camera access is unavailable.");
       }
 
-      stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: { ideal: facing },
-          width: { ideal: 1280 },
-          height: { ideal: 1600 }
-        }
-      });
+      const next = await navigator.mediaDevices
+        .getUserMedia({
+          audio: false,
+          video: {
+            facingMode: { ideal: facing }
+          }
+        });
 
       if (!video.isConnected) {
-        stopCamera();
+        next.getTracks().forEach(track => track.stop());
         return;
       }
 
-      video.srcObject = stream;
+      stream = next;
+      video.srcObject = next;
       await video.play();
 
-      if (message) {
-        message.textContent =
-          "Position your face inside the frame.";
+      if (note) {
+        note.textContent =
+          "Position yourself in the frame.";
       }
 
     } catch (error) {
-      if (message) {
-        message.textContent =
-          "Camera unavailable. Check browser camera " +
-          "permissions, or choose a photo from your device.";
+      if (note) {
+        note.textContent =
+          "Unable to open camera. Check camera " +
+          "permissions or choose a photo from your device.";
       }
 
       console.warn(
-        "[Mana Profile Camera]",
+        "[Mana Camera]",
         error
       );
     }
   }
 
-  function showCamera() {
-    if ($(MODAL_ID)) return;
+  function setCaptureState(captured) {
+    const video = $("manaCameraVideo104995");
+    const image = $("manaCameraCaptured104995");
 
-    capturedFile = null;
-    facing = "user";
+    if (!video || !image) return;
 
-    const modal = document.createElement("div");
-    modal.id = MODAL_ID;
-    modal.setAttribute("role", "dialog");
-    modal.setAttribute("aria-modal", "true");
-    modal.setAttribute("aria-label", "Take profile photo");
+    video.style.display =
+      captured ? "none" : "block";
 
-    modal.innerHTML = `
-      <div class="mc-card">
-        <h3>Take Profile Photo</h3>
+    image.style.display =
+      captured ? "block" : "none";
 
-        <video
-          id="manaCameraVideo104994"
-          autoplay
-          playsinline
-          muted
-        ></video>
+    $("manaCameraCapture104995").hidden = captured;
+    $("manaCameraSwitch104995").hidden = captured;
 
-        <img
-          id="manaCapturedImage104994"
-          class="mc-captured"
-          alt="Captured profile photo"
-          style="display:none"
-        >
-
-        <div class="mc-actions">
-          <button
-            type="button"
-            id="manaCameraSwitch104994"
-          >
-            Switch Camera
-          </button>
-
-          <button
-            type="button"
-            class="mc-primary"
-            id="manaCameraCapture104994"
-          >
-            Capture Photo
-          </button>
-
-          <button
-            type="button"
-            id="manaCameraRetake104994"
-            style="display:none"
-          >
-            Retake
-          </button>
-
-          <button
-            type="button"
-            class="mc-primary"
-            id="manaCameraUse104994"
-            style="display:none"
-          >
-            Use Photo
-          </button>
-
-          <button
-            type="button"
-            id="manaCameraCancel104994"
-          >
-            Cancel
-          </button>
-        </div>
-
-        <p
-          class="mc-note"
-          id="manaCameraMessage104994"
-        >
-          Allow camera access when prompted.
-        </p>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    $("manaCameraCancel104994")
-      .addEventListener("click", closeCamera);
-
-    $("manaCameraSwitch104994")
-      .addEventListener("click", async () => {
-        facing = facing === "user"
-          ? "environment"
-          : "user";
-
-        await startCamera();
-      });
-
-    $("manaCameraCapture104994")
-      .addEventListener("click", capturePhoto);
-
-    $("manaCameraRetake104994")
-      .addEventListener("click", async () => {
-        capturedFile = null;
-
-        $("manaCapturedImage104994")
-          .style.display = "none";
-
-        $("manaCameraVideo104994")
-          .style.display = "block";
-
-        $("manaCameraCapture104994")
-          .style.display = "";
-
-        $("manaCameraSwitch104994")
-          .style.display = "";
-
-        $("manaCameraUse104994")
-          .style.display = "none";
-
-        $("manaCameraRetake104994")
-          .style.display = "none";
-
-        await startCamera();
-      });
-
-    $("manaCameraUse104994")
-      .addEventListener("click", usePhoto);
-
-    void startCamera();
+    $("manaCameraRetake104995").hidden = !captured;
+    $("manaCameraUse104995").hidden = !captured;
   }
 
+  /* =====================================================
+     CAPTURE PHOTO
+     ===================================================== */
+
   async function capturePhoto() {
-    const video = $("manaCameraVideo104994");
+    const video = $("manaCameraVideo104995");
 
     if (
       !video ||
@@ -389,11 +285,13 @@
       )
     );
 
-    canvas.width =
-      Math.round(video.videoWidth * scale);
+    canvas.width = Math.round(
+      video.videoWidth * scale
+    );
 
-    canvas.height =
-      Math.round(video.videoHeight * scale);
+    canvas.height = Math.round(
+      video.videoHeight * scale
+    );
 
     const context = canvas.getContext("2d");
 
@@ -408,11 +306,7 @@
     );
 
     const blob = await new Promise(resolve => {
-      canvas.toBlob(
-        resolve,
-        "image/jpeg",
-        0.88
-      );
+      canvas.toBlob(resolve, "image/jpeg", .88);
     });
 
     if (!blob) return;
@@ -423,55 +317,32 @@
       { type: "image/jpeg" }
     );
 
-    const image = $("manaCapturedImage104994");
+    clearCapturedURL();
+    photoURL = URL.createObjectURL(blob);
+
+    const image = $("manaCameraCaptured104995");
 
     if (!image) return;
 
-    image.src = URL.createObjectURL(blob);
-
-    image.onload = () => {
-      URL.revokeObjectURL(image.src);
-    };
+    image.src = photoURL;
 
     stopCamera();
+    setCaptureState(true);
 
-    video.style.display = "none";
-    image.style.display = "block";
-
-    $("manaCameraCapture104994")
-      .style.display = "none";
-
-    $("manaCameraSwitch104994")
-      .style.display = "none";
-
-    $("manaCameraRetake104994")
-      .style.display = "";
-
-    $("manaCameraUse104994")
-      .style.display = "";
-
-    $("manaCameraMessage104994")
-      .textContent =
-        "Happy with your photo? Select Use Photo.";
+    $("manaCameraNote104995").textContent =
+      "Select Use Photo or Retake.";
   }
 
   function usePhoto() {
-    const input = $(INPUT_ID);
+    const input = $(INPUT);
 
     if (!input || !capturedFile) return;
 
     try {
       const transfer = new DataTransfer();
-
       transfer.items.add(capturedFile);
 
       input.files = transfer.files;
-
-      /*
-       Triggers the existing Profile preview.
-       The original Save & Continue still
-       uploads this file to Supabase.
-      */
 
       input.dispatchEvent(
         new Event("change", {
@@ -482,96 +353,238 @@
       closeCamera();
 
     } catch (error) {
-      console.warn(
-        "[Mana Camera] Could not attach photo",
-        error
-      );
+      $("manaCameraNote104995").textContent =
+        "Unable to attach photo. " +
+        "Please choose a photo from your device.";
+
+      console.warn("[Mana Camera]", error);
     }
   }
 
-  function installButtons() {
-    const input = $(INPUT_ID);
+  /* =====================================================
+     CAMERA MODAL
+     ===================================================== */
 
-    if (!input || $(ROOT_ID)) return;
+  function openCamera() {
+    if ($(MODAL)) return;
 
-    const wrapper = document.createElement("div");
-    wrapper.id = ROOT_ID;
+    facing = "user";
+    capturedFile = null;
 
-    wrapper.innerHTML = `
-      <button
-        type="button"
-        id="manaTakePhoto104994"
-      >
-        📷 Take Photo
-      </button>
+    const modal = document.createElement("div");
+    modal.id = MODAL;
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
 
-      <button
-        type="button"
-        id="manaChoosePhoto104994"
-      >
-        Choose from Device
-      </button>
+    modal.innerHTML = `
+      <div class="mana-camera-card">
+        <h3>Take Profile Photo</h3>
+
+        <video
+          id="manaCameraVideo104995"
+          autoplay
+          muted
+          playsinline
+        ></video>
+
+        <img
+          id="manaCameraCaptured104995"
+          alt="Captured profile photo"
+          style="display:none"
+        >
+
+        <div class="mana-camera-actions">
+          <button type="button"
+            id="manaCameraSwitch104995">
+            Switch Camera
+          </button>
+
+          <button type="button"
+            class="primary"
+            id="manaCameraCapture104995">
+            Capture Photo
+          </button>
+
+          <button type="button"
+            id="manaCameraRetake104995"
+            hidden>
+            Retake
+          </button>
+
+          <button type="button"
+            class="primary"
+            id="manaCameraUse104995"
+            hidden>
+            Use Photo
+          </button>
+
+          <button type="button"
+            id="manaCameraCancel104995">
+            Cancel
+          </button>
+        </div>
+
+        <p id="manaCameraNote104995">
+          Allow access to your camera when prompted.
+        </p>
+      </div>
     `;
+
+    document.body.appendChild(modal);
+
+    $("manaCameraCancel104995")
+      .addEventListener("click", closeCamera);
+
+    $("manaCameraSwitch104995")
+      .addEventListener("click", async () => {
+        facing = facing === "user"
+          ? "environment"
+          : "user";
+
+        await startCamera();
+      });
+
+    $("manaCameraCapture104995")
+      .addEventListener("click", capturePhoto);
+
+    $("manaCameraRetake104995")
+      .addEventListener("click", async () => {
+        capturedFile = null;
+        clearCapturedURL();
+        setCaptureState(false);
+        await startCamera();
+      });
+
+    $("manaCameraUse104995")
+      .addEventListener("click", usePhoto);
+
+    void startCamera();
+  }
+
+  /* =====================================================
+     RELIABLE DYNAMIC PROFILE MOUNT
+
+     The Profile input is added AFTER
+     the page initially loads.
+
+     Watch until it exists, then install
+     the buttons in its actual field.
+
+     Reinstall only if that field is
+     replaced by a Profile redraw.
+     ===================================================== */
+
+  function installButtons() {
+    const input = $(INPUT);
+
+    if (!input) return false;
 
     const field = input.closest(".me-field");
 
-    if (!field) return;
+    if (!field) return false;
+
+    const existing = $(CONTROLS);
+
+    if (existing && existing.parentElement === field) {
+      return true;
+    }
+
+    existing?.remove();
+
+    const controls = document.createElement("div");
+    controls.id = CONTROLS;
+
+    const take = document.createElement("button");
+    take.type = "button";
+    take.textContent = "📷 Take Photo";
+
+    const choose = document.createElement("button");
+    choose.type = "button";
+    choose.textContent = "Choose from Device";
+
+    controls.append(take, choose);
 
     input.insertAdjacentElement(
       "beforebegin",
-      wrapper
+      controls
     );
 
-    $("manaTakePhoto104994")
-      .addEventListener("click", showCamera);
+    take.addEventListener("click", openCamera);
 
-    $("manaChoosePhoto104994")
-      .addEventListener("click", () => {
-        input.click();
+    choose.addEventListener("click", () => {
+      input.click();
+    });
+
+    return true;
+  }
+
+  function watchProfile() {
+    const profile = $(PROFILE);
+
+    if (!profile) return false;
+
+    if (!profileObserver) {
+      profileObserver = new MutationObserver(() => {
+        if ($(INPUT) && !$(CONTROLS)) {
+          installButtons();
+        }
       });
+
+      profileObserver.observe(profile, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    installButtons();
+    return true;
   }
 
   function init() {
-    installStyles();
-
-    installButtons();
+    styles();
 
     /*
-     Profile controls are dynamically
-     positioned by the 104992 layout.
+     On first load, wait until the
+     Profile screen has been created.
     */
 
-    document.addEventListener(
-      "click",
-      event => {
-        if (
-          event.target.closest?.(
-            "[data-open-profile],#manaProfileButton"
-          )
-        ) {
-          setTimeout(installButtons, 150);
+    if (!watchProfile()) {
+      mountObserver = new MutationObserver(() => {
+        if (watchProfile()) {
+          mountObserver.disconnect();
+          mountObserver = null;
         }
-      }
-    );
+      });
 
-    window.addEventListener(
-      "pageshow",
-      installButtons
-    );
+      mountObserver.observe(document.body, {
+        childList: true,
+        subtree: true
+      });
+    }
+
+    window.addEventListener("pageshow", () => {
+      watchProfile();
+      installButtons();
+    });
 
     document.addEventListener(
       "visibilitychange",
       () => {
         if (!document.hidden) {
           installButtons();
+        } else {
+          stopCamera();
         }
       }
     );
 
-    window.addEventListener("pagehide", stopCamera);
+    window.addEventListener(
+      "pagehide",
+      stopCamera
+    );
 
     console.log(
-      "[Mana Movement] Profile Camera 104994 active"
+      "[Mana Movement] Camera 104995 active"
     );
   }
 
