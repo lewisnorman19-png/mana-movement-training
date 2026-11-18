@@ -1,50 +1,59 @@
 
 /* ============================================================
    MANA MOVEMENT TRAINING
-   COACH PROFILE CAMERA
-   BUILD 105011
+   COACH PROFILE CAMERA — STABILITY FIX
+   BUILD 105012
 
-   COMPLETE NEW JAVASCRIPT FILE
+   COMPLETE REPLACEMENT:
+   mana_coach_profile_camera_105011.js
 
    - Take Photo
    - Choose from Device
-   - Capture, Retake, Use Photo
+   - Capture / Retake / Use Photo
    - Front / rear camera switching
-   - Compact premium profile preview
-   - Uses original Coach Profile save logic
+   - Compact 96px photo preview
+   - Reliable controls after Settings loads
+   - Reliable controls after Settings re-renders
+   - Uses original Save Coach Profile handler
 
-   NO DATABASE CHANGES
-   NO CLIENT PROFILE CHANGES
+   NO DATABASE OR NAVIGATION CHANGES
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const FLAG = "MANA_COACH_CAMERA_105011";
+  const FLAG = "MANA_COACH_CAMERA_105012";
 
   if (window[FLAG]) return;
   window[FLAG] = true;
 
   const ROOT = "manaCoachSettings105010";
+  const SECTION =
+    '#manaCoachSuite104707 [data-mcn-view="settings"]';
+
   const INPUT = "mcsPhotoInput105010";
   const OLD_BUTTON = "mcsChoosePhoto105010";
-  const CONTROLS = "manaCoachPhotoControls105011";
-  const MODAL = "manaCoachCameraModal105011";
-  const STYLE = "manaCoachCameraStyle105011";
+  const PREVIEW = "mcsAvatar105010";
+
+  const CONTROLS = "manaCoachPhotoControls105012";
+  const MODAL = "manaCoachCameraModal105012";
+  const STYLE = "manaCoachCameraStyle105012";
 
   const $ = id => document.getElementById(id);
 
   let stream = null;
   let facing = "user";
   let capturedFile = null;
-  let capturedUrl = null;
-  let observer = null;
+  let capturedURL = null;
+  let cameraRequest = 0;
+  let sectionObserver = null;
+  let pendingMount = false;
 
   /* =====================================================
-     STYLES
+     PREMIUM STYLING
      ===================================================== */
 
-  function styles() {
+  function installStyles() {
     if ($(STYLE)) return;
 
     const style = document.createElement("style");
@@ -52,48 +61,96 @@
 
     style.textContent = `
 
+      /* Hide the file input, not the controls */
+
       #${ROOT} #${INPUT} {
         display: none !important;
       }
 
-      #${ROOT} #${OLD_BUTTON} {
+      /*
+       Only hide the original photo button
+       once replacement controls are mounted.
+      */
+
+      #${ROOT}.mcc-controls-ready
+      #${OLD_BUTTON} {
         display: none !important;
       }
 
-      #${ROOT} #${CONTROLS} {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 9px;
-        align-items: center;
-      }
+      /* Small coach photo */
 
-      #${ROOT} #${CONTROLS} button {
-        min-height: 43px;
-        padding: 10px 13px;
-        border: 1px solid #FF7927;
-        border-radius: 11px;
-        background: #24180F;
-        color: #FF7927;
-        -webkit-text-fill-color: #FF7927;
-        font-size: 12px;
-        font-weight: 900;
-        cursor: pointer;
-      }
-
-      #${ROOT} #mcsAvatar105010 {
+      #${ROOT} #${PREVIEW} {
         flex: 0 0 96px !important;
         width: 96px !important;
         height: 96px !important;
+        min-width: 96px !important;
+        min-height: 96px !important;
+
+        display: grid !important;
+        place-items: center !important;
+
         border: 1px solid #FF7927 !important;
         border-radius: 13px !important;
         background: #101215 !important;
+        overflow: hidden !important;
       }
 
-      #${ROOT} #mcsAvatar105010 img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
+      #${ROOT} #${PREVIEW} img {
+        display: block !important;
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: cover !important;
       }
+
+      #${ROOT} .mcs-photo-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        gap: 7px !important;
+        min-width: 0 !important;
+      }
+
+      #${ROOT} #${CONTROLS} {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        gap: 9px !important;
+        width: 100% !important;
+      }
+
+      #${ROOT} #${CONTROLS} button {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        min-height: 44px !important;
+        padding: 11px 15px !important;
+
+        background: #24180F !important;
+        border: 1px solid #FF7927 !important;
+        border-radius: 11px !important;
+
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+
+        font-size: 12px !important;
+        font-weight: 900 !important;
+        line-height: 1.25 !important;
+        cursor: pointer !important;
+      }
+
+      #${ROOT} #${CONTROLS} button:hover {
+        background: #352114 !important;
+      }
+
+      #${ROOT} #${CONTROLS}
+      button:focus-visible {
+        outline: 2px solid #FFFFFF !important;
+        outline-offset: 2px !important;
+      }
+
+      /* Camera overlay */
 
       #${MODAL} {
         position: fixed !important;
@@ -101,37 +158,42 @@
         z-index: 110000 !important;
 
         display: flex !important;
-        align-items: center;
-        justify-content: center;
+        align-items: center !important;
+        justify-content: center !important;
 
-        padding: 15px;
-        background: rgba(0,0,0,.9);
-        box-sizing: border-box;
+        padding: 15px !important;
+        background: rgba(0,0,0,.92) !important;
+        box-sizing: border-box !important;
       }
 
       #${MODAL} * {
         box-sizing: border-box;
       }
 
+      #${MODAL} [hidden] {
+        display: none !important;
+      }
+
       #${MODAL} .mcc-panel {
-        width: min(480px,100%);
+        width: min(470px,100%);
         max-height: 94dvh;
         overflow-y: auto;
 
+        padding: 17px;
+
         background: #15171B;
         border: 1px solid #505862;
-        border-radius: 19px;
-        padding: 17px;
+        border-radius: 18px;
 
         color: #FFFFFF;
       }
 
       #${MODAL} .mcc-header {
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: center;
         gap: 12px;
-        margin-bottom: 14px;
+        margin-bottom: 13px;
       }
 
       #${MODAL} .mcc-kicker {
@@ -143,22 +205,20 @@
 
       #${MODAL} h2 {
         color: #FFFFFF;
-        font-size: 21px;
         margin: 5px 0 0;
+        font-size: 21px;
+        font-weight: 900;
       }
 
       #${MODAL} .mcc-preview {
-        display: grid;
-        place-items: center;
-        overflow: hidden;
-
         width: 100%;
         aspect-ratio: 1 / 1;
         max-height: min(55dvh,400px);
+        overflow: hidden;
 
         background: #090B0D;
         border: 1px solid #48515B;
-        border-radius: 14px;
+        border-radius: 13px;
       }
 
       #${MODAL} video,
@@ -177,18 +237,18 @@
         display: flex;
         flex-wrap: wrap;
         gap: 9px;
-        margin-top: 14px;
+        margin-top: 13px;
       }
 
       #${MODAL} button {
         min-height: 43px;
-        padding: 10px 13px;
+        padding: 10px 14px;
+
+        background: #24180F;
         border: 1px solid #FF7927;
         border-radius: 10px;
 
-        background: #24180F;
         color: #FF7927;
-
         font-size: 12px;
         font-weight: 900;
         cursor: pointer;
@@ -205,9 +265,8 @@
       }
 
       #${MODAL} .mcc-note {
+        margin-top: 12px;
         min-height: 20px;
-        margin-top: 11px;
-
         color: #B7C0CB;
         font-size: 12px;
         line-height: 1.5;
@@ -221,6 +280,10 @@
         #${MODAL} .mcc-actions button {
           flex: 1 1 auto;
         }
+
+        #${ROOT} #${CONTROLS} button {
+          padding: 10px 12px !important;
+        }
       }
 
     `;
@@ -229,19 +292,20 @@
   }
 
   /* =====================================================
-     CLEANUP
+     CAMERA CLEANUP
      ===================================================== */
 
   function stopCamera() {
+    cameraRequest++;
+
     if (stream) {
       stream.getTracks().forEach(
         track => track.stop()
       );
-
       stream = null;
     }
 
-    const video = $("mccVideo105011");
+    const video = $("mccVideo105012");
 
     if (video) {
       video.pause();
@@ -249,10 +313,10 @@
     }
   }
 
-  function clearCapture() {
-    if (capturedUrl) {
-      URL.revokeObjectURL(capturedUrl);
-      capturedUrl = null;
+  function clearCaptured() {
+    if (capturedURL) {
+      URL.revokeObjectURL(capturedURL);
+      capturedURL = null;
     }
 
     capturedFile = null;
@@ -260,32 +324,31 @@
 
   function closeCamera() {
     stopCamera();
-    clearCapture();
+    clearCaptured();
     $(MODAL)?.remove();
   }
 
   /* =====================================================
-     CAMERA
+     START CAMERA
      ===================================================== */
 
   async function startCamera() {
-    const video = $("mccVideo105011");
-    const note = $("mccNote105011");
-
-    if (!video) return;
-
     stopCamera();
 
-    if (
-      !navigator.mediaDevices ||
-      !navigator.mediaDevices.getUserMedia
-    ) {
-      if (note) {
-        note.textContent =
-          "Camera not available. Use Choose from Device.";
-      }
+    const request = cameraRequest;
+    const video = $("mccVideo105012");
+    const note = $("mccNote105012");
+
+    if (!video || !note) return;
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      note.textContent =
+        "This device cannot open the camera. " +
+        "Choose from Device instead.";
       return;
     }
+
+    note.textContent = "Starting camera…";
 
     try {
       const next = await navigator.mediaDevices
@@ -296,7 +359,10 @@
           }
         });
 
-      if (!video.isConnected) {
+      if (
+        request !== cameraRequest ||
+        !video.isConnected
+      ) {
         next.getTracks().forEach(
           track => track.stop()
         );
@@ -308,17 +374,16 @@
 
       await video.play();
 
-      if (note) {
+      if (request === cameraRequest) {
         note.textContent =
           "Position yourself in the frame.";
       }
 
     } catch (error) {
-      if (note) {
+      if (request === cameraRequest) {
         note.textContent =
-          "Unable to access the camera. " +
-          "Check camera permissions or choose " +
-          "a photo from your device.";
+          "Camera unavailable. Check permissions " +
+          "or choose an existing photo.";
       }
 
       console.warn(
@@ -328,35 +393,44 @@
     }
   }
 
-  function showCaptured(captured) {
-    const video = $("mccVideo105011");
-    const image = $("mccCaptured105011");
+  /* =====================================================
+     CAPTURE PHOTO
+     ===================================================== */
+
+  function showCaptured(isCaptured) {
+    const video = $("mccVideo105012");
+    const image = $("mccCaptured105012");
 
     if (!video || !image) return;
 
     video.style.display =
-      captured ? "none" : "block";
+      isCaptured ? "none" : "block";
 
     image.style.display =
-      captured ? "block" : "none";
+      isCaptured ? "block" : "none";
 
-    $("mccCapture105011").hidden = captured;
-    $("mccSwitch105011").hidden = captured;
+    $("mccCapture105012").hidden =
+      isCaptured;
 
-    $("mccRetake105011").hidden = !captured;
-    $("mccUse105011").hidden = !captured;
+    $("mccSwitch105012").hidden =
+      isCaptured;
+
+    $("mccRetake105012").hidden =
+      !isCaptured;
+
+    $("mccUse105012").hidden =
+      !isCaptured;
   }
 
-  async function takePhoto() {
-    const video = $("mccVideo105011");
+  async function capturePhoto() {
+    const video = $("mccVideo105012");
+    const note = $("mccNote105012");
 
     if (
       !video ||
       !video.videoWidth ||
       !video.videoHeight
     ) {
-      const note = $("mccNote105011");
-
       if (note) {
         note.textContent =
           "Camera is not ready yet.";
@@ -364,9 +438,8 @@
       return;
     }
 
-    const canvas = document.createElement(
-      "canvas"
-    );
+    const canvas =
+      document.createElement("canvas");
 
     const scale = Math.min(
       1,
@@ -396,74 +469,62 @@
       canvas.height
     );
 
-    const blob = await new Promise(
-      resolve => {
-        canvas.toBlob(
-          resolve,
-          "image/jpeg",
-          .85
-        );
+    const blob = await new Promise(resolve => {
+      canvas.toBlob(
+        resolve,
+        "image/jpeg",
+        .85
+      );
+    });
+
+    if (!blob) {
+      if (note) {
+        note.textContent =
+          "Unable to capture this photo.";
       }
-    );
-
-    if (!blob) return;
-
-    clearCapture();
-
-    capturedFile = new File(
-      [blob],
-      "mana-coach-photo-" +
-        Date.now() + ".jpg",
-      {type: "image/jpeg"}
-    );
-
-    capturedUrl = URL.createObjectURL(
-      blob
-    );
-
-    const image = $("mccCaptured105011");
-
-    if (!image) {
-      clearCapture();
       return;
     }
 
-    image.src = capturedUrl;
+    clearCaptured();
+
+    capturedFile = new File(
+      [blob],
+      "mana-coach-" + Date.now() + ".jpg",
+      { type: "image/jpeg" }
+    );
+
+    capturedURL = URL.createObjectURL(blob);
+
+    const image = $("mccCaptured105012");
+
+    if (!image) return;
+
+    image.src = capturedURL;
 
     stopCamera();
     showCaptured(true);
 
-    const note = $("mccNote105011");
-
     if (note) {
       note.textContent =
-        "Use Photo to attach it, " +
-        "or Retake to try again.";
+        "Use Photo to attach it or Retake.";
     }
   }
 
+  /* =====================================================
+     ATTACH TO EXISTING SAVE HANDLER
+     ===================================================== */
+
   function usePhoto() {
-    if (!capturedFile) return;
-
     const input = $(INPUT);
+    const note = $("mccNote105012");
 
-    if (!input) {
-      closeCamera();
-      return;
-    }
+    if (!input || !capturedFile) return;
 
     try {
       const transfer = new DataTransfer();
-
       transfer.items.add(capturedFile);
 
       input.files = transfer.files;
-
-      /*
-       Trigger original Settings photo
-       handler, which creates the compact
-       preview for Save Coach Profile.
-      */
 
       input.dispatchEvent(
         new Event("change", {
@@ -474,11 +535,10 @@
       closeCamera();
 
     } catch (error) {
-      const note = $("mccNote105011");
-
       if (note) {
         note.textContent =
-          "Unable to attach photograph.";
+          "Unable to attach photo. " +
+          "Please use Choose from Device.";
       }
     }
   }
@@ -491,10 +551,11 @@
     if ($(MODAL)) return;
 
     facing = "user";
-    clearCapture();
+    clearCaptured();
 
     const modal = document.createElement("div");
     modal.id = MODAL;
+
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
     modal.setAttribute(
@@ -516,7 +577,7 @@
 
           <button
             type="button"
-            id="mccClose105011"
+            id="mccClose105012"
           >
             CLOSE
           </button>
@@ -524,38 +585,39 @@
 
         <div class="mcc-preview">
           <video
-            id="mccVideo105011"
+            id="mccVideo105012"
             autoplay
             muted
             playsinline
           ></video>
 
           <img
-            id="mccCaptured105011"
+            id="mccCaptured105012"
             class="mcc-captured"
-            alt="Captured coach photograph"
+            alt="Captured coach photo"
           >
         </div>
 
         <div class="mcc-actions">
+
           <button
             type="button"
             class="primary"
-            id="mccCapture105011"
+            id="mccCapture105012"
           >
             CAPTURE
           </button>
 
           <button
             type="button"
-            id="mccSwitch105011"
+            id="mccSwitch105012"
           >
             SWITCH CAMERA
           </button>
 
           <button
             type="button"
-            id="mccRetake105011"
+            id="mccRetake105012"
             hidden
           >
             RETAKE
@@ -564,16 +626,17 @@
           <button
             type="button"
             class="primary"
-            id="mccUse105011"
+            id="mccUse105012"
             hidden
           >
             USE PHOTO
           </button>
+
         </div>
 
         <div
           class="mcc-note"
-          id="mccNote105011"
+          id="mccNote105012"
           role="status"
         >
           Starting camera…
@@ -584,30 +647,29 @@
 
     document.body.appendChild(modal);
 
-    $("mccClose105011").onclick =
+    $("mccClose105012").onclick =
       closeCamera;
 
-    $("mccCapture105011").onclick =
-      takePhoto;
+    $("mccCapture105012").onclick =
+      capturePhoto;
 
-    $("mccSwitch105011").onclick =
+    $("mccSwitch105012").onclick =
       async () => {
-        facing =
-          facing === "user"
-            ? "environment"
-            : "user";
+        facing = facing === "user"
+          ? "environment"
+          : "user";
 
         await startCamera();
       };
 
-    $("mccRetake105011").onclick =
+    $("mccRetake105012").onclick =
       async () => {
-        clearCapture();
+        clearCaptured();
         showCaptured(false);
         await startCamera();
       };
 
-    $("mccUse105011").onclick =
+    $("mccUse105012").onclick =
       usePhoto;
 
     modal.addEventListener(
@@ -623,10 +685,10 @@
   }
 
   /* =====================================================
-     SETTINGS CONTROLS
+     ATTACH VISIBLE PHOTO BUTTONS
 
-     Existing file input and original
-     image processing remain untouched.
+     This runs after the Settings screen
+     finishes loading and after re-renders.
      ===================================================== */
 
   function mountControls() {
@@ -634,69 +696,146 @@
     const input = $(INPUT);
     const oldButton = $(OLD_BUTTON);
 
-    if (!root || !input || !oldButton) {
-      return;
-    }
+    if (!root || !input || !oldButton) return;
 
     const parent = oldButton.parentElement;
 
     if (!parent) return;
 
-    if ($(CONTROLS)) return;
+    let controls = $(CONTROLS);
 
-    const controls = document.createElement("div");
-    controls.id = CONTROLS;
+    /*
+     Check that the controls really belong
+     to the currently rendered Settings
+     panel, rather than an old node.
+    */
 
-    const camera = document.createElement("button");
-    camera.type = "button";
-    camera.textContent = "Take Photo";
+    if (
+      controls &&
+      !parent.contains(controls)
+    ) {
+      controls.remove();
+      controls = null;
+    }
 
-    const device = document.createElement("button");
-    device.type = "button";
-    device.textContent = "Choose from Device";
+    if (!controls) {
+      controls = document.createElement("div");
+      controls.id = CONTROLS;
 
-    controls.append(camera, device);
+      const camera =
+        document.createElement("button");
 
-    parent.insertBefore(
-      controls,
-      oldButton
+      camera.type = "button";
+      camera.textContent = "Take Photo";
+
+      const device =
+        document.createElement("button");
+
+      device.type = "button";
+      device.textContent =
+        "Choose from Device";
+
+      camera.addEventListener(
+        "click",
+        openCamera
+      );
+
+      device.addEventListener(
+        "click",
+        () => {
+          const currentInput = $(INPUT);
+
+          if (currentInput) {
+            currentInput.click();
+          }
+        }
+      );
+
+      controls.append(camera, device);
+
+      parent.insertBefore(
+        controls,
+        oldButton
+      );
+    }
+
+    /*
+     Only mark the original button as
+     replaceable once both new buttons
+     exist inside the live panel.
+    */
+
+    root.classList.add(
+      "mcc-controls-ready"
     );
 
-    camera.addEventListener(
-      "click",
-      openCamera
-    );
-
-    device.addEventListener(
-      "click",
-      () => input.click()
-    );
+    window.MANA_COACH_CAMERA_BUILD =
+      "105012";
   }
 
   /* =====================================================
-     INITIALISE
+     RELIABLE SETTINGS WATCH
 
-     Settings can re-render after a
-     profile or preference save.
+     Observe the Settings section, not just
+     the root's immediate children.
+
+     The account information loads
+     asynchronously and builds the profile
+     after the initial page render.
      ===================================================== */
 
-  function init() {
-    styles();
+  function scheduleMount() {
+    if (pendingMount) return;
 
-    mountControls();
+    pendingMount = true;
 
-    const root = $(ROOT);
+    requestAnimationFrame(() => {
+      pendingMount = false;
+      mountControls();
+    });
+  }
 
-    if (root) {
-      observer = new MutationObserver(
-        mountControls
-      );
+  function watchSettings() {
+    const section =
+      document.querySelector(SECTION);
 
-      observer.observe(root, {
-        childList: true,
-        subtree: false
-      });
+    if (!section) return false;
+
+    if (sectionObserver) {
+      sectionObserver.disconnect();
     }
+
+    sectionObserver =
+      new MutationObserver(scheduleMount);
+
+    sectionObserver.observe(section, {
+      childList: true,
+      subtree: true
+    });
+
+    scheduleMount();
+    return true;
+  }
+
+  function init() {
+    installStyles();
+
+    /*
+     Bounded setup attempts for modules
+     that initialise at different times.
+    */
+
+    [0, 150, 450, 1000, 1800].forEach(
+      delay => {
+        setTimeout(() => {
+          if (!sectionObserver) {
+            watchSettings();
+          } else {
+            mountControls();
+          }
+        }, delay);
+      }
+    );
 
     document.addEventListener(
       "keydown",
@@ -710,11 +849,9 @@
       }
     );
 
-    window.MANA_COACH_CAMERA_BUILD =
-      "105011";
-
     console.log(
-      "[Mana Movement] Coach Camera 105011"
+      "[Mana Movement] Coach Camera " +
+      "105012 active"
     );
   }
 
@@ -722,7 +859,7 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {once:true}
+      { once: true }
     );
   } else {
     init();
