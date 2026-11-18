@@ -1,43 +1,41 @@
 
-/* ==========================================================
+/* ============================================================
    MANA MOVEMENT TRAINING
-   COACH HUB — PHOTO, CHAT & ACTIVE TABS
-   BUILD 105001
+   COACH HUB — PHOTO / CHAT / TABS REPAIR
+   BUILD 105002
 
-   COMPLETE JAVASCRIPT FILE
+   COMPLETE REPLACEMENT:
+   mana_coach_avatar_chat_tabs_105001.js
 
-   FIXES:
-   - Client profile photo in Coach Hub header
-   - Uses existing private Supabase photo storage
-   - Respects client profile sharing permission
-   - Keeps initials if no photo is available
-   - Removes stale photo when switching clients
-   - Premium Coach Chat card and button
-   - Active Coach Hub bottom tab highlights orange
-   - Makes historical coaching cards clearer
-   - Works on laptop and mobile
+   FIXES
+   - Profile photo survives Coach header re-renders
+   - Secure private photo loading
+   - No previous-client photo carryover
+   - Consistent premium Coach Chat
+   - Removes residual yellow/gold styling
+   - Exactly one active orange Coach tab
+   - Clients active while viewing a client
+   - Premium historical coaching cards
 
-   PRESERVES:
-   - View Client navigation
-   - Existing Chat functionality and messages
-   - Program assignments
+   PROTECTS
+   - Existing Chat functionality
+   - Program Builder and assignments
    - Block Upgrade Requests
-   - Notes, check-ins and workout history
-   - Coach Summary calculations
-   - Client Profile and photo uploads
-   - All existing database policies
+   - Supabase permissions and client sharing
+   - Check-ins, notes and training history
+   - Client Profile and camera
+   - Mobile and desktop layouts
 
-   No database writes.
-   No replacement of existing buttons.
-   No deletion of historical records.
-   ========================================================== */
+   No database changes.
+   No message or workout data changes.
+   ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "105001";
-  const FLAG = "MANA_COACH_FINISH_105001";
-  const STYLE = "manaCoachFinishStyle105001";
+  const BUILD = "105002";
+  const FLAG = "MANA_COACH_FINISH_105002";
+  const STYLE = "manaCoachFinishStyle105002";
 
   if (window[FLAG]) return;
   window[FLAG] = true;
@@ -50,21 +48,29 @@
 
   const $ = id => document.getElementById(id);
 
-  let desiredClientId = "";
-  let loadedClientId = "";
-  let loadedAvatar = null;
-  let activeAvatarNode = null;
-  let requestNumber = 0;
-  let refreshScheduled = false;
-  let detailObserver = null;
+  let selectedId = "";
+  let currentId = "";
+  let avatarURL = "";
+  let avatarExpiry = 0;
+  let loadingId = "";
+  let loadTicket = 0;
+
+  let heroObserver = null;
+  let observedHero = null;
+
   let profileObserver = null;
-  let observedPanel = null;
+  let observedProfile = null;
 
-  /* ======================================================
-     HELPERS
-     ====================================================== */
+  let detailObserver = null;
+  let observedDetail = null;
 
-  function detailVisible() {
+  let refreshQueued = false;
+
+  /* =====================================================
+     VISIBILITY
+     ===================================================== */
+
+  function detailOpen() {
     const view = $(VIEW);
 
     return Boolean(
@@ -74,39 +80,15 @@
     );
   }
 
-  function coachVisible() {
-    const coach = $("coachView");
-
-    return Boolean(
-      coach &&
-      !coach.hidden &&
-      !coach.classList.contains("hide")
-    );
+  function profileClientId() {
+    return String(
+      $(PANEL)?.dataset.clientId || ""
+    ).trim();
   }
 
-  function cleanText(value) {
-    return String(value ?? "").trim();
-  }
-
-  function avatarNodes() {
-    const view = $(VIEW);
-    if (!view) return [];
-
-    const nodes = [
-      view.querySelector(
-        `#${HERO} .mana-v998-avatar`
-      ),
-      view.querySelector(
-        "#detailClientAvatar"
-      )
-    ];
-
-    return [...new Set(nodes.filter(Boolean))];
-  }
-
-  /* ======================================================
-     PREMIUM CSS
-     ====================================================== */
+  /* =====================================================
+     PREMIUM STYLE SYSTEM
+     ===================================================== */
 
   function installStyles() {
     if ($(STYLE)) return;
@@ -117,16 +99,54 @@
     style.textContent = `
 
       /* =====================================
-         COACH HEADER PROFILE PHOTO
+         CLIENT HEADER
          ===================================== */
 
-      #${VIEW} #${HERO} .mana-v998-avatar,
+      #${VIEW} #${HERO} {
+        background: #14161A !important;
+        background-image: none !important;
+        border: 1px solid #535C68 !important;
+        border-radius: 19px !important;
+        box-shadow: none !important;
+      }
+
+      #${VIEW} #${HERO}
+      .mana-v998-kicker {
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+      }
+
+      #${VIEW} #${HERO}
+      .mana-v998-name {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+      }
+
+      #${VIEW} #${HERO}
+      .mana-v998-sub {
+        color: #C1C6CE !important;
+        -webkit-text-fill-color: #C1C6CE !important;
+      }
+
+      #${VIEW} #${HERO}
+      .mana-v998-hero-purpose {
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+      }
+
+      /* CLIENT PROFILE PHOTO */
+
+      #${VIEW} #${HERO}
+      .mana-v998-avatar,
       #${VIEW} #detailClientAvatar {
         position: relative !important;
+
         width: 64px !important;
         height: 64px !important;
+
         min-width: 64px !important;
         min-height: 64px !important;
+
         max-width: 64px !important;
         max-height: 64px !important;
 
@@ -138,11 +158,12 @@
 
         overflow: hidden !important;
 
+        background: #101215 !important;
         border: 2px solid #FF7927 !important;
         border-radius: 15px !important;
 
-        background: #101215 !important;
         color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
 
         font-size: 18px !important;
         font-weight: 900 !important;
@@ -150,7 +171,7 @@
         box-sizing: border-box !important;
       }
 
-      #${VIEW} .mana-coach-avatar-105001 {
+      #${VIEW} .mana-coach-avatar-105002 {
         display: block !important;
 
         position: absolute !important;
@@ -158,6 +179,7 @@
 
         width: 100% !important;
         height: 100% !important;
+
         max-width: 100% !important;
         max-height: 100% !important;
 
@@ -166,6 +188,7 @@
 
         margin: 0 !important;
         padding: 0 !important;
+
         border: 0 !important;
         border-radius: 13px !important;
 
@@ -173,71 +196,73 @@
       }
 
       /* =====================================
-         COACH CHAT CARD
+         COACH CHAT — PREMIUM FINISH
          ===================================== */
 
-      #${VIEW} .mana-coach-chat-105001 {
+      #${VIEW} .mana-coach-chat-105002 {
         display: flex !important;
         flex-direction: column !important;
         align-items: stretch !important;
 
         width: 100% !important;
-        min-width: 0 !important;
+        max-width: 100% !important;
 
         gap: 9px !important;
-        padding: 16px 18px !important;
 
-        margin: 12px 0 !important;
+        padding: 18px 20px !important;
+        margin: 13px 0 !important;
 
         background: #15171B !important;
         background-image: none !important;
 
-        border: 1px solid #4C5560 !important;
+        border: 1px solid #505862 !important;
         border-radius: 17px !important;
 
-        color: #FFFFFF !important;
         box-shadow: none !important;
-
         box-sizing: border-box !important;
       }
 
-      #${VIEW} .mana-coach-chat-105001 h2,
-      #${VIEW} .mana-coach-chat-105001 h3,
-      #${VIEW} .mana-coach-chat-105001 h4 {
+      #${VIEW} .mana-coach-chat-105002 h2,
+      #${VIEW} .mana-coach-chat-105002 h3,
+      #${VIEW} .mana-coach-chat-105002 h4 {
         color: #FFFFFF !important;
         -webkit-text-fill-color: #FFFFFF !important;
 
         font-family: inherit !important;
         font-size: 17px !important;
         font-weight: 900 !important;
-        line-height: 1.3 !important;
 
+        line-height: 1.3 !important;
         margin: 0 !important;
       }
 
-      #${VIEW} .mana-coach-chat-105001 p,
-      #${VIEW} .mana-coach-chat-105001 small {
-        color: #B7C0CB !important;
-        -webkit-text-fill-color: #B7C0CB !important;
+      #${VIEW} .mana-coach-chat-105002 p,
+      #${VIEW} .mana-coach-chat-105002 small,
+      #${VIEW} .mana-coach-chat-105002
+      .muted {
+        color: #B9C2CD !important;
+        -webkit-text-fill-color: #B9C2CD !important;
 
         font-size: 12px !important;
-        line-height: 1.5 !important;
+        line-height: 1.55 !important;
 
         margin: 0 !important;
       }
 
-      #${VIEW} .mana-coach-chat-105001 button {
+      #${VIEW}
+      .mana-coach-chat-105002 button {
         display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
 
         width: fit-content !important;
         max-width: 100% !important;
-        min-height: 43px !important;
 
-        padding: 11px 17px !important;
+        min-height: 44px !important;
 
-        background: #24170F !important;
+        padding: 11px 19px !important;
+
+        background: #25180F !important;
         background-image: none !important;
 
         border: 1px solid #FF7927 !important;
@@ -246,6 +271,7 @@
         color: #FF7927 !important;
         -webkit-text-fill-color: #FF7927 !important;
 
+        font-family: inherit !important;
         font-size: 12px !important;
         font-weight: 900 !important;
 
@@ -254,21 +280,120 @@
       }
 
       #${VIEW}
-      .mana-coach-chat-105001 button:hover {
-        background: #352114 !important;
+      .mana-coach-chat-105002 button:hover {
+        background: #372114 !important;
       }
 
       /* =====================================
-         BOTTOM NAVIGATION
+         ASSIGNED PROGRAMS
+         ===================================== */
 
-         Existing navigation controls retain
-         their click handlers and routing.
+      #${VIEW} #manaCoachAssignments104720 {
+        background: #15171B !important;
+        border: 1px solid #505862 !important;
+        border-radius: 17px !important;
+        box-shadow: none !important;
+      }
+
+      #${VIEW}
+      #manaCoachAssignments104720 h3 {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+      }
+
+      #${VIEW}
+      #manaCoachAssignments104720
+      .mca-kicker {
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+      }
+
+      /* =====================================
+         PROGRAM UPGRADE REQUEST
+         ===================================== */
+
+      #${VIEW} #manaV1017CoachRequest {
+        background: #15171B !important;
+        border: 1px solid #FF7927 !important;
+        border-radius: 17px !important;
+        box-shadow: none !important;
+      }
+
+      #${VIEW} #manaV1017CoachRequest
+      h2,
+      #${VIEW} #manaV1017CoachRequest
+      h3,
+      #${VIEW} #manaV1017CoachRequest
+      h4 {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+      }
+
+      #${VIEW} #manaV1017CoachRequest
+      .m1017-kicker,
+      #${VIEW} #manaV1017CoachRequest
+      .m1017-pill,
+      #${VIEW} #manaV1017CoachRequest
+      .m1017-ready {
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+
+        border-color: #FF7927 !important;
+      }
+
+      #${VIEW} #manaV1017CoachRequest
+      .m1017-stat strong {
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+      }
+
+      #${VIEW} #manaV1017CoachRequest
+      button {
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+
+        border-color: #FF7927 !important;
+        border-radius: 10px !important;
+      }
+
+      /* =====================================
+         HISTORICAL COACHING INFORMATION
+         ===================================== */
+
+      #${VIEW} #detailCoachSummary
+      .coach-summary-stat {
+        background: #101215 !important;
+        border: 1px solid #454D57 !important;
+        border-radius: 13px !important;
+        box-shadow: none !important;
+      }
+
+      #${VIEW} #detailCoachSummary
+      .coach-summary-stat strong {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+      }
+
+      #${VIEW} #detailCoachSummary
+      .coach-summary-value,
+      #${VIEW} #detailCoachSummary
+      .coach-summary-number {
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+      }
+
+      #${VIEW} #detailCoachSummary
+      .coach-summary-note {
+        background: #101215 !important;
+        border-color: #454D57 !important;
+      }
+
+      /* =====================================
+         COACH HUB BOTTOM NAV
          ===================================== */
 
       #${NAV} .mana-v970-tab {
         background: #15171A !important;
-        background-image: none !important;
-
         border: 1px solid #414750 !important;
         border-radius: 13px !important;
 
@@ -276,124 +401,62 @@
         -webkit-text-fill-color: #C1C6CE !important;
 
         box-shadow: none !important;
-
-        transition:
-          background-color .15s ease,
-          border-color .15s ease,
-          color .15s ease !important;
       }
 
       #${NAV} .mana-v970-tab
       .mana-v970-tab-icon,
       #${NAV} .mana-v970-tab
       .mcn-tab-label {
+        color: inherit !important;
+        -webkit-text-fill-color:
+          currentColor !important;
+      }
+
+      #${NAV} .mana-v970-tab.active {
+        background: #321D12 !important;
+        border-color: #FF7927 !important;
+
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+      }
+
+      /*
+       When an actual client detail is open,
+       Clients is the active destination,
+       regardless of the previously selected
+       Coach Hub page.
+      */
+
+      body:has(
+        #${VIEW}:not(.hide):not([hidden])
+      ) #${NAV}
+      .mana-v970-tab {
+        background: #15171A !important;
+        border-color: #414750 !important;
+
         color: #C1C6CE !important;
         -webkit-text-fill-color: #C1C6CE !important;
       }
 
-      #${NAV} .mana-v970-tab.active,
-      #${NAV} .mana-v970-tab[aria-current="page"],
-      #${NAV} .mana-v970-tab[aria-selected="true"] {
+      body:has(
+        #${VIEW}:not(.hide):not([hidden])
+      ) #${NAV}
+      .mana-v970-tab[data-mcn-tab="clients"] {
         background: #321D12 !important;
-        background-image: none !important;
-
-        border: 1px solid #FF7927 !important;
+        border-color: #FF7927 !important;
 
         color: #FF7927 !important;
         -webkit-text-fill-color: #FF7927 !important;
-
-        box-shadow: none !important;
-      }
-
-      #${NAV} .mana-v970-tab.active
-      .mana-v970-tab-icon,
-      #${NAV} .mana-v970-tab.active
-      .mcn-tab-label,
-      #${NAV} .mana-v970-tab[aria-current="page"]
-      .mana-v970-tab-icon,
-      #${NAV} .mana-v970-tab[aria-current="page"]
-      .mcn-tab-label,
-      #${NAV} .mana-v970-tab[aria-selected="true"]
-      .mana-v970-tab-icon,
-      #${NAV} .mana-v970-tab[aria-selected="true"]
-      .mcn-tab-label {
-        color: #FF7927 !important;
-        -webkit-text-fill-color: #FF7927 !important;
-      }
-
-      #${NAV} .mana-v970-tab:focus-visible {
-        outline: 2px solid #FF7927 !important;
-        outline-offset: 2px !important;
-      }
-
-      /* =====================================
-         HISTORICAL COACHING INFORMATION
-         ===================================== */
-
-      #${VIEW} #detailLatestCheckin,
-      #${VIEW} #detailCheckinHistory,
-      #${VIEW} #detailCoachSummary {
-        color: #FFFFFF !important;
-        max-width: 100% !important;
-      }
-
-      #${VIEW}
-      #detailCoachSummary .coach-summary-grid {
-        display: grid !important;
-        grid-template-columns:
-          repeat(2,minmax(0,1fr)) !important;
-        gap: 11px !important;
-        margin-top: 14px !important;
-      }
-
-      #${VIEW}
-      #detailCoachSummary .coach-summary-stat {
-        min-width: 0 !important;
-        min-height: 115px !important;
-
-        padding: 15px !important;
-
-        background: #101215 !important;
-        border: 1px solid #424A55 !important;
-        border-radius: 14px !important;
-      }
-
-      #${VIEW}
-      #detailCoachSummary .coach-summary-label {
-        color: #AEB8C4 !important;
-      }
-
-      #${VIEW}
-      #detailCoachSummary .coach-summary-stat strong {
-        color: #FFFFFF !important;
-      }
-
-      #${VIEW}
-      #detailCoachSummary .coach-summary-number,
-      #${VIEW}
-      #detailCoachSummary .coach-summary-value {
-        color: #FF7927 !important;
-      }
-
-      #${VIEW}
-      #detailCoachSummary .coach-summary-note {
-        background: #101215 !important;
-        border: 1px solid #424A55 !important;
-        border-radius: 13px !important;
-      }
-
-      #${VIEW}
-      #detailCoachSummary .coach-summary-note strong {
-        color: #FF7927 !important;
       }
 
       /* =====================================
          MOBILE
          ===================================== */
 
-      @media (max-width:600px) {
+      @media(max-width:600px) {
 
-        #${VIEW} #${HERO} .mana-v998-avatar,
+        #${VIEW} #${HERO}
+        .mana-v998-avatar,
         #${VIEW} #detailClientAvatar {
           width: 54px !important;
           height: 54px !important;
@@ -401,16 +464,17 @@
           min-height: 54px !important;
           max-width: 54px !important;
           max-height: 54px !important;
+
           flex-basis: 54px !important;
         }
 
-        #${VIEW} .mana-coach-chat-105001 {
-          padding: 13px !important;
+        #${VIEW} .mana-coach-chat-105002 {
+          padding: 14px !important;
           border-radius: 14px !important;
         }
 
         #${VIEW}
-        .mana-coach-chat-105001 button {
+        .mana-coach-chat-105002 button {
           width: 100% !important;
         }
 
@@ -418,138 +482,138 @@
           min-width: 0 !important;
         }
 
-        #${NAV} .mcn-tab-label {
-          font-size: 10px !important;
-        }
-
-        #${VIEW}
-        #detailCoachSummary .coach-summary-grid {
-          gap: 7px !important;
-        }
-
-        #${VIEW}
-        #detailCoachSummary .coach-summary-stat {
-          min-height: 100px !important;
-          padding: 11px !important;
-        }
-
       }
-
     `;
 
     document.head.appendChild(style);
   }
 
-  /* ======================================================
-     CLEAR PREVIOUS PHOTO
+  /* =====================================================
+     CLIENT PHOTO ELEMENTS
+     ===================================================== */
 
-     Protects against showing the previous
-     client's picture while changing clients.
-     ====================================================== */
-
-  function clearPhoto() {
+  function holders() {
     const view = $(VIEW);
-    if (!view) return;
 
-    view.querySelectorAll(
-      ".mana-coach-avatar-105001"
-    ).forEach(image => image.remove());
+    if (!view) return [];
 
-    activeAvatarNode = null;
+    return [
+      view.querySelector(
+        `#${HERO} .mana-v998-avatar`
+      ),
+      view.querySelector(
+        "#detailClientAvatar"
+      )
+    ].filter(Boolean);
   }
 
-  function showPhoto(url, clientId) {
-    if (!detailVisible()) return;
+  function clearPhotos() {
+    $(VIEW)?.querySelectorAll(
+      ".mana-coach-avatar-105002"
+    ).forEach(img => img.remove());
+  }
 
-    const panel = $(PANEL);
+  function placePhoto() {
+    if (!detailOpen()) return;
+    if (!avatarURL) return;
 
     if (
-      cleanText(panel?.dataset.clientId) !==
-      clientId
+      !currentId ||
+      profileClientId() !== currentId
     ) {
       return;
     }
 
-    const nodes = avatarNodes();
+    if (Date.now() >= avatarExpiry) {
+      avatarURL = "";
+      void loadAvatar(currentId);
+      return;
+    }
 
-    nodes.forEach(holder => {
+    holders().forEach(holder => {
       let image = holder.querySelector(
-        ".mana-coach-avatar-105001"
+        ".mana-coach-avatar-105002"
       );
 
-      if (!image) {
-        image = document.createElement("img");
+      if (image) {
+        if (image.dataset.clientId === currentId) {
+          return;
+        }
 
-        image.className =
-          "mana-coach-avatar-105001";
-
-        image.alt = "Client profile photograph";
-
-        holder.appendChild(image);
+        image.remove();
       }
 
-      if (image.src !== url) {
-        image.src = url;
-      }
+      image = document.createElement("img");
+
+      image.className =
+        "mana-coach-avatar-105002";
+
+      image.alt = "Client profile photograph";
+      image.dataset.clientId = currentId;
+      image.src = avatarURL;
 
       image.onerror = () => {
         image.remove();
+        avatarURL = "";
       };
-    });
 
-    activeAvatarNode = nodes[0] || null;
+      holder.appendChild(image);
+    });
   }
 
-  /* ======================================================
-     PRIVATE PHOTO LOADING
+  /* =====================================================
+     PRIVATE SUPABASE PHOTO
 
-     Uses the selected client ID from the
-     existing Coach Profile renderer.
+     Only reads the photograph belonging to
+     the currently selected client.
 
-     The client must have enabled profile
-     sharing for the photo to appear.
-
-     Supabase RLS and storage access rules
-     remain authoritative.
-     ====================================================== */
+     Requires client profile sharing.
+     Existing RLS policies are respected.
+     ===================================================== */
 
   async function loadAvatar(clientId) {
     if (!clientId) return;
 
-    const ticket = ++requestNumber;
+    if (
+      loadingId === clientId ||
+      (
+        currentId === clientId &&
+        avatarURL &&
+        Date.now() < avatarExpiry
+      )
+    ) {
+      placePhoto();
+      return;
+    }
 
-    loadedClientId = clientId;
-    loadedAvatar = null;
+    const ticket = ++loadTicket;
 
-    clearPhoto();
+    loadingId = clientId;
 
     try {
       if (
         typeof window.supabaseClient !==
         "function"
-      ) {
-        return;
-      }
+      ) return;
 
       const db = await window.supabaseClient();
 
-      const profile = await db
+      const shared = await db
         .from("client_extended_profiles")
         .select("share_with_coach")
         .eq("user_id", clientId)
         .maybeSingle();
 
-      if (
-        ticket !== requestNumber ||
-        profile.error ||
-        profile.data?.share_with_coach !== true
-      ) {
-        return;
-      }
+      if (ticket !== loadTicket) return;
 
-      const photos = await db
+      if (
+        shared.error ||
+        shared.data?.share_with_coach !== true
+      ) return;
+
+      const result = await db
         .from("client_progress_photos")
-        .select("storage_path,created_at")
+        .select("storage_path")
         .eq("user_id", clientId)
         .eq("phase", "avatar")
         .eq("angle", "avatar")
@@ -558,15 +622,12 @@
         })
         .limit(1);
 
-      if (
-        ticket !== requestNumber ||
-        photos.error
-      ) {
-        return;
-      }
+      if (ticket !== loadTicket) return;
+
+      if (result.error) return;
 
       const path =
-        photos.data?.[0]?.storage_path;
+        result.data?.[0]?.storage_path;
 
       if (!path) return;
 
@@ -574,54 +635,105 @@
         .from(BUCKET)
         .createSignedUrl(path, 600);
 
+      if (ticket !== loadTicket) return;
+
       if (
-        ticket !== requestNumber ||
         signed.error ||
         !signed.data?.signedUrl
-      ) {
-        return;
-      }
-
-      const panel = $(PANEL);
+      ) return;
 
       if (
-        !detailVisible() ||
-        cleanText(panel?.dataset.clientId) !==
-          clientId
-      ) {
-        return;
-      }
+        !detailOpen() ||
+        profileClientId() !== clientId
+      ) return;
 
-      loadedAvatar = signed.data.signedUrl;
+      currentId = clientId;
+      avatarURL = signed.data.signedUrl;
 
-      showPhoto(loadedAvatar, clientId);
+      /*
+       Refresh the signed URL before it
+       reaches its ten-minute expiry.
+      */
+
+      avatarExpiry =
+        Date.now() + 9 * 60 * 1000;
+
+      placePhoto();
 
     } catch (error) {
       console.warn(
-        "[Mana Coach Photo]",
+        "[Mana Coach Avatar]",
         error
       );
+
+    } finally {
+      if (loadingId === clientId) {
+        loadingId = "";
+      }
     }
   }
 
-  /* ======================================================
-     FIND EXISTING COACH CHAT CARD
+  /* =====================================================
+     CLIENT SELECTION
+     ===================================================== */
 
-     Style existing elements only.
-     No new buttons or chat handlers.
-     ====================================================== */
+  function syncClient() {
+    if (!detailOpen()) return;
+
+    const clientId = profileClientId();
+
+    if (!clientId) return;
+
+    /*
+     While the new client is loading,
+     the previous profile can still be
+     present briefly. Never reuse it.
+    */
+
+    if (
+      selectedId &&
+      selectedId !== clientId
+    ) return;
+
+    if (currentId !== clientId) {
+      currentId = clientId;
+      avatarURL = "";
+      avatarExpiry = 0;
+
+      clearPhotos();
+
+      void loadAvatar(clientId);
+      return;
+    }
+
+    if (avatarURL) {
+      placePhoto();
+    } else if (
+      !loadingId &&
+      !avatarExpiry
+    ) {
+      void loadAvatar(clientId);
+    }
+  }
+
+  /* =====================================================
+     COACH CHAT
+
+     Style existing Chat card only.
+     No click handlers are replaced.
+     ===================================================== */
 
   function tidyChat() {
-    if (!detailVisible()) return;
+    if (!detailOpen()) return;
 
     const view = $(VIEW);
     if (!view) return;
 
     const button = Array.from(
       view.querySelectorAll("button")
-    ).find(node =>
+    ).find(element =>
       /open client chat/i.test(
-        node.textContent || ""
+        element.textContent || ""
       )
     );
 
@@ -637,170 +749,64 @@
       card.id === PANEL ||
       card.id === "manaCoachAssignments104720" ||
       card.id === "manaV1017CoachRequest"
-    ) {
-      return;
-    }
+    ) return;
 
     card.classList.add(
-      "mana-coach-chat-105001"
+      "mana-coach-chat-105002"
     );
   }
 
-  /* ======================================================
-     HISTORICAL SECTION PRESENTATION
+  /* =====================================================
+     RE-RENDER PROTECTION
 
-     These remain actual client records.
-     Nothing is deleted or recalculated.
-     ====================================================== */
+     The original Mana v9.98 Coach Hub
+     replaces the header's HTML when
+     updating a client.
 
-  function labelHistory() {
-    if (!detailVisible()) return;
+     Observe the existing header's direct
+     children so the profile photo is
+     restored after these replacements.
 
-    const view = $(VIEW);
-    if (!view) return;
+     Adding an image inside the avatar
+     does not trigger this observer.
+     ===================================================== */
 
-    const summary = $("detailCoachSummary");
-
-    const card = summary?.closest(
-      ".card, section, article"
-    );
-
-    if (card) {
-      const heading =
-        card.querySelector(".row h3, h3");
-
-      if (
-        heading &&
-        heading.textContent.trim() ===
-          "Coach summary"
-      ) {
-        heading.textContent =
-          "Performance History";
-      }
-
-      if (
-        !card.querySelector(
-          ".mana-history-note-105001"
-        )
-      ) {
-        const note =
-          document.createElement("p");
-
-        note.className =
-          "mana-history-note-105001";
-
-        note.textContent =
-          "Based on recorded training history. " +
-          "Use alongside the latest client " +
-          "profile and current coaching goals.";
-
-        note.style.cssText = [
-          "color:#B7C0CB",
-          "font-size:11px",
-          "line-height:1.5",
-          "margin:10px 0 4px"
-        ].join(";");
-
-        const heading =
-          card.querySelector(".row");
-
-        if (heading) {
-          heading.insertAdjacentElement(
-            "afterend",
-            note
-          );
-        }
-      }
-    }
-  }
-
-  /* ======================================================
-     REFRESH FROM EXISTING PROFILE RENDERER
-
-     Profile panel data-client-id is set by
-     the active Coach Profile renderer.
-     ====================================================== */
-
-  function syncClient() {
-    if (!detailVisible()) return;
-
-    const panel = $(PANEL);
-
-    const id = cleanText(
-      panel?.dataset.clientId
-    );
-
-    if (!id) return;
+  function watchHero() {
+    const hero = $(HERO);
 
     if (
-      desiredClientId &&
-      desiredClientId !== id
-    ) {
-      return;
-    }
+      !hero ||
+      observedHero === hero
+    ) return;
 
-    if (loadedClientId !== id) {
-      void loadAvatar(id);
-      return;
-    }
+    heroObserver?.disconnect();
 
-    if (loadedAvatar) {
-      const nodes = avatarNodes();
+    observedHero = hero;
 
-      if (
-        nodes.length &&
-        !nodes.every(node =>
-          node.querySelector(
-            ".mana-coach-avatar-105001"
-          )
-        )
-      ) {
-        showPhoto(loadedAvatar, id);
-      }
-    }
-  }
+    heroObserver = new MutationObserver(() => {
+      queueRefresh();
+    });
 
-  function refresh() {
-    if (!detailVisible()) return;
-
-    tidyChat();
-    labelHistory();
-    syncClient();
-  }
-
-  function scheduleRefresh() {
-    if (refreshScheduled) return;
-
-    refreshScheduled = true;
-
-    requestAnimationFrame(() => {
-      refreshScheduled = false;
-      refresh();
+    heroObserver.observe(hero, {
+      childList: true,
+      subtree: false
     });
   }
 
-  /* ======================================================
-     OBSERVE ACTIVE CLIENT CHANGES
-
-     Observe only the Coach Client detail
-     panel and Coach Profile panel.
-
-     No page-wide subtree observer.
-     ====================================================== */
-
-  function watchProfilePanel() {
+  function watchProfile() {
     const panel = $(PANEL);
 
-    if (!panel || observedPanel === panel) {
-      return;
-    }
+    if (
+      !panel ||
+      observedProfile === panel
+    ) return;
 
     profileObserver?.disconnect();
 
-    observedPanel = panel;
+    observedProfile = panel;
 
     profileObserver =
-      new MutationObserver(scheduleRefresh);
+      new MutationObserver(queueRefresh);
 
     profileObserver.observe(panel, {
       attributes: true,
@@ -813,76 +819,98 @@
   function watchDetail() {
     const view = $(VIEW);
 
-    if (!view || detailObserver) return;
+    if (
+      !view ||
+      observedDetail === view
+    ) return;
+
+    detailObserver?.disconnect();
+
+    observedDetail = view;
 
     detailObserver =
       new MutationObserver(() => {
-        watchProfilePanel();
-        scheduleRefresh();
+        watchHero();
+        watchProfile();
+        queueRefresh();
       });
-
-    detailObserver.observe(view, {
-      attributes: true,
-      attributeFilter: ["class"]
-    });
-
-    /*
-     Direct-child observation catches
-     newly mounted profile panels without
-     watching every nested input.
-    */
 
     detailObserver.observe(view, {
       childList: true,
       subtree: false
     });
+
+    detailObserver.observe(view, {
+      attributes: true,
+      attributeFilter: ["class"]
+    });
   }
 
-  /* ======================================================
-     CLIENT SELECTION
+  function refresh() {
+    if (!detailOpen()) return;
 
-     Immediately clear the previous photo
-     when another client is opened.
-     ====================================================== */
+    watchHero();
+    watchProfile();
 
-  function onClick(event) {
+    tidyChat();
+    syncClient();
+  }
+
+  function queueRefresh() {
+    if (refreshQueued) return;
+
+    refreshQueued = true;
+
+    requestAnimationFrame(() => {
+      refreshQueued = false;
+      refresh();
+    });
+  }
+
+  /* =====================================================
+     SELECT ANOTHER CLIENT
+
+     Clear stale photographs immediately.
+     ===================================================== */
+
+  function onClientClick(event) {
     const button = event.target.closest?.(
       ".client-open[data-client-id]"
     );
 
     if (!button) return;
 
-    desiredClientId =
-      cleanText(button.dataset.clientId);
+    selectedId =
+      String(button.dataset.clientId || "");
 
-    loadedClientId = "";
-    loadedAvatar = null;
+    currentId = "";
+    avatarURL = "";
+    avatarExpiry = 0;
+    loadingId = "";
 
-    requestNumber++;
+    loadTicket++;
 
-    clearPhoto();
+    clearPhotos();
 
-    [250, 650, 1100].forEach(delay => {
-      setTimeout(() => {
-        watchProfilePanel();
-        refresh();
-      }, delay);
+    [250, 650, 1200].forEach(delay => {
+      setTimeout(queueRefresh, delay);
     });
   }
 
-  /* ======================================================
+  /* =====================================================
      INITIALISE
-     ====================================================== */
+     ===================================================== */
 
   function init() {
     installStyles();
 
     watchDetail();
-    watchProfilePanel();
+    watchHero();
+    watchProfile();
 
     document.addEventListener(
       "click",
-      onClick,
+      onClientClick,
       true
     );
 
@@ -890,8 +918,9 @@
       "pageshow",
       () => {
         watchDetail();
-        watchProfilePanel();
-        scheduleRefresh();
+        watchHero();
+        watchProfile();
+        queueRefresh();
       }
     );
 
@@ -899,12 +928,12 @@
       "visibilitychange",
       () => {
         if (!document.hidden) {
-          scheduleRefresh();
+          queueRefresh();
         }
       }
     );
 
-    refresh();
+    queueRefresh();
 
     window.MANA_COACH_FINISH_BUILD =
       BUILD;
