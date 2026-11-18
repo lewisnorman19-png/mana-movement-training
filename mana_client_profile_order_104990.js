@@ -1,35 +1,32 @@
 
 /* ============================================================
    MANA MOVEMENT TRAINING
-   CLIENT PROFILE — PREMIUM ORDER REPAIR
-   BUILD 104991
+   CLIENT PROFILE — PREMIUM FIELD FINISH
+   BUILD 104992
 
    COMPLETE REPLACEMENT:
    mana_client_profile_order_104990.js
 
-   ORDER:
-   1. Personal Details
-   2. Training Goals
-   3. Nutrition Goals
-   4. Progression Photos
-   5. Save & Continue
+   FIXES
+   - First name + Last name side by side
+   - Removes duplicate visible Name field
+   - Date of birth + calculated age side by side
+   - Current weight + target weight side by side
+   - One visible Daily Activity selector
+   - Preserves existing Fuel calculations
+   - Keeps four premium profile sections
+   - Preserves contact and photo upload fields
 
-   - Merge duplicated Personal Details sections
-   - Keep all existing input fields
-   - Move target weight and limitations to Training
-   - Move dietary preferences to Nutrition
-   - Keep photograph uploads functional
-   - Premium orange / black / white / silver
-   - No Supabase writes
-   - No changes to original save handlers
-   - No changes to Coach Hub
+   NO DATABASE CHANGES
+   NO NEW PROFILE RECORDS
+   NO COACH HUB FUNCTION REPLACEMENTS
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "104991";
-  const FLAG = "MANA_PROFILE_ORDER_104991";
+  const BUILD = "104992";
+  const FLAG = "MANA_PROFILE_ORDER_104992";
 
   if (window[FLAG]) return;
   window[FLAG] = true;
@@ -38,9 +35,13 @@
 
   const SCREEN = "manaProfileScreen";
   const ROOT = "manaExtendedClient104901";
-  const STYLE = "manaProfileOrderStyle104991";
+  const STYLE = "manaProfileOrderStyle104992";
 
-  let attempts = [];
+  let timers = [];
+
+  /* ============================================================
+     STYLING
+     ============================================================ */
 
   function installStyles() {
     if ($(STYLE)) return;
@@ -49,48 +50,43 @@
     style.id = STYLE;
 
     style.textContent = `
+
       #${SCREEN} {
-        --mana-section-orange: #FF7927;
-        --mana-section-border: #4C5560;
+        --mana-orange: #FF7927;
+        --mana-dark: #15171B;
+        --mana-border: #4B535E;
       }
 
       #${SCREEN} .mana-profile-card,
       #${SCREEN} #${ROOT} > .me-card {
-        background: #15171B !important;
-        border: 1px solid var(--mana-section-border) !important;
-        border-radius: 16px !important;
-        padding: 16px !important;
+        background: var(--mana-dark) !important;
+        border: 1px solid var(--mana-border) !important;
+        border-left: 3px solid var(--mana-orange) !important;
+        border-radius: 15px !important;
+        padding: 15px !important;
         margin: 12px 0 !important;
         box-shadow: none !important;
       }
-
-      /* CLEAR CATEGORY HEADINGS */
 
       #${SCREEN} .mana-profile-card > h3,
       #${SCREEN} #${ROOT} > .me-card > h3 {
         color: #FFFFFF !important;
         font-size: 19px !important;
         font-weight: 850 !important;
-        line-height: 1.3 !important;
         margin: 0 0 15px !important;
-        padding: 0 0 11px !important;
-        border-bottom: 2px solid #FF7927 !important;
+        padding-bottom: 12px !important;
+        border-bottom: 2px solid var(--mana-orange) !important;
       }
 
-      #${SCREEN} .mana-profile-card[data-mana-order],
-      #${SCREEN} #${ROOT} > .me-card[data-mana-order] {
-        border-left: 3px solid #FF7927 !important;
-      }
-
-      /* MERGED PERSONAL DETAILS */
+      /* MERGED PERSONAL CARD */
 
       #${SCREEN} .mana-personal-merged
       .me-card {
         background: transparent !important;
         border: none !important;
-        border-radius: 0 !important;
         padding: 0 !important;
-        margin: 16px 0 0 !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
         box-shadow: none !important;
       }
 
@@ -106,108 +102,112 @@
         display: flex !important;
         flex-direction: row !important;
         align-items: center !important;
-        gap: 14px !important;
-        margin: 0 0 17px !important;
-        padding: 0 0 15px !important;
-        border-bottom: 1px solid #373F49 !important;
+        gap: 13px !important;
+        margin: 0 0 15px !important;
+        padding: 0 0 14px !important;
+        border-bottom: 1px solid #3A424C !important;
       }
 
-      #${SCREEN} .mana-personal-merged
-      .me-grid {
+      /* PAIRED FIELDS */
+
+      #${SCREEN} .mana-paired-fields {
+        display: grid !important;
+        grid-template-columns:
+          repeat(2,minmax(0,1fr)) !important;
         gap: 10px !important;
+        width: 100% !important;
+        margin: 10px 0 !important;
+        align-items: start !important;
       }
 
-      #${SCREEN} .mana-personal-merged
-      .mana-contact-heading {
-        color: #FF7927;
-        font-size: 11px;
-        font-weight: 900;
-        letter-spacing: .09em;
-        text-transform: uppercase;
-        margin: 16px 0 11px;
-        padding-top: 13px;
-        border-top: 1px solid #373F49;
+      #${SCREEN} .mana-paired-fields
+      > .me-field,
+      #${SCREEN} .mana-paired-fields
+      > .mana-profile-field {
+        min-width: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
       }
 
-      /* COMPACT INPUTS */
+      #${SCREEN} .mana-paired-fields input {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
 
+      #${SCREEN} .mana-profile-field input,
       #${SCREEN} .me-field input,
+      #${SCREEN} .me-field select,
       #${SCREEN} .me-field textarea {
         background: #101215 !important;
+        color: white !important;
         border: 1px solid #4B535D !important;
         border-radius: 10px !important;
-        color: #FFFFFF !important;
       }
 
+      #${SCREEN} .mana-profile-field input:focus,
       #${SCREEN} .me-field input:focus,
-      #${SCREEN} .me-field textarea:focus {
+      #${SCREEN} .me-field select:focus {
         border-color: #FF7927 !important;
         outline-color: #FF7927 !important;
       }
 
-      #${SCREEN} .me-field label {
-        color: #C0C7D0 !important;
-        font-size: 12px !important;
+      #${SCREEN} #manaProfileAge[readonly] {
+        color: #FF7927 !important;
+        font-weight: 850 !important;
+        opacity: 1 !important;
       }
 
-      /* TRAINING / NUTRITION SUBSECTIONS */
+      #${SCREEN} .mana-section-subheading {
+        color: #FF7927 !important;
+        font-size: 11px !important;
+        font-weight: 900 !important;
+        letter-spacing: .08em !important;
+        text-transform: uppercase !important;
+        padding-top: 12px !important;
+        margin: 16px 0 10px !important;
+        border-top: 1px solid #353D47 !important;
+      }
 
       #${SCREEN} .mana-extra-field-group {
-        margin-top: 14px;
-        padding-top: 13px;
-        border-top: 1px solid #373F49;
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 11px;
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 11px !important;
+        margin-top: 13px !important;
+        padding-top: 12px !important;
+        border-top: 1px solid #353D47 !important;
       }
 
-      #${SCREEN} .mana-extra-field-group
-      .me-field {
-        margin: 0;
-      }
-
-      /* PHOTO SECTION */
+      /* PHOTOS */
 
       #${SCREEN} #${ROOT} {
+        width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
-        width: 100% !important;
       }
 
-      #${SCREEN} #${ROOT} > .me-card {
-        margin-top: 12px !important;
-      }
-
-      #${SCREEN} #${ROOT}
-      .me-photo-grid {
+      #${SCREEN} #${ROOT} .me-photo-grid {
         display: grid !important;
         grid-template-columns:
-          repeat(3, minmax(0,1fr)) !important;
+          repeat(3,minmax(0,1fr)) !important;
         gap: 8px !important;
       }
 
-      #${SCREEN} #${ROOT}
-      .me-photo-card {
-        background: #101215 !important;
-        border: 1px solid #444C56 !important;
-        border-radius: 10px !important;
-        padding: 8px !important;
+      #${SCREEN} #${ROOT} .me-photo-card {
         min-width: 0 !important;
+        border: 1px solid #424A55 !important;
+        background: #101215 !important;
+        border-radius: 10px !important;
+        padding: 7px !important;
       }
 
-      #${SCREEN} #${ROOT}
-      .me-photo-preview {
-        max-height: 190px !important;
-      }
-
-      #${SCREEN} #${ROOT}
-      .me-consent {
+      #${SCREEN} #${ROOT} .me-consent {
+        display: flex !important;
+        flex-direction: row !important;
         align-items: flex-start !important;
-        gap: 12px !important;
+        gap: 11px !important;
       }
 
-      #${SCREEN} #${ROOT}
-      .me-consent input {
+      #${SCREEN} #${ROOT} .me-consent input {
         width: 20px !important;
         height: 20px !important;
         flex: 0 0 20px !important;
@@ -219,75 +219,459 @@
       #${SCREEN} #manaProfileSave {
         background: #FF7927 !important;
         color: #0B0C0E !important;
-        border: 0 !important;
-        border-radius: 13px !important;
+        border: none !important;
+        border-radius: 12px !important;
+        min-height: 55px !important;
         font-weight: 900 !important;
-        min-height: 56px !important;
       }
 
-      @media (max-width: 600px) {
+      /* MOBILE */
+
+      @media(max-width:600px) {
+
         #${SCREEN} .mana-profile-card,
         #${SCREEN} #${ROOT} > .me-card {
-          padding: 13px !important;
+          padding: 12px !important;
         }
 
-        #${SCREEN} .mana-personal-merged
-        .me-card {
-          padding: 0 !important;
+        #${SCREEN} .mana-paired-fields {
+          grid-template-columns:
+            repeat(2,minmax(0,1fr)) !important;
+          gap: 7px !important;
         }
 
-        #${SCREEN} .mana-personal-merged
-        .me-grid {
-          grid-template-columns: 1fr !important;
+        #${SCREEN} .mana-paired-fields
+        input {
+          padding: 10px 8px !important;
+          font-size: 13px !important;
         }
 
-        #${SCREEN} #${ROOT}
-        .me-photo-grid {
+        #${SCREEN} #${ROOT} .me-photo-grid {
           gap: 5px !important;
         }
 
-        #${SCREEN} #${ROOT}
-        .me-photo-card {
+        #${SCREEN} #${ROOT} .me-photo-card {
           padding: 5px !important;
         }
-
-        #${SCREEN} #${ROOT}
-        .me-photo-preview {
-          max-height: 160px !important;
-        }
       }
+
     `;
 
     document.head.appendChild(style);
   }
 
+  /* ============================================================
+     FIELD HELPERS
+     ============================================================ */
+
   function field(id) {
-    return $(id)?.closest(".me-field") || null;
+    const element = $(id);
+
+    return element?.closest(
+      ".me-field, .mana-profile-field"
+    ) || null;
   }
 
-  function setHeading(card, label) {
-    const heading = Array.from(card.children)
-      .find(el => el.tagName === "H3");
+  function pair(id, parent) {
+    let row = $(id);
 
-    if (heading && heading.textContent !== label) {
-      heading.textContent = label;
+    if (!row) {
+      row = document.createElement("div");
+      row.id = id;
+      row.className = "mana-paired-fields";
+    }
+
+    if (row.parentElement !== parent) {
+      parent.appendChild(row);
+    }
+
+    return row;
+  }
+
+  function moveField(element, target) {
+    if (
+      element &&
+      target &&
+      element.parentElement !== target
+    ) {
+      target.appendChild(element);
+    }
+  }
+
+  function heading(card, text) {
+    const h = Array.from(card.children)
+      .find(node => node.tagName === "H3");
+
+    if (h && h.textContent.trim() !== text) {
+      h.textContent = text;
     }
   }
 
   /* ============================================================
-     ARRANGE EXISTING DOM ELEMENTS
+     AGE CALCULATED FROM DATE OF BIRTH
+
+     Never calculates from the old age
+     field. Date of birth is the source.
+
+     Preserves the existing age input ID
+     for Fuel calculations and Profile save.
+     ============================================================ */
+
+  function ageFromDOB(value) {
+    if (
+      !value ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(value)
+    ) {
+      return null;
+    }
+
+    const [year, month, day] =
+      value.split("-").map(Number);
+
+    const today = new Date();
+
+    const dob = new Date(
+      year,
+      month - 1,
+      day
+    );
+
+    if (
+      dob.getFullYear() !== year ||
+      dob.getMonth() !== month - 1 ||
+      dob.getDate() !== day ||
+      dob > today
+    ) {
+      return null;
+    }
+
+    let age =
+      today.getFullYear() - year;
+
+    const birthdayPassed =
+      today.getMonth() + 1 > month ||
+      (
+        today.getMonth() + 1 === month &&
+        today.getDate() >= day
+      );
+
+    if (!birthdayPassed) {
+      age--;
+    }
+
+    return age >= 0 && age <= 120
+      ? age
+      : null;
+  }
+
+  function updateAge() {
+    const dob = $("me-dob");
+    const ageInput = $("manaProfileAge");
+
+    if (!dob || !ageInput) return;
+
+    const age = ageFromDOB(dob.value);
+
+    /*
+     Invalid or missing DOB: keep the
+     existing age rather than overwrite it.
+    */
+
+    if (age === null) return;
+
+    if (ageInput.value !== String(age)) {
+      ageInput.value = String(age);
+
+      ageInput.dispatchEvent(
+        new Event("input", {
+          bubbles: true
+        })
+      );
+
+      ageInput.dispatchEvent(
+        new Event("change", {
+          bubbles: true
+        })
+      );
+    }
+  }
+
+  function connectAge() {
+    const dob = $("me-dob");
+    const age = $("manaProfileAge");
+
+    if (!dob || !age) return;
+
+    age.readOnly = true;
+    age.title =
+      "Automatically calculated from date of birth";
+
+    if (!dob.dataset.manaAgeConnected) {
+      dob.dataset.manaAgeConnected = "1";
+
+      dob.addEventListener(
+        "input",
+        updateAge
+      );
+
+      dob.addEventListener(
+        "change",
+        updateAge
+      );
+    }
+
+    updateAge();
+  }
+
+  /* ============================================================
+     FIRST / LAST NAME
+
+     The original manaProfileName remains
+     in the DOM for the existing save logic,
+     but is no longer displayed twice.
+
+     First / Last fields drive the original
+     Name value.
+     ============================================================ */
+
+  function connectNames() {
+    const first = $("me-first_name");
+    const last = $("me-last_name");
+    const original = $("manaProfileName");
+
+    if (!first || !last || !original) {
+      return;
+    }
+
+    function syncName() {
+      const full = [
+        first.value.trim(),
+        last.value.trim()
+      ].filter(Boolean).join(" ");
+
+      if (
+        full &&
+        original.value !== full
+      ) {
+        original.value = full;
+
+        original.dispatchEvent(
+          new Event("input", {
+            bubbles: true
+          })
+        );
+      }
+    }
+
+    if (!first.dataset.manaNameConnected) {
+      first.dataset.manaNameConnected = "1";
+
+      first.addEventListener(
+        "input",
+        syncName
+      );
+
+      last.addEventListener(
+        "input",
+        syncName
+      );
+    }
+
+    /*
+     Initialise only missing components.
+     Never overwrite saved first/last data
+     with a guessed split of a full name.
+    */
+
+    if (
+      !first.value.trim() &&
+      !last.value.trim() &&
+      original.value.trim()
+    ) {
+      first.value =
+        original.value.trim();
+    } else {
+      syncName();
+    }
+  }
+
+  /* ============================================================
+     DAILY ACTIVITY — ONE VISIBLE SELECTOR
+
+     Retain the original visible Daily
+     Activity dropdown.
+
+     The added custom selector remains
+     available internally because Build
+     104981 uses it for calorie estimates.
+
+     Bridge changes to the calculation.
+     ============================================================ */
+
+  function normaliseActivity(value, label) {
+    const text = (
+      String(value || "") + " " +
+      String(label || "")
+    ).toLowerCase();
+
+    if (
+      /very.active|extremely|extra.active/.test(text)
+    ) {
+      return "very_active";
+    }
+
+    if (/sedentary|mostly.sitting/.test(text)) {
+      return "sedentary";
+    }
+
+    if (/moderate/.test(text)) {
+      return "moderate";
+    }
+
+    if (/light/.test(text)) {
+      return "light";
+    }
+
+    if (/active/.test(text)) {
+      return "active";
+    }
+
+    return "";
+  }
+
+  function connectActivity() {
+    const screen = $(SCREEN);
+
+    const custom = $(
+      "manaPremiumActivity104981"
+    );
+
+    if (!screen || !custom) return;
+
+    const customWrapper = custom.closest(
+      ".mana-premium-activity"
+    );
+
+    const selects = Array.from(
+      screen.querySelectorAll("select")
+    );
+
+    const existing = selects.find(select => {
+      if (select === custom) return false;
+
+      const fieldWrapper = select.closest(
+        ".mana-profile-field, .me-field"
+      );
+
+      const label =
+        fieldWrapper?.querySelector("label");
+
+      return (
+        label?.textContent?.trim()
+          .toLowerCase() ===
+        "daily activity"
+      );
+    });
+
+    /*
+     Do not hide the custom selector unless
+     another Daily Activity input exists.
+    */
+
+    if (!existing) return;
+
+    if (customWrapper) {
+      customWrapper.style.display = "none";
+    }
+
+    if (
+      existing.dataset.manaActivityConnected
+    ) return;
+
+    existing.dataset.manaActivityConnected = "1";
+
+    function syncActivity() {
+      const option =
+        existing.selectedOptions?.[0];
+
+      const mapped = normaliseActivity(
+        existing.value,
+        option?.textContent
+      );
+
+      if (custom.value !== mapped) {
+        custom.value = mapped;
+
+        custom.dispatchEvent(
+          new Event("change", {
+            bubbles: true
+          })
+        );
+      }
+    }
+
+    existing.addEventListener(
+      "change",
+      syncActivity
+    );
+
+    syncActivity();
+  }
+
+  /* ============================================================
+     PROFILE PHOTO PREVIEW
+     ============================================================ */
+
+  function connectAvatar() {
+    const input = $("me-file-avatar");
+
+    if (
+      !input ||
+      input.dataset.manaAvatarConnected
+    ) return;
+
+    input.dataset.manaAvatarConnected = "1";
+
+    input.addEventListener("change", () => {
+      const file = input.files?.[0];
+
+      if (!file) return;
+
+      const holder = $("me-preview-avatar");
+
+      if (!holder) return;
+
+      const url = URL.createObjectURL(file);
+      const image = document.createElement("img");
+
+      image.src = url;
+      image.alt = "Profile photo";
+      image.className = "me-avatar";
+
+      image.addEventListener(
+        "load",
+        () => URL.revokeObjectURL(url),
+        { once: true }
+      );
+
+      holder.replaceChildren(image);
+    });
+  }
+
+  /* ============================================================
+     PREMIUM PROFILE ORDER
      ============================================================ */
 
   function arrange() {
     const screen = $(SCREEN);
+
     const shell = screen?.querySelector(
       ".mana-profile-shell"
     );
 
     const extended = $(ROOT);
-    const save = $("manaProfileSave");
 
-    if (!shell || !extended || !save) {
+    if (!shell || !extended) {
       return false;
     }
 
@@ -296,16 +680,20 @@
         ".mana-profile-card"
       );
 
-    const training = shell.querySelector(
-      ".mana-profile-training"
-    );
+    const training =
+      shell.querySelector(
+        ".mana-profile-training"
+      );
 
-    const nutrition = shell.querySelector(
-      ".mana-profile-fuel"
-    );
+    const nutrition =
+      shell.querySelector(
+        ".mana-profile-fuel"
+      );
 
     const contact =
-      $("me-first_name")?.closest(".me-card");
+      $("me-first_name")?.closest(
+        ".me-card"
+      );
 
     const photos =
       $("me-file-baseline-front")?.closest(
@@ -322,208 +710,259 @@
       return false;
     }
 
-    /*
-     Always locate elements by their IDs,
-     regardless of where an earlier pass
-     moved them.
-    */
-
-    setHeading(personal, "Personal Details");
-    setHeading(training, "Training Goals");
-    setHeading(nutrition, "Nutrition Goals");
-    setHeading(photos, "Progression Photos");
+    heading(personal, "Personal Details");
+    heading(training, "Training Goals");
+    heading(nutrition, "Nutrition Goals");
+    heading(photos, "Progression Photos");
 
     personal.classList.add(
       "mana-personal-merged"
     );
 
-    personal.dataset.manaOrder = "1";
-    training.dataset.manaOrder = "2";
-    nutrition.dataset.manaOrder = "3";
-    photos.dataset.manaOrder = "4";
-
-    /* ---------------------------------------
+    /* ----------------------------------------
        1. PERSONAL DETAILS
-
-       Keep the original Profile fields.
-       Merge extended contact information.
-       --------------------------------------- */
+       ---------------------------------------- */
 
     const avatar = contact.querySelector(
       ".me-avatar-row"
+    ) || personal.querySelector(
+      ".me-avatar-row"
     );
 
-    const personalHeading = Array.from(
-      personal.children
-    ).find(el => el.tagName === "H3");
+    const mainHeading =
+      Array.from(personal.children)
+        .find(node =>
+          node.tagName === "H3"
+        );
 
     if (
       avatar &&
-      avatar.parentElement !== personal &&
-      personalHeading
+      mainHeading &&
+      avatar.parentElement !== personal
     ) {
-      personalHeading.insertAdjacentElement(
+      mainHeading.insertAdjacentElement(
         "afterend",
         avatar
       );
     }
 
-    if (contact.parentElement !== personal) {
-      personal.appendChild(contact);
+    moveField(contact, personal);
+
+    const name = field(
+      "manaProfileName"
+    );
+
+    /*
+     Hide the duplicate original Name
+     wrapper but keep the input accessible
+     to its existing save handler.
+    */
+
+    if (name) {
+      name.style.display = "none";
+    }
+
+    const first = field("me-first_name");
+    const last = field("me-last_name");
+
+    const contactGrid =
+      contact.querySelector(".me-grid");
+
+    const names = pair(
+      "manaNameRow104992",
+      contactGrid || contact
+    );
+
+    moveField(first, names);
+    moveField(last, names);
+
+    /*
+     Names must be the first fields after
+     the profile photo.
+    */
+
+    const oldContactLabel =
+      contact.querySelector(
+        ".mana-contact-heading"
+      );
+
+    if (oldContactLabel) {
+      oldContactLabel.remove();
+    }
+
+    if (contactGrid) {
+      contactGrid.insertBefore(
+        names,
+        contactGrid.firstChild
+      );
+    }
+
+    const dob = field("me-dob");
+    const age = field("manaProfileAge");
+
+    const dobAge = pair(
+      "manaDobAgeRow104992",
+      contactGrid || contact
+    );
+
+    moveField(dob, dobAge);
+    moveField(age, dobAge);
+
+    if (names.parentElement === contactGrid) {
+      names.insertAdjacentElement(
+        "afterend",
+        dobAge
+      );
     }
 
     /*
-     Keep the extended first / last name
-     controls for cloud saving, but avoid
-     showing a second First Name field
-     alongside the original Name field.
-
-     The First Name field remains present
-     and can be populated from the original
-     name when changed.
+     Gender and height remain with the
+     original Personal settings.
     */
 
-    const firstField = field("me-first_name");
-
-    if (firstField) {
-      firstField.style.display = "none";
-    }
-
-    const originalName = $("manaProfileName");
-    const firstName = $("me-first_name");
+    const originalGrid =
+      $("manaProfileGender")?.closest(
+        ".mana-profile-grid"
+      );
 
     if (
-      originalName &&
-      firstName &&
-      !originalName.dataset.manaNameSync
+      originalGrid &&
+      originalGrid.parentElement === personal
     ) {
-      originalName.dataset.manaNameSync = "1";
-
-      originalName.addEventListener(
-        "input",
-        () => {
-          firstName.value =
-            originalName.value.trim().split(/\s+/)[0] || "";
-        }
+      contact.insertAdjacentElement(
+        "afterend",
+        originalGrid
       );
     }
 
     /*
-     Put contact details under a single
-     clear subheading inside Personal.
+     Place the contact fields after the
+     initial personal measurements.
     */
 
-    let contactLabel = personal.querySelector(
-      ".mana-contact-heading"
-    );
+    const contactLabel =
+      document.getElementById(
+        "manaContactHeading104992"
+      ) ||
+      document.createElement("div");
 
-    if (!contactLabel) {
-      contactLabel =
-        document.createElement("div");
+    contactLabel.id =
+      "manaContactHeading104992";
 
-      contactLabel.className =
-        "mana-contact-heading";
+    contactLabel.className =
+      "mana-section-subheading";
 
-      contactLabel.textContent =
-        "Contact & Emergency Details";
+    contactLabel.textContent =
+      "Contact & Emergency Details";
 
-      contact.insertBefore(
+    const phone = field("me-phone");
+
+    if (phone && contactGrid) {
+      contactGrid.insertBefore(
         contactLabel,
-        contact.querySelector(".me-grid") ||
-        contact.firstChild
+        phone
       );
     }
 
-    /* ---------------------------------------
+    /* ----------------------------------------
        2. TRAINING GOALS
+       ---------------------------------------- */
 
-       Move training-specific extended
-       fields into the Training card.
-       --------------------------------------- */
-
-    let extraTraining = training.querySelector(
-      "#manaExtraTraining104991"
+    let trainingExtra = $(
+      "manaExtraTraining104991"
     );
 
-    if (!extraTraining) {
-      extraTraining = document.createElement(
-        "div"
-      );
+    if (!trainingExtra) {
+      trainingExtra =
+        document.createElement("div");
 
-      extraTraining.id =
+      trainingExtra.id =
         "manaExtraTraining104991";
 
-      extraTraining.className =
+      trainingExtra.className =
         "mana-extra-field-group";
+    }
 
-      training.appendChild(extraTraining);
+    if (trainingExtra.parentElement !== training) {
+      training.appendChild(trainingExtra);
+    }
+
+    const weight = field(
+      "manaProfileWeight"
+    );
+
+    const target = field(
+      "me-target_weight"
+    );
+
+    const weights = pair(
+      "manaWeightRow104992",
+      trainingExtra
+    );
+
+    moveField(weight, weights);
+    moveField(target, weights);
+
+    if (
+      trainingExtra.firstElementChild !== weights
+    ) {
+      trainingExtra.insertBefore(
+        weights,
+        trainingExtra.firstChild
+      );
     }
 
     [
-      "me-target_weight",
       "me-injuries",
       "me-training_preferences"
     ].forEach(id => {
-      const element = field(id);
-
-      if (
-        element &&
-        element.parentElement !== extraTraining
-      ) {
-        extraTraining.appendChild(element);
-      }
+      moveField(
+        field(id),
+        trainingExtra
+      );
     });
 
-    /* ---------------------------------------
+    /* ----------------------------------------
        3. NUTRITION GOALS
+       ---------------------------------------- */
 
-       Move dietary preferences into
-       the existing nutrition card.
-       --------------------------------------- */
-
-    let extraNutrition = nutrition.querySelector(
-      "#manaExtraNutrition104991"
+    let nutritionExtra = $(
+      "manaExtraNutrition104991"
     );
 
-    if (!extraNutrition) {
-      extraNutrition =
+    if (!nutritionExtra) {
+      nutritionExtra =
         document.createElement("div");
 
-      extraNutrition.id =
+      nutritionExtra.id =
         "manaExtraNutrition104991";
 
-      extraNutrition.className =
+      nutritionExtra.className =
         "mana-extra-field-group";
-
-      nutrition.appendChild(extraNutrition);
     }
-
-    const dietary = field(
-      "me-dietary_preferences"
-    );
 
     if (
-      dietary &&
-      dietary.parentElement !== extraNutrition
+      nutritionExtra.parentElement !== nutrition
     ) {
-      extraNutrition.appendChild(dietary);
+      nutrition.appendChild(nutritionExtra);
     }
 
-    /* ---------------------------------------
-       4. PROGRESSION PHOTOS
+    moveField(
+      field("me-dietary_preferences"),
+      nutritionExtra
+    );
 
-       Keep the existing photo card inside
-       its original root. The upload event
-       handlers remain attached.
-       --------------------------------------- */
+    /* ----------------------------------------
+       4. PROGRESSION PHOTOS
+       ---------------------------------------- */
 
     if (photos.parentElement !== extended) {
       extended.appendChild(photos);
     }
 
     /*
-     Make the order stable even if this
-     function is called again on mobile.
+     Re-establish screen order using the
+     existing nodes only.
     */
 
     if (
@@ -532,44 +971,29 @@
       nutrition.parentElement === shell &&
       extended.parentElement === shell
     ) {
-      if (
-        training.previousElementSibling !==
-        personal
-      ) {
-        personal.insertAdjacentElement(
-          "afterend",
-          training
-        );
-      }
-
-      if (
-        nutrition.previousElementSibling !==
+      personal.insertAdjacentElement(
+        "afterend",
         training
-      ) {
-        training.insertAdjacentElement(
-          "afterend",
-          nutrition
-        );
-      }
+      );
 
-      if (
-        extended.previousElementSibling !==
+      training.insertAdjacentElement(
+        "afterend",
         nutrition
-      ) {
-        nutrition.insertAdjacentElement(
-          "afterend",
-          extended
-        );
-      }
+      );
+
+      nutrition.insertAdjacentElement(
+        "afterend",
+        extended
+      );
     }
 
-    /*
-     Keep Save & Continue at the end.
-    */
+    const save = $("manaProfileSave");
 
     if (
-      extended.nextElementSibling !== save &&
-      extended.parentElement === save.parentElement
+      save &&
+      extended.parentElement ===
+        save.parentElement &&
+      extended.nextElementSibling !== save
     ) {
       extended.insertAdjacentElement(
         "afterend",
@@ -577,68 +1001,27 @@
       );
     }
 
+    connectNames();
+    connectAge();
+    connectActivity();
+    connectAvatar();
+
     screen.dataset.manaProfileOrder = BUILD;
 
     return true;
   }
 
   /* ============================================================
-     PHOTO PREVIEW FOR MOVED AVATAR
-
-     The original profile-photo event was
-     attached to the extended root.
-     Since the avatar now sits inside Personal,
-     retain its preview behaviour directly.
+     LOAD / REOPEN
      ============================================================ */
 
-  function installAvatarPreview() {
-    const input = $("me-file-avatar");
-
-    if (
-      !input ||
-      input.dataset.manaPreviewConnected
-    ) return;
-
-    input.dataset.manaPreviewConnected = "1";
-
-    input.addEventListener("change", () => {
-      const file = input.files?.[0];
-
-      if (!file) return;
-
-      const holder = $("me-preview-avatar");
-
-      if (!holder) return;
-
-      const url = URL.createObjectURL(file);
-      const image = document.createElement("img");
-
-      image.src = url;
-      image.alt = "Profile photograph";
-
-      image.className = "me-avatar";
-
-      image.addEventListener(
-        "load",
-        () => URL.revokeObjectURL(url),
-        { once: true }
-      );
-
-      holder.replaceChildren(image);
-    });
-  }
-
   function schedule() {
-    attempts.forEach(clearTimeout);
-    attempts = [];
+    timers.forEach(clearTimeout);
+    timers = [];
 
-    [100, 300, 700, 1200].forEach(delay => {
-      attempts.push(
-        setTimeout(() => {
-          if (arrange()) {
-            installAvatarPreview();
-          }
-        }, delay)
+    [100, 350, 750, 1300].forEach(delay => {
+      timers.push(
+        setTimeout(arrange, delay)
       );
     });
   }
@@ -665,7 +1048,9 @@
     document.addEventListener(
       "visibilitychange",
       () => {
-        if (!document.hidden) schedule();
+        if (!document.hidden) {
+          schedule();
+        }
       }
     );
 
@@ -675,7 +1060,7 @@
     );
 
     console.log(
-      "[Mana Movement] Client Profile " +
+      "[Mana Movement] Premium Profile " +
       BUILD +
       " active"
     );
