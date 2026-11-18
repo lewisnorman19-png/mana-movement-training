@@ -1,36 +1,42 @@
 
 /* ============================================================
    MANA MOVEMENT TRAINING
-   COACH HUB — NAVIGATION STABILITY
-   BUILD 105004
+   COACH HUB — STABLE NAVIGATION & LIVE INBOX
+   BUILD 105006
 
-   COMPLETE JAVASCRIPT FILE
+   COMPLETE REPLACEMENT:
+   mana_coach_navigation_stability_105004.js
 
    FIXES
-   - Chat no longer opens old Progress screen
-   - Summary / Clients / Chat / Payments / Settings
-   - First click opens the correct Coach Hub section
-   - Exactly one active orange tab
-   - Active tab stays orange
-   - Client Detail highlights Clients
-   - Prevents conflicting legacy tab click handling
-   - Preserves existing client and chat data
+   - Live Coaching Inbox loads on first click
+   - Chat never needs a second click
+   - Restores Inbox after navigation
+   - Prevents old Progress page opening
+   - Keeps one active orange navigation tab
+   - Clients highlighted in Client Detail
+   - Existing client directory preserved
 
-   DOES NOT CHANGE
-   - Supabase
-   - Messages
-   - Client Profile
-   - Profile photograph
-   - Program Builder
-   - Workout history
-   - Client assignments
+   PRESERVES
+   - Supabase client records
+   - Real messages and unread indicators
+   - Existing conversation modal
+   - Coach Profile and photographs
+   - Program Builder and assignments
+   - Block requests
+   - History & Results
+   - Existing mobile layout
+
+   No database writes.
+   No duplicate inbox.
+   No fake conversations.
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "105004";
-  const FLAG = "MANA_COACH_NAV_STABLE_105004";
+  const BUILD = "105006";
+  const FLAG = "MANA_COACH_NAV_105006";
+  const STYLE = "manaCoachNavStyle105006";
 
   if (window[FLAG]) return;
   window[FLAG] = true;
@@ -38,13 +44,12 @@
   const NAV = "manaV97CoachNav";
   const HOME = "coachHomePage";
   const SUITE = "manaCoachSuite104707";
-  const DETAIL = "coachClientDetailView";
   const COACH = "coachView";
-  const STYLE = "manaCoachNavStableStyle105004";
+  const DETAIL = "coachClientDetailView";
 
   const $ = id => document.getElementById(id);
 
-  const routes = {
+  const ROUTES = {
     home: "summary",
     fuel: "clients",
     progress: "chat",
@@ -53,21 +58,28 @@
   };
 
   let selected = "summary";
-  let pending = false;
-  let observer = null;
-  let observedNav = null;
-  let observedCoach = null;
-  let observedDetail = null;
+  let refreshQueued = false;
+  let inboxQueued = false;
+  let lastInboxRequest = 0;
+
+  let navObserver = null;
+  let viewObserver = null;
+  let chatObserver = null;
+
+  let watchedNav = null;
+  let watchedCoach = null;
+  let watchedDetail = null;
+  let watchedChat = null;
 
   /* =====================================================
      VISIBILITY
      ===================================================== */
 
-  function visible(node) {
+  function visible(element) {
     return Boolean(
-      node &&
-      !node.hidden &&
-      !node.classList.contains("hide")
+      element &&
+      !element.hidden &&
+      !element.classList.contains("hide")
     );
   }
 
@@ -85,18 +97,32 @@
   function routeFor(button) {
     if (!button) return "";
 
-    const underlying =
-      button.dataset.coachPage;
-
     return (
-      routes[underlying] ||
+      ROUTES[button.dataset.coachPage] ||
       button.dataset.mcnTab ||
       ""
     );
   }
 
+  function chatView() {
+    return document.querySelector(
+      "#" + SUITE + ' [data-mcn-view="chat"]'
+    );
+  }
+
+  function chatVisible() {
+    const section = chatView();
+
+    return Boolean(
+      visible($(COACH)) &&
+      section &&
+      !section.hidden &&
+      section.getClientRects().length > 0
+    );
+  }
+
   /* =====================================================
-     PREMIUM ORANGE ACTIVE STATE
+     ORANGE NAVIGATION STYLING
      ===================================================== */
 
   function installStyles() {
@@ -107,12 +133,10 @@
 
     style.textContent = `
 
-      /* INACTIVE BUTTONS */
-
-      #${NAV} .mana-v970-tab {
+      #${NAV}.mana-nav-controlled-105006
+      .mana-v970-tab {
         background: #15171A !important;
         background-image: none !important;
-
         border: 1px solid #414750 !important;
         border-radius: 13px !important;
 
@@ -122,24 +146,21 @@
         box-shadow: none !important;
       }
 
-      #${NAV} .mana-v970-tab
+      #${NAV}.mana-nav-controlled-105006
+      .mana-v970-tab
       .mana-v970-tab-icon,
-      #${NAV} .mana-v970-tab
+      #${NAV}.mana-nav-controlled-105006
+      .mana-v970-tab
       .mcn-tab-label {
         color: inherit !important;
         -webkit-text-fill-color:
           currentColor !important;
       }
 
-      /* ONE ACTIVE BUTTON */
-
-      #${NAV}
-      .mana-v970-tab.mana-nav-selected-105004 {
+      #${NAV}.mana-nav-controlled-105006
+      .mana-v970-tab.mana-nav-selected-105006 {
         background: #321D12 !important;
-        background-image: none !important;
-
         border: 1px solid #FF7927 !important;
-        border-radius: 13px !important;
 
         color: #FF7927 !important;
         -webkit-text-fill-color: #FF7927 !important;
@@ -147,43 +168,14 @@
         box-shadow: none !important;
       }
 
-      #${NAV}
-      .mana-v970-tab.mana-nav-selected-105004
+      #${NAV}.mana-nav-controlled-105006
+      .mana-v970-tab.mana-nav-selected-105006
       .mana-v970-tab-icon,
-      #${NAV}
-      .mana-v970-tab.mana-nav-selected-105004
+      #${NAV}.mana-nav-controlled-105006
+      .mana-v970-tab.mana-nav-selected-105006
       .mcn-tab-label {
         color: #FF7927 !important;
         -webkit-text-fill-color: #FF7927 !important;
-      }
-
-      /*
-       Neutralise older active classes
-       when this navigation system is
-       controlling the Coach Hub.
-      */
-
-      #${NAV}.mana-nav-controlled-105004
-      .mana-v970-tab.active:not(
-        .mana-nav-selected-105004
-      ) {
-        background: #15171A !important;
-        border-color: #414750 !important;
-
-        color: #C1C6CE !important;
-        -webkit-text-fill-color: #C1C6CE !important;
-      }
-
-      #${NAV}.mana-nav-controlled-105004
-      .mana-v970-tab.active:not(
-        .mana-nav-selected-105004
-      ) .mana-v970-tab-icon,
-      #${NAV}.mana-nav-controlled-105004
-      .mana-v970-tab.active:not(
-        .mana-nav-selected-105004
-      ) .mcn-tab-label {
-        color: #C1C6CE !important;
-        -webkit-text-fill-color: #C1C6CE !important;
       }
 
       #${NAV} .mana-v970-tab:focus-visible {
@@ -197,58 +189,22 @@
   }
 
   /* =====================================================
-     SELECTED PAGE CONTENT
+     ACTIVE TAB
 
-     Uses the existing Coach Hub views.
-     No new Chat, Payment or Client screens
-     are fabricated.
-     ===================================================== */
-
-  function displaySelected() {
-    const suite = $(SUITE);
-    const home = $(HOME);
-
-    if (!suite || !home) return;
-
-    suite.querySelectorAll(
-      "[data-mcn-view]"
-    ).forEach(section => {
-      const shouldShow =
-        section.dataset.mcnView === selected;
-
-      if (section.hidden === shouldShow) {
-        section.hidden = !shouldShow;
-      }
-    });
-
-    const summary =
-      selected === "summary";
-
-    if (
-      home.classList.contains(
-        "mcn-summary-active"
-      ) !== summary
-    ) {
-      home.classList.toggle(
-        "mcn-summary-active",
-        summary
-      );
-    }
-  }
-
-  /* =====================================================
-     KEEP ONE TAB ACTIVE
+     The existing navigation retains its
+     buttons, labels and original structure.
      ===================================================== */
 
   function updateTabs() {
     const nav = $(NAV);
+
     if (!nav || !coachOpen()) return;
 
     nav.classList.add(
-      "mana-nav-controlled-105004"
+      "mana-nav-controlled-105006"
     );
 
-    const activePage =
+    const active =
       detailOpen()
         ? "clients"
         : selected;
@@ -256,31 +212,20 @@
     nav.querySelectorAll(
       ".mana-v970-tab[data-coach-page]"
     ).forEach(button => {
-      const isActive =
-        routeFor(button) === activePage;
+      const chosen =
+        routeFor(button) === active;
 
       button.classList.toggle(
-        "mana-nav-selected-105004",
-        isActive
+        "mana-nav-selected-105006",
+        chosen
       );
 
-      /*
-       Synchronise legacy active styling
-       so only one tab is marked active.
-      */
+      button.classList.toggle(
+        "active",
+        chosen
+      );
 
-      if (
-        button.classList.contains(
-          "active"
-        ) !== isActive
-      ) {
-        button.classList.toggle(
-          "active",
-          isActive
-        );
-      }
-
-      if (isActive) {
+      if (chosen) {
         button.setAttribute(
           "aria-current",
           "page"
@@ -294,14 +239,112 @@
   }
 
   /* =====================================================
-     ROUTING
+     EXISTING COACH HUB SECTIONS
+     ===================================================== */
 
-     Navigate to the existing Coach Home
-     container, then display the requested
-     Coach Hub section.
+  function showSelected() {
+    const suite = $(SUITE);
+    const home = $(HOME);
 
-     This avoids opening the old underlying
-     Progress / Fuel / Programs pages.
+    if (!suite || !home) return;
+
+    suite.querySelectorAll(
+      "[data-mcn-view]"
+    ).forEach(section => {
+      const shouldShow =
+        section.dataset.mcnView === selected;
+
+      if (section.hidden !== !shouldShow) {
+        section.hidden = !shouldShow;
+      }
+    });
+
+    home.classList.toggle(
+      "mcn-summary-active",
+      selected === "summary"
+    );
+  }
+
+  /* =====================================================
+     REAL COACHING INBOX
+
+     Existing Mana Strength messaging
+     module provides this function:
+
+       window.refreshManaCoachInbox()
+
+     This is the existing Supabase-backed
+     inbox, not a replacement renderer.
+     ===================================================== */
+
+  function refreshRealInbox(force = false) {
+    if (!chatVisible()) return;
+
+    const now = Date.now();
+
+    if (
+      !force &&
+      now - lastInboxRequest < 1200
+    ) {
+      return;
+    }
+
+    if (
+      typeof window.refreshManaCoachInbox !==
+      "function"
+    ) {
+      return;
+    }
+
+    lastInboxRequest = now;
+
+    try {
+      const result =
+        window.refreshManaCoachInbox();
+
+      if (
+        result &&
+        typeof result.catch === "function"
+      ) {
+        result.catch(error => {
+          console.warn(
+            "[Mana Coach Inbox]",
+            error
+          );
+        });
+      }
+    } catch (error) {
+      console.warn(
+        "[Mana Coach Inbox]",
+        error
+      );
+    }
+  }
+
+  function queueInboxRefresh() {
+    if (inboxQueued) return;
+
+    inboxQueued = true;
+
+    requestAnimationFrame(() => {
+      inboxQueued = false;
+
+      if (!chatVisible()) return;
+
+      refreshRealInbox(true);
+    });
+  }
+
+  /* =====================================================
+     REFRESH AFTER NAVIGATION
+
+     This is necessary because the original
+     v9.7 navigation is intercepted before
+     the newer chat module's document-level
+     navigation listener.
+
+     Refresh explicitly after the new
+     section is actually visible.
      ===================================================== */
 
   function navigate(page) {
@@ -337,36 +380,46 @@
       $(HOME)?.classList.remove("hide");
     }
 
-    displaySelected();
+    showSelected();
     updateTabs();
 
-    /*
-     Older navigation may update its
-     active class during this transition.
-
-     Reconcile after the current event,
-     without dispatching another click.
-    */
-
     requestAnimationFrame(() => {
-      displaySelected();
+      showSelected();
       updateTabs();
+
+      if (selected === "chat") {
+        queueInboxRefresh();
+      }
     });
+
+    if (page === "chat") {
+      /*
+       A second bounded refresh handles
+       pages that become visible after a
+       short navigation transition.
+      */
+
+      setTimeout(() => {
+        if (selected === "chat") {
+          refreshRealInbox();
+        }
+      }, 350);
+    }
 
     window.scrollTo(0, 0);
   }
 
   /* =====================================================
-     CAPTURE NAVIGATION BEFORE LEGACY HANDLERS
+     INTERCEPT OLD NAVIGATION
 
-     The original v9.7 navigation assigns
-     Chat to the old Progress page.
+     Stops Chat from opening the legacy
+     Coach Progress page.
 
-     Handle only actual Coach Hub tab
-     clicks. Other buttons are untouched.
+     Does not intercept chat conversations,
+     client cards or other Coach buttons.
      ===================================================== */
 
-  function interceptClick(event) {
+  function onNavClick(event) {
     if (!coachOpen()) return;
 
     const target = event.target;
@@ -376,7 +429,8 @@
     }
 
     const button = target.closest(
-      `#${NAV} .mana-v970-tab[data-coach-page]`
+      "#" + NAV +
+      " .mana-v970-tab[data-coach-page]"
     );
 
     if (!button) return;
@@ -393,30 +447,73 @@
   }
 
   /* =====================================================
-     RECONCILE LATER CLASS CHANGES
+     OBSERVE CHAT PANEL
 
-     Observe only:
-     - five navigation buttons
-     - Coach View visibility
-     - Client Detail visibility
+     If the older placeholder reappears,
+     request the real inbox again.
 
-     No document-wide DOM observer.
+     Only watches the existing chat panel.
+     Does not monitor the entire document.
      ===================================================== */
 
-  function reconcile() {
-    if (!coachOpen()) return;
+  function watchChat() {
+    const section = chatView();
 
-    updateTabs();
+    const panel = section?.querySelector(
+      ".mcn-panel"
+    );
+
+    if (!panel || watchedChat === panel) {
+      return;
+    }
+
+    chatObserver?.disconnect();
+
+    watchedChat = panel;
+
+    chatObserver = new MutationObserver(() => {
+      if (!chatVisible()) return;
+
+      const placeholder =
+        panel.querySelector(".mcn-notice");
+
+      if (
+        placeholder &&
+        /messaging connection pending/i.test(
+          placeholder.textContent || ""
+        )
+      ) {
+        refreshRealInbox();
+      }
+    });
+
+    chatObserver.observe(panel, {
+      childList: true,
+      subtree: false
+    });
   }
 
-  function scheduleReconcile() {
-    if (pending) return;
+  /* =====================================================
+     WATCH EXISTING NAVIGATION STATE
 
-    pending = true;
+     Reconcile highlights when another
+     Coach module updates the tab classes.
+
+     Never routes again from an observer.
+     ===================================================== */
+
+  function queueTabs() {
+    if (refreshQueued) return;
+
+    refreshQueued = true;
 
     requestAnimationFrame(() => {
-      pending = false;
-      reconcile();
+      refreshQueued = false;
+
+      if (!coachOpen()) return;
+
+      updateTabs();
+      watchChat();
     });
   }
 
@@ -426,52 +523,57 @@
     const detail = $(DETAIL);
 
     if (
-      nav === observedNav &&
-      coach === observedCoach &&
-      detail === observedDetail
-    ) return;
+      nav !== watchedNav
+    ) {
+      navObserver?.disconnect();
+      watchedNav = nav;
 
-    observer?.disconnect();
+      if (nav) {
+        navObserver = new MutationObserver(
+          queueTabs
+        );
 
-    observedNav = nav;
-    observedCoach = coach;
-    observedDetail = detail;
-
-    observer = new MutationObserver(
-      scheduleReconcile
-    );
-
-    if (nav) {
-      observer.observe(nav, {
-        subtree: true,
-        attributes: true,
-        attributeFilter: [
-          "class",
-          "aria-current",
-          "aria-selected"
-        ]
-      });
+        navObserver.observe(nav, {
+          attributes: true,
+          attributeFilter: [
+            "class",
+            "aria-current"
+          ],
+          subtree: true
+        });
+      }
     }
 
-    if (coach) {
-      observer.observe(coach, {
-        attributes: true,
-        attributeFilter: [
-          "class",
-          "hidden"
-        ]
-      });
+    if (
+      coach !== watchedCoach ||
+      detail !== watchedDetail
+    ) {
+      viewObserver?.disconnect();
+
+      watchedCoach = coach;
+      watchedDetail = detail;
+
+      viewObserver = new MutationObserver(
+        queueTabs
+      );
+
+      for (const element of [
+        coach,
+        detail
+      ]) {
+        if (!element) continue;
+
+        viewObserver.observe(element, {
+          attributes: true,
+          attributeFilter: [
+            "class",
+            "hidden"
+          ]
+        });
+      }
     }
 
-    if (detail) {
-      observer.observe(detail, {
-        attributes: true,
-        attributeFilter: [
-          "class",
-          "hidden"
-        ]
-      });
-    }
+    watchChat();
   }
 
   /* =====================================================
@@ -482,13 +584,14 @@
     installStyles();
 
     /*
-     Window capture executes before the
-     older document-level Coach handlers.
+     Capture before the legacy Coach tab
+     handlers, keeping the working newer
+     Coach Hub screens.
     */
 
     window.addEventListener(
       "click",
-      interceptClick,
+      onNavClick,
       true
     );
 
@@ -501,18 +604,37 @@
 
       if (current && !detailOpen()) {
         selected =
-          routeFor(current) || "summary";
+          routeFor(current) ||
+          "summary";
       }
 
-      displaySelected();
+      showSelected();
       updateTabs();
+
+      if (selected === "chat") {
+        queueInboxRefresh();
+      }
     }
 
     window.addEventListener(
       "pageshow",
       () => {
         observe();
-        scheduleReconcile();
+
+        queueTabs();
+
+        if (chatVisible()) {
+          queueInboxRefresh();
+        }
+      }
+    );
+
+    window.addEventListener(
+      "focus",
+      () => {
+        if (chatVisible()) {
+          queueInboxRefresh();
+        }
       }
     );
 
@@ -520,7 +642,11 @@
       "visibilitychange",
       () => {
         if (!document.hidden) {
-          scheduleReconcile();
+          queueTabs();
+
+          if (chatVisible()) {
+            queueInboxRefresh();
+          }
         }
       }
     );
@@ -529,7 +655,7 @@
       BUILD;
 
     console.log(
-      "[Mana Movement] Coach Navigation " +
+      "[Mana Movement] Coach Nav & Inbox " +
       BUILD +
       " active"
     );
