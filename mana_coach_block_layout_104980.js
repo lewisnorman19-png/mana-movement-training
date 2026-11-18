@@ -1,50 +1,35 @@
 
 /* ============================================================
    MANA MOVEMENT TRAINING
-   COACH HUB — PREMIUM FINISH
-   BUILD 104980
+   COACH HUB + FUEL PROFILE FINISH
+   BUILD 104981
 
-   COMPLETE NEW JAVASCRIPT FILE
+   COMPLETE REPLACEMENT FOR:
+   mana_coach_block_layout_104980.js
 
-   FIXES
-   - Program Upgrade Request jumping to the top
-   - Premium Coach Hub card consistency
-   - Missing calories and protein
-   - Missing current recovery score
-   - Fuel and Recovery coach visibility
+   - Premium compact Fuel layout
+   - Automatic calorie and protein targets
+   - Daily activity selection
+   - Recommended water from body weight
+   - Recommended recovery target: 8/10
+   - Actual recovery score shown separately
+   - Client-to-coach secure Fuel sync
+   - Block Request positioned below programs
 
-   CLIENT SYNC
-   - Reads existing saved Profile values
-   - Reads existing saved Fuel targets
-   - Reads existing Recovery records
-   - Respects existing profile sharing consent
-   - Preserves unrelated extended profile data
-
-   COACH HUB
-   - Reads only authorised cloud information
-   - Displays actual values or unavailable status
-   - Never reads the coach's own Fuel as client data
-
-   PRESERVES
-   - View Client
-   - Program Builder
-   - Request action buttons
-   - Coach Chat
-   - Photos
-   - Existing navigation
-
-   No new database tables.
-   No database policy changes.
-   No continuous page-wide observer.
+   PRESERVES:
+   View Client, Program Builder, Chat,
+   client information, photographs, workouts,
+   navigation and existing Supabase policies.
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "104980";
+  const BUILD = "104981";
+  const FLAG = "MANA_PREMIUM_104981";
 
-  if (window.MANA_PREMIUM_104980) return;
-  window.MANA_PREMIUM_104980 = true;
+  if (window[FLAG]) return;
+  window[FLAG] = true;
 
   const $ = id => document.getElementById(id);
 
@@ -53,53 +38,84 @@
   const BLOCK = "manaV1017CoachRequest";
   const ASSIGN = "manaCoachAssignments104720";
 
-  const STYLE = "manaPremium104980Style";
-
   const PROFILE_KEY = "mana-profile-v67";
   const TARGET_KEY = "mana-fuel-v58-targets";
   const DAILY_KEY = "mana-strength-v866-daily";
   const FUEL_KEY = "mana-fuel-v571";
 
-  let lastClientId = "";
-  let coachData = null;
-  let coachRequest = 0;
+  const STYLE_ID = "manaPremiumStyle104981";
+  const FUEL_ID = "manaPremiumFuel104981";
+  const ACTIVITY_ID = "manaPremiumActivity104981";
 
-  let detailObserver = null;
+  const RECOVERY_TARGET = 8;
+
+  let coachClientId = "";
+  let coachData = null;
+  let coachTicket = 0;
+  let syncing = false;
+  let syncTimer = null;
+  let blockObserver = null;
   let profileObserver = null;
   let observedProfile = null;
-  let arranging = false;
+  let movingBlock = false;
 
-  let syncTimer = null;
-  let syncBusy = false;
+  const activityFactors = {
+    sedentary: 1.2,
+    light: 1.375,
+    moderate: 1.55,
+    active: 1.725,
+    very_active: 1.9
+  };
 
-  const safe = value =>
+  const escapeHTML = value =>
     String(value ?? "").replace(
       /[&<>"']/g,
-      character => ({
+      c => ({
         "&": "&amp;",
         "<": "&lt;",
         ">": "&gt;",
         '"': "&quot;",
         "'": "&#39;"
-      })[character]
+      })[c]
     );
 
-  function readLocal(key) {
+  function read(key) {
     try {
-      const value = JSON.parse(
+      const data = JSON.parse(
         localStorage.getItem(key) || "{}"
       );
 
-      return value &&
-        typeof value === "object"
-          ? value
+      return data &&
+        typeof data === "object"
+          ? data
           : {};
     } catch (_) {
       return {};
     }
   }
 
-  function hasValue(value) {
+  function write(key, value) {
+    localStorage.setItem(
+      key,
+      JSON.stringify(value)
+    );
+  }
+
+  function numeric(value) {
+    if (
+      value === null ||
+      value === undefined ||
+      value === ""
+    ) return null;
+
+    const n = Number(value);
+
+    return Number.isFinite(n)
+      ? n
+      : null;
+  }
+
+  function available(value) {
     return (
       value !== null &&
       value !== undefined &&
@@ -107,17 +123,7 @@
     );
   }
 
-  function number(value) {
-    if (!hasValue(value)) return null;
-
-    const n = Number(value);
-
-    return Number.isFinite(n) && n >= 0
-      ? n
-      : null;
-  }
-
-  function coachOpen() {
+  function detailOpen() {
     const view = $(VIEW);
 
     return Boolean(
@@ -127,7 +133,7 @@
     );
   }
 
-  function currentClient() {
+  function selectedClient() {
     try {
       if (
         typeof selectedCoachClient !== "undefined" &&
@@ -135,9 +141,8 @@
       ) {
         return {
           id: String(selectedCoachClient.userId),
-          name: String(
+          name:
             selectedCoachClient.clientName || "Client"
-          )
         };
       }
     } catch (_) {}
@@ -145,367 +150,247 @@
     return null;
   }
 
-  async function dbConnection() {
+  async function db() {
     if (
       typeof window.supabaseClient !== "function"
     ) {
-      throw new Error("Cloud unavailable");
+      throw Error("Mana cloud unavailable");
     }
 
     return await window.supabaseClient();
   }
 
   /* ============================================================
-     PREMIUM DESIGN
+     CALCULATION — USE EXISTING PROFILE VALUES
+
+     If daily activity is selected, it becomes
+     the activity multiplier.
+
+     Otherwise retain the original training-day
+     multiplier used by Mana Movement.
      ============================================================ */
 
-  function installStyles() {
-    if ($(STYLE)) return;
+  function calculate(profile) {
+    const age = numeric(profile.age);
+    const height = numeric(profile.height);
+    const weight = numeric(profile.weight);
+    const days = numeric(profile.days) || 0;
 
-    const style = document.createElement("style");
-    style.id = STYLE;
+    if (
+      age === null ||
+      height === null ||
+      weight === null ||
+      age <= 0 ||
+      height <= 0 ||
+      weight <= 0
+    ) return null;
 
-    style.textContent = `
+    const gender = String(
+      profile.gender || ""
+    ).toLowerCase();
 
-      /* COACH PROFILE */
+    const goal = String(
+      profile.fuelGoal || "Maintenance"
+    ).toLowerCase();
 
-      #${VIEW} #${PROFILE} {
-        background: #15171B !important;
-        border: 1px solid #4D5660 !important;
-        border-radius: 17px !important;
-        padding: 15px !important;
-        margin: 12px 0 !important;
-        box-shadow: none !important;
-      }
+    const base =
+      10 * weight +
+      6.25 * height -
+      5 * age;
 
-      #${VIEW} #${PROFILE} * {
-        box-sizing: border-box;
-      }
+    const bmr =
+      gender === "male"
+        ? base + 5
+        : gender === "female"
+          ? base - 161
+          : base - 78;
 
-      #${PROFILE} .mana-profile-group {
-        margin-top: 13px !important;
-        padding-top: 12px !important;
-      }
+    let factor =
+      days >= 5 ? 1.7 :
+      days === 4 ? 1.6 :
+      days === 3 ? 1.5 : 1.4;
 
-      #${PROFILE} .mana-profile-group h3 {
-        color: #FF7927 !important;
-        font-size: 11px !important;
-        font-weight: 900 !important;
-        letter-spacing: .08em !important;
-        margin: 0 0 9px !important;
-      }
+    const selectedFactor =
+      activityFactors[profile.dailyActivity];
 
-      #${PROFILE} .mana-profile-grid {
-        gap: 7px !important;
-      }
+    if (selectedFactor) {
+      factor = selectedFactor;
+    }
 
-      #${PROFILE} .mana-profile-cell {
-        padding: 9px 11px !important;
-        min-height: 0 !important;
-        height: auto !important;
-        background: #101215 !important;
-        border: 1px solid #444C56 !important;
-        border-radius: 10px !important;
-      }
+    let calories = bmr * factor;
+    let proteinFactor = 1.6;
 
-      #${PROFILE} .mana-profile-cell small {
-        color: #ABB5C0 !important;
-        font-size: 10px !important;
-        text-align: left !important;
-      }
+    if (
+      goal === "weight loss" ||
+      goal === "lose weight"
+    ) {
+      calories *= 0.85;
+      proteinFactor = 2.0;
+    }
 
-      #${PROFILE} .mana-profile-cell strong {
-        color: #FFFFFF !important;
-        font-size: 13px !important;
-        font-weight: 750 !important;
-        line-height: 1.4 !important;
-        text-align: left !important;
-      }
+    if (
+      goal === "build muscle" ||
+      goal === "muscle gain"
+    ) {
+      calories *= 1.08;
+      proteinFactor = 1.8;
+    }
 
-      /* FUEL AND RECOVERY */
+    return {
+      calories:
+        Math.round(calories / 50) * 50,
 
-      #${PROFILE} .mana-premium-fuel-grid {
-        display: grid;
-        grid-template-columns:
-          repeat(2,minmax(0,1fr));
-        gap: 8px;
-      }
+      protein:
+        Math.round(weight * proteinFactor),
 
-      #${PROFILE} .mana-premium-metric {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        gap: 6px;
-        background: #101215;
-        border: 1px solid #444C56;
-        border-radius: 11px;
-        padding: 12px;
-        min-width: 0;
-      }
+      water:
+        Math.round(weight * 35 / 100) * 100,
 
-      #${PROFILE} .mana-premium-metric small {
-        color: #B0B9C4;
-        font-size: 11px;
-        font-weight: 600;
-      }
+      recoveryTarget: RECOVERY_TARGET
+    };
+  }
 
-      #${PROFILE} .mana-premium-metric strong {
-        color: #FF7927;
-        font-size: 22px;
-        font-weight: 900;
-        line-height: 1.2;
-        overflow-wrap: anywhere;
-      }
+  /* ============================================================
+     CLIENT PROFILE — DAILY ACTIVITY INPUT
+     ============================================================ */
 
-      #${PROFILE} .mana-premium-metric span {
-        color: #AAB3BD;
-        font-size: 10px;
-        line-height: 1.4;
-      }
+  function installActivitySelector() {
+    const screen = $("manaProfileScreen");
 
-      #${PROFILE} .mana-premium-fuel-note {
-        color: #AEB7C1;
-        font-size: 11px;
-        line-height: 1.5;
-        margin: 10px 0 0;
-      }
+    if (!screen || $(ACTIVITY_ID)) return;
 
-      /* BLOCK REQUEST */
+    const fuelGoal = $("manaProfileFuelGoal");
 
-      #${VIEW} #${BLOCK} {
-        width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        margin: 13px 0 !important;
-        padding: 15px !important;
-        background: #15171B !important;
-        border: 1px solid #8A6425 !important;
-        border-radius: 17px !important;
-        box-shadow: none !important;
-      }
+    if (!fuelGoal) return;
 
-      #${BLOCK} .m1017-coach-head {
-        gap: 12px !important;
-      }
+    const wrapper = document.createElement("div");
 
-      #${BLOCK} button {
-        border-radius: 10px !important;
-      }
+    wrapper.className = "mana-premium-activity";
 
-      /* ASSIGNED PROGRAMS */
+    wrapper.innerHTML = `
+      <label for="${ACTIVITY_ID}">
+        Daily activity outside workouts
+      </label>
 
-      #${VIEW} #${ASSIGN} {
-        background: #15171B !important;
-        border: 1px solid #505862 !important;
-        border-radius: 17px !important;
-        padding: 15px !important;
-        margin: 12px 0 !important;
-        box-shadow: none !important;
-      }
+      <select id="${ACTIVITY_ID}">
+        <option value="">
+          Use current training-day estimate
+        </option>
+        <option value="sedentary">
+          Mostly sitting
+        </option>
+        <option value="light">
+          Light movement
+        </option>
+        <option value="moderate">
+          Moderately active
+        </option>
+        <option value="active">
+          Very active
+        </option>
+        <option value="very_active">
+          Extremely active
+        </option>
+      </select>
 
-      #${VIEW} #${ASSIGN} .mca-row {
-        background: #101215 !important;
-        border-radius: 10px !important;
-        padding: 11px !important;
-      }
-
-      /* COACHING ACTIONS */
-
-      #${VIEW} #manaV1010ClientActions {
-        margin: 12px 0 !important;
-      }
-
-      #${VIEW} #manaV1010ClientActions
-      .m1010-action {
-        background: #1A1D22 !important;
-        border: 1px solid #4F5863 !important;
-        border-radius: 12px !important;
-        box-shadow: none !important;
-      }
-
-      /* SUMMARY */
-
-      #${VIEW} #manaV998ClientSummary {
-        background: #15171B !important;
-        border-radius: 16px !important;
-        padding: 14px !important;
-        margin: 12px 0 !important;
-      }
-
-      /* CHAT */
-
-      #${VIEW} .mana-premium-chat {
-        background: #15171B !important;
-        border: 1px solid #505862 !important;
-        border-radius: 15px !important;
-        padding: 15px !important;
-      }
-
-      #${VIEW} .mana-premium-chat button {
-        background: #15171B !important;
-        color: #FF7927 !important;
-        border: 1px solid #FF7927 !important;
-        border-radius: 10px !important;
-        padding: 10px 14px !important;
-        font: 800 12px system-ui !important;
-        cursor: pointer !important;
-      }
-
-      /* PHOTO ACCORDION */
-
-      #${PROFILE} .mana-photo-fold {
-        border-radius: 12px !important;
-        margin-top: 13px !important;
-      }
-
-      #${PROFILE} .mana-photo-card img,
-      #${PROFILE} .mana-photo-empty {
-        max-height: 165px !important;
-      }
-
-      /* MOBILE */
-
-      @media(max-width:600px) {
-        #${VIEW} #${PROFILE},
-        #${VIEW} #${ASSIGN},
-        #${VIEW} #${BLOCK} {
-          padding: 12px !important;
-        }
-
-        #${PROFILE} .mana-premium-fuel-grid {
-          gap: 6px;
-        }
-
-        #${PROFILE} .mana-premium-metric {
-          padding: 10px;
-        }
-
-        #${PROFILE} .mana-premium-metric strong {
-          font-size: 18px;
-        }
-      }
+      <p>
+        This adjusts your calorie estimate
+        without changing your training goal.
+      </p>
     `;
 
-    document.head.appendChild(style);
-  }
+    const anchor =
+      fuelGoal.closest(
+        ".mana-profile-field, .mana-profile-row"
+      ) || fuelGoal.parentElement;
 
-  /* ============================================================
-     BLOCK REQUEST — PERMANENT POSITION FIX
-
-     The legacy 101700 module recreates the
-     request after focus and client changes.
-
-     Observe only the Coach Detail's direct
-     children, not the entire document.
-     ============================================================ */
-
-  function positionBlock() {
-    if (!coachOpen() || arranging) return;
-
-    const view = $(VIEW);
-    const block = $(BLOCK);
-    const assign = $(ASSIGN);
-
-    if (
-      !view ||
-      !block ||
-      !assign ||
-      !view.contains(assign)
-    ) {
-      return;
-    }
-
-    if (
-      block.parentElement === view &&
-      block.previousElementSibling === assign
-    ) {
-      return;
-    }
-
-    arranging = true;
-
-    try {
-      assign.insertAdjacentElement(
+    if (anchor) {
+      anchor.insertAdjacentElement(
         "afterend",
-        block
+        wrapper
       );
-    } finally {
-      arranging = false;
     }
+
+    const select = $(ACTIVITY_ID);
+
+    if (!select) return;
+
+    select.value =
+      read(PROFILE_KEY).dailyActivity || "";
+
+    select.addEventListener("change", () => {
+      const profile = read(PROFILE_KEY);
+
+      profile.dailyActivity = select.value;
+      profile.updatedAt = new Date().toISOString();
+
+      write(PROFILE_KEY, profile);
+
+      calculateAndSave();
+
+      queueSync(450);
+    });
   }
 
-  function installBlockObserver() {
-    const view = $(VIEW);
+  function calculateAndSave() {
+    const profile = read(PROFILE_KEY);
 
-    if (!view || detailObserver) return;
-
-    detailObserver = new MutationObserver(() => {
-      if (coachOpen()) {
-        positionBlock();
-        tidyChat();
-        attachProfileObserver();
-      }
-    });
-
-    detailObserver.observe(view, {
-      childList: true,
-      subtree: false
-    });
-  }
-
-  /* ============================================================
-     CHAT PRESENTATION
-     ============================================================ */
-
-  function tidyChat() {
-    if (!coachOpen()) return;
-
-    const view = $(VIEW);
-    if (!view) return;
-
-    const button = Array.from(
-      view.querySelectorAll("button")
-    ).find(el =>
-      /open client chat/i.test(
-        el.textContent || ""
-      )
-    );
-
-    if (!button) return;
-
-    const card = button.closest(
-      ".card, section, article"
-    );
+    const selector = $(ACTIVITY_ID);
 
     if (
-      card &&
-      card !== view &&
-      !card.contains($(PROFILE))
+      selector &&
+      selector.value !==
+        (profile.dailyActivity || "")
     ) {
-      card.classList.add(
-        "mana-premium-chat"
-      );
+      profile.dailyActivity = selector.value;
+      write(PROFILE_KEY, profile);
     }
+
+    const result = calculate(profile);
+
+    if (!result) return null;
+
+    /*
+     Preserve unrelated Fuel fields such as
+     carbohydrates and fat.
+    */
+
+    const saved = read(TARGET_KEY);
+
+    write(TARGET_KEY, {
+      ...saved,
+      calories: result.calories,
+      protein: result.protein,
+      water: result.water
+    });
+
+    const calories = $("manaProfileFuelCalories");
+    const protein = $("manaProfileFuelProtein");
+
+    if (calories) {
+      calories.textContent =
+        result.calories.toLocaleString() + " cal";
+    }
+
+    if (protein) {
+      protein.textContent =
+        result.protein + "g";
+    }
+
+    return result;
   }
 
   /* ============================================================
-     EXISTING RECOVERY VALUES
-
-     Same source fields used by Mana28.
-
-     Never use a default score when the
-     client has no actual recovery record.
+     RECOVERY — ACTUAL LATEST SAVED SCORE
      ============================================================ */
 
-  function recoveryScore(record) {
-    if (!record || typeof record !== "object") {
-      return null;
-    }
+  function scoreFrom(record) {
+    if (!record) return null;
 
-    const n = number(record.recoveryScore);
+    const score = numeric(record.recoveryScore);
 
-    if (n !== null) {
-      return Math.min(10, n);
+    if (score !== null) {
+      return Math.min(10, Math.max(0, score));
     }
 
     const level = String(
@@ -518,9 +403,7 @@
     if (
       level === "low" ||
       level === "needs-attention"
-    ) {
-      return 3;
-    }
+    ) return 3;
 
     if (record.recovery === true) return 8;
 
@@ -528,31 +411,26 @@
   }
 
   function latestRecovery() {
-    const daily = readLocal(DAILY_KEY);
-    const fuel = readLocal(FUEL_KEY);
+    const daily = read(DAILY_KEY);
+    const fuel = read(FUEL_KEY);
 
-    const dates = Array.from(
-      new Set([
+    const dates = [
+      ...new Set([
         ...Object.keys(daily),
         ...Object.keys(fuel)
       ])
-    )
-      .filter(key =>
-        /^\d{4}-\d{2}-\d{2}$/.test(key)
-      )
+    ]
+      .filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d))
       .sort()
       .reverse();
 
     for (const date of dates) {
       const score =
-        recoveryScore(daily[date]) ??
-        recoveryScore(fuel[date]);
+        scoreFrom(daily[date]) ??
+        scoreFrom(fuel[date]);
 
       if (score !== null) {
-        return {
-          score,
-          date
-        };
+        return { score, date };
       }
     }
 
@@ -560,119 +438,96 @@
   }
 
   /* ============================================================
-     CLIENT-SIDE SYNC
-
-     Uses the client's own authenticated account.
-
-     Existing share_with_coach consent must
-     already be true.
-
-     Only updates approved existing profile
-     details. It does not create consent.
+     CLOUD SYNC — CLIENT'S OWN DATA ONLY
      ============================================================ */
 
-  async function syncClientFuel() {
-    if (syncBusy) return;
+  async function syncClient() {
+    if (syncing) return;
 
-    syncBusy = true;
+    syncing = true;
 
     try {
-      const db = await dbConnection();
+      const client = await db();
 
       const { data: auth, error: authError } =
-        await db.auth.getUser();
+        await client.auth.getUser();
 
       if (authError || !auth?.user) return;
 
-      const user = auth.user;
+      const userId = auth.user.id;
 
       const { data: role, error: roleError } =
-        await db.from("profiles")
+        await client.from("profiles")
           .select("role")
-          .eq("id", user.id)
+          .eq("id", userId)
           .maybeSingle();
 
-      if (roleError || role?.role !== "client") {
-        return;
-      }
+      if (
+        roleError ||
+        role?.role !== "client"
+      ) return;
 
       const { data: existing, error } =
-        await db.from("client_extended_profiles")
+        await client
+          .from("client_extended_profiles")
           .select("details,share_with_coach")
-          .eq("user_id", user.id)
+          .eq("user_id", userId)
           .maybeSingle();
 
       if (
         error ||
         !existing ||
         !existing.share_with_coach
-      ) {
-        return;
-      }
+      ) return;
 
-      const profile = readLocal(PROFILE_KEY);
-      const targets = readLocal(TARGET_KEY);
+      const result = calculateAndSave();
+
+      if (!result) return;
+
+      const profile = read(PROFILE_KEY);
       const recovery = latestRecovery();
 
-      const next = {
+      const details = {
         ...(existing.details || {})
       };
 
-      let changed = false;
+      details.fuel_goal =
+        profile.fuelGoal || "";
 
-      function update(key, value) {
-        if (!hasValue(value)) return;
+      details.daily_activity =
+        profile.dailyActivity || "";
 
-        if (
-          JSON.stringify(next[key]) !==
-          JSON.stringify(value)
-        ) {
-          next[key] = value;
-          changed = true;
-        }
-      }
+      details.calorie_target = result.calories;
+      details.protein_target = result.protein;
 
-      if (hasValue(profile.fuelGoal)) {
-        update(
-          "fuel_goal",
-          String(profile.fuelGoal)
-        );
-      }
+      details.fuel_water_target_ml =
+        result.water;
 
-      const calories = number(targets.calories);
-      const protein = number(targets.protein);
-      const water = number(targets.water);
-
-      if (calories !== null && calories > 0) {
-        update("calorie_target", calories);
-      }
-
-      if (protein !== null && protein > 0) {
-        update("protein_target", protein);
-      }
-
-      if (water !== null && water > 0) {
-        update("fuel_water_target_ml", water);
-      }
+      details.recovery_target =
+        result.recoveryTarget;
 
       if (recovery) {
-        update("recovery_score", recovery.score);
-        update("recovery_date", recovery.date);
+        details.recovery_score =
+          recovery.score;
+
+        details.recovery_date =
+          recovery.date;
       }
 
-      if (!changed) return;
+      if (
+        JSON.stringify(details) ===
+        JSON.stringify(existing.details || {})
+      ) return;
 
-      const result = await db
+      const update = await client
         .from("client_extended_profiles")
-        .update({
-          details: next
-        })
-        .eq("user_id", user.id);
+        .update({ details })
+        .eq("user_id", userId);
 
-      if (result.error) {
+      if (update.error) {
         console.warn(
           "[Mana Fuel Sync]",
-          result.error.message
+          update.error.message
         );
       }
 
@@ -682,69 +537,186 @@
         error
       );
     } finally {
-      syncBusy = false;
+      syncing = false;
     }
   }
 
-  function scheduleClientSync(delay = 650) {
+  function queueSync(delay = 700) {
     clearTimeout(syncTimer);
 
-    syncTimer = setTimeout(() => {
-      void syncClientFuel();
-    }, delay);
+    syncTimer = setTimeout(
+      () => void syncClient(),
+      delay
+    );
   }
 
   /* ============================================================
-     COACH — LOAD AUTHORISED FUEL DATA
+     PREMIUM FUEL CARDS
+     SAME TWO-COLUMN WIDTH AS TRAINING
      ============================================================ */
 
-  async function loadCoachFuel(force = false) {
-    if (!coachOpen()) return;
+  function metric(label, value, description) {
+    return `
+      <div class="mana-premium-fuel-item">
+        <small>${escapeHTML(label)}</small>
+        <strong>${escapeHTML(value)}</strong>
+        <span>${escapeHTML(description)}</span>
+      </div>
+    `;
+  }
 
-    const person = currentClient();
-
-    if (!person?.id) return;
+  function renderFuel() {
+    const panel = $(PROFILE);
+    const person = selectedClient();
 
     if (
-      !force &&
-      lastClientId === person.id &&
-      coachData
-    ) {
-      renderFuel(person);
+      !detailOpen() ||
+      !panel ||
+      !person ||
+      person.id !== coachClientId ||
+      !coachData
+    ) return;
+
+    const section = Array.from(
+      panel.querySelectorAll(
+        ".mana-profile-group"
+      )
+    ).find(node =>
+      /fuel\s*&\s*nutrition/i.test(
+        node.querySelector("h3")
+          ?.textContent || ""
+      )
+    );
+
+    if (!section) return;
+
+    const grid = section.querySelector(
+      ".mana-profile-grid"
+    );
+
+    if (!grid) return;
+
+    const d = coachData;
+
+    const calories =
+      numeric(d.calorie_target);
+
+    const protein =
+      numeric(d.protein_target);
+
+    const waterML =
+      numeric(d.fuel_water_target_ml);
+
+    const recorded =
+      numeric(d.recovery_score);
+
+    const recoveryTarget =
+      numeric(d.recovery_target) ??
+      RECOVERY_TARGET;
+
+    const water =
+      waterML !== null
+        ? (waterML / 1000)
+            .toFixed(2)
+            .replace(/0+$/, "")
+            .replace(/\.$/, "") + " L"
+        : available(d.water_target)
+          ? d.water_target + " L"
+          : "—";
+
+    const html = `
+      ${metric(
+        "Daily Calories",
+        calories !== null
+          ? calories.toLocaleString() + " kcal"
+          : "—",
+        "Calculated from client profile"
+      )}
+
+      ${metric(
+        "Daily Protein",
+        protein !== null
+          ? protein + " g"
+          : "—",
+        "Calculated from body weight and goal"
+      )}
+
+      ${metric(
+        "Daily Water",
+        water,
+        "Recommended from body weight"
+      )}
+
+      ${metric(
+        "Recovery Target",
+        recoveryTarget + " / 10",
+        "Recommended daily target"
+      )}
+
+      ${metric(
+        "Last Recovery Score",
+        recorded !== null
+          ? recorded + " / 10"
+          : "Not recorded",
+        d.recovery_date ||
+        "Awaiting client check-in"
+      )}
+
+      ${metric(
+        "Nutrition Goal",
+        d.fuel_goal || "Not shared",
+        "Client's selected goal"
+      )}
+    `;
+
+    if (grid.dataset.premiumHTML === html) {
       return;
     }
 
-    const ticket = ++coachRequest;
+    grid.classList.add(
+      "mana-premium-fuel-grid"
+    );
+
+    grid.innerHTML = html;
+    grid.dataset.premiumHTML = html;
+  }
+
+  async function loadCoachFuel() {
+    if (!detailOpen()) return;
+
+    const person = selectedClient();
+
+    if (!person?.id) return;
+
+    const ticket = ++coachTicket;
 
     try {
-      const db = await dbConnection();
+      const client = await db();
 
       const { data, error } =
-        await db.from("client_extended_profiles")
+        await client
+          .from("client_extended_profiles")
           .select("details,share_with_coach")
           .eq("user_id", person.id)
           .maybeSingle();
 
-      if (ticket !== coachRequest) return;
+      if (ticket !== coachTicket) return;
 
       if (
-        !coachOpen() ||
-        currentClient()?.id !== person.id
-      ) {
-        return;
-      }
+        !detailOpen() ||
+        selectedClient()?.id !== person.id
+      ) return;
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      lastClientId = person.id;
+      coachClientId = person.id;
 
-      coachData = data?.share_with_coach
-        ? data.details || {}
-        : {};
+      coachData =
+        data?.share_with_coach
+          ? data.details || {}
+          : {};
 
-      renderFuel(person);
+      renderFuel();
 
     } catch (error) {
       console.warn(
@@ -755,220 +727,270 @@
   }
 
   /* ============================================================
-     FUEL DISPLAY
+     BLOCK REQUEST — KEEP BELOW ASSIGNED PROGRAMS
      ============================================================ */
 
-  function metric(label, value, note) {
-    return `
-      <div class="mana-premium-metric">
-        <small>${safe(label)}</small>
-        <strong>${safe(value)}</strong>
-        <span>${safe(note)}</span>
-      </div>
-    `;
-  }
+  function moveBlock() {
+    if (!detailOpen() || movingBlock) return;
 
-  function renderFuel(person) {
-    const panel = $(PROFILE);
+    const view = $(VIEW);
+    const block = $(BLOCK);
+    const assign = $(ASSIGN);
 
     if (
-      !coachOpen() ||
-      !panel ||
-      !person ||
-      currentClient()?.id !== person.id ||
-      !coachData
-    ) {
-      return;
+      !view ||
+      !block ||
+      !assign ||
+      !view.contains(assign)
+    ) return;
+
+    if (
+      block.previousElementSibling === assign &&
+      block.parentElement === assign.parentElement
+    ) return;
+
+    movingBlock = true;
+
+    try {
+      assign.insertAdjacentElement(
+        "afterend",
+        block
+      );
+    } finally {
+      movingBlock = false;
     }
+  }
 
-    const d = coachData;
+  /* ============================================================
+     OBSERVE ONLY KNOWN DYNAMIC CONTAINERS
+     ============================================================ */
 
-    const calories =
-      number(d.calorie_target) ??
-      number(d.daily_calories);
+  function attachObservers() {
+    const view = $(VIEW);
 
-    const protein =
-      number(d.protein_target) ??
-      number(d.daily_protein);
-
-    const waterML =
-      number(d.fuel_water_target_ml);
-
-    const recovery =
-      number(d.recovery_score);
-
-    const waterText =
-      waterML !== null
-        ? (waterML / 1000).toFixed(2).replace(/0+$/, "").replace(/\.$/, "") + " L"
-        : hasValue(d.water_target)
-          ? String(d.water_target) + " L"
-          : "—";
-
-    const score =
-      recovery === null
-        ? "—"
-        : Math.min(10, recovery) + " / 10";
-
-    const goal =
-      d.fuel_goal ||
-      d.fuelGoal ||
-      d.food_goal ||
-      "";
-
-    const fuelGroup = Array.from(
-      panel.querySelectorAll(
-        ".mana-profile-group"
-      )
-    ).find(group =>
-      /fuel\s*&\s*nutrition/i.test(
-        group.querySelector("h3")
-          ?.textContent || ""
-      )
-    );
-
-    if (!fuelGroup) return;
-
-    const grid = fuelGroup.querySelector(
-      ".mana-profile-grid"
-    );
-
-    if (!grid) return;
-
-    const html = `
-      <div class="mana-premium-fuel-grid">
-        ${metric(
-          "Daily Calories",
-          calories === null
-            ? "—"
-            : calories.toLocaleString() + " kcal",
-          "Saved client target"
-        )}
-
-        ${metric(
-          "Daily Protein",
-          protein === null
-            ? "—"
-            : protein + " g",
-          "Saved client target"
-        )}
-
-        ${metric(
-          "Daily Water",
-          waterText,
-          "Saved client target"
-        )}
-
-        ${metric(
-          "Recovery",
-          score,
-          d.recovery_date
-            ? "Recorded " + d.recovery_date
-            : "Latest recorded score"
-        )}
-      </div>
-
-      ${
-        goal
-          ? `<p class="mana-premium-fuel-note">
-               Food goal: ${safe(goal)}
-             </p>`
-          : ""
-      }
-    `;
-
-    const signature =
-      JSON.stringify({
-        person: person.id,
-        calories,
-        protein,
-        waterText,
-        recovery,
-        goal,
-        date: d.recovery_date
+    if (view && !blockObserver) {
+      blockObserver = new MutationObserver(() => {
+        if (detailOpen()) {
+          moveBlock();
+          attachObservers();
+        }
       });
 
-    if (
-      grid.dataset.manaPremiumSignature ===
-      signature
-    ) {
-      return;
+      blockObserver.observe(view, {
+        childList: true,
+        subtree: false
+      });
     }
 
-    grid.innerHTML = html;
-    grid.dataset.manaPremiumSignature = signature;
-  }
-
-  /* ============================================================
-     PROFILE REDRAW
-
-     The existing profile renderer may
-     replace the Fuel section after its
-     cloud response. Watch only the
-     profile panel for that redraw.
-     ============================================================ */
-
-  function attachProfileObserver() {
     const panel = $(PROFILE);
 
-    if (!panel || panel === observedProfile) return;
+    if (
+      panel &&
+      observedProfile !== panel
+    ) {
+      profileObserver?.disconnect();
+      observedProfile = panel;
 
-    if (profileObserver) {
-      profileObserver.disconnect();
+      profileObserver = new MutationObserver(() => {
+        if (!detailOpen()) return;
+
+        const person = selectedClient();
+
+        if (
+          person?.id === coachClientId &&
+          coachData
+        ) {
+          renderFuel();
+        }
+      });
+
+      profileObserver.observe(panel, {
+        childList: true,
+        subtree: false
+      });
     }
-
-    observedProfile = panel;
-
-    profileObserver = new MutationObserver(() => {
-      if (!coachOpen()) return;
-
-      const person = currentClient();
-
-      if (
-        person?.id === lastClientId &&
-        coachData
-      ) {
-        renderFuel(person);
-      }
-    });
-
-    profileObserver.observe(panel, {
-      childList: true,
-      subtree: false
-    });
   }
 
   /* ============================================================
-     CLIENT SWITCH
+     COACH HUB PREMIUM STYLES
      ============================================================ */
 
-  function onClientOpen() {
-    lastClientId = "";
+  function installStyles() {
+    if ($(STYLE_ID)) return;
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+
+    style.textContent = `
+      #${VIEW} #${PROFILE},
+      #${VIEW} #${ASSIGN} {
+        background: #15171B !important;
+        border: 1px solid #4E5660 !important;
+        border-radius: 16px !important;
+        padding: 15px !important;
+        margin: 12px 0 !important;
+        box-shadow: none !important;
+      }
+
+      #${PROFILE} .mana-profile-grid {
+        display: grid !important;
+        grid-template-columns:
+          repeat(2,minmax(0,1fr)) !important;
+        gap: 7px !important;
+      }
+
+      #${PROFILE} .mana-profile-cell {
+        padding: 9px 11px !important;
+        min-height: 0 !important;
+        height: auto !important;
+        border-radius: 10px !important;
+      }
+
+      #${PROFILE} .mana-premium-fuel-grid {
+        width: 100% !important;
+        display: grid !important;
+        grid-template-columns:
+          repeat(2,minmax(0,1fr)) !important;
+        gap: 7px !important;
+      }
+
+      #${PROFILE} .mana-premium-fuel-item {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 4px;
+
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        height: auto;
+
+        background: #101215;
+        border: 1px solid #424A55;
+        border-radius: 10px;
+        padding: 9px 11px;
+        box-sizing: border-box;
+      }
+
+      #${PROFILE} .mana-premium-fuel-item small {
+        display: block;
+        width: 100%;
+        color: #ADB6C1;
+        font-size: 10px;
+        line-height: 1.3;
+        text-align: left;
+      }
+
+      #${PROFILE} .mana-premium-fuel-item strong {
+        display: block;
+        width: 100%;
+        color: #FF7927;
+        font-size: 16px;
+        font-weight: 850;
+        line-height: 1.3;
+        text-align: left;
+        overflow-wrap: anywhere;
+      }
+
+      #${PROFILE} .mana-premium-fuel-item span {
+        display: block;
+        color: #AEB7C2;
+        font-size: 10px;
+        line-height: 1.3;
+        text-align: left;
+      }
+
+      #${VIEW} #${BLOCK} {
+        background: #15171B !important;
+        border: 1px solid #8A6425 !important;
+        border-radius: 16px !important;
+        padding: 15px !important;
+        margin: 12px 0 !important;
+        box-shadow: none !important;
+      }
+
+      #${VIEW} #${BLOCK} button {
+        border-radius: 10px !important;
+      }
+
+      #${VIEW} #manaV1010ClientActions,
+      #${VIEW} #manaV998ClientSummary {
+        margin: 12px 0 !important;
+      }
+
+      #manaProfileScreen .mana-premium-activity {
+        margin: 12px 0;
+      }
+
+      #manaProfileScreen .mana-premium-activity label {
+        display: block;
+        color: #C1C6CE;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 7px;
+      }
+
+      #manaProfileScreen .mana-premium-activity select {
+        display: block;
+        width: 100%;
+        background: #101215;
+        color: #FFFFFF;
+        border: 1px solid #555D66;
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 14px;
+      }
+
+      #manaProfileScreen .mana-premium-activity p {
+        color: #AEB7C2;
+        font-size: 11px;
+        line-height: 1.5;
+        margin: 7px 0;
+      }
+
+      @media(max-width:600px) {
+        #${VIEW} #${PROFILE},
+        #${VIEW} #${ASSIGN},
+        #${VIEW} #${BLOCK} {
+          padding: 12px !important;
+        }
+
+        #${PROFILE} .mana-profile-grid,
+        #${PROFILE} .mana-premium-fuel-grid {
+          grid-template-columns: 1fr !important;
+          gap: 6px !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+  /* ============================================================
+     STARTUP AND EVENTS
+     ============================================================ */
+
+  function clientOpened() {
+    coachClientId = "";
     coachData = null;
+    ++coachTicket;
 
-    ++coachRequest;
-
-    [250, 650, 1300].forEach(delay => {
+    [250, 650, 1200].forEach(delay => {
       setTimeout(() => {
-        if (!coachOpen()) return;
+        if (!detailOpen()) return;
 
-        positionBlock();
-        tidyChat();
-        attachProfileObserver();
+        attachObservers();
+        moveBlock();
 
         void loadCoachFuel();
       }, delay);
     });
   }
 
-  /* ============================================================
-     INITIALISE
-     ============================================================ */
-
   function init() {
     installStyles();
-
-    installBlockObserver();
-    attachProfileObserver();
+    attachObservers();
 
     document.addEventListener(
       "click",
@@ -978,7 +1000,7 @@
             ".client-open[data-client-id]"
           )
         ) {
-          onClientOpen();
+          clientOpened();
         }
 
         if (
@@ -986,33 +1008,44 @@
             "#manaProfileSave"
           )
         ) {
-          scheduleClientSync(900);
+          setTimeout(() => {
+            calculateAndSave();
+            queueSync(550);
+          }, 180);
         }
       },
       true
     );
 
-    window.addEventListener(
-      "mana:profile-synced",
-      () => {
-        scheduleClientSync(1100);
-      }
-    );
-
     document.addEventListener(
       "change",
       event => {
-        const element = event.target;
-
         if (
-          element?.closest?.(
-            "#fuelV58TargetsModal"
-          ) ||
-          element?.closest?.(
+          event.target?.closest?.(
             "#manaProfileScreen"
           )
         ) {
-          scheduleClientSync(900);
+          queueSync(1100);
+        }
+      }
+    );
+
+    window.addEventListener(
+      "mana:profile-synced",
+      () => {
+        queueSync(700);
+      }
+    );
+
+    window.addEventListener(
+      "focus",
+      () => {
+        if (detailOpen()) {
+          moveBlock();
+          attachObservers();
+          void loadCoachFuel();
+        } else {
+          installActivitySelector();
         }
       }
     );
@@ -1022,47 +1055,58 @@
       () => {
         if (document.hidden) return;
 
-        positionBlock();
-
-        if (coachOpen()) {
-          attachProfileObserver();
-          void loadCoachFuel(true);
+        if (detailOpen()) {
+          moveBlock();
+          attachObservers();
+          void loadCoachFuel();
         } else {
-          scheduleClientSync(1100);
+          installActivitySelector();
         }
       }
     );
 
-    window.addEventListener(
-      "focus",
-      () => {
-        if (coachOpen()) {
-          positionBlock();
-          attachProfileObserver();
-        } else {
-          scheduleClientSync(1100);
+    document.addEventListener(
+      "click",
+      event => {
+        if (
+          event.target.closest?.(
+            "#manaProfileScreen"
+          )
+        ) {
+          installActivitySelector();
         }
       }
     );
 
-    /* Initial client sync after sign-in
-       has had an opportunity to restore
-       the saved profile. */
+    installActivitySelector();
 
-    setTimeout(() => {
-      scheduleClientSync(200);
-    }, 1800);
-
-    if (coachOpen()) {
-      positionBlock();
-      tidyChat();
-      void loadCoachFuel();
+    if (detailOpen()) {
+      clientOpened();
     }
 
-    window.MANA_PREMIUM_BUILD = BUILD;
+    /*
+     Profile screen may be created lazily
+     after the user opens it.
+    */
+
+    document.addEventListener(
+      "click",
+      event => {
+        if (
+          event.target.closest?.(
+            "[data-open-profile], #manaProfileButton"
+          )
+        ) {
+          setTimeout(
+            installActivitySelector,
+            100
+          );
+        }
+      }
+    );
 
     console.log(
-      "[Mana Movement] Premium Coach Hub " +
+      "[Mana Movement] Coach Premium " +
       BUILD +
       " active"
     );
