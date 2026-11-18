@@ -1,203 +1,373 @@
 
 /* ============================================================
    MANA MOVEMENT TRAINING
-   COACH HUB — QUICK START PROGRAM LIBRARY
-   BUILD 105007
+   QUICK START PROGRAM BUILDER
+   BUILD 105008
 
-   COMPLETE NEW JAVASCRIPT FILE
+   COMPLETE REPLACEMENT FOR:
+   mana_program_quickstart_105007.js
 
-   WORKS WITH:
-   v10_01_coach_program_builder_100110.js
-
-   PRESETS
-   - Chest & Triceps / Back & Biceps /
-     Legs & Shoulders — 3 day split
-   - Chest Day
-   - Back Day
-   - Arms Day
-   - Leg Day
+   TARGETS THE ACTUAL V10.08 PROGRAM BUILDER
 
    FEATURES
-   - Uses existing Mana exercise library
-   - Automatically fills four training weeks
-   - Includes sets, reps and rest periods
-   - All workouts stay editable
-   - Existing Save and Save + Assign remain
-   - Full custom exercise builder stays available
-   - No new database tables
-   - No change to existing client assignments
+   - Simple premium one-column desktop layout
+   - Quick Start presets at the top
+   - Three-day training split
+   - Chest, Back, Arms and Legs workouts
+   - Four-week program creation
+   - Exercise Library hidden until requested
+   - Program Map hidden until requested
+   - Orange / black / white / silver styling
+   - Existing Save and Save + Assign retained
+   - Existing exercise editing retained
 
-   IMPORTANT
-   Presets should be loaded into a newly opened
-   builder. This script uses the builder's existing
-   buttons and input handlers, not private state.
+   NO DATABASE CHANGES
+   NO CLIENT DATA CHANGES
+   NO REPLACEMENT SAVE LOGIC
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "105007";
-  const FLAG = "MANA_QUICKSTART_105007";
-  const STYLE = "manaQuickstartStyle105007";
-  const MODAL = "manaV1001ProgramBuilder";
-  const PANEL = "manaQuickstart105007";
+  const FLAG = "MANA_QUICKSTART_105008";
+  const BUILD = "105008";
 
   if (window[FLAG]) return;
   window[FLAG] = true;
 
+  const MODAL = "manaV1008ProgramBuilder";
+  const CONTENT = "m104Content";
+  const PANEL = "manaQuickStart105008";
+  const STYLE = "manaQuickStartStyle105008";
+
   const $ = id => document.getElementById(id);
 
-  let working = false;
-  let observer = null;
+  let busy = false;
+  let opened = false;
+  let presetLoaded = false;
+  let frameQueued = false;
   let contentObserver = null;
-  let framePending = false;
-  let modalWasOpen = false;
-  let usedThisSession = false;
 
   /* =====================================================
-     PRESET WORKOUT DATA
+     PRESET WORKOUTS
 
-     Names correspond to the existing
-     Mana exercise library.
+     Exercise names match the existing
+     Mana Movement Supabase library.
      ===================================================== */
 
-  const EXERCISES = {
+  const WORKOUTS = {
+    chestTris: {
+      title: "Chest & Triceps",
+      exercises: [
+        ["Bench Press", 4, "6-10", 120],
+        ["Incline Dumbbell Press", 3, "8-12", 90],
+        ["Machine Chest Press", 3, "10-12", 75],
+        ["Push Up", 3, "10-15", 60],
+        ["Cable Triceps Pressdown", 3, "10-15", 60],
+        ["Overhead Triceps Extension", 3, "10-15", 60]
+      ]
+    },
 
-    chest: [
-      ["Bench Press", 4, "6-10", 120],
-      ["Incline Dumbbell Press", 3, "8-12", 90],
-      ["Machine Chest Press", 3, "10-12", 75],
-      ["Push Up", 3, "10-15", 60],
-      ["Cable Triceps Pressdown", 3, "10-15", 60],
-      ["Overhead Triceps Extension", 3, "10-15", 60]
-    ],
+    backBis: {
+      title: "Back & Biceps",
+      exercises: [
+        ["Lat Pulldown", 4, "8-12", 90],
+        ["Seated Cable Row", 4, "8-12", 90],
+        ["Chest Supported Row", 3, "8-12", 75],
+        ["Face Pull", 3, "12-15", 60],
+        ["Barbell Curl", 3, "8-12", 60],
+        ["Hammer Curl", 3, "10-15", 60]
+      ]
+    },
 
-    back: [
-      ["Lat Pulldown", 4, "8-12", 90],
-      ["Seated Cable Row", 4, "8-12", 90],
-      ["Chest Supported Row", 3, "10-12", 75],
-      ["Face Pull", 3, "12-15", 60],
-      ["Barbell Curl", 3, "8-12", 60],
-      ["Hammer Curl", 3, "10-12", 60]
-    ],
+    legsShoulders: {
+      title: "Legs & Shoulders",
+      exercises: [
+        ["Leg Press", 4, "8-12", 120],
+        ["Romanian Deadlift", 3, "8-12", 120],
+        ["Bulgarian Split Squat", 3, "8-12 each", 90],
+        ["Lying Hamstring Curl", 3, "10-15", 60],
+        ["Dumbbell Shoulder Press", 3, "8-12", 90],
+        ["Lateral Raise", 3, "12-20", 60]
+      ]
+    },
 
-    legsShoulders: [
-      ["Leg Press", 4, "8-12", 120],
-      ["Romanian Deadlift", 3, "8-10", 120],
-      ["Bulgarian Split Squat", 3, "10 each", 90],
-      ["Lying Hamstring Curl", 3, "10-15", 60],
-      ["Dumbbell Shoulder Press", 3, "8-12", 90],
-      ["Lateral Raise", 3, "12-15", 60]
-    ],
+    chest: {
+      title: "Chest Day",
+      exercises: [
+        ["Bench Press", 4, "6-10", 120],
+        ["Incline Dumbbell Press", 4, "8-12", 90],
+        ["Machine Chest Press", 3, "10-12", 75],
+        ["Dumbbell Bench Press", 3, "10-12", 75],
+        ["Push Up", 3, "10-20", 60]
+      ]
+    },
 
-    chestOnly: [
-      ["Bench Press", 4, "6-10", 120],
-      ["Incline Dumbbell Press", 4, "8-12", 90],
-      ["Machine Chest Press", 3, "10-12", 75],
-      ["Dumbbell Bench Press", 3, "10-12", 75],
-      ["Push Up", 3, "10-15", 60]
-    ],
+    back: {
+      title: "Back Day",
+      exercises: [
+        ["Lat Pulldown", 4, "8-12", 90],
+        ["Barbell Row", 4, "6-10", 120],
+        ["Seated Cable Row", 3, "10-12", 75],
+        ["One Arm Dumbbell Row", 3, "10 each", 75],
+        ["Face Pull", 3, "12-15", 60]
+      ]
+    },
 
-    backOnly: [
-      ["Lat Pulldown", 4, "8-12", 90],
-      ["Barbell Row", 4, "6-10", 120],
-      ["Seated Cable Row", 3, "10-12", 75],
-      ["One Arm Dumbbell Row", 3, "10 each", 75],
-      ["Face Pull", 3, "12-15", 60]
-    ],
+    arms: {
+      title: "Arms Day",
+      exercises: [
+        ["Barbell Curl", 3, "8-12", 60],
+        ["Cable Triceps Pressdown", 3, "10-12", 60],
+        ["Dumbbell Curl", 3, "10-12", 60],
+        ["Overhead Triceps Extension", 3, "10-15", 60],
+        ["Hammer Curl", 3, "10-12", 60],
+        ["Bench Dip", 3, "10-15", 60]
+      ]
+    },
 
-    armsOnly: [
-      ["Barbell Curl", 3, "8-12", 60],
-      ["Cable Triceps Pressdown", 3, "10-12", 60],
-      ["Dumbbell Curl", 3, "10-12", 60],
-      ["Overhead Triceps Extension", 3, "10-15", 60],
-      ["Hammer Curl", 3, "10-12", 60],
-      ["Bench Dip", 3, "10-15", 60]
-    ],
-
-    legsOnly: [
-      ["Back Squat", 4, "6-10", 120],
-      ["Leg Press", 3, "10-12", 90],
-      ["Romanian Deadlift", 3, "8-12", 120],
-      ["Bulgarian Split Squat", 3, "10 each", 90],
-      ["Seated Hamstring Curl", 3, "10-15", 60],
-      ["Seated Calf Raise", 3, "12-20", 60]
-    ]
+    legs: {
+      title: "Leg Day",
+      exercises: [
+        ["Back Squat", 4, "6-10", 120],
+        ["Leg Press", 3, "10-12", 90],
+        ["Romanian Deadlift", 3, "8-12", 120],
+        ["Bulgarian Split Squat", 3, "10 each", 90],
+        ["Seated Hamstring Curl", 3, "10-15", 60],
+        ["Seated Calf Raise", 3, "12-20", 60]
+      ]
+    }
   };
 
   const PRESETS = [
     {
-      id: "split3",
+      id: "three",
       title: "3-Day Training Split",
-      subtitle:
-        "Chest & Triceps / Back & Biceps / " +
-        "Legs & Shoulders",
+      description:
+        "Chest & Triceps / Back & Biceps / Legs & Shoulders",
       goal: "Strength and muscle development",
-      days: [
-        ["Chest & Triceps", "chest"],
-        ["Back & Biceps", "back"],
-        ["Legs & Shoulders", "legsShoulders"]
+      workouts: [
+        WORKOUTS.chestTris,
+        WORKOUTS.backBis,
+        WORKOUTS.legsShoulders
       ]
     },
     {
       id: "chest",
       title: "Chest Day",
-      subtitle: "Chest-focused gym workout",
+      description: "Chest-focused workout",
       goal: "Chest muscle development",
-      days: [
-        ["Chest Day", "chestOnly"]
-      ]
+      workouts: [WORKOUTS.chest]
     },
     {
       id: "back",
       title: "Back Day",
-      subtitle: "Back-focused gym workout",
+      description: "Rows and pulldowns",
       goal: "Back muscle development",
-      days: [
-        ["Back Day", "backOnly"]
-      ]
+      workouts: [WORKOUTS.back]
     },
     {
       id: "arms",
       title: "Arms Day",
-      subtitle: "Biceps and triceps workout",
+      description: "Biceps and triceps",
       goal: "Arm muscle development",
-      days: [
-        ["Arms Day", "armsOnly"]
-      ]
+      workouts: [WORKOUTS.arms]
     },
     {
       id: "legs",
       title: "Leg Day",
-      subtitle: "Lower-body gym workout",
+      description: "Lower-body workout",
       goal: "Lower-body strength",
-      days: [
-        ["Leg Day", "legsOnly"]
-      ]
+      workouts: [WORKOUTS.legs]
     }
   ];
 
   /* =====================================================
-     PREMIUM STYLES
+     STYLES
      ===================================================== */
 
-  function styles() {
+  function installStyles() {
     if ($(STYLE)) return;
 
-    const style = document.createElement("style");
-    style.id = STYLE;
+    const sheet = document.createElement("style");
+    sheet.id = STYLE;
 
-    style.textContent = `
+    sheet.textContent = `
+
+      /* =====================================
+         MAIN BUILDER WIDTH
+         ===================================== */
+
+      #${MODAL} .m104-shell {
+        width: 100% !important;
+        max-width: 1000px !important;
+        margin: 0 auto !important;
+      }
+
+      #${MODAL} .m104-grid {
+        display: grid !important;
+        grid-template-columns: minmax(0,1fr) !important;
+        gap: 15px !important;
+        width: 100% !important;
+        padding-top: 10px !important;
+      }
+
+      #${MODAL} .m105-builder-grid {
+        display: grid !important;
+        grid-template-columns: minmax(0,1fr) !important;
+        gap: 14px !important;
+      }
+
+      #${MODAL} #m105WorkoutPanel {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+
+      /* =====================================
+         COLLAPSED OPTIONAL PANELS
+         ===================================== */
+
+      #${MODAL} #m105LibraryPanel {
+        display: none !important;
+      }
+
+      #${MODAL}.mqs-library-open
+      #m105LibraryPanel {
+        display: block !important;
+      }
+
+      #${MODAL} #m105ProgramMap {
+        display: none !important;
+      }
+
+      #${MODAL}.mqs-map-open
+      #m105ProgramMap {
+        display: block !important;
+        position: static !important;
+        max-height: 520px !important;
+        overflow: auto !important;
+      }
+
+      #${MODAL} #m105ProgramPanel {
+        display: none !important;
+      }
+
+      #${MODAL} #m105MobileTabs {
+        display: none !important;
+      }
+
+      /* =====================================
+         MANA ORANGE COLOUR SYSTEM
+         ===================================== */
+
+      #${MODAL} .m104-brand,
+      #${MODAL} .m108-client-kicker,
+      #${MODAL} .m106-section-kicker,
+      #${MODAL} .m104-section-title,
+      #${MODAL} .m105-map-week-label {
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+      }
+
+      #${MODAL} .m104-sub,
+      #${MODAL} .m108-client-status,
+      #${MODAL} .m104-label,
+      #${MODAL} .m104-count {
+        color: #B7C0CB !important;
+        -webkit-text-fill-color: #B7C0CB !important;
+      }
+
+      #${MODAL} .m104-card,
+      #${MODAL} .m106-editor-block {
+        background: #15171B !important;
+        background-image: none !important;
+        border-color: #454D57 !important;
+        box-shadow: none !important;
+      }
+
+      #${MODAL} .m108-client-context {
+        background: #15171B !important;
+        background-image: none !important;
+        border-color: #454D57 !important;
+      }
+
+      #${MODAL} .m104-input,
+      #${MODAL} .m104-select,
+      #${MODAL} .m104-textarea,
+      #${MODAL} .m104-mini input {
+        background: #101215 !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        border: 1px solid #505862 !important;
+        border-radius: 10px !important;
+      }
+
+      #${MODAL} .m104-input:focus,
+      #${MODAL} .m104-select:focus,
+      #${MODAL} .m104-textarea:focus {
+        outline: 2px solid #FF7927 !important;
+        outline-offset: 1px !important;
+      }
+
+      #${MODAL} .m104-chip,
+      #${MODAL} .m104-tool,
+      #${MODAL} .m104-soft,
+      #${MODAL} .m104-add,
+      #${MODAL} .m104-gold,
+      #${MODAL} .m104-btn,
+      #${MODAL} .m105-mobile-tab {
+        background: #1B1D21 !important;
+        background-image: none !important;
+        color: #FF7927 !important;
+        -webkit-text-fill-color: #FF7927 !important;
+        border: 1px solid #FF7927 !important;
+        border-radius: 10px !important;
+        box-shadow: none !important;
+      }
+
+      #${MODAL} .m104-chip.active,
+      #${MODAL} .m104-gold,
+      #${MODAL} #m104Assign {
+        background: #FF7927 !important;
+        background-image: none !important;
+        color: #101114 !important;
+        -webkit-text-fill-color: #101114 !important;
+        border-color: #FF7927 !important;
+        font-weight: 900 !important;
+      }
+
+      #${MODAL} .m104-ex,
+      #${MODAL} .m104-built,
+      #${MODAL} .m105-program-map {
+        background: #101215 !important;
+        background-image: none !important;
+        border-color: #414954 !important;
+      }
+
+      #${MODAL} .m104-ex strong,
+      #${MODAL} .m104-built-name,
+      #${MODAL} .m104-program-head h3,
+      #${MODAL} .m105-program-map h4 {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+      }
+
+      #${MODAL} .m104-ex small {
+        color: #B7C0CB !important;
+        -webkit-text-fill-color: #B7C0CB !important;
+      }
+
+      /* =====================================
+         QUICK START HEADER
+         ===================================== */
 
       #${MODAL} #${PANEL} {
-        width: 100%;
-        margin: 16px 0;
-        padding: 18px;
-
         background: #15171B;
         border: 1px solid #505862;
-        border-radius: 17px;
-
+        border-radius: 18px;
+        padding: 20px;
+        margin: 15px 0 5px;
         color: #FFFFFF;
         box-sizing: border-box;
       }
@@ -206,266 +376,219 @@
         box-sizing: border-box;
       }
 
-      #${PANEL} .mqs-kicker {
+      #${PANEL} .mqs-eyebrow {
+        font: 900 10px/1.4 system-ui,sans-serif;
+        letter-spacing: .13em;
         color: #FF7927;
-        font: 900 10px/1.4
-          system-ui, sans-serif;
-        letter-spacing: .12em;
-        margin-bottom: 6px;
+        margin-bottom: 7px;
       }
 
-      #${PANEL} .mqs-title {
-        font: 900 23px/1.2
-          system-ui, sans-serif;
+      #${PANEL} h2 {
         color: #FFFFFF;
+        font-size: 24px;
+        font-weight: 900;
         margin: 0 0 7px;
       }
 
-      #${PANEL} .mqs-help {
-        font: 12px/1.6
-          system-ui, sans-serif;
+      #${PANEL} .mqs-description {
         color: #B7C0CB;
-        margin: 0 0 15px;
+        font-size: 12px;
+        line-height: 1.6;
+        margin: 0 0 16px;
       }
 
-      #${PANEL} .mqs-grid {
+      #${PANEL} .mqs-options {
         display: grid;
-        grid-template-columns:
-          repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(2,minmax(0,1fr));
         gap: 10px;
       }
 
-      #${PANEL} .mqs-preset {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
-
-        gap: 7px;
+      #${PANEL} .mqs-choice {
         width: 100%;
         min-width: 0;
-        min-height: 98px;
-
+        min-height: 90px;
         padding: 15px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 6px;
 
         background: #101215;
-        border: 1px solid #4C5560;
+        border: 1px solid #454D57;
         border-radius: 13px;
-
+        color: #FFFFFF;
         text-align: left;
-        color: #FFFFFF;
         cursor: pointer;
-
-        transition:
-          border-color .15s ease,
-          background .15s ease;
       }
 
-      #${PANEL} .mqs-preset:first-child {
+      #${PANEL} .mqs-choice:first-child {
         grid-column: 1 / -1;
+        background: #25180F;
         border-color: #FF7927;
-        background: #241810;
       }
 
-      #${PANEL} .mqs-preset:hover {
+      #${PANEL} .mqs-choice:hover,
+      #${PANEL} .mqs-choice:focus-visible {
         border-color: #FF7927;
-        background: #291B13;
+        outline-color: #FF7927;
       }
 
-      #${PANEL} .mqs-preset strong {
-        color: #FFFFFF;
+      #${PANEL} .mqs-choice strong {
         font-size: 14px;
         font-weight: 900;
+        color: #FFFFFF;
       }
 
-      #${PANEL} .mqs-preset span {
-        color: #B7C0CB;
+      #${PANEL} .mqs-choice span {
         font-size: 11px;
-        line-height: 1.45;
+        line-height: 1.5;
+        color: #B7C0CB;
       }
 
-      #${PANEL} .mqs-footer {
-        margin-top: 13px;
-        padding-top: 12px;
+      #${PANEL} .mqs-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 9px;
+        margin-top: 16px;
+        padding-top: 14px;
         border-top: 1px solid #383F49;
+      }
 
-        color: #B7C0CB;
-        font-size: 11px;
-        line-height: 1.55;
+      #${PANEL} .mqs-tool {
+        min-height: 42px;
+        padding: 10px 15px;
+        border: 1px solid #FF7927;
+        border-radius: 11px;
+        background: #1B1D21;
+        color: #FF7927;
+        font-size: 12px;
+        font-weight: 850;
+        cursor: pointer;
+      }
+
+      #${PANEL} .mqs-tool.selected {
+        background: #FF7927;
+        color: #101114;
       }
 
       #${PANEL} .mqs-status {
         margin-top: 12px;
-        color: #FF7927;
         font-size: 12px;
-        font-weight: 750;
-        line-height: 1.5;
+        line-height: 1.55;
+        color: #FF7927;
       }
 
-      #${PANEL} button:disabled {
+      #${PANEL} .mqs-choice:disabled {
         opacity: .5;
         cursor: not-allowed;
       }
 
-      /* Existing builder's premium colours */
+      @media (max-width: 700px) {
+        #${MODAL} {
+          padding-left: 10px !important;
+          padding-right: 10px !important;
+        }
 
-      #${MODAL} .m1001-brand,
-      #${MODAL} .m1001-client {
-        color: #FF7927 !important;
-      }
-
-      #${MODAL} .m1001-card {
-        background: #15171B !important;
-        border-color: #4C5560 !important;
-        box-shadow: none !important;
-      }
-
-      #${MODAL} .m1001-chip.active {
-        color: #FF7927 !important;
-        border-color: #FF7927 !important;
-        background: #291910 !important;
-      }
-
-      #${MODAL} .m1001-add,
-      #${MODAL} .m1001-save,
-      #${MODAL} .m1001-assign {
-        border-color: #FF7927 !important;
-        color: #FF7927 !important;
-        background: #241810 !important;
-      }
-
-      #${MODAL} .m1001-add:hover,
-      #${MODAL} .m1001-save:hover,
-      #${MODAL} .m1001-assign:hover {
-        background: #352114 !important;
-      }
-
-      @media (max-width: 600px) {
         #${MODAL} #${PANEL} {
           padding: 13px;
         }
 
-        #${PANEL} .mqs-grid {
+        #${PANEL} h2 {
+          font-size: 20px;
+        }
+
+        #${PANEL} .mqs-options {
           grid-template-columns: 1fr;
           gap: 8px;
         }
 
-        #${PANEL} .mqs-preset:first-child {
+        #${PANEL} .mqs-choice:first-child {
           grid-column: auto;
         }
 
-        #${PANEL} .mqs-preset {
-          min-height: 80px;
-          padding: 13px;
-        }
-
-        #${PANEL} .mqs-title {
-          font-size: 20px;
+        #${PANEL} .mqs-choice {
+          min-height: 76px;
+          padding: 12px;
         }
       }
 
     `;
 
-    document.head.appendChild(style);
+    document.head.appendChild(sheet);
   }
 
   /* =====================================================
-     EXISTING BUILDER HELPERS
+     EXISTING BUILDER CONTROLS
      ===================================================== */
 
-  function modalOpen() {
+  function isOpen() {
     return !!$(MODAL)?.classList.contains("open");
   }
 
   function ready() {
     return Boolean(
-      modalOpen() &&
-      $("m1001ProgramName") &&
-      $("m1001Search") &&
-      $("m1001BuiltList")
+      isOpen() &&
+      $("m104ProgramName") &&
+      $("m104BuiltList") &&
+      $("m104Library")
     );
   }
 
-  function inputValue(id, value) {
-    const node = $(id);
-    if (!node) return;
+  function setValue(id, value) {
+    const input = $(id);
+    if (!input) return;
 
-    node.value = String(value);
+    input.value = String(value);
 
-    node.dispatchEvent(
+    input.dispatchEvent(
       new Event("input", {
         bubbles: true
       })
     );
   }
 
-  function selectButton(attribute, value) {
-    const buttons = Array.from(
+  function findControl(attribute, value) {
+    return Array.from(
       $(MODAL)?.querySelectorAll(
         "[" + attribute + "]"
       ) || []
+    ).find(button =>
+      button.getAttribute(attribute) ===
+      String(value)
     );
+  }
 
-    const button = buttons.find(
-      item =>
-        item.getAttribute(attribute) ===
-        String(value)
+  function selectControl(attribute, value) {
+    const button = findControl(
+      attribute,
+      value
     );
 
     if (!button) {
       throw new Error(
-        "Builder control unavailable: " +
-        attribute + "=" + value
+        "Could not find " +
+        attribute + " " + value
       );
     }
 
     button.click();
   }
 
-  function clearCurrentDay() {
-    const box = $("m1001BuiltList");
-    if (!box) return;
-
-    /*
-     Use the builder's existing REMOVE
-     event so private draft state stays
-     synchronized.
-    */
-
-    let safety = 0;
-
-    while (
-      box.querySelector("[data-remove]") &&
-      safety < 30
-    ) {
-      box.querySelector(
-        "[data-remove]"
-      ).click();
-
-      safety++;
-    }
-  }
-
-  function setExerciseField(
-    index,
-    key,
-    value
-  ) {
-    const box = $("m1001BuiltList");
-
-    const field = Array.from(
-      box?.querySelectorAll(
-        '[data-field="' + key + '"]'
-      ) || []
+  function changeField(index, field, value) {
+    const input = Array.from(
+      $("m104BuiltList")
+        ?.querySelectorAll(
+          '[data-field="' + field + '"]'
+        ) || []
     ).find(node =>
       Number(node.dataset.index) === index
     );
 
-    if (!field) return;
+    if (!input) return;
 
-    field.value = String(value);
-
-    field.dispatchEvent(
+    input.value = String(value);
+    input.dispatchEvent(
       new Event("input", {
         bubbles: true
       })
@@ -473,123 +596,125 @@
   }
 
   /* =====================================================
-     ADD AN EXERCISE VIA ORIGINAL LIBRARY
-
-     Matches exact exercise names from the
-     existing Supabase-loaded library.
-
-     This invokes the builder's own
-     addExercise() through its button.
+     ADD EXERCISE THROUGH LIVE LIBRARY
      ===================================================== */
 
-  function addFromLibrary(row) {
-    const [name, sets, reps, rest] = row;
+  function addExercise(definition) {
+    const [name, sets, reps, rest] =
+      definition;
 
-    inputValue("m1001Search", name);
+    setValue("m104Search", name);
 
-    const library = $("m1001Library");
-    if (!library) return false;
-
-    const match = Array.from(
-      library.querySelectorAll(".m1001-ex")
-    ).find(element =>
-      element.querySelector("strong")
+    const row = Array.from(
+      $("m104Library")
+        ?.querySelectorAll(".m104-ex") || []
+    ).find(item =>
+      item.querySelector("strong")
         ?.textContent.trim().toLowerCase() ===
       name.toLowerCase()
     );
 
-    const button =
-      match?.querySelector("[data-add-ex]");
+    const add =
+      row?.querySelector("[data-add-ex]");
 
-    if (!button) return false;
+    if (!add) return false;
 
-    button.click();
+    add.click();
 
     const count =
-      $("m1001BuiltList")
-        ?.querySelectorAll(".m1001-built")
+      $("m104BuiltList")
+        ?.querySelectorAll(".m104-built")
         .length || 0;
 
     if (!count) return false;
 
     const index = count - 1;
 
-    setExerciseField(index, "sets", sets);
-    setExerciseField(index, "reps", reps);
-    setExerciseField(index, "rest", rest);
+    changeField(index, "sets", sets);
+    changeField(index, "reps", reps);
+    changeField(index, "rest", rest);
 
     return true;
   }
 
   /* =====================================================
-     APPLY A DAY
+     BUILD WEEK 1
      ===================================================== */
 
-  function applyDay(dayNumber, definition) {
-    const [title, exerciseKey] = definition;
+  function buildWorkout(dayNumber, workout) {
+    selectControl("data-day", dayNumber);
 
-    selectButton("data-day", dayNumber);
+    setValue(
+      "m104DayTitle",
+      workout.title
+    );
 
-    clearCurrentDay();
+    setValue("m104Minutes", 55);
 
-    inputValue("m1001DayTitle", title);
-    inputValue("m1001Minutes", 55);
+    const missing = [];
 
-    const notFound = [];
-
-    for (const exercise of EXERCISES[exerciseKey]) {
-      if (!addFromLibrary(exercise)) {
-        notFound.push(exercise[0]);
+    for (const exercise of workout.exercises) {
+      if (!addExercise(exercise)) {
+        missing.push(exercise[0]);
       }
     }
 
-    inputValue("m1001Search", "");
+    setValue("m104Search", "");
 
-    return notFound;
+    return missing;
   }
 
   /* =====================================================
-     APPLY COMPLETE PRESET
+     APPLY PRESET
 
-     Populate all 4 weeks, then return
-     to Week 1 / Day 1.
+     Build Week 1, then use existing
+     Copy Week function for Weeks 2-4.
 
-     No Save or Assign action is triggered.
+     This preserves builder's private
+     draft state and save format.
      ===================================================== */
 
   async function applyPreset(preset) {
-    if (working || !ready()) return;
+    if (busy || !ready()) return;
 
-    if (usedThisSession) {
-      window.alert(
-        "For a different preset, close and " +
-        "reopen Program Builder to start " +
-        "with a fresh program."
+    if (presetLoaded) {
+      alert(
+        "A preset is already loaded. " +
+        "Close and reopen the Program Builder " +
+        "to start another fresh program."
       );
       return;
     }
 
-    const approved = window.confirm(
+    const hasExercises =
+      $("m104BuiltList")
+        ?.querySelector(".m104-built");
+
+    if (hasExercises) {
+      alert(
+        "This workout already contains exercises. " +
+        "Open a new builder before loading a preset " +
+        "so your current work is preserved."
+      );
+      return;
+    }
+
+    const proceed = confirm(
       "Load " + preset.title + "?\n\n" +
-      "This fills four weeks using the " +
-      "existing Mana exercise library.\n\n" +
-      "Any exercises in the selected " +
-      "workout days will be replaced.\n\n" +
-      "Use this on a newly opened builder " +
-      "for a clean program."
+      "Mana will build four weeks using the " +
+      "existing exercise library.\n\n" +
+      "You can customise everything before saving."
     );
 
-    if (!approved) return;
+    if (!proceed) return;
 
-    working = true;
+    busy = true;
 
-    const status = $(
-      "manaQuickstartStatus105007"
-    );
+    const status = $("mqsStatus105008");
 
     const buttons = Array.from(
       $(PANEL).querySelectorAll(
-        ".mqs-preset"
+        ".mqs-choice"
       )
     );
 
@@ -600,136 +725,136 @@
     const missing = new Set();
 
     try {
-      inputValue(
-        "m1001ProgramName",
+      setValue(
+        "m104ProgramName",
         "Mana " + preset.title
       );
 
-      inputValue("m1001Goal", preset.goal);
-
-      inputValue(
-        "m1001Description",
-        "Four-week Mana Movement preset. " +
-        "Personalise exercise selection, " +
-        "sets, repetitions and rest periods " +
-        "for the client's needs and ability."
+      setValue(
+        "m104Goal",
+        preset.goal
       );
 
-      /*
-       Existing builder defaults to four
-       weeks; explicitly set it to four.
-      */
+      setValue("m104Weeks", 4);
 
-      inputValue("m1001Weeks", 4);
-
-      $("m1001Weeks").dispatchEvent(
+      $("m104Weeks").dispatchEvent(
         new Event("change", {
           bubbles: true
         })
       );
 
-      /*
-       Reset the library category to ALL.
-      */
-
       const all = Array.from(
-        $("m1001Categories")
+        $("m104Categories")
           ?.querySelectorAll("[data-cat]") || []
-      ).find(
-        node =>
-          node.dataset.cat.toLowerCase() ===
-          "all"
+      ).find(button =>
+        button.dataset.cat?.toLowerCase() ===
+        "all"
       );
 
       all?.click();
 
-      for (let week = 1; week <= 4; week++) {
-        if (!modalOpen()) {
-          throw new Error(
-            "Program Builder was closed."
-          );
+      selectControl("data-week", 1);
+
+      for (
+        let day = 1;
+        day <= preset.workouts.length;
+        day++
+      ) {
+        if (status) {
+          status.textContent =
+            "Building Day " + day +
+            " of " + preset.workouts.length + "…";
         }
 
-        selectButton("data-week", week);
+        const omitted = buildWorkout(
+          day,
+          preset.workouts[day - 1]
+        );
 
-        for (
-          let day = 1;
-          day <= preset.days.length;
-          day++
-        ) {
-          if (status) {
-            status.textContent =
-              "Loading Week " + week +
-              " · Day " + day +
-              " of " + preset.days.length +
-              "…";
-          }
+        omitted.forEach(name =>
+          missing.add(name)
+        );
 
-          const omitted = applyDay(
-            day,
-            preset.days[day - 1]
-          );
-
-          omitted.forEach(name => {
-            missing.add(name);
-          });
-        }
-
-        /*
-         Yield between weeks to avoid
-         blocking the interface.
-        */
-
-        await new Promise(resolve => {
-          requestAnimationFrame(resolve);
-        });
-      }
-
-      selectButton("data-week", 1);
-      selectButton("data-day", 1);
-
-      usedThisSession = true;
-
-      if (status) {
-        status.textContent = missing.size
-          ? (
-            "Preset loaded. These exercises " +
-            "could not be matched: " +
-            [...missing].join(", ") +
-            ". Add alternatives manually."
-          )
-          : (
-            "Preset loaded ✓ " +
-            preset.days.length +
-            " workout day(s) per week " +
-            "for four weeks. " +
-            "Review, customise, then " +
-            "Save or Save + Assign."
-          );
-      }
-
-    } catch (error) {
-      if (status) {
-        status.textContent =
-          "Could not finish preset: " +
-          (error.message || String(error));
+        await new Promise(resolve =>
+          requestAnimationFrame(resolve)
+        );
       }
 
       /*
-       Never autosave an incomplete preset.
-       The existing builder remains open
-       for review or manual editing.
+       Restore Day 1 before copying.
+       The existing copy function preserves
+       all built days in the current week.
       */
+
+      selectControl("data-day", 1);
+
+      for (let week = 2; week <= 4; week++) {
+        const copy = $("m104CopyWeek");
+
+        if (!copy) {
+          throw new Error(
+            "Copy Week button unavailable."
+          );
+        }
+
+        copy.click();
+
+        if (status) {
+          status.textContent =
+            "Creating Week " + week + " of 4…";
+        }
+
+        await new Promise(resolve =>
+          requestAnimationFrame(resolve)
+        );
+      }
+
+      selectControl("data-week", 1);
+      selectControl("data-day", 1);
+
+      presetLoaded = true;
+
+      if (status) {
+        status.textContent =
+          missing.size
+            ? (
+              "Preset loaded with unmatched exercises: " +
+              [...missing].join(", ") +
+              ". Review and add alternatives."
+            )
+            : (
+              "Program ready ✓ Four weeks loaded. " +
+              "Review and customise, then use " +
+              "Save Program or Save + Assign."
+            );
+      }
+
+      $(MODAL)?.classList.remove(
+        "mqs-library-open",
+        "mqs-map-open"
+      );
+
+      $(MODAL).scrollTop = 0;
+
+      refreshTools();
+
+    } catch (error) {
+      presetLoaded = true;
+
+      if (status) {
+        status.textContent =
+          "Preset needs review: " +
+          (error.message || String(error)) +
+          ". Nothing has been saved automatically.";
+      }
 
       console.warn(
         "[Mana Quick Start]",
         error
       );
 
-      usedThisSession = true;
-
     } finally {
-      working = false;
+      busy = false;
 
       buttons.forEach(button => {
         button.disabled = false;
@@ -738,23 +863,85 @@
   }
 
   /* =====================================================
-     MOUNT QUICK START CONTROLS
+     OPTIONAL LIBRARY AND PROGRAM MAP
+     ===================================================== */
 
-     Insert outside m1001Content so the
-     original builder can re-render days
-     without destroying the preset library.
+  function togglePanel(name) {
+    const modal = $(MODAL);
+    if (!modal) return;
+
+    const classname =
+      name === "library"
+        ? "mqs-library-open"
+        : "mqs-map-open";
+
+    const wasOpen =
+      modal.classList.contains(classname);
+
+    modal.classList.remove(
+      "mqs-library-open",
+      "mqs-map-open"
+    );
+
+    if (!wasOpen) {
+      modal.classList.add(classname);
+    }
+
+    refreshTools();
+  }
+
+  function refreshTools() {
+    const modal = $(MODAL);
+    if (!modal) return;
+
+    const library = $("mqsLibrary105008");
+    const map = $("mqsMap105008");
+
+    library?.classList.toggle(
+      "selected",
+      modal.classList.contains(
+        "mqs-library-open"
+      )
+    );
+
+    map?.classList.toggle(
+      "selected",
+      modal.classList.contains(
+        "mqs-map-open"
+      )
+    );
+
+    if (library) {
+      library.textContent =
+        modal.classList.contains(
+          "mqs-library-open"
+        )
+          ? "Hide Exercise Library"
+          : "Open Exercise Library";
+    }
+
+    if (map) {
+      map.textContent =
+        modal.classList.contains(
+          "mqs-map-open"
+        )
+          ? "Hide Program Map"
+          : "View Program Map";
+    }
+  }
+
+  /* =====================================================
+     MOUNT QUICK START PANEL
+
+     Insert before the original content.
+     The builder can re-render freely.
      ===================================================== */
 
   function mount() {
     const modal = $(MODAL);
-    if (!modal) return;
+    const content = $(CONTENT);
 
-    const shell =
-      modal.querySelector(".m1001-shell");
-
-    const content = $("m1001Content");
-
-    if (!shell || !content) return;
+    if (!modal || !content) return;
 
     let panel = $(PANEL);
 
@@ -763,35 +950,44 @@
       panel.id = PANEL;
 
       panel.innerHTML = `
-        <div class="mqs-kicker">
+        <div class="mqs-eyebrow">
           MANA MOVEMENT · COACH TOOLS
         </div>
 
-        <h2 class="mqs-title">
-          Quick Start Programs
-        </h2>
+        <h2>Quick Start Programs</h2>
 
-        <p class="mqs-help">
-          Choose a ready-made workout.
-          Exercises, sets, reps and rest
-          are prefilled. Customise anything
-          before saving or assigning.
+        <p class="mqs-description">
+          Choose a ready-made program and
+          customise it for your client.
+          No need to build every workout
+          from scratch.
         </p>
 
-        <div class="mqs-grid"></div>
+        <div class="mqs-options"></div>
 
-        <div class="mqs-footer">
-          Need something different?
-          Continue using the full Exercise
-          Library and Custom Program Builder
-          below. Presets are starting points,
-          not fixed client prescriptions.
+        <div class="mqs-tools">
+          <button
+            type="button"
+            class="mqs-tool"
+            id="mqsLibrary105008"
+          >
+            Open Exercise Library
+          </button>
+
+          <button
+            type="button"
+            class="mqs-tool"
+            id="mqsMap105008"
+          >
+            View Program Map
+          </button>
         </div>
 
         <div
+          id="mqsStatus105008"
           class="mqs-status"
-          id="manaQuickstartStatus105007"
           role="status"
+          aria-live="polite"
         ></div>
       `;
 
@@ -801,7 +997,7 @@
       );
 
       const grid = panel.querySelector(
-        ".mqs-grid"
+        ".mqs-options"
       );
 
       PRESETS.forEach(preset => {
@@ -809,7 +1005,7 @@
           document.createElement("button");
 
         button.type = "button";
-        button.className = "mqs-preset";
+        button.className = "mqs-choice";
 
         const title =
           document.createElement("strong");
@@ -820,98 +1016,105 @@
           document.createElement("span");
 
         description.textContent =
-          preset.subtitle;
+          preset.description;
 
         button.append(title, description);
 
         button.addEventListener(
           "click",
-          () => {
-            void applyPreset(preset);
-          }
+          () => void applyPreset(preset)
         );
 
         grid.appendChild(button);
       });
-    }
 
-    /*
-     Hide choices while the exercise
-     library is still loading.
-    */
+      $("mqsLibrary105008")
+        .addEventListener(
+          "click",
+          () => togglePanel("library")
+        );
+
+      $("mqsMap105008")
+        .addEventListener(
+          "click",
+          () => togglePanel("map")
+        );
+    }
 
     panel.style.display =
       ready() ? "" : "none";
+
+    refreshTools();
   }
 
   /* =====================================================
-     WATCH EXISTING BUILDER
+     BUILDER REFRESH CONTROL
 
-     Observe only its modal and content.
-     No page-wide observers or intervals.
+     Watch only the existing content's
+     direct children and modal visibility.
+
+     No document-wide mutation observer.
      ===================================================== */
 
   function scheduleMount() {
-    if (framePending) return;
+    if (frameQueued) return;
 
-    framePending = true;
+    frameQueued = true;
 
     requestAnimationFrame(() => {
-      framePending = false;
-      mount();
+      frameQueued = false;
 
-      const opened = modalOpen();
+      const nowOpen = isOpen();
 
-      if (opened && !modalWasOpen) {
-        usedThisSession = false;
+      if (nowOpen && !opened) {
+        presetLoaded = false;
 
-        const status = $(
-          "manaQuickstartStatus105007"
+        $(MODAL)?.classList.remove(
+          "mqs-library-open",
+          "mqs-map-open"
         );
+
+        const status = $("mqsStatus105008");
 
         if (status) status.textContent = "";
       }
 
-      modalWasOpen = opened;
+      opened = nowOpen;
+      mount();
     });
   }
 
   function init() {
-    styles();
+    installStyles();
 
     const modal = $(MODAL);
+    const content = $(CONTENT);
 
-    if (!modal) {
+    if (!modal || !content) {
       console.warn(
         "[Mana Quick Start] " +
-        "Original Program Builder not found."
+        "V10.08 builder unavailable."
       );
       return;
     }
 
-    observer = new MutationObserver(
-      scheduleMount
-    );
+    const modalObserver =
+      new MutationObserver(scheduleMount);
 
-    observer.observe(modal, {
+    modalObserver.observe(modal, {
       attributes: true,
       attributeFilter: ["class"]
     });
 
-    const content = $("m1001Content");
+    contentObserver =
+      new MutationObserver(scheduleMount);
 
-    if (content) {
-      contentObserver = new MutationObserver(
-        scheduleMount
-      );
+    contentObserver.observe(content, {
+      childList: true,
+      subtree: false
+    });
 
-      contentObserver.observe(content, {
-        childList: true,
-        subtree: false
-      });
-    }
-
-    mount();
+    scheduleMount();
 
     window.MANA_QUICKSTART_BUILD = BUILD;
 
