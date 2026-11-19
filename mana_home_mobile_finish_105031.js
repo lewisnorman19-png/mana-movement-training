@@ -1,27 +1,31 @@
 
 /* ==========================================================
    MANA MOVEMENT TRAINING
-   PREMIUM MOBILE HOME PAGE
-   BUILD 105031
+   MOBILE HOME FINISH — BUILD 105033
 
-   COMPLETE NEW FILE:
+   COMPLETE REPLACEMENT FILE:
    mana_home_mobile_finish_105031.js
 
-   - Nearly full-screen-width mobile banners
-   - Consistent spacing between cards
-   - Breathing room below the 10-step guide
-   - Custom illustrations for each program
-   - Premium orange / black / white / silver
-   - Preserves existing button functionality
-   - Does not change desktop layout
-   - Does not affect Profile or Coach Hub
+   FIXES:
+   - Keeps approved full-width mobile banners
+   - Adds breathing space between banners
+   - Fixes icons hidden by older CSS rules
+   - Profile, Mana28, Strength and Lyfe icons
+   - Keeps desktop layout unchanged
+
+   PRESERVES:
+   - Existing button click handlers
+   - Client and Coach navigation
+   - Membership and program information
+   - Profile, Chat, Payments and workouts
    ========================================================== */
 
 (() => {
   "use strict";
 
-  const FLAG = "MANA_HOME_MOBILE_105031";
-  const STYLE = "manaHomeMobileStyle105031";
+  const BUILD = "105033";
+  const FLAG = "MANA_HOME_MOBILE_105033";
+  const STYLE = "manaHomeMobileStyle105033";
   const HOME = "manaV80Home";
 
   if (window[FLAG]) return;
@@ -29,114 +33,88 @@
 
   const $ = id => document.getElementById(id);
 
-  /* =====================================================
-     ORIGINAL VECTOR ICONS
-     ===================================================== */
-
   const ICONS = {
     profile: `
-      <svg viewBox="0 0 100 100"
-           aria-hidden="true"
-           fill="none"
-           xmlns="http://www.w3.org/2000/svg">
-        <circle cx="50" cy="29" r="13"
-          stroke="currentColor"
-          stroke-width="5"/>
-        <path
-          d="M20 79C20 61 32 52 50 52
-             C68 52 80 61 80 79"
-          stroke="currentColor"
-          stroke-width="5"
-          stroke-linecap="round"/>
-        <path d="M39 73L47 81L63 62"
-          stroke="#FFFFFF"
-          stroke-width="5"
-          stroke-linecap="round"
-          stroke-linejoin="round"/>
+      <svg xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 100"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true">
+        <circle cx="50" cy="28" r="13"/>
+        <path d="M20 79
+          C20 61 32 52 50 52
+          S80 61 80 79"/>
+        <path d="M36 72L46 81L65 60"
+          stroke="#FFFFFF"/>
       </svg>
     `,
 
     mana28: `
-      <svg viewBox="0 0 100 100"
-           aria-hidden="true"
-           fill="none"
-           xmlns="http://www.w3.org/2000/svg">
+      <svg xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 100"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true">
         <rect x="14" y="21"
-          width="72" height="67"
-          rx="11"
-          stroke="currentColor"
-          stroke-width="5"/>
-        <path d="M14 40H86"
-          stroke="currentColor"
-          stroke-width="5"/>
-        <path d="M33 13V29M67 13V29"
-          stroke="currentColor"
-          stroke-width="5"
-          stroke-linecap="round"/>
-        <text x="50" y="72"
+          width="72" height="66" rx="10"/>
+        <path d="M14 40H86M33 13V29M67 13V29"/>
+        <text x="50" y="73"
           text-anchor="middle"
           fill="#FFFFFF"
-          font-size="29"
-          font-weight="900"
-          font-family="Arial,sans-serif">28</text>
+          stroke="none"
+          font-family="Arial,sans-serif"
+          font-size="30"
+          font-weight="900">28</text>
       </svg>
     `,
 
     strength: `
-      <svg viewBox="0 0 100 100"
-           aria-hidden="true"
-           fill="none"
-           xmlns="http://www.w3.org/2000/svg">
-        <path d="M29 50H71"
-          stroke="currentColor"
-          stroke-width="6"
-          stroke-linecap="round"/>
-        <rect x="14" y="32"
-          width="13" height="36"
-          rx="3"
-          stroke="currentColor"
-          stroke-width="5"/>
+      <svg xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 100"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true">
+        <path d="M30 50H70"/>
+        <rect x="12" y="31"
+          width="14" height="38" rx="3"/>
         <rect x="27" y="39"
-          width="10" height="22"
-          rx="2"
-          fill="currentColor"/>
-        <rect x="73" y="32"
-          width="13" height="36"
-          rx="3"
-          stroke="currentColor"
-          stroke-width="5"/>
+          width="10" height="22" rx="2"
+          fill="currentColor" stroke="none"/>
+        <rect x="74" y="31"
+          width="14" height="38" rx="3"/>
         <rect x="63" y="39"
-          width="10" height="22"
-          rx="2"
-          fill="currentColor"/>
-        <path d="M14 50H6M86 50H94"
-          stroke="#FFFFFF"
-          stroke-width="4"
-          stroke-linecap="round"/>
+          width="10" height="22" rx="2"
+          fill="currentColor" stroke="none"/>
       </svg>
     `,
 
     lyfe: `
-      <svg viewBox="0 0 100 100"
-           aria-hidden="true"
-           fill="none"
-           xmlns="http://www.w3.org/2000/svg">
-        <path
-          d="M50 87
-             C23 70 13 52 23 36
-             C31 23 44 27 50 38
-             C56 27 69 23 77 36
-             C87 52 77 70 50 87Z"
-          stroke="currentColor"
-          stroke-width="5"
-          stroke-linejoin="round"/>
-        <path
-          d="M26 56H39L46 45L54 67
-             L62 55H74"
+      <svg xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 100"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true">
+        <path d="M50 87
+          C25 71 13 53 23 36
+          C31 23 44 27 50 38
+          C56 27 69 23 77 36
+          C87 53 75 71 50 87Z"/>
+        <path d="M26 56H38L46 45
+          L54 67L62 55H74"
           stroke="#FFFFFF"
-          stroke-width="4"
-          stroke-linecap="round"
-          stroke-linejoin="round"/>
+          stroke-width="4"/>
       </svg>
     `
   };
@@ -149,7 +127,7 @@
   ];
 
   /* =====================================================
-     MOBILE-ONLY STYLE
+     MOBILE STYLING
      ===================================================== */
 
   function installStyles() {
@@ -160,34 +138,23 @@
 
     style.textContent = `
 
-      @media (max-width:600px) {
+      @media(max-width:600px) {
 
-        /* ===================================
-           HOME PAGE WIDTH
-           =================================== */
-
-        html,
-        body {
-          max-width: 100%;
-        }
+        /* Preserve approved banner width */
 
         html body #${HOME} {
           position: relative !important;
           width: calc(100vw - 12px) !important;
           max-width: calc(100vw - 12px) !important;
           min-width: 0 !important;
-
           margin-left:
             calc(50% - 50vw + 6px) !important;
           margin-right: 0 !important;
-
           padding-left: 0 !important;
           padding-right: 0 !important;
-
           padding-bottom:
             calc(118px + env(safe-area-inset-bottom))
             !important;
-
           box-sizing: border-box !important;
         }
 
@@ -197,9 +164,7 @@
           box-sizing: border-box;
         }
 
-        /* ===================================
-           TOP BRAND
-           =================================== */
+        /* Brand */
 
         html body #${HOME}
         .mana-v8013-brand {
@@ -209,85 +174,76 @@
           padding: 12px 12px 0 !important;
         }
 
-        /* ===================================
-           PROFILE / GET STARTED BANNER
-           =================================== */
+        /* Profile / Goals banner */
 
         html body #${HOME}
         #manaV80ProfileSetup {
-          display: block !important;
           position: relative !important;
-
+          display: block !important;
+          isolation: isolate !important;
           width: 100% !important;
           max-width: 100% !important;
           min-width: 0 !important;
-
-          margin: 0 0 26px !important;
+          margin: 0 0 30px !important;
           padding: 24px 18px !important;
-
+          overflow: hidden !important;
           border: 1px solid #FF7927 !important;
           border-radius: 18px !important;
-
           background:
             linear-gradient(
               135deg,
-              #191B20 0%,
+              #191B20,
               #101215 68%,
-              #19110D 100%
+              #19110D
             ) !important;
-
-          overflow: hidden !important;
+          color: #FFFFFF !important;
           text-align: left !important;
         }
 
-        /* ===================================
-           SELECT / 10 STEP GUIDE AREA
-           =================================== */
+        /* Selection / guide area */
 
         html body #${HOME}
         .mana-v8013-select {
           width: 100% !important;
           max-width: 100% !important;
-
-          margin: 0 0 30px !important;
+          margin: 0 0 34px !important;
           padding: 18px 14px !important;
-
           border: 1px solid #444C57 !important;
           border-radius: 15px !important;
-
           background: #15171B !important;
         }
 
         html body #${HOME}
-        .mana-home-10-step-guide,
+        .mana-guide-button-105033,
         html body #${HOME}
         [data-mana-10-steps] {
-          width: 100% !important;
-          max-width: 100% !important;
-          margin-bottom: 30px !important;
+          margin-bottom: 34px !important;
         }
 
-        /* ===================================
-           THREE MAIN PROGRAM BANNERS
-           =================================== */
+        /* Main program banners */
 
         html body #${HOME}
-        .mana-v8013-program {
-          display: flex !important;
-          flex-direction: column !important;
-
+        button.mana-v8013-program {
           position: relative !important;
           isolation: isolate !important;
+
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: stretch !important;
 
           width: 100% !important;
           max-width: 100% !important;
           min-width: 0 !important;
 
-          height: auto !important;
           min-height: 260px !important;
+          height: auto !important;
 
-          margin: 0 0 22px !important;
+          margin-top: 0 !important;
+          margin-bottom: 30px !important;
           padding: 27px 18px 22px !important;
+
+          border: 1px solid #FF7927 !important;
+          border-radius: 19px !important;
 
           background:
             linear-gradient(
@@ -297,20 +253,17 @@
               #1B130E
             ) !important;
 
-          border: 1px solid #FF7927 !important;
-          border-radius: 19px !important;
-
           box-shadow:
             0 8px 22px rgba(0,0,0,.22)
             !important;
 
-          color: #FFFFFF !important;
           overflow: hidden !important;
           text-align: left !important;
+          color: #FFFFFF !important;
         }
 
         html body #${HOME}
-        .mana-v8013-program.current {
+        button.mana-v8013-program.current {
           border: 2px solid #FF7927 !important;
           background:
             linear-gradient(
@@ -320,14 +273,14 @@
             ) !important;
         }
 
+        /* Space after the final banner */
+
         html body #${HOME}
-        .mana-v8013-program:last-of-type {
-          margin-bottom: 28px !important;
+        #manaV80Life {
+          margin-bottom: 38px !important;
         }
 
-        /* ===================================
-           BADGE SPACING
-           =================================== */
+        /* Badge */
 
         html body #${HOME}
         .mana-v8013-program
@@ -335,31 +288,24 @@
           position: absolute !important;
           top: 15px !important;
           right: 14px !important;
-
-          z-index: 5 !important;
+          z-index: 12 !important;
           max-width: 50% !important;
-
           background: #22180F !important;
-          border-color: #FF7927 !important;
           color: #FF7927 !important;
+          border-color: #FF7927 !important;
         }
 
-        /* ===================================
-           BANNER TEXT
-           =================================== */
+        /* Banner text */
 
         html body #${HOME}
         .mana-v8013-program-label {
           max-width: 75% !important;
           padding-top: 11px !important;
           margin-bottom: 10px !important;
-
           color: #FF7927 !important;
           -webkit-text-fill-color: #FF7927 !important;
-
           font-size: 12px !important;
           font-weight: 950 !important;
-          letter-spacing: .09em !important;
         }
 
         html body #${HOME}
@@ -375,10 +321,8 @@
         .mana-v8013-program p {
           max-width: 75% !important;
           margin: 12px 0 0 !important;
-
           color: #C4CAD2 !important;
           -webkit-text-fill-color: #C4CAD2 !important;
-
           font-size: 13px !important;
           line-height: 1.55 !important;
         }
@@ -387,19 +331,9 @@
         .mana-v8013-program
         .mana-v8013-open {
           margin-top: 18px !important;
-
           color: #FF7927 !important;
           -webkit-text-fill-color: #FF7927 !important;
-
           font-size: 13px !important;
-          font-weight: 900 !important;
-        }
-
-        html body #${HOME}
-        .mana-v8013-program
-        .mana-v8013-current-badge {
-          max-width: max-content !important;
-          margin-top: 14px !important;
         }
 
         html body #${HOME}
@@ -410,31 +344,39 @@
         }
 
         /* ===================================
-           ILLUSTRATIONS
+           ICON POSITIONING
 
-           Keep old artwork from overlapping
-           the new consistent icons.
+           Higher specificity than the older
+           Home illustration CSS so the icon
+           remains absolutely positioned.
            =================================== */
 
         html body #${HOME}
-        .mana-home-icon-105031 {
-          position: absolute !important;
-
+        button.mana-v8013-program
+        > .mana-home-icon-105033,
+        html body #${HOME}
+        button#manaV80ProfileSetup
+        > .mana-home-icon-105033 {
           display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
+          position: absolute !important;
+          z-index: 8 !important;
 
-          top: 76px !important;
-          right: 16px !important;
+          top: 82px !important;
+          right: 14px !important;
+          left: auto !important;
+          bottom: auto !important;
 
           width: 78px !important;
           height: 78px !important;
 
+          align-items: center !important;
+          justify-content: center !important;
+
           padding: 12px !important;
+          margin: 0 !important;
 
           border: 1px solid
-            rgba(255,121,39,.7) !important;
-
+            rgba(255,121,39,.75) !important;
           border-radius: 19px !important;
 
           background:
@@ -445,36 +387,31 @@
             ) !important;
 
           color: #FF7927 !important;
-
-          z-index: 2 !important;
+          opacity: 1 !important;
+          visibility: visible !important;
           pointer-events: none !important;
 
+          transform: none !important;
           box-shadow:
             0 5px 18px rgba(0,0,0,.2)
             !important;
         }
 
         html body #${HOME}
-        .mana-home-icon-105031 svg {
+        .mana-home-icon-105033 svg {
           display: block !important;
           width: 100% !important;
           height: 100% !important;
+          color: #FF7927 !important;
+          stroke: currentColor;
         }
 
-        html body #${HOME}
-        .mana-home-icon-ready-105031
-        > .mana-v1024-home-art,
-        html body #${HOME}
-        .mana-home-icon-ready-105031
-        > .m1025-home-icon {
-          display: none !important;
-        }
+        /* Profile icon centred vertically */
 
         html body #${HOME}
-        #manaV80ProfileSetup
-        .mana-home-icon-105031 {
+        button#manaV80ProfileSetup
+        > .mana-home-icon-105033 {
           top: 50% !important;
-          right: 16px !important;
           transform: translateY(-50%) !important;
         }
 
@@ -485,45 +422,39 @@
           max-width: 75% !important;
         }
 
-        /* ===================================
-           TEN-STEP BUTTON SPACE
-
-           This targets only the home guide
-           button if present.
-           =================================== */
+        /* Hide older illustrations ONLY
+           when the new icon is installed */
 
         html body #${HOME}
-        .mana-guide-button-105031 {
-          display: block !important;
-
-          width: 100% !important;
-          max-width: 100% !important;
-
-          margin-top: 12px !important;
-          margin-bottom: 30px !important;
-
-          min-height: 48px !important;
-          border-radius: 12px !important;
+        .mana-home-icon-ready-105033
+        > .mana-v1024-home-art,
+        html body #${HOME}
+        .mana-home-icon-ready-105033
+        > .m1025-home-icon,
+        html body #${HOME}
+        .mana-home-icon-ready-105033
+        > .mana-home-icon-105031 {
+          display: none !important;
         }
       }
-
-      /* =====================================
-         VERY SMALL PHONES
-         ===================================== */
 
       @media(max-width:375px) {
 
         html body #${HOME}
-        .mana-v8013-program {
+        button.mana-v8013-program {
+          min-height: 270px !important;
           padding-left: 15px !important;
           padding-right: 15px !important;
-          min-height: 270px !important;
         }
 
         html body #${HOME}
-        .mana-home-icon-105031 {
-          width: 63px !important;
-          height: 63px !important;
+        button.mana-v8013-program
+        > .mana-home-icon-105033,
+        html body #${HOME}
+        button#manaV80ProfileSetup
+        > .mana-home-icon-105033 {
+          width: 64px !important;
+          height: 64px !important;
           right: 10px !important;
           padding: 9px !important;
         }
@@ -540,113 +471,77 @@
   }
 
   /* =====================================================
-     ADD ICON WITHOUT REPLACING CARD
-     OR TOUCHING ITS CLICK HANDLER
+     INSTALL ICONS WITHOUT MODIFYING BUTTON LOGIC
      ===================================================== */
 
-  function addIcon(id, type) {
-    const card = $(id);
+  function installIcons() {
+    const home = $(HOME);
+    if (!home) return;
 
-    if (!card || !ICONS[type]) return;
+    for (const [id, type] of CARDS) {
+      const card = $(id);
 
-    if (
-      card.querySelector(
-        ".mana-home-icon-105031"
-      )
-    ) return;
+      if (!card || !home.contains(card)) {
+        continue;
+      }
 
-    const icon = document.createElement("span");
+      if (!card.querySelector(
+        ":scope > .mana-home-icon-105033"
+      )) {
+        const icon = document.createElement("span");
+        icon.className = "mana-home-icon-105033";
+        icon.setAttribute("aria-hidden", "true");
+        icon.innerHTML = ICONS[type];
+        card.appendChild(icon);
+      }
 
-    icon.className =
-      "mana-home-icon-105031";
-
-    icon.setAttribute("aria-hidden","true");
-
-    icon.innerHTML = ICONS[type];
-
-    card.appendChild(icon);
-
-    card.classList.add(
-      "mana-home-icon-ready-105031"
-    );
+      card.classList.add(
+        "mana-home-icon-ready-105033"
+      );
+    }
   }
 
   /* =====================================================
-     RECOGNISE EXISTING 10-STEP GUIDE
-
-     Do not create a fake guide button.
-     Only style a real button if it exists.
+     OPTIONAL 10-STEP BUTTON
      ===================================================== */
 
   function markGuide() {
     const home = $(HOME);
     if (!home) return;
 
-    const candidates = home.querySelectorAll(
-      "button,a"
-    );
+    home.querySelectorAll("button,a")
+      .forEach(element => {
+        const name = (
+          element.textContent || ""
+        ).trim().toLowerCase();
 
-    for (const element of candidates) {
-      const label = (
-        element.textContent || ""
-      ).trim().toLowerCase();
-
-      if (
-        /10[\s-]*(step|steps)/.test(label) ||
-        /ten[\s-]+steps/.test(label)
-      ) {
-        element.classList.add(
-          "mana-guide-button-105031"
-        );
-      }
-    }
+        if (
+          /10[\s-]*(step|steps)/.test(name) ||
+          /ten[\s-]+steps/.test(name)
+        ) {
+          element.classList.add(
+            "mana-guide-button-105033"
+          );
+        }
+      });
   }
 
   /* =====================================================
-     APPLY ONLY TO EXISTING HOME
+     REFRESH HOME DECORATION
      ===================================================== */
 
-  function enhanceHome() {
-    const home = $(HOME);
-
-    if (!home) return;
-
-    for (const [id,type] of CARDS) {
-      addIcon(id,type);
-    }
-
+  function enhance() {
+    installIcons();
     markGuide();
   }
 
-  /* =====================================================
-     INIT
-     ===================================================== */
-
   function init() {
     installStyles();
+    enhance();
 
-    enhanceHome();
-
-    // Home may be constructed after login.
-    // Bounded checks only — no page-wide
-    // permanent observer or route overrides.
-    [100,350,800,1600,2800].forEach(
-      delay => setTimeout(enhanceHome,delay)
-    );
-
-    window.addEventListener(
-      "pageshow",
-      enhanceHome
-    );
-
-    window.addEventListener(
-      "mana:program-change",
-      enhanceHome
-    );
-
-    window.addEventListener(
-      "mana:profile-synced",
-      enhanceHome
+    // Home may be created after sign-in.
+    [150, 450, 1000, 2000].forEach(
+      delay => setTimeout(enhance, delay)
     );
 
     document.addEventListener("click", event => {
@@ -655,15 +550,30 @@
           "#manaV80HomeBtn"
         )
       ) {
-        setTimeout(enhanceHome,100);
+        setTimeout(enhance, 100);
       }
     });
 
-    window.MANA_HOME_MOBILE_BUILD =
-      "105031";
+    window.addEventListener(
+      "pageshow",
+      enhance
+    );
+
+    window.addEventListener(
+      "mana:program-change",
+      enhance
+    );
+
+    window.addEventListener(
+      "mana:profile-synced",
+      enhance
+    );
+
+    window.MANA_HOME_MOBILE_BUILD = BUILD;
 
     console.log(
-      "[Mana Movement] Mobile Home 105031 ready"
+      "[Mana Movement] Mobile Home " +
+      BUILD + " active"
     );
   }
 
@@ -671,10 +581,9 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {once:true}
+      { once: true }
     );
   } else {
     init();
   }
-
 })();
