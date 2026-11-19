@@ -1,41 +1,41 @@
 
 /* ==========================================================
    MANA MOVEMENT TRAINING
-   MOBILE PROFILE ALIGNMENT
-   BUILD 105023
+   MOBILE PROFILE STABILITY
+   BUILD 105030
 
    COMPLETE REPLACEMENT:
    mana_profile_mobile_stability_105016.js
 
-   MOBILE ONLY:
-   - Email Address gets a full-width row
-   - Contact Number appears underneath
-   - DOB and Age align correctly
-   - Safari date control has adequate space
-   - Height and Weight remain side by side
-   - First and Last Name remain side by side
+   FIX:
+   - DOB and Age same vertical alignment on phones
+   - Consistent label and input heights
+   - Native Safari date picker retained
 
    PRESERVES:
-   - Perfect laptop layout (105022)
-   - Existing client profile fields and saving
-   - Input focus protection
-   - Full-width mobile Coach Hub
-   - Client photos and camera
-   - Coach Hub, Chat and navigation
+   - Working laptop layout
+   - Full-width mobile email
+   - Contact number below email
+   - Name, Gender, Height and Weight
+   - Mobile Coach Hub width
+   - Existing input protection
+   - All saving, photos and navigation
 
-   NO DATABASE CHANGES.
+   No database changes.
    ========================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "105023";
-  const FLAG = "MANA_PROFILE_MOBILE_105023";
-  const STYLE = "manaProfileMobileStyle105023";
+  const BUILD = "105030";
+  const FLAG = "MANA_PROFILE_MOBILE_105030";
+  const STYLE = "manaProfileMobileStyle105030";
   const SCREEN = "manaProfileScreen";
 
   if (window[FLAG]) return;
   window[FLAG] = true;
+
+  const $ = id => document.getElementById(id);
 
   const FIELDS = new Set([
     "me-first_name",
@@ -57,12 +57,8 @@
   let guardTimer = null;
   let root = null;
 
-  function $(id) {
-    return document.getElementById(id);
-  }
-
   /* =====================================================
-     STYLES
+     MOBILE CSS
      ===================================================== */
 
   function installStyles() {
@@ -72,8 +68,6 @@
     style.id = STYLE;
 
     style.textContent = `
-
-      /* Shared field safety */
 
       #${SCREEN} .mana-profile-field,
       #${SCREEN} .me-field,
@@ -90,9 +84,7 @@
         outline-offset: 1px !important;
       }
 
-      /* ======================================
-         PHONE ONLY
-         ====================================== */
+      /* PHONE ONLY */
 
       @media (max-width:600px) {
 
@@ -119,108 +111,105 @@
           font-size: 16px !important;
         }
 
-        /* ===================================
-           EMAIL AND CONTACT NUMBER
-
-           Two separate full-width rows.
-           Preserve the original inputs.
-           =================================== */
+        /* =====================================
+           EMAIL: FULL WIDTH
+           PHONE: ITS OWN ROW
+           ===================================== */
 
         #${SCREEN}
         #manaEmailPhoneRow105022 {
           display: grid !important;
-          grid-template-columns:
-            minmax(0,1fr) !important;
-          gap: 12px !important;
+          grid-template-columns: minmax(0,1fr) !important;
           width: 100% !important;
           min-width: 0 !important;
+          gap: 12px !important;
+        }
+
+        #${SCREEN}
+        #manaEmailPhoneRow105022 > * {
+          display: block !important;
+          grid-column: 1 / -1 !important;
+          width: 100% !important;
+          min-width: 0 !important;
+          max-width: 100% !important;
         }
 
         #${SCREEN}
         #manaEmailPhoneRow105022
-        > .me-field {
-          grid-column: 1 / -1 !important;
+        #me-account-email,
+        #${SCREEN}
+        #manaEmailPhoneRow105022
+        #me-phone {
           display: block !important;
           width: 100% !important;
           min-width: 0 !important;
-          max-width: 100% !important;
+          height: 48px !important;
+          min-height: 48px !important;
+          padding: 10px 12px !important;
+          font-size: 16px !important;
+          line-height: normal !important;
+          border-radius: 10px !important;
         }
 
         #${SCREEN}
         #manaEmailPhoneRow105022
         #me-account-email {
-          display: block !important;
-          width: 100% !important;
-          min-width: 0 !important;
-          max-width: 100% !important;
-          min-height: 48px !important;
-          height: 48px !important;
-          padding: 11px 12px !important;
-          font-size: 16px !important;
-          line-height: 24px !important;
-          border-radius: 10px !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
           background: #171A1F !important;
           color: #D1D5DB !important;
-          -webkit-text-fill-color:
-            #D1D5DB !important;
+          -webkit-text-fill-color: #D1D5DB !important;
+          text-overflow: ellipsis !important;
           opacity: 1 !important;
         }
 
-        #${SCREEN}
-        #manaEmailPhoneRow105022
-        #me-phone {
-          width: 100% !important;
-          min-height: 48px !important;
-          height: 48px !important;
-          font-size: 16px !important;
-          padding: 11px 12px !important;
-        }
+        /* =====================================
+           DOB AND AGE — FIXED ALIGNMENT
 
-        /* ===================================
-           DOB / AGE ROW
-
-           Correct vertical alignment and
-           adequate Safari date-field width.
-           =================================== */
+           Same grid, same label height,
+           same input height and box sizing.
+           Native Safari date picker retained.
+           ===================================== */
 
         #${SCREEN}
         #manaDobAgeRow104992 {
           display: grid !important;
           grid-template-columns:
-            minmax(0,1fr) 78px !important;
+            minmax(0,1fr) 84px !important;
+          gap: 10px !important;
           align-items: start !important;
-          column-gap: 10px !important;
-          row-gap: 0 !important;
           width: 100% !important;
           min-width: 0 !important;
+          margin: 4px 0 10px !important;
+          padding: 0 !important;
         }
 
         #${SCREEN}
-        #manaDobAgeRow104992
-        > .me-field,
-        #${SCREEN}
-        #manaDobAgeRow104992
-        > .mana-profile-field {
-          width: 100% !important;
+        #manaDobAgeRow104992 > * {
+          display: flex !important;
+          flex-direction: column !important;
+          align-items: stretch !important;
+          justify-content: flex-start !important;
           min-width: 0 !important;
-          max-width: 100% !important;
+          width: 100% !important;
           margin: 0 !important;
           padding: 0 !important;
           align-self: start !important;
+          box-sizing: border-box !important;
         }
 
         #${SCREEN}
         #manaDobAgeRow104992 label {
-          display: flex !important;
-          align-items: center !important;
+          display: block !important;
+          flex: 0 0 20px !important;
+          width: 100% !important;
           min-height: 20px !important;
           height: 20px !important;
+          max-height: 20px !important;
           margin: 0 0 7px !important;
           padding: 0 !important;
           font-size: 12px !important;
+          font-weight: 750 !important;
           line-height: 20px !important;
+          box-sizing: border-box !important;
         }
 
         #${SCREEN}
@@ -230,50 +219,54 @@
         #manaDobAgeRow104992
         #manaProfileAge {
           display: block !important;
+          position: relative !important;
+          flex: 0 0 48px !important;
           width: 100% !important;
           min-width: 0 !important;
           max-width: 100% !important;
           height: 48px !important;
           min-height: 48px !important;
           max-height: 48px !important;
-          box-sizing: border-box !important;
           margin: 0 !important;
           border: 1px solid #4B535D !important;
           border-radius: 10px !important;
           background: #101215 !important;
+          color: #FFFFFF !important;
+          font-family: inherit !important;
           font-size: 16px !important;
+          font-weight: 500 !important;
           line-height: normal !important;
           vertical-align: top !important;
+          box-sizing: border-box !important;
+          transform: none !important;
         }
 
         #${SCREEN}
         #manaDobAgeRow104992
         #me-dob {
-          padding: 8px 6px !important;
-          color: #FFFFFF !important;
-          -webkit-text-fill-color:
-            #FFFFFF !important;
-          appearance: auto !important;
+          padding: 0 7px !important;
           -webkit-appearance: auto !important;
+          appearance: auto !important;
           text-align: left !important;
-          text-align-last: left !important;
+          color-scheme: dark;
         }
 
         #${SCREEN}
         #manaDobAgeRow104992
         #me-dob::-webkit-date-and-time-value {
+          min-height: 0 !important;
+          height: auto !important;
+          line-height: normal !important;
           text-align: left !important;
-          min-height: 24px !important;
-          line-height: 24px !important;
+          padding: 0 !important;
         }
 
         #${SCREEN}
         #manaDobAgeRow104992
         #me-dob::-webkit-datetime-edit {
-          display: inline-flex !important;
-          align-items: center !important;
           padding: 0 !important;
-          line-height: 24px !important;
+          margin: 0 !important;
+          line-height: normal !important;
         }
 
         #${SCREEN}
@@ -281,21 +274,21 @@
         #me-dob::-webkit-calendar-picker-indicator {
           width: 15px !important;
           height: 15px !important;
-          margin-left: 3px !important;
-          flex-shrink: 0 !important;
+          margin: 0 0 0 2px !important;
+          opacity: 1 !important;
         }
 
         #${SCREEN}
         #manaDobAgeRow104992
         #manaProfileAge {
-          padding: 10px 8px !important;
+          padding: 0 10px !important;
           color: #FF7927 !important;
           opacity: 1 !important;
         }
 
-        /* ===================================
-           OTHER PERSONAL DETAILS PAIRS
-           =================================== */
+        /* =====================================
+           KEEP NAME / HEIGHT / WEIGHT PAIRED
+           ===================================== */
 
         #${SCREEN}
         #manaNameRow104992,
@@ -308,9 +301,9 @@
           width: 100% !important;
         }
 
-        /* ===================================
-           WIDER MOBILE COACH HUB
-           =================================== */
+        /* =====================================
+           KEEP COACH HUB WIDE ON PHONE
+           ===================================== */
 
         #coachView:not(.hide),
         #coachClientDetailView:not(.hide) {
@@ -326,8 +319,7 @@
 
         #coachHomePage,
         #manaCoachSuite104707,
-        #manaCoachSuite104707
-        [data-mcn-view],
+        #manaCoachSuite104707 [data-mcn-view],
         #manaCoachSettings105010,
         #manaCoachSettingsExtra105013,
         #coachClientDetailView > .card,
@@ -339,8 +331,7 @@
           box-sizing: border-box !important;
         }
 
-        #manaCoachSuite104707
-        .mcn-panel {
+        #manaCoachSuite104707 .mcn-panel {
           padding: 12px !important;
         }
 
@@ -355,13 +346,7 @@
   }
 
   /* =====================================================
-     INPUT STABILITY
-
-     Preserve the value in a focused input
-     if an older asynchronous profile loader
-     attempts to overwrite it.
-
-     No navigation or database changes.
+     EXISTING INPUT STABILITY
      ===================================================== */
 
   function endGuard() {
@@ -374,10 +359,7 @@
   }
 
   function startGuard(input) {
-    if (
-      !input ||
-      !FIELDS.has(input.id)
-    ) return;
+    if (!input || !FIELDS.has(input.id)) return;
 
     endGuard();
 
@@ -386,10 +368,7 @@
     editingAt = Date.now();
 
     guardTimer = setInterval(() => {
-      if (
-        !active ||
-        !active.isConnected
-      ) {
+      if (!active || !active.isConnected) {
         endGuard();
         return;
       }
@@ -407,86 +386,62 @@
   function connect() {
     const screen = $(SCREEN);
 
-    if (!screen || root === screen) {
-      return;
-    }
+    if (!screen || root === screen) return;
 
     root = screen;
 
-    screen.addEventListener(
-      "focusin",
-      event => {
-        const target = event.target;
+    screen.addEventListener("focusin", event => {
+      const input = event.target;
 
+      if (
+        input instanceof HTMLInputElement &&
+        FIELDS.has(input.id)
+      ) {
+        startGuard(input);
+      }
+    }, true);
+
+    screen.addEventListener("input", event => {
+      if (event.target === active) {
+        lastValue = active.value;
+        editingAt = Date.now();
+      }
+    }, true);
+
+    screen.addEventListener("change", event => {
+      if (event.target === active) {
+        lastValue = active.value;
+      }
+    }, true);
+
+    screen.addEventListener("focusout", event => {
+      if (event.target !== active) return;
+
+      const old = active;
+      const value = lastValue;
+
+      setTimeout(() => {
         if (
-          target instanceof HTMLInputElement &&
-          FIELDS.has(target.id)
+          old.isConnected &&
+          old.value !== value &&
+          Date.now() - editingAt < 2500
         ) {
-          startGuard(target);
+          old.value = value;
         }
-      },
-      true
-    );
 
-    screen.addEventListener(
-      "input",
-      event => {
-        if (event.target === active) {
-          lastValue = active.value;
-          editingAt = Date.now();
-        }
-      },
-      true
-    );
-
-    screen.addEventListener(
-      "change",
-      event => {
-        if (event.target === active) {
-          lastValue = active.value;
-        }
-      },
-      true
-    );
-
-    screen.addEventListener(
-      "focusout",
-      event => {
-        if (event.target !== active) return;
-
-        const old = active;
-        const value = lastValue;
-
-        setTimeout(() => {
-          if (
-            old.isConnected &&
-            old.value !== value &&
-            Date.now() - editingAt < 2500
-          ) {
-            old.value = value;
-          }
-
-          if (active === old) {
-            endGuard();
-          }
-        }, 250);
-      },
-      true
-    );
-
-    screen.addEventListener(
-      "click",
-      event => {
-        if (
-          event.target.closest?.(
-            "#manaProfileSave"
-          )
-        ) {
+        if (active === old) {
           endGuard();
         }
-      },
-      true
-    );
+      }, 250);
+    }, true);
+
+    screen.addEventListener("click", event => {
+      if (
+        event.target.closest?.("#manaProfileSave")
+      ) {
+        endGuard();
+      }
+    }, true);
   }
 
   /* =====================================================
@@ -497,23 +452,17 @@
     installStyles();
     connect();
 
-    document.addEventListener(
-      "click",
-      event => {
-        if (
-          event.target.closest?.(
-            '[data-open-profile],#manaProfileButton'
-          )
-        ) {
-          setTimeout(connect, 0);
-        }
+    document.addEventListener("click", event => {
+      if (
+        event.target.closest?.(
+          '[data-open-profile],#manaProfileButton'
+        )
+      ) {
+        setTimeout(connect, 0);
       }
-    );
+    });
 
-    window.addEventListener(
-      "pageshow",
-      connect
-    );
+    window.addEventListener("pageshow", connect);
 
     window.MANA_PROFILE_MOBILE_BUILD = BUILD;
 
@@ -532,5 +481,4 @@
   } else {
     init();
   }
-
 })();
