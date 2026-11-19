@@ -1,35 +1,45 @@
 
 /* ==========================================================
    MANA MOVEMENT
-   CONSISTENT MOBILE HOME BANNERS
-   BUILD 105034
+   PREMIUM MOBILE HOME BANNERS
+   BUILD 105035
 
    COMPLETE REPLACEMENT:
    mana_home_mobile_finish_105031.js
 
-   - Three identical banner dimensions
-   - Heading and description top-left
-   - Illustration top-right
-   - Membership information bottom-left
-   - Explore action bottom-right
-   - Consistent 26px separation
-   - Approved mobile width preserved
-   - Desktop unchanged
-   - Existing button handlers preserved
+   FIXES:
+   - Larger orange program headings
+   - Original white headings unchanged
+   - Silver descriptions below icon area
+   - Consistent banner width and height
+   - Larger bottom-left membership text
+   - ManaLyfe: Free with paid membership
+
+   PRESERVES:
+   - Existing icons
+   - Existing Explore actions
+   - Banner spacing
+   - Original program navigation
+   - Desktop Home
+   - Profile, Coach Hub, Chat and Payments
    ========================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "105034";
-  const FLAG = "MANA_HOME_MOBILE_105034";
-  const STYLE = "manaHomeMobileStyle105034";
+  const BUILD = "105035";
+  const FLAG = "MANA_HOME_MOBILE_105035";
+  const STYLE = "manaHomeMobileStyle105035";
   const HOME = "manaV80Home";
 
   if (window[FLAG]) return;
   window[FLAG] = true;
 
   const $ = id => document.getElementById(id);
+
+  /* =====================================================
+     ICONS — ORIGINAL PREMIUM ORANGE
+     ===================================================== */
 
   const icons = {
     mana28: `
@@ -61,11 +71,13 @@
         <rect x="8" y="21" width="8"
           height="22" rx="2"/>
         <rect x="17" y="25" width="7"
-          height="14" rx="2" fill="#FF7927"/>
+          height="14" rx="2"
+          fill="#FF7927"/>
         <rect x="48" y="21" width="8"
           height="22" rx="2"/>
         <rect x="40" y="25" width="7"
-          height="14" rx="2" fill="#FF7927"/>
+          height="14" rx="2"
+          fill="#FF7927"/>
       </svg>
     `,
 
@@ -83,7 +95,8 @@
           C60 30 52 44 32 55Z"/>
         <path d="M13 34h12l5-9
           7 17 5-8h9"
-          stroke="#FFFFFF" stroke-width="3"/>
+          stroke="#FFFFFF"
+          stroke-width="3"/>
       </svg>
     `
   };
@@ -104,13 +117,13 @@
     {
       id: "manaV80Life",
       type: "lyfe",
-      footer: "Included with paid membership",
+      footer: "Free with paid membership",
       action: "Explore ManaLyfe"
     }
   ];
 
   /* =====================================================
-     MOBILE-ONLY STYLES
+     MOBILE STYLE
      ===================================================== */
 
   function installStyles() {
@@ -121,40 +134,48 @@
 
     style.textContent = `
 
-      @media(max-width:600px) {
+      @media (max-width:600px) {
 
-        /* APPROVED PHONE WIDTH */
+        /* ===================================
+           PRESERVE APPROVED MOBILE WIDTH
+           =================================== */
 
         html body #${HOME} {
           position: relative !important;
           width: calc(100vw - 12px) !important;
           max-width: calc(100vw - 12px) !important;
           min-width: 0 !important;
+
           margin-left:
             calc(50% - 50vw + 6px) !important;
           margin-right: 0 !important;
+
           padding-left: 0 !important;
           padding-right: 0 !important;
+
           box-sizing: border-box !important;
         }
 
-        /* SPACE BELOW SELECTION / GUIDE */
+        html body #${HOME} *,
+        html body #${HOME} *::before,
+        html body #${HOME} *::after {
+          box-sizing: border-box;
+        }
+
+        /* ===================================
+           BREATHING ROOM ABOVE BANNERS
+           =================================== */
 
         html body #${HOME}
         .mana-v8013-select {
           margin-bottom: 34px !important;
         }
 
-        /* ALL THREE BANNERS — IDENTICAL */
+        /* ===================================
+           ALL THREE BANNERS
 
-        html body #${HOME}
-        button.mana-v8013-program
-        .mana-home-card-main-105034,
-        html body #${HOME}
-        button.mana-v8013-program
-        .mana-home-card-footer-105034 {
-          box-sizing: border-box !important;
-        }
+           Identical height, width, padding.
+           =================================== */
 
         html body #${HOME}
         button#manaV80Mana28,
@@ -163,8 +184,11 @@
         html body #${HOME}
         button#manaV80Life {
           position: relative !important;
+
           display: flex !important;
           flex-direction: column !important;
+          align-items: stretch !important;
+          justify-content: flex-start !important;
 
           width: 100% !important;
           max-width: 100% !important;
@@ -174,11 +198,10 @@
           min-height: 344px !important;
           max-height: 344px !important;
 
-          margin: 0 0 26px !important;
-          padding: 24px 18px 18px !important;
+          margin-top: 0 !important;
+          margin-bottom: 26px !important;
 
-          overflow: hidden !important;
-          isolation: isolate !important;
+          padding: 24px 18px 18px !important;
 
           border: 1px solid #FF7927 !important;
           border-radius: 19px !important;
@@ -194,13 +217,13 @@
           color: #FFFFFF !important;
           text-align: left !important;
 
+          overflow: hidden !important;
+          isolation: isolate !important;
+          box-sizing: border-box !important;
+
           box-shadow:
             0 8px 22px rgba(0,0,0,.22)
             !important;
-
-          justify-content: flex-start !important;
-          align-items: stretch !important;
-          box-sizing: border-box !important;
         }
 
         html body #${HOME}
@@ -208,7 +231,9 @@
           border-width: 2px !important;
         }
 
-        /* MAIN CONTENT — FIXED TOP POSITION */
+        /* ===================================
+           MAIN CONTENT POSITION
+           =================================== */
 
         html body #${HOME}
         .mana-home-card-main-105034 {
@@ -217,19 +242,27 @@
 
           display: flex !important;
           flex-direction: column !important;
-
           align-items: flex-start !important;
-          justify-content: flex-start !important;
 
           width: 100% !important;
           min-width: 0 !important;
-          flex: 0 0 auto !important;
+
+          min-height: 218px !important;
+          flex: 0 0 218px !important;
 
           margin: 0 !important;
           padding: 0 !important;
         }
 
-        /* HEADING TOP-LEFT */
+        /* ===================================
+           ORANGE PROGRAM HEADING
+
+           MANA 28
+           MANA STRENGTH
+           MANA LYFE
+
+           Increased from 12px to 18px.
+           =================================== */
 
         html body #${HOME}
         .mana-home-card-main-105034
@@ -244,14 +277,24 @@
           padding: 0 !important;
 
           color: #FF7927 !important;
-          -webkit-text-fill-color: #FF7927
-            !important;
+          -webkit-text-fill-color:
+            #FF7927 !important;
 
-          font-size: 12px !important;
+          font-size: 18px !important;
           font-weight: 950 !important;
-          line-height: 1.35 !important;
-          letter-spacing: .08em !important;
+          line-height: 1.2 !important;
+          letter-spacing: .015em !important;
+
+          text-transform: uppercase !important;
+          white-space: normal !important;
         }
+
+        /* ===================================
+           WHITE HEADING
+
+           Preserve original text and size.
+           Example: 28-Day Kickstart.
+           =================================== */
 
         html body #${HOME}
         .mana-home-card-main-105034 h2 {
@@ -265,42 +308,67 @@
           padding: 0 !important;
 
           color: #FFFFFF !important;
-          -webkit-text-fill-color: #FFFFFF
-            !important;
+          -webkit-text-fill-color:
+            #FFFFFF !important;
 
           font-size: 28px !important;
           font-weight: 950 !important;
           line-height: 1.08 !important;
           letter-spacing: -.03em !important;
+          white-space: normal !important;
         }
 
-        /* DESCRIPTION DIRECTLY UNDER HEADING */
+        /* ===================================
+           SILVER DESCRIPTION
+
+           Explicitly positioned BELOW
+           the icon's occupied area.
+
+           Full available width rather
+           than squeezed alongside icon.
+           =================================== */
 
         html body #${HOME}
         .mana-home-card-main-105034 p {
           display: block !important;
-          position: static !important;
 
-          width: calc(100% - 86px) !important;
-          max-width: calc(100% - 86px) !important;
+          position: absolute !important;
+          z-index: 5 !important;
+
+          top: 125px !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: auto !important;
+
+          width: 100% !important;
+          max-width: 100% !important;
+          min-width: 0 !important;
 
           margin: 0 !important;
           padding: 0 !important;
 
           color: #C4CAD2 !important;
-          -webkit-text-fill-color: #C4CAD2
-            !important;
+          -webkit-text-fill-color:
+            #C4CAD2 !important;
 
           font-size: 13px !important;
           font-weight: 400 !important;
           line-height: 1.5 !important;
+
+          text-align: left !important;
+          white-space: normal !important;
+          transform: none !important;
         }
 
-        /* ICON — TOP RIGHT */
+        /* ===================================
+           ICON TOP-RIGHT
+           =================================== */
 
         html body #${HOME}
         button.mana-v8013-program
         > .mana-home-icon-105034 {
+          display: flex !important;
+
           position: absolute !important;
           z-index: 8 !important;
 
@@ -309,12 +377,11 @@
           left: auto !important;
           bottom: auto !important;
 
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-
           width: 72px !important;
           height: 72px !important;
+
+          align-items: center !important;
+          justify-content: center !important;
 
           padding: 11px !important;
           margin: 0 !important;
@@ -323,6 +390,7 @@
           border-radius: 17px !important;
 
           background: #231B16 !important;
+
           color: #FF7927 !important;
 
           opacity: 1 !important;
@@ -343,7 +411,12 @@
           visibility: visible !important;
         }
 
-        /* BOTTOM ROW — SAME POSITION ON ALL */
+        /* ===================================
+           BOTTOM FOOTER
+
+           Same horizontal position
+           on all three program cards.
+           =================================== */
 
         html body #${HOME}
         .mana-home-card-footer-105034 {
@@ -354,8 +427,8 @@
           grid-template-columns:
             minmax(0,1fr) auto !important;
 
-          gap: 10px !important;
           align-items: end !important;
+          gap: 10px !important;
 
           width: 100% !important;
           min-width: 0 !important;
@@ -368,45 +441,64 @@
             !important;
         }
 
+        /* ===================================
+           BOTTOM LEFT MEMBERSHIP TEXT
+
+           Enlarged from 11px to 13px.
+           =================================== */
+
         html body #${HOME}
         .mana-home-card-note-105034 {
-          position: static !important;
           display: block !important;
+          position: static !important;
 
           min-width: 0 !important;
+
           margin: 0 !important;
           padding: 0 !important;
 
-          color: #C4CAD2 !important;
-          -webkit-text-fill-color: #C4CAD2
-            !important;
+          color: #D1D5DB !important;
+          -webkit-text-fill-color:
+            #D1D5DB !important;
 
-          font-size: 11px !important;
-          font-weight: 650 !important;
-          line-height: 1.4 !important;
+          font-size: 13px !important;
+          font-weight: 750 !important;
+          line-height: 1.35 !important;
+
           text-align: left !important;
+          white-space: normal !important;
         }
+
+        /* ===================================
+           BOTTOM RIGHT EXPLORE
+           =================================== */
 
         html body #${HOME}
         .mana-home-card-action-105034 {
-          position: static !important;
           display: block !important;
+          position: static !important;
 
           margin: 0 !important;
           padding: 0 !important;
 
           color: #FF7927 !important;
-          -webkit-text-fill-color: #FF7927
-            !important;
+          -webkit-text-fill-color:
+            #FF7927 !important;
 
           font-size: 11px !important;
           font-weight: 900 !important;
           line-height: 1.4 !important;
+
           text-align: right !important;
           white-space: normal !important;
         }
 
-        /* HIDE OLD CONTENT THAT SHIFTED CARDS */
+        /* ===================================
+           HIDE OLD DUPLICATE CONTENT
+
+           Preserve old nodes and data,
+           just avoid duplicate rendering.
+           =================================== */
 
         html body #${HOME}
         button.mana-v8013-program
@@ -441,17 +533,18 @@
           display: none !important;
         }
 
-        /* EXTRA SPACE AFTER LAST BANNER */
-
         html body #${HOME}
         #manaV80Life {
           margin-bottom: 35px !important;
         }
       }
 
-      /* SMALL PHONES — STILL IDENTICAL HEIGHTS */
+      /* =====================================
+         SMALL PHONE ADJUSTMENT
+         ===================================== */
 
       @media(max-width:375px) {
+
         html body #${HOME}
         button#manaV80Mana28,
         html body #${HOME}
@@ -461,32 +554,42 @@
           height: 365px !important;
           min-height: 365px !important;
           max-height: 365px !important;
+
           padding-left: 14px !important;
           padding-right: 14px !important;
         }
 
         html body #${HOME}
-        button.mana-v8013-program
-        > .mana-home-icon-105034 {
-          width: 60px !important;
-          height: 60px !important;
-          right: 12px !important;
+        .mana-home-card-main-105034
+        .mana-v8013-program-label {
+          font-size: 17px !important;
+          width: calc(100% - 72px) !important;
+          max-width: calc(100% - 72px) !important;
         }
 
         html body #${HOME}
         .mana-home-card-main-105034 h2 {
-          font-size: 25px !important;
+          width: calc(100% - 72px) !important;
+          max-width: calc(100% - 72px) !important;
+          font-size: 28px !important;
         }
 
         html body #${HOME}
-        .mana-home-card-main-105034
-        .mana-v8013-program-label,
-        html body #${HOME}
-        .mana-home-card-main-105034 h2,
-        html body #${HOME}
         .mana-home-card-main-105034 p {
-          width: calc(100% - 72px) !important;
-          max-width: calc(100% - 72px) !important;
+          top: 133px !important;
+        }
+
+        html body #${HOME}
+        button.mana-v8013-program
+        > .mana-home-icon-105034 {
+          right: 12px !important;
+          width: 60px !important;
+          height: 60px !important;
+        }
+
+        html body #${HOME}
+        .mana-home-card-note-105034 {
+          font-size: 12px !important;
         }
       }
     `;
@@ -495,11 +598,10 @@
   }
 
   /* =====================================================
-     ORGANISE EXISTING CARD CONTENT
+     ORGANISE ORIGINAL PROGRAM CONTENT
 
-     Moves original nodes rather than
-     replacing the program buttons.
-     All original click handlers remain.
+     Keep existing buttons and handlers.
+     No program routing changes.
      ===================================================== */
 
   function organiseCard(config) {
@@ -547,7 +649,9 @@
       card.appendChild(icon);
     }
 
-    icon.innerHTML = icons[config.type];
+    if (!icon.firstElementChild) {
+      icon.innerHTML = icons[config.type];
+    }
 
     let footer = card.querySelector(
       ":scope > .mana-home-card-footer-105034"
@@ -571,7 +675,9 @@
       footer.appendChild(note);
     }
 
-    note.textContent = config.footer;
+    if (note.textContent !== config.footer) {
+      note.textContent = config.footer;
+    }
 
     let action = footer.querySelector(
       ".mana-home-card-action-105034"
@@ -584,36 +690,21 @@
       footer.appendChild(action);
     }
 
-    action.textContent = config.action;
+    if (action.textContent !== config.action) {
+      action.textContent = config.action;
+    }
 
-    card.classList.add("mana-home-fixed-105034");
+    card.classList.add(
+      "mana-home-fixed-105034"
+    );
   }
 
   /* =====================================================
-     EXISTING GUIDE BUTTON
+     REFRESH EXISTING HOME
      ===================================================== */
-
-  function markGuide() {
-    const home = $(HOME);
-    if (!home) return;
-
-    home.querySelectorAll("button,a")
-      .forEach(button => {
-        if (
-          /10[\s-]*steps?/i.test(
-            button.textContent || ""
-          )
-        ) {
-          button.classList.add(
-            "mana-home-guide-105034"
-          );
-        }
-      });
-  }
 
   function enhance() {
     CONFIG.forEach(organiseCard);
-    markGuide();
   }
 
   function init() {
@@ -624,15 +715,18 @@
       delay => setTimeout(enhance,delay)
     );
 
-    document.addEventListener("click", event => {
-      if (
-        event.target.closest?.(
-          "#manaV80HomeBtn"
-        )
-      ) {
-        setTimeout(enhance,100);
+    document.addEventListener(
+      "click",
+      event => {
+        if (
+          event.target.closest?.(
+            "#manaV80HomeBtn"
+          )
+        ) {
+          setTimeout(enhance,100);
+        }
       }
-    });
+    );
 
     window.addEventListener(
       "pageshow",
@@ -647,7 +741,7 @@
     window.MANA_HOME_MOBILE_BUILD = BUILD;
 
     console.log(
-      "[Mana Movement] Home banners " +
+      "[Mana Movement] Home Banners " +
       BUILD + " ready"
     );
   }
