@@ -2,7 +2,7 @@
 /* ============================================================
    MANA MOVEMENT TRAINING
    CLIENT PROFILE RESTORE + PREMIUM COACH CHAT
-   BUILD 104901
+   BUILD 105028
 
    COMPLETE REPLACEMENT:
    mana_extended_client_profile_104900.js
@@ -28,12 +28,17 @@
    - Never changes program builder
    - Never changes chat message handling
    - No permanent page-wide observer
+
+   GENDER FIX 105028
+   - Loads details.gender into client selector
+   - Saves Gender in the existing profile upsert
+   - No separate asynchronous Gender save
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "104901";
+  const BUILD = "105028";
   const FLAG = "MANA_EXT_CLIENT_104901";
 
   if (window[FLAG]) return;
@@ -308,6 +313,12 @@
         height: 100%;
         object-fit: cover;
         display: block;
+      }
+
+      #${ROOT} .me-photo-card strong {
+        display: block;
+        font-size: 12px;
+        margin-bottom: 8px;
       }
 
       #${ROOT} .me-photo-card strong {
@@ -791,6 +802,23 @@
 
       const details = data?.details || {};
 
+      // Load the client's own saved Gender.
+      const genderInput = $("manaProfileGender");
+
+      if (
+        genderInput &&
+        typeof details.gender === "string" &&
+        Array.from(genderInput.options).some(
+          option => option.value === details.gender
+        )
+      ) {
+        genderInput.value = details.gender;
+
+        genderInput.dispatchEvent(
+          new Event("change", { bubbles: true })
+        );
+      }
+
       fields.forEach(([key]) => {
         const input = $("me-" + key);
 
@@ -1015,6 +1043,19 @@
           details[key] = input.value.trim();
         }
       });
+
+      // Save Gender in the same operation as
+      // every other extended client field.
+      const genderInput = $("manaProfileGender");
+
+      if (
+        genderInput &&
+        Array.from(genderInput.options).some(
+          option => option.value === genderInput.value
+        )
+      ) {
+        details.gender = genderInput.value;
+      }
 
       details.contact_email =
         user.email || "";
