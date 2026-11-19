@@ -1,169 +1,104 @@
 
 /* ==========================================================
    MANA MOVEMENT TRAINING
-   COACH HUB SETTINGS + CLIENT GENDER
-   BUILD 105026
+   COACH HUB GENDER SAVE & DISPLAY
+   BUILD 105027
 
-   COMPLETE NEW JAVASCRIPT FILE
+   COMPLETE REPLACEMENT:
+   mana_coach_settings_gender_105026.js
 
    FIXES:
-   1. Restore fifth Coach Hub Settings tab
-   2. Keep existing Settings content working
-   3. Display Gender in Coach View Client
-   4. Save client's Gender on explicit Profile save
-   5. Respect share_with_coach permission
-   6. Never copy Gender between accounts
+   - Gender saved after extended-profile save completes
+   - No unreliable 600ms save race
+   - Client account identity verified
+   - Existing details merged, never replaced
+   - Existing coach-sharing consent unchanged
+   - Gender loaded fresh in Coach View Client
+   - Settings remains visible in Coach Hub
 
    PRESERVES:
-   - Client Profile 105022
-   - Mobile Profile 105023
-   - Account isolation 105024
-   - Number input repair 105025
-   - Existing Coach Hub navigation
+   - Client Profile layout and photographs
+   - Client and coach account isolation
+   - Working Coach Hub navigation
    - Chat, Payments and Program Builder
-   - Client photographs and history
+   - Training and Fuel records
 
-   No schema changes.
-   No automatic consent changes.
+   No database schema changes.
    ========================================================== */
 
 (() => {
   "use strict";
 
-  const BUILD = "105026";
-  const FLAG = "MANA_COACH_SETTINGS_GENDER_105026";
+  const BUILD = "105027";
+  const FLAG = "MANA_COACH_GENDER_105027";
 
   if (window[FLAG]) return;
   window[FLAG] = true;
 
   const NAV = "manaV97CoachNav";
-  const SUITE = "manaCoachSuite104707";
-  const DETAIL = "coachClientDetailView";
-  const PROFILE = "manaCoachProfile104950";
   const SCREEN = "manaProfileScreen";
-  const STYLE = "manaCoachGenderStyle105026";
+  const DETAIL = "coachClientDetailView";
+  const PANEL = "manaCoachProfile104950";
+  const CELL = "mana-gender-cell-105027";
 
   const $ = id => document.getElementById(id);
 
+  const VALID = new Set([
+    "",
+    "Male",
+    "Female",
+    "Non-binary",
+    "Prefer not to say"
+  ]);
+
+  let pendingSave = null;
+  let saving = false;
   let detailObserver = null;
+  let panelObserver = null;
+  let observedPanel = null;
   let observedDetail = null;
-  let profileObserver = null;
-  let observedProfile = null;
-  let loadingGender = false;
-  let genderRequest = 0;
-  let saveBusy = false;
-  let savingFor = "";
-  let lastGenderSignature = "";
+  let request = 0;
+  let refreshQueued = false;
 
   /* =====================================================
-     STYLING
-     ===================================================== */
-
-  function installStyles() {
-    if ($(STYLE)) return;
-
-    const sheet = document.createElement("style");
-    sheet.id = STYLE;
-
-    sheet.textContent = `
-
-      /* Restore the fifth Coach Hub tab */
-
-      #${NAV} .mana-v970-nav-inner {
-        display: grid !important;
-        grid-template-columns:
-          repeat(5,minmax(0,1fr)) !important;
-      }
-
-      #${NAV}
-      [data-coach-page="profile"] {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        order: 5 !important;
-      }
-
-      #${NAV}
-      [data-coach-page="profile"]
-      .mana-v970-tab-icon,
-      #${NAV}
-      [data-coach-page="profile"]
-      .mcn-tab-label {
-        display: block !important;
-        visibility: visible !important;
-      }
-
-      /* Gender in coach's client profile */
-
-      #${PROFILE}
-      .mana-gender-cell-105026 {
-        min-width: 0 !important;
-        border-color: #505862 !important;
-      }
-
-      #${PROFILE}
-      .mana-gender-cell-105026 small {
-        color: #B7C0CB !important;
-      }
-
-      #${PROFILE}
-      .mana-gender-cell-105026 strong {
-        color: #FFFFFF !important;
-      }
-
-      @media(max-width:390px) {
-        #${NAV}
-        .mana-v970-nav-inner {
-          gap: 4px !important;
-        }
-
-        #${NAV}
-        [data-coach-page="profile"] {
-          font-size: 9px !important;
-          min-width: 0 !important;
-        }
-      }
-    `;
-
-    document.head.appendChild(sheet);
-  }
-
-  /* =====================================================
-     CONNECTED ACCOUNT
+     SUPABASE SESSION
      ===================================================== */
 
   async function session() {
     if (
-      typeof window.supabaseClient !== "function"
-    ) return null;
+      typeof window.supabaseClient !==
+      "function"
+    ) {
+      return null;
+    }
 
     const db = await window.supabaseClient();
 
-    const {data,error} =
-      await db.auth.getUser();
+    const result = await db.auth.getUser();
 
-    if (error || !data?.user?.id) {
+    if (
+      result.error ||
+      !result.data?.user?.id
+    ) {
       return null;
     }
 
     return {
       db,
-      user: data.user
+      user: result.data.user
     };
   }
 
   /* =====================================================
-     RESTORE SETTINGS TAB
+     SETTINGS TAB
 
-     Use the existing navigation mechanism.
-     Do not introduce a competing page router.
+     Existing navigation owns click handling.
+     Restore the button if another renderer
+     removes it, but do not route clicks.
      ===================================================== */
 
-  function restoreSettingsTab() {
-    const nav = $(NAV);
-    if (!nav) return;
-
-    const inner = nav.querySelector(
+  function ensureSettings() {
+    const inner = $(NAV)?.querySelector(
       ".mana-v970-nav-inner"
     );
 
@@ -175,20 +110,13 @@
 
     if (!button) {
       button = document.createElement("button");
-
       button.type = "button";
       button.className = "mana-v970-tab";
-
       button.dataset.coachPage = "profile";
-      button.dataset.mcnTab = "settings";
-
       inner.appendChild(button);
     }
 
     button.hidden = false;
-    button.removeAttribute("aria-hidden");
-
-    button.dataset.coachPage = "profile";
     button.dataset.mcnTab = "settings";
     button.style.order = "5";
 
@@ -215,181 +143,178 @@
     }
 
     label.textContent = "Settings";
-
-    /*
-     Navigation 104707/105006 already
-     handles data-coach-page="profile".
-     No duplicate click handler.
-    */
   }
 
   /* =====================================================
-     STORE CLIENT GENDER WHEN CLIENT SAVES
+     CAPTURE GENDER ON SAVE
 
-     Only the authenticated client's
-     Gender is used.
-
-     Existing extended-profile details
-     are merged, not replaced.
-
-     Coach sharing permission is retained.
+     The main extended-profile saver owns
+     creating records and saving consent.
+     This module waits for its success event.
      ===================================================== */
 
-  async function persistClientGender() {
-    if (saveBusy) return;
+  function captureGender() {
+    const select = $("manaProfileGender");
 
-    const selected =
-      $("manaProfileGender");
+    if (!select || !VALID.has(select.value)) {
+      return;
+    }
 
-    if (!selected) return;
+    pendingSave = {
+      gender: select.value,
+      timestamp: Date.now()
+    };
+  }
 
-    const gender = selected.value;
+  /* =====================================================
+     SAVE CLIENT GENDER
 
-    const allowed = new Set([
-      "",
-      "Male",
-      "Female",
-      "Non-binary",
-      "Prefer not to say"
-    ]);
+     Only updates existing records for
+     the currently authenticated client.
+     Never changes share_with_coach.
+     ===================================================== */
 
-    if (!allowed.has(gender)) return;
+  async function persistGender() {
+    if (saving || !pendingSave) return;
 
-    saveBusy = true;
+    const snapshot = pendingSave;
+    pendingSave = null;
+
+    if (
+      Date.now() - snapshot.timestamp >
+      30000
+    ) {
+      return;
+    }
+
+    saving = true;
 
     try {
       const auth = await session();
-
       if (!auth) return;
 
-      const id = auth.user.id;
+      const userId = auth.user.id;
 
-      /*
-       Check that a client is saving
-       their own data, rather than a
-       coach updating another user.
-      */
-
-      const roleResult = await auth.db
+      const role = await auth.db
         .from("profiles")
         .select("role")
-        .eq("id",id)
+        .eq("id", userId)
         .maybeSingle();
 
       if (
-        roleResult.error ||
-        roleResult.data?.role !== "client"
-      ) return;
-
-      /*
-       Check that authentication has
-       not changed during this save.
-      */
+        role.error ||
+        role.data?.role !== "client"
+      ) {
+        return;
+      }
 
       const existing = await auth.db
         .from("client_extended_profiles")
-        .select("details,share_with_coach")
-        .eq("user_id",id)
+        .select("details")
+        .eq("user_id", userId)
         .maybeSingle();
 
-      if (existing.error) {
-        throw existing.error;
+      if (
+        existing.error ||
+        !existing.data
+      ) {
+        throw existing.error ||
+          Error("Extended profile not yet saved.");
       }
 
-      const fresh = await auth.db.auth.getUser();
+      const latestUser =
+        await auth.db.auth.getUser();
 
       if (
-        fresh.error ||
-        fresh.data?.user?.id !== id
-      ) return;
+        latestUser.error ||
+        latestUser.data?.user?.id !==
+          userId
+      ) {
+        return;
+      }
 
-      /*
-       Do not create a new record from
-       this small add-on. The existing
-       extended-profile save owns record
-       creation and consent.
-      */
-
-      if (!existing.data) return;
-
-      const oldDetails =
-        existing.data.details || {};
-
-      const nextDetails = {
-        ...oldDetails,
-        gender
+      const details = {
+        ...(existing.data.details || {}),
+        gender: snapshot.gender
       };
 
-      const {error} = await auth.db
+      const result = await auth.db
         .from("client_extended_profiles")
         .update({
-          details: nextDetails,
-          updated_at: new Date().toISOString()
+          details,
+          updated_at:
+            new Date().toISOString()
         })
-        .eq("user_id",id);
+        .eq("user_id", userId);
 
-      if (error) throw error;
+      if (result.error) {
+        throw result.error;
+      }
 
       console.log(
-        "[Mana Movement] Client Gender saved " +
+        "[Mana Movement] Gender synced " +
         BUILD
       );
 
     } catch (error) {
       console.warn(
-        "[Mana Gender] Save:",
+        "[Mana Gender] Save failed:",
         error
       );
 
     } finally {
-      saveBusy = false;
+      saving = false;
     }
   }
 
-  function connectClientSave() {
+  function connectSaving() {
     const screen = $(SCREEN);
 
-    if (!screen) return;
-
-    if (screen.dataset.manaGenderSave105026) {
+    if (!screen ||
+        screen.dataset.manaGender105027) {
       return;
     }
 
-    screen.dataset.manaGenderSave105026 = "1";
+    screen.dataset.manaGender105027 = "1";
 
     /*
-     Wait for the original Profile and
-     extended-profile handlers to save.
-     Then merge Gender into the existing
-     record without changing consent.
+     Capture the selected value before
+     the original handlers finish saving.
     */
 
     screen.addEventListener(
       "click",
       event => {
         if (
-          !event.target.closest?.(
+          event.target.closest?.(
             "#manaProfileSave"
           )
-        ) return;
+        ) {
+          captureGender();
+        }
+      },
+      true
+    );
 
-        setTimeout(() => {
-          void persistClientGender();
-        },600);
+    /*
+     The extended-profile module emits
+     this event only after its database
+     upsert and photo processing succeed.
+    */
+
+    window.addEventListener(
+      "mana:extended-profile-saved",
+      () => {
+        void persistGender();
       }
     );
   }
 
   /* =====================================================
-     COACH CLIENT PROFILE
-
-     Use the client ID displayed by the
-     current Coach View Client renderer.
-     Never use localStorage to retrieve
-     another person's Gender.
+     COACH CLIENT LOOKUP
      ===================================================== */
 
-  function coachDetailOpen() {
+  function detailOpen() {
     const view = $(DETAIL);
 
     return Boolean(
@@ -399,51 +324,76 @@
     );
   }
 
-  function currentClientId() {
-    const panel = $(PROFILE);
+  function clientId() {
+    if (!detailOpen()) return "";
 
-    if (
-      !panel ||
-      !coachDetailOpen()
-    ) return "";
-
-    return panel.dataset.clientId || "";
+    return $(PANEL)?.dataset.clientId || "";
   }
 
-  function ensureGenderCell(grid) {
+  function personalGrid() {
+    const panel = $(PANEL);
+
+    if (!panel || !detailOpen()) return null;
+
+    const section = Array.from(
+      panel.querySelectorAll(
+        ".mana-profile-group"
+      )
+    ).find(item =>
+      /personal|contact/i.test(
+        item.querySelector("h3")
+          ?.textContent || ""
+      )
+    );
+
+    return section?.querySelector(
+      ".mana-profile-grid"
+    ) || null;
+  }
+
+  /* =====================================================
+     GENDER DISPLAY
+     ===================================================== */
+
+  function ensureCell(grid) {
     let cell = grid.querySelector(
-      ".mana-gender-cell-105026"
+      "." + CELL
     );
 
     if (cell) return cell;
 
+    /*
+     Remove the previous add-on's
+     temporary Gender cell, if present.
+    */
+
+    grid.querySelector(
+      ".mana-gender-cell-105026"
+    )?.remove();
+
     cell = document.createElement("div");
 
     cell.className =
-      "mana-profile-cell mana-gender-cell-105026";
+      "mana-profile-cell " + CELL;
 
     const label = document.createElement("small");
     label.textContent = "Gender";
 
     const value = document.createElement("strong");
-    value.textContent = "Not provided";
+    value.textContent = "Loading…";
 
     cell.append(label,value);
 
-    /*
-       Place immediately after the
-       first Full Name field where possible.
-    */
+    const name = Array.from(
+      grid.children
+    ).find(item =>
+      item.querySelector("small")
+        ?.textContent.trim()
+        .toLowerCase() === "full name"
+    );
 
-    const first = Array.from(grid.children)
-      .find(node =>
-        node.querySelector("small")
-          ?.textContent.trim()
-          .toLowerCase() === "full name"
-      );
-
-    if (first) {
-      first.insertAdjacentElement(
+    if (name) {
+      name.insertAdjacentElement(
         "afterend",
         cell
       );
@@ -454,182 +404,155 @@
     return cell;
   }
 
-  async function showClientGender() {
-    if (loadingGender || !coachDetailOpen()) {
-      return;
-    }
+  async function refreshGender() {
+    const id = clientId();
+    const grid = personalGrid();
 
-    const panel = $(PROFILE);
-    const clientId = currentClientId();
+    if (!id || !grid) return;
 
-    if (!panel || !clientId) return;
+    const ticket = ++request;
+    const cell = ensureCell(grid);
+    const text = cell.querySelector("strong");
 
-    const personalSection = Array.from(
-      panel.querySelectorAll(
-        ".mana-profile-group"
-      )
-    ).find(section =>
-      /personal|contact/i.test(
-        section.querySelector("h3")
-          ?.textContent || ""
-      )
-    );
-
-    const grid = personalSection?.querySelector(
-      ".mana-profile-grid"
-    );
-
-    if (!grid) return;
-
-    const signature =
-      clientId + "|" +
-      Array.from(grid.children).length;
-
-    if (
-      lastGenderSignature === signature &&
-      grid.querySelector(
-        ".mana-gender-cell-105026"
-      )
-    ) return;
-
-    loadingGender = true;
-
-    const ticket = ++genderRequest;
-
-    const cell = ensureGenderCell(grid);
-    const value = cell.querySelector("strong");
+    text.textContent = "Loading…";
 
     try {
       const auth = await session();
 
-      if (!auth) return;
+      if (!auth) {
+        text.textContent = "Unavailable";
+        return;
+      }
 
       const result = await auth.db
         .from("client_extended_profiles")
         .select("details,share_with_coach")
-        .eq("user_id",clientId)
+        .eq("user_id", id)
         .maybeSingle();
 
       if (
-        ticket !== genderRequest ||
-        currentClientId() !== clientId ||
+        ticket !== request ||
+        clientId() !== id ||
         !cell.isConnected
       ) return;
 
       if (result.error) {
-        value.textContent = "Unavailable";
+        text.textContent = "Unavailable";
         return;
       }
 
-      const shared = Boolean(
-        result.data?.share_with_coach
-      );
+      if (
+        !result.data ||
+        !result.data.share_with_coach
+      ) {
+        text.textContent = "Not shared";
+        return;
+      }
 
-      const gender = shared
-        ? result.data?.details?.gender
-        : "";
+      const gender =
+        result.data.details?.gender;
 
-      value.textContent =
+      text.textContent =
         typeof gender === "string" &&
-        gender.trim()
+        VALID.has(gender) &&
+        gender !== ""
           ? gender
-          : "Not provided";
-
-      lastGenderSignature = signature;
+          : "Not saved yet";
 
     } catch (error) {
-      if (value?.isConnected) {
-        value.textContent = "Unavailable";
+      if (cell.isConnected) {
+        text.textContent = "Unavailable";
       }
 
       console.warn(
         "[Mana Coach Gender]",
         error
       );
-
-    } finally {
-      loadingGender = false;
     }
   }
 
   /* =====================================================
-     WATCH ONLY COACH CLIENT DETAIL
+     WATCH CLIENT PROFILE RENDERER
 
-     The original renderer can redraw
-     this panel when another client is
-     selected.
-
-     No full-page observer.
+     The coach profile is refreshed when
+     changing clients. Reattach the cell
+     without changing existing sections.
      ===================================================== */
 
-  function watchClientPanel() {
-    const panel = $(PROFILE);
+  function queueRefresh() {
+    if (refreshQueued) return;
 
-    if (!panel || observedProfile === panel) {
+    refreshQueued = true;
+
+    requestAnimationFrame(() => {
+      refreshQueued = false;
+
+      if (detailOpen() && personalGrid()) {
+        void refreshGender();
+      }
+    });
+  }
+
+  function observePanel() {
+    const panel = $(PANEL);
+
+    if (!panel ||
+        observedPanel === panel) {
       return;
     }
 
-    profileObserver?.disconnect();
-    observedProfile = panel;
+    panelObserver?.disconnect();
+    observedPanel = panel;
 
-    profileObserver = new MutationObserver(
+    panelObserver = new MutationObserver(
       () => {
-        if (!coachDetailOpen()) return;
+        if (!detailOpen()) return;
 
-        /*
-         Only fetch when the renderer
-         has replaced its profile content
-         and the Gender cell is absent.
-        */
+        const grid = personalGrid();
 
-        const gender = panel.querySelector(
-          ".mana-gender-cell-105026"
-        );
-
-        if (!gender) {
-          lastGenderSignature = "";
-          void showClientGender();
+        if (
+          grid &&
+          !grid.querySelector("." + CELL)
+        ) {
+          queueRefresh();
         }
       }
     );
 
-    profileObserver.observe(panel,{
-      childList:true,
-      subtree:false
+    panelObserver.observe(panel, {
+      childList: true,
+      subtree: false
     });
 
-    void showClientGender();
+    queueRefresh();
   }
 
-  function watchDetail() {
+  function observeDetail() {
     const detail = $(DETAIL);
 
     if (
       !detail ||
       observedDetail === detail
-    ) return;
+    ) {
+      return;
+    }
 
     detailObserver?.disconnect();
     observedDetail = detail;
 
     detailObserver = new MutationObserver(
       () => {
-        if (coachDetailOpen()) {
-          watchClientPanel();
-          void showClientGender();
+        if (detailOpen()) {
+          observePanel();
+          queueRefresh();
         }
       }
     );
 
-    detailObserver.observe(detail,{
-      attributes:true,
-      attributeFilter:["class","hidden"]
+    detailObserver.observe(detail, {
+      attributes: true,
+      attributeFilter: ["class","hidden"]
     });
-
-    if (coachDetailOpen()) {
-      watchClientPanel();
-      void showClientGender();
-    }
   }
 
   /* =====================================================
@@ -637,58 +560,48 @@
      ===================================================== */
 
   function refresh() {
-    restoreSettingsTab();
-    connectClientSave();
-    watchDetail();
-    watchClientPanel();
+    ensureSettings();
+    connectSaving();
+    observeDetail();
+    observePanel();
   }
 
   function init() {
-    installStyles();
     refresh();
 
-    /*
-     Existing Coach Hub and client
-     profile screens load at different
-     points in startup.
-    */
-
-    [200,600,1200,2200].forEach(delay => {
-      setTimeout(refresh,delay);
-    });
+    [200,600,1200,2200].forEach(
+      delay => {
+        setTimeout(refresh, delay);
+      }
+    );
 
     document.addEventListener(
       "click",
       event => {
-        const target = event.target;
-
-        if (
-          target.closest?.(
-            ".client-open[data-client-id], " +
-            "#backToCoachClients"
-          )
-        ) {
-          lastGenderSignature = "";
-
+        if (event.target.closest?.(
+          ".client-open[data-client-id]"
+        )) {
           setTimeout(() => {
             refresh();
-            void showClientGender();
-          },250);
+            queueRefresh();
+          },350);
         }
       }
     );
 
     window.addEventListener(
       "pageshow",
-      refresh
+      () => {
+        refresh();
+        queueRefresh();
+      }
     );
 
-    window.MANA_COACH_SETTINGS_GENDER_BUILD =
-      BUILD;
+    window.MANA_COACH_GENDER_BUILD = BUILD;
 
     console.log(
-      "[Mana Movement] Coach Settings " +
-      "and Gender " + BUILD + " ready"
+      "[Mana Movement] Coach Gender " +
+      BUILD + " ready"
     );
   }
 
