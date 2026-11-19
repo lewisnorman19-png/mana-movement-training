@@ -1,35 +1,34 @@
 
 /* ============================================================
    MANA MOVEMENT — MOBILE HOME FINISH
-   BUILD 105040
+   BUILD 105041
 
-   COMPLETE REPLACEMENT:
+   COMPLETE FILE REPLACEMENT:
    mana_home_mobile_finish_105031.js
 
-   CHANGES FROM 105039:
-   1. Mana Strength icon: SILVER
-   2. Mana Strength: ONE price only
-   3. ManaLyfe icon: WHITE
-   4. ManaLyfe heading:
-        Reset.
-        Rebuild.
-        Move Forward.
-      All below the icon area, with description below
+   ONLY NEW CHANGE:
+   ManaLyfe heading is displayed in
+   three separate block-level lines:
 
-   PRESERVED:
-   - Original button functionality
-   - Program navigation
-   - Approved banner width and height
-   - Existing gaps between banners
+   Reset.
+   Rebuild.
+   Move Forward.
+
+   PRESERVES BUILD 105040:
+   - Banner sizes and spacing
    - Mana28 orange icon
+   - Mana Strength silver icon
+   - ManaLyfe white icon
+   - Single Strength price
+   - Original Home navigation
    - Desktop layout
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "105040";
-  const ID = "mana-home-css-105040";
+  const BUILD = "105041";
+  const ID = "mana-home-css-105041";
 
   if (document.getElementById(ID)) return;
 
@@ -37,22 +36,17 @@
 
     @media (max-width:600px) {
 
-      /* =====================================
-         HOME WIDTH — UNCHANGED
-         ===================================== */
+      /* HOME WIDTH */
 
       html body #manaV80Home {
         width: calc(100vw - 12px) !important;
         max-width: calc(100vw - 12px) !important;
         min-width: 0 !important;
-
         margin-left:
           calc(50% - 50vw + 6px) !important;
         margin-right: 0 !important;
-
         padding-left: 0 !important;
         padding-right: 0 !important;
-
         box-sizing: border-box !important;
       }
 
@@ -61,16 +55,12 @@
         margin-bottom: 34px !important;
       }
 
-      /* =====================================
-         ALL THREE BANNERS — UNCHANGED
-         ===================================== */
+      /* THREE ORIGINAL PROGRAM BANNERS */
 
       html body #manaV80Home
       button#manaV80Mana28,
-
       html body #manaV80Home
       button#manaV80Strength,
-
       html body #manaV80Home
       button#manaV80Life {
         position: relative !important;
@@ -100,7 +90,6 @@
 
         color: #FFFFFF !important;
         text-align: left !important;
-
         overflow: hidden !important;
         box-sizing: border-box !important;
 
@@ -109,9 +98,7 @@
           !important;
       }
 
-      /* =====================================
-         ORANGE PROGRAM HEADINGS
-         ===================================== */
+      /* ORANGE PROGRAM HEADINGS */
 
       html body #manaV80Home
       button.mana-v8013-program
@@ -138,18 +125,14 @@
         line-height: 1.15 !important;
         letter-spacing: 0 !important;
         text-transform: uppercase !important;
-
         z-index: 6 !important;
       }
 
-      /* =====================================
-         ORIGINAL ICON POSITIONS
-         ===================================== */
+      /* EXISTING ICON POSITIONS */
 
       html body #manaV80Home
       button.mana-v8013-program
       > .m1025-home-icon,
-
       html body #manaV80Home
       button.mana-v8013-program
       > .mana-v1024-home-art {
@@ -163,7 +146,6 @@
 
         width: 62px !important;
         height: 62px !important;
-
         padding: 7px !important;
         margin: 0 !important;
 
@@ -178,8 +160,8 @@
 
         opacity: 1 !important;
         visibility: visible !important;
-
         pointer-events: none !important;
+
         box-sizing: border-box !important;
         z-index: 7 !important;
       }
@@ -187,7 +169,6 @@
       html body #manaV80Home
       button.mana-v8013-program
       > .m1025-home-icon svg,
-
       html body #manaV80Home
       button.mana-v8013-program
       > .mana-v1024-home-art svg {
@@ -196,28 +177,20 @@
         height: 100% !important;
       }
 
-      /* =====================================
-         MANA28 ICON — ORANGE
-         ===================================== */
+      /* MANA28 ICON — ORANGE */
 
       html body #manaV80Home
-      #manaV80Mana28
-      > .m1025-home-icon,
-
+      #manaV80Mana28 > .m1025-home-icon,
       html body #manaV80Home
-      #manaV80Mana28
-      > .mana-v1024-home-art {
+      #manaV80Mana28 > .mana-v1024-home-art {
         color: #FF7927 !important;
         border-color: #FF7927 !important;
       }
 
       html body #manaV80Home
-      #manaV80Mana28
-      > .m1025-home-icon svg,
-
+      #manaV80Mana28 > .m1025-home-icon svg,
       html body #manaV80Home
-      #manaV80Mana28
-      > .mana-v1024-home-art svg {
+      #manaV80Mana28 > .mana-v1024-home-art svg {
         filter:
           brightness(0)
           saturate(100%)
@@ -230,28 +203,20 @@
           !important;
       }
 
-      /* =====================================
-         MANA STRENGTH ICON — SILVER
-         ===================================== */
+      /* MANA STRENGTH ICON — SILVER */
 
       html body #manaV80Home
-      #manaV80Strength
-      > .m1025-home-icon,
-
+      #manaV80Strength > .m1025-home-icon,
       html body #manaV80Home
-      #manaV80Strength
-      > .mana-v1024-home-art {
+      #manaV80Strength > .mana-v1024-home-art {
         color: #C0C6CF !important;
         border-color: #C0C6CF !important;
       }
 
       html body #manaV80Home
-      #manaV80Strength
-      > .m1025-home-icon svg,
-
+      #manaV80Strength > .m1025-home-icon svg,
       html body #manaV80Home
-      #manaV80Strength
-      > .mana-v1024-home-art svg {
+      #manaV80Strength > .mana-v1024-home-art svg {
         filter:
           brightness(0)
           saturate(100%)
@@ -264,37 +229,27 @@
           !important;
       }
 
-      /* =====================================
-         MANA LYFE ICON — WHITE
-         ===================================== */
+      /* MANA LYFE ICON — WHITE */
 
       html body #manaV80Home
-      #manaV80Life
-      > .m1025-home-icon,
-
+      #manaV80Life > .m1025-home-icon,
       html body #manaV80Home
-      #manaV80Life
-      > .mana-v1024-home-art {
+      #manaV80Life > .mana-v1024-home-art {
         color: #FFFFFF !important;
         border-color: #FFFFFF !important;
       }
 
       html body #manaV80Home
-      #manaV80Life
-      > .m1025-home-icon svg,
-
+      #manaV80Life > .m1025-home-icon svg,
       html body #manaV80Home
-      #manaV80Life
-      > .mana-v1024-home-art svg {
+      #manaV80Life > .mana-v1024-home-art svg {
         filter:
           brightness(0)
           invert(1)
           !important;
       }
 
-      /* =====================================
-         WHITE HEADINGS — BELOW ICON AREA
-         ===================================== */
+      /* WHITE HEADINGS */
 
       html body #manaV80Home
       button.mana-v8013-program > h2 {
@@ -322,33 +277,51 @@
 
         text-align: left !important;
         white-space: normal !important;
-
         z-index: 5 !important;
       }
 
       /* =====================================
-         MANA LYFE WHITE HEADING
+         MANA LYFE — THREE SEPARATE LINES
 
-         Three dedicated lines.
-         Text starts below the icon.
+         Each phrase has its own span.
+         display:block forces a new line.
          ===================================== */
 
       html body #manaV80Home
       #manaV80Life > h2 {
         top: 91px !important;
-
         font-size: 22px !important;
         line-height: 1.08 !important;
 
-        white-space: pre-line !important;
-
         width: calc(100% - 36px) !important;
         max-width: calc(100% - 36px) !important;
+
+        white-space: normal !important;
+        text-align: left !important;
       }
 
-      /* =====================================
-         SILVER DESCRIPTIONS
-         ===================================== */
+      html body #manaV80Home
+      #manaV80Life > h2
+      .mana-lyfe-line-105041 {
+        display: block !important;
+        width: 100% !important;
+
+        margin: 0 !important;
+        padding: 0 !important;
+
+        color: #FFFFFF !important;
+        -webkit-text-fill-color:
+          #FFFFFF !important;
+
+        font-size: inherit !important;
+        font-weight: inherit !important;
+        line-height: inherit !important;
+
+        white-space: nowrap !important;
+        text-align: left !important;
+      }
+
+      /* SILVER DESCRIPTION */
 
       html body #manaV80Home
       button.mana-v8013-program > p {
@@ -375,12 +348,10 @@
         font-weight: 400 !important;
 
         text-align: left !important;
-
         z-index: 5 !important;
       }
 
-      /* ManaLyfe description begins
-         beneath the three-line heading. */
+      /* LYFE DESCRIPTION BELOW THREE LINES */
 
       html body #manaV80Home
       #manaV80Life > p {
@@ -389,34 +360,20 @@
         line-height: 1.35 !important;
       }
 
-      /* =====================================
-         HIDE OLD DUPLICATE TEXT
-         ===================================== */
+      /* HIDE OLD DUPLICATES */
 
       html body #manaV80Home
-      button.mana-v8013-program
-      .mana-v8013-free-note,
-
+      button.mana-v8013-program .mana-v8013-free-note,
       html body #manaV80Home
-      button.mana-v8013-program
-      .m1027-home-support,
-
+      button.mana-v8013-program .m1027-home-support,
       html body #manaV80Home
-      button.mana-v8013-program
-      .mana-v8013-current-badge,
-
+      button.mana-v8013-program .mana-v8013-current-badge,
       html body #manaV80Home
-      button.mana-v8013-program
-      .mana-v8013-badge {
+      button.mana-v8013-program .mana-v8013-badge {
         display: none !important;
       }
 
-      /* =====================================
-         STRENGTH PRICE — ONE COPY ONLY
-
-         Display original price element.
-         Remove generated duplicate.
-         ===================================== */
+      /* ONE STRENGTH PRICE */
 
       html body #manaV80Home
       #manaV80Strength::before {
@@ -425,8 +382,7 @@
       }
 
       html body #manaV80Home
-      #manaV80Strength
-      .mana-v8013-price {
+      #manaV80Strength .mana-v8013-price {
         display: flex !important;
         position: absolute !important;
 
@@ -444,13 +400,11 @@
 
         width: 46% !important;
         max-width: 46% !important;
-
         z-index: 6 !important;
       }
 
       html body #manaV80Home
-      #manaV80Strength
-      .mana-v8013-price strong {
+      #manaV80Strength .mana-v8013-price strong {
         color: #D1D5DB !important;
         -webkit-text-fill-color:
           #D1D5DB !important;
@@ -461,8 +415,7 @@
       }
 
       html body #manaV80Home
-      #manaV80Strength
-      .mana-v8013-price span {
+      #manaV80Strength .mana-v8013-price span {
         color: #D1D5DB !important;
         -webkit-text-fill-color:
           #D1D5DB !important;
@@ -470,17 +423,13 @@
         font-size: 11px !important;
         font-weight: 650 !important;
         line-height: 1.2 !important;
-
         margin: 0 !important;
       }
 
-      /* =====================================
-         EXPLORE — BOTTOM RIGHT
-         ===================================== */
+      /* EXPLORE — BOTTOM RIGHT */
 
       html body #manaV80Home
-      button.mana-v8013-program
-      .mana-v8013-open {
+      button.mana-v8013-program .mana-v8013-open {
         display: block !important;
         position: absolute !important;
 
@@ -502,13 +451,10 @@
         font-size: 12px !important;
         font-weight: 900 !important;
         text-align: right !important;
-
         z-index: 6 !important;
       }
 
-      /* =====================================
-         FOOTER SEPARATOR
-         ===================================== */
+      /* FOOTER RULE */
 
       html body #manaV80Home
       button.mana-v8013-program::after {
@@ -521,16 +467,13 @@
         bottom: 46px !important;
 
         height: 1px !important;
-
         background:
           rgba(255,255,255,.12) !important;
 
         pointer-events: none !important;
       }
 
-      /* =====================================
-         MANA28 — NO FREE CLAIM
-         ===================================== */
+      /* MANA28 — NO FREE LABEL */
 
       html body #manaV80Home
       #manaV80Mana28::before {
@@ -538,9 +481,7 @@
         display: none !important;
       }
 
-      /* =====================================
-         MANA LYFE — MEMBERSHIP NOTE
-         ===================================== */
+      /* LYFE MEMBERSHIP NOTE */
 
       html body #manaV80Home
       #manaV80Life::before {
@@ -556,12 +497,10 @@
         top: auto !important;
 
         max-width: 45% !important;
-
         margin: 0 !important;
         padding: 0 !important;
 
         color: #D1D5DB !important;
-
         font-size: 12px !important;
         font-weight: 750 !important;
         line-height: 1.25 !important;
@@ -576,18 +515,14 @@
       }
     }
 
-    /* =====================================
-       NARROW PHONES
-       ===================================== */
+    /* NARROW PHONES */
 
     @media(max-width:360px) {
 
       html body #manaV80Home
       button#manaV80Mana28,
-
       html body #manaV80Home
       button#manaV80Strength,
-
       html body #manaV80Home
       button#manaV80Life {
         height: 312px !important;
@@ -621,11 +556,10 @@
   `;
 
   /* =====================================================
-     MANA LYFE HEADING
+     FORCE EACH PHRASE TO ITS OWN LINE
 
-     Adds visual line breaks to the existing
-     heading only. Does not change the
-     button or its click handler.
+     Changes only the existing ManaLyfe
+     h2 content, not its button or handler.
      ===================================================== */
 
   function formatLyfeHeading() {
@@ -635,17 +569,34 @@
 
     if (!heading) return;
 
-    const wanted =
-      "Reset.\nRebuild.\nMove Forward.";
+    const lines = heading.querySelectorAll(
+      ":scope > .mana-lyfe-line-105041"
+    );
 
-    if (heading.textContent !== wanted) {
-      heading.textContent = wanted;
+    if (
+      lines.length === 3 &&
+      lines[0].textContent === "Reset." &&
+      lines[1].textContent === "Rebuild." &&
+      lines[2].textContent === "Move Forward."
+    ) {
+      return;
     }
-  }
 
-  /* =====================================================
-     INITIALISE
-     ===================================================== */
+    const values = [
+      "Reset.",
+      "Rebuild.",
+      "Move Forward."
+    ];
+
+    heading.replaceChildren();
+
+    values.forEach(value => {
+      const line = document.createElement("span");
+      line.className = "mana-lyfe-line-105041";
+      line.textContent = value;
+      heading.appendChild(line);
+    });
+  }
 
   function install() {
     let style = document.getElementById(ID);
@@ -657,13 +608,12 @@
     }
 
     style.textContent = css;
-
     formatLyfeHeading();
 
     window.MANA_HOME_MOBILE_BUILD = BUILD;
 
     console.log(
-      "[Mana Movement] Home 105040 ready"
+      "[Mana Movement] Home 105041 ready"
     );
   }
 
@@ -671,41 +621,33 @@
     document.addEventListener(
       "DOMContentLoaded",
       install,
-      { once:true }
+      { once: true }
     );
   } else {
     install();
   }
 
-  /* The existing Home script may refresh
-     its card text after login. Reapply
-     only the requested Lyfe line breaks. */
+  /* Reapply only if the original Home
+     script refreshes the Lyfe heading. */
 
   window.addEventListener(
     "pageshow",
     formatLyfeHeading
   );
 
-  document.addEventListener(
-    "click",
-    event => {
-      if (
-        event.target.closest?.(
-          "#manaV80HomeBtn"
-        )
-      ) {
-        setTimeout(formatLyfeHeading,100);
-      }
-    }
-  );
-
   window.addEventListener(
     "mana:program-change",
-    () => setTimeout(formatLyfeHeading,0)
+    () => setTimeout(formatLyfeHeading, 0)
   );
 
-  [200,650,1500].forEach(delay => {
-    setTimeout(formatLyfeHeading,delay);
+  document.addEventListener("click", event => {
+    if (event.target.closest?.("#manaV80HomeBtn")) {
+      setTimeout(formatLyfeHeading, 100);
+    }
+  });
+
+  [150, 450, 1000, 2000].forEach(delay => {
+    setTimeout(formatLyfeHeading, delay);
   });
 
 })();
