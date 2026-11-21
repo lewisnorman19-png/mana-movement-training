@@ -1,109 +1,91 @@
-/* =========================================
-   MANA MOVEMENT TRAINING v9.19.0
-   PHONE RESUME GUARD
 
-   FIXES:
-   - PHONE TIMEOUT DOES NOT REOPEN INTRO
-   - APP RETURNS TO PREVIOUS MANA SCREEN
-   - MANUAL INTRO STILL WORKS
-   - FRESH LOGIN CAN STILL USE INTRO
-   ========================================= */
+/*
+=========================================
+MANA MOVEMENT TRAINING v9.19.1
+PHONE RESUME GUARD — BUILD 91901
+
+COMPLETE REPLACEMENT:
+v9_19_phone_resume.js
+
+FIXES
+- Removes repeated app-shell enforcement
+- Prevents overlapping Safari resume checks
+- Stops unnecessary screen redraws
+- Keeps manual Introduction working
+- Keeps fresh login Introduction working
+- Prevents automatic Intro reopening
+- Preserves current program and tab
+
+IMPORTANT
+- Does not rebuild Strength Overview
+- Does not recreate navigation buttons
+- Does not modify Profile or DOB
+- Does not modify Coach Hub
+- Does not affect desktop layout
+=========================================
+*/
 
 (() => {
   "use strict";
 
+  const BUILD = "91901";
+  const FLAG = "MANA_PHONE_RESUME_91901";
 
-  const INTRO_ID =
-    "manaV81Intro";
+  if (window[FLAG]) return;
+  window[FLAG] = true;
 
-  const ENTERED_KEY =
-    "mana-v919-entered-mana";
+  const INTRO_ID = "manaV81Intro";
+  const ENTERED_KEY = "mana-v919-entered-mana";
 
+  let manualIntro = false;
+  let restoring = false;
+  let resumeTimer = null;
+  let manualTimer = null;
+  let introObserver = null;
 
-  let manualIntro =
-    false;
+  const $ = id => document.getElementById(id);
 
-  let restoring =
-    false;
-
-
-  /* =========================================
-     HELPERS
-     ========================================= */
+  /* ======================================
+     SESSION HELPERS
+     ====================================== */
 
   function intro() {
-
-    return document.getElementById(
-      INTRO_ID
-    );
-
+    return $(INTRO_ID);
   }
-
 
   function introOpen() {
-
     return Boolean(
-      intro()
-        ?.classList
-        .contains(
-          "open"
-        )
+      intro()?.classList.contains("open")
     );
-
   }
 
-
   function hasEnteredMana() {
-
     try {
-
       return (
-        localStorage.getItem(
-          ENTERED_KEY
-        ) === "1"
+        localStorage.getItem(ENTERED_KEY) === "1"
       );
-
     } catch (_) {
-
       return false;
-
     }
   }
 
-
   function markEntered() {
-
     try {
-
-      localStorage.setItem(
-        ENTERED_KEY,
-        "1"
-      );
-
+      localStorage.setItem(ENTERED_KEY, "1");
     } catch (_) {}
-
   }
-
 
   function clearEntered() {
-
     try {
-
-      localStorage.removeItem(
-        ENTERED_KEY
-      );
-
+      localStorage.removeItem(ENTERED_KEY);
     } catch (_) {}
-
   }
 
-
-  /* =========================================
-     CLOSE AUTO INTRO
-     ========================================= */
+  /* ======================================
+     CLOSE UNWANTED INTRO ONLY
+     ====================================== */
 
   function closeAutoIntro() {
-
     if (
       restoring ||
       manualIntro ||
@@ -113,420 +95,276 @@
       return;
     }
 
+    restoring = true;
 
-    restoring =
-      true;
-
-
-    /*
-      The user has already entered Mana.
-
-      If Intro appears because iOS has
-      restored the session, close it.
-    */
-
-    if (
-      typeof
-        window
-          .closeManaIntroduction ===
-      "function"
-    ) {
-
-      window
-        .closeManaIntroduction();
-
-    } else {
-
-      intro()
-        ?.classList
-        .remove(
-          "open"
-        );
-
-
-      document.body.style.overflow =
-        "";
-
+    try {
+      if (
+        typeof window.closeManaIntroduction ===
+        "function"
+      ) {
+        window.closeManaIntroduction();
+      } else {
+        intro()?.classList.remove("open");
+        document.body.style.overflow = "";
+      }
+    } catch (error) {
+      console.warn(
+        "[Mana Phone] Intro close:",
+        error
+      );
     }
 
-
     /*
-      Let the existing route guard put
-      the user back where they were.
+     Only restore the application shell
+     if we actually had to close an
+     unwanted Introduction.
+
+     Do not enforce the shell on every
+     focus, pageshow or visibility event.
     */
 
-    setTimeout(
-      () => {
-
+    setTimeout(() => {
+      try {
         if (
-          typeof
-            window
-              .enforceManaAppShell ===
-          "function"
+          !introOpen() &&
+          typeof window.enforceManaAppShell ===
+            "function"
         ) {
-
-          window
-            .enforceManaAppShell();
-
+          window.enforceManaAppShell();
         }
-
-
-        restoring =
-          false;
-
-      },
-      100
-    );
-
+      } catch (error) {
+        console.warn(
+          "[Mana Phone] Shell restore:",
+          error
+        );
+      } finally {
+        restoring = false;
+      }
+    }, 100);
   }
 
-
-  /* =========================================
-     MANUAL INTRO
-     ========================================= */
+  /* ======================================
+     MANUAL INTRODUCTION
+     ====================================== */
 
   function wrapManualIntro() {
-
     const original =
-      window
-        .openManaIntroduction;
+      window.openManaIntroduction;
 
-
-    if (
-      typeof original !==
-      "function"
-    ) {
+    if (typeof original !== "function") {
       return;
     }
 
-
-    if (
-      original
-        .__manaV919Wrapped
-    ) {
+    if (original.__manaV919Wrapped) {
       return;
     }
 
+    function wrapped(...args) {
+      manualIntro = true;
 
-    const wrapped =
-      function() {
+      if (manualTimer !== null) {
+        clearTimeout(manualTimer);
+      }
 
-        manualIntro =
-          true;
+      const result =
+        original.apply(this, args);
 
+      manualTimer = setTimeout(() => {
+        manualIntro = false;
+        manualTimer = null;
+      }, 1200);
 
-        const result =
-          original.apply(
-            this,
-            arguments
-          );
+      return result;
+    }
 
+    wrapped.__manaV919Wrapped = true;
 
-        /*
-          Keep manual permission alive
-          while the Intro opens.
-        */
-
-        setTimeout(
-          () => {
-
-            manualIntro =
-              false;
-
-          },
-          1200
-        );
-
-
-        return result;
-
-      };
-
-
-    wrapped
-      .__manaV919Wrapped =
-        true;
-
-
-    window
-      .openManaIntroduction =
-        wrapped;
-
+    window.openManaIntroduction = wrapped;
   }
 
-
-  /* =========================================
-     ENTER BUTTON
-     ========================================= */
+  /* ======================================
+     ENTER AND LOGOUT
+     ====================================== */
 
   function watchEnterButton() {
-
     document.addEventListener(
       "click",
       event => {
-
         if (
-          event.target.closest(
+          event.target?.closest?.(
             "#manaV81Enter"
           )
         ) {
-
           markEntered();
+          manualIntro = false;
 
-
-          manualIntro =
-            false;
-
+          if (manualTimer !== null) {
+            clearTimeout(manualTimer);
+            manualTimer = null;
+          }
         }
-
       },
       true
     );
-
   }
 
-
-  /* =========================================
-     LOGOUT
-     ========================================= */
-
   function watchLogout() {
-
     window.addEventListener(
       "mana:logout",
       () => {
-
         clearEntered();
+        manualIntro = false;
 
-        manualIntro =
-          false;
+        if (resumeTimer !== null) {
+          clearTimeout(resumeTimer);
+          resumeTimer = null;
+        }
 
+        if (manualTimer !== null) {
+          clearTimeout(manualTimer);
+          manualTimer = null;
+        }
       }
     );
-
   }
 
-
-  /* =========================================
+  /* ======================================
      INTRO WATCHER
-     ========================================= */
+     ====================================== */
 
   function watchIntro() {
+    const target = intro();
 
-    const target =
-      intro();
+    if (!target) return;
 
-
-    if (!target) {
-      return;
+    if (introObserver) {
+      introObserver.disconnect();
     }
 
-
-    const observer =
-      new MutationObserver(
-        () => {
-
-          if (
-            target
-              .classList
-              .contains(
-                "open"
-              )
-          ) {
-
-            setTimeout(
-              closeAutoIntro,
-              30
-            );
-
-          }
-
-        }
-      );
-
-
-    observer.observe(
-      target,
-      {
-        attributes:true,
-        attributeFilter:[
-          "class"
-        ]
+    introObserver = new MutationObserver(() => {
+      if (
+        target.classList.contains("open") &&
+        !manualIntro &&
+        hasEnteredMana()
+      ) {
+        scheduleResumeCheck();
       }
-    );
+    });
 
+    introObserver.observe(target, {
+      attributes: true,
+      attributeFilter: ["class"]
+    });
   }
 
+  /* ======================================
+     SAFARI RESUME
+     ====================================== */
 
-  /* =========================================
-     PHONE RESUME
-     ========================================= */
-
-  function resumeApp() {
-
-    if (
-      !hasEnteredMana()
-    ) {
-      return;
-    }
-
+  function scheduleResumeCheck() {
+    if (!hasEnteredMana()) return;
 
     /*
-      iOS can restore the legacy client
-      state first, causing v8.1 to open
-      Intro a fraction of a second later.
+     Coalesce consecutive browser events.
 
-      Check several times while the app
-      settles.
+     Safari may fire focus, pageshow and
+     visibilitychange together.
+
+     They must not launch three separate
+     chains of screen restoration.
     */
 
-    [
-      20,
-      100,
-      250,
-      500,
-      900,
-      1500
-    ].forEach(
-      delay => {
+    if (resumeTimer !== null) {
+      clearTimeout(resumeTimer);
+    }
 
-        setTimeout(
-          () => {
+    resumeTimer = setTimeout(() => {
+      resumeTimer = null;
 
-            closeAutoIntro();
+      /*
+       We only act when Introduction is
+       actually visible unexpectedly.
 
+       If the user is already in Home,
+       Overview, Workouts or Profile,
+       leave that screen completely alone.
+      */
 
-            if (
-              !introOpen() &&
-              typeof
-                window
-                  .enforceManaAppShell ===
-                "function"
-            ) {
-
-              window
-                .enforceManaAppShell();
-
-            }
-
-          },
-          delay
-        );
-
+      if (introOpen()) {
+        closeAutoIntro();
       }
-    );
-
+    }, 120);
   }
 
-
   function watchPhone() {
-
     document.addEventListener(
       "visibilitychange",
       () => {
-
         if (
           document.visibilityState ===
-            "visible"
+          "visible"
         ) {
-
-          resumeApp();
-
+          scheduleResumeCheck();
         }
-
       }
     );
-
 
     window.addEventListener(
       "pageshow",
-      resumeApp
+      scheduleResumeCheck
     );
-
 
     window.addEventListener(
       "focus",
-      resumeApp
+      scheduleResumeCheck
     );
-
   }
 
-
-  /* =========================================
-     INIT
-     ========================================= */
+  /* ======================================
+     STARTUP
+     ====================================== */
 
   function init() {
-
-    /*
-      v8.1 loads before this file.
-      Wrap the manual Intro function.
-    */
-
     wrapManualIntro();
 
-
     /*
-      If scripts are still settling,
-      try the wrapper again.
+     Retain bounded setup retries for
+     the original Introduction function.
     */
 
-    [
-      200,
-      600,
-      1200
-    ].forEach(
-      delay => {
-
-        setTimeout(
-          wrapManualIntro,
-          delay
-        );
-
-      }
-    );
-
+    [200, 600, 1200].forEach(delay => {
+      setTimeout(
+        wrapManualIntro,
+        delay
+      );
+    });
 
     watchEnterButton();
-
     watchLogout();
-
     watchIntro();
-
     watchPhone();
 
-
-    /*
-      If the app itself was restarted
-      by iOS rather than merely resumed,
-      prevent the old auto Intro too.
-    */
-
-    if (
-      hasEnteredMana()
-    ) {
-
-      resumeApp();
-
+    if (hasEnteredMana()) {
+      scheduleResumeCheck();
     }
 
+    window.MANA_PHONE_RESUME_BUILD = BUILD;
+
+    console.log(
+      "[Mana Movement] Phone resume " +
+      BUILD +
+      " active"
+    );
   }
 
-
-  if (
-    document.readyState ===
-      "loading"
-  ) {
-
+  if (document.readyState === "loading") {
     document.addEventListener(
       "DOMContentLoaded",
-      init
+      init,
+      { once: true }
     );
-
   } else {
-
     init();
-
   }
 
 })();
