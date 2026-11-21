@@ -2,7 +2,7 @@
 /* ============================================================
    MANA MOVEMENT TRAINING
    CLIENT PROFILE RESTORE + PREMIUM COACH CHAT
-   BUILD 105028
+   BUILD 105049
 
    COMPLETE REPLACEMENT:
    mana_extended_client_profile_104900.js
@@ -33,12 +33,18 @@
    - Loads details.gender into client selector
    - Saves Gender in the existing profile upsert
    - No separate asynchronous Gender save
+
+   DOB FIX 105049
+   - Preserves a valid DOB if cloud data is empty
+   - Restores DOB from account-scoped local storage
+   - Prevents blank DOB overwriting cloud DOB
+   - Preserves existing profile and photo features
    ============================================================ */
 
 (() => {
   "use strict";
 
-  const BUILD = "105028";
+  const BUILD = "105049";
   const FLAG = "MANA_EXT_CLIENT_104901";
 
   if (window[FLAG]) return;
@@ -819,13 +825,66 @@
         );
       }
 
+      /*
+       DOB FIX 105049
+
+       Never overwrite a valid DOB with an
+       empty cloud field. Restore from the
+       signed-in client's local storage when
+       appropriate.
+      */
+
       fields.forEach(([key]) => {
         const input = $("me-" + key);
 
-        if (input) {
-          input.value =
-            details[key] ?? "";
+        if (!input) return;
+
+        if (key === "dob") {
+          const valid = value =>
+            /^\d{4}-\d{2}-\d{2}$/.test(
+              String(value || "")
+            );
+
+          let local = "";
+
+          const localKey =
+            "mana-dob-secure-scope-" + user.id;
+
+          try {
+            local =
+              localStorage.getItem(localKey) || "";
+          } catch (_) {}
+
+          const value =
+            valid(details.dob)
+              ? details.dob
+              : valid(local)
+                ? local
+                : valid(input.value)
+                  ? input.value
+                  : "";
+
+          if (value) {
+            input.value = value;
+
+            try {
+              localStorage.setItem(
+                localKey,
+                value
+              );
+            } catch (_) {}
+
+            input.dispatchEvent(
+              new Event("change", {
+                bubbles: true
+              })
+            );
+          }
+
+          return;
         }
+
+        input.value = details[key] ?? "";
       });
 
       if (
@@ -1036,12 +1095,39 @@
         ...oldDetails
       };
 
+      /*
+       DOB FIX 105049
+
+       Keep valid cloud DOB when the
+       screen input is temporarily blank.
+       Preserve all other fields normally.
+      */
+
       fields.forEach(([key]) => {
         const input = $("me-" + key);
 
-        if (input) {
-          details[key] = input.value.trim();
+        if (!input) return;
+
+        const value = input.value.trim();
+
+        if (key === "dob") {
+          const valid = date =>
+            /^\d{4}-\d{2}-\d{2}$/.test(
+              String(date || "")
+            );
+
+          if (valid(value)) {
+            details.dob = value;
+          } else if (valid(oldDetails.dob)) {
+            details.dob = oldDetails.dob;
+          } else {
+            delete details.dob;
+          }
+
+          return;
         }
+
+        details[key] = value;
       });
 
       // Save Gender in the same operation as
