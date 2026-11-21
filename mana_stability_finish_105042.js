@@ -1,346 +1,438 @@
 
 /*
- MANA MOVEMENT
- STABILITY + BANNER REPAIRS
- BUILD 105042
+  MANA MOVEMENT
+  MOBILE STABILITY REPAIR — BUILD 105043
 
- Complete JavaScript file.
- Load after the existing scripts.
+  Complete replacement for:
+  mana_stability_finish_105042.js
+
+  Repairs:
+  - Strength Learning navigation
+  - Client DOB persistence
+  - Original yellow banner streak
+  - ManaLyfe text and spacing
+
+  Preserves the working Profile shortcut.
 */
 
 (() => {
   "use strict";
 
-  if (window.MANA_STABILITY_FINISH_105042) return;
-  window.MANA_STABILITY_FINISH_105042 = true;
+  if (window.MANA_STABILITY_105043) return;
+  window.MANA_STABILITY_105043 = true;
 
   const $ = id => document.getElementById(id);
-  const STYLE_ID = "mana-stability-105042";
+  const ORANGE = "#FF7927";
+  const STYLE = "mana-stability-style-105043";
 
   const css = `
-    /* Remove decorative yellow banner streaks */
+    /* REMOVE THE ORIGINAL GOLD CURRENT STRIPE */
 
-    #manaV80Home #manaV80Mana28::before,
-    #manaV80Home #manaV80Strength::before,
-    #manaV80Home #manaV80Mana28
-      .mana-v8013-program-label::before,
-    #manaV80Home #manaV80Strength
-      .mana-v8013-program-label::before,
-    #manaV80Home #manaV80Mana28
-      .mana-v8013-program-label::after,
-    #manaV80Home #manaV80Strength
-      .mana-v8013-program-label::after {
+    html body #manaV80Home
+    button.mana-v8013-program.current::before,
+    html body #manaV80Home
+    button#manaV80Mana28::before,
+    html body #manaV80Home
+    button#manaV80Strength::before {
       content: none !important;
       display: none !important;
+      height: 0 !important;
+      background: none !important;
+      box-shadow: none !important;
     }
 
-    #manaV80Home #manaV80Mana28,
-    #manaV80Home #manaV80Strength,
-    #manaV80Home #manaV80Life {
-      background-image:
-        linear-gradient(
-          135deg,
-          #191B20,
-          #101215 72%,
-          #1B130E
-        ) !important;
+    /* PRESERVE THE ORANGE PROGRAM BORDERS */
+
+    html body #manaV80Home
+    button.mana-v8013-program {
+      border-color: ${ORANGE} !important;
     }
 
-    /* Keep banner labels clear of icons */
+    /* MANA LYFE HEADING AND ICON CLEARANCE */
 
-    #manaV80Home button.mana-v8013-program
+    @media (max-width: 600px) {
+
+      html body #manaV80Home
+      #manaV80Life
       > .mana-v8013-program-label {
-      box-sizing: border-box !important;
-      width: calc(100% - 124px) !important;
-      max-width: calc(100% - 124px) !important;
-      overflow-wrap: break-word !important;
-    }
+        position: absolute !important;
+        top: 20px !important;
+        left: 18px !important;
+        right: 102px !important;
+        width: auto !important;
+        max-width: none !important;
+        font-size: 20px !important;
+        line-height: 1.15 !important;
+        overflow-wrap: normal !important;
+        z-index: 5 !important;
+      }
 
-    /* ManaLyfe heading alignment */
+      html body #manaV80Home
+      #manaV80Life
+      > .m1025-home-icon,
+      html body #manaV80Home
+      #manaV80Life
+      > .mana-v1024-home-art {
+        position: absolute !important;
+        top: 17px !important;
+        right: 15px !important;
+        left: auto !important;
+        width: 62px !important;
+        height: 62px !important;
+        z-index: 7 !important;
+      }
 
-    #manaV80Home #manaV80Life > h2 {
-      box-sizing: border-box !important;
-      top: 96px !important;
-      left: 18px !important;
-      right: 18px !important;
-      width: calc(100% - 36px) !important;
-      max-width: calc(100% - 36px) !important;
-      font-size: clamp(19px,5.2vw,22px) !important;
-      line-height: 1.12 !important;
-      white-space: normal !important;
-    }
+      html body #manaV80Home
+      #manaV80Life > h2 {
+        position: absolute !important;
+        top: 97px !important;
+        left: 18px !important;
+        right: 18px !important;
+        width: calc(100% - 36px) !important;
+        max-width: calc(100% - 36px) !important;
+        margin: 0 !important;
+        font-size: 22px !important;
+        line-height: 1.12 !important;
+        text-align: left !important;
+        z-index: 5 !important;
+      }
 
-    #manaV80Home #manaV80Life > h2
+      html body #manaV80Home
+      #manaV80Life > h2
       .mana-lyfe-line-105041 {
+        display: block !important;
+        width: 100% !important;
+        white-space: nowrap !important;
+        margin: 0 !important;
+      }
+
+      html body #manaV80Home
+      #manaV80Life > p {
+        position: absolute !important;
+        top: 190px !important;
+        left: 18px !important;
+        right: 18px !important;
+        width: calc(100% - 36px) !important;
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+        z-index: 4 !important;
+      }
+
+      html body #manaV80Home
+      #manaV80Life::before {
+        left: 18px !important;
+        right: auto !important;
+        bottom: 13px !important;
+        width: 55% !important;
+        max-width: 55% !important;
+        font-size: 11px !important;
+        line-height: 1.25 !important;
+        text-align: left !important;
+      }
+    }
+
+    @media (max-width: 360px) {
+      html body #manaV80Home
+      #manaV80Life > h2 {
+        font-size: 20px !important;
+      }
+
+      html body #manaV80Home
+      #manaV80Life > p {
+        top: 184px !important;
+      }
+    }
+
+    /* STRENGTH LEARNING NAVIGATION */
+
+    html body #manaV83ProgramShell.open
+    #manaV83Tabs {
+      display: grid !important;
+      grid-template-columns:
+        repeat(5, minmax(0, 1fr)) !important;
+      width: 100% !important;
+    }
+
+    html body #manaV83ProgramShell.open
+    #manaV83Tabs
+    [data-v83-tab="learn"] {
       display: block !important;
-      white-space: normal !important;
-    }
-
-    #manaV80Home #manaV80Life > p {
-      top: 185px !important;
-    }
-
-    /* ManaLyfe membership text */
-
-    #manaV80Home #manaV80Life::before {
-      left: 18px !important;
-      bottom: 13px !important;
-      max-width: 55% !important;
-      width: 55% !important;
-      text-align: left !important;
-      line-height: 1.25 !important;
-      font-size: 11px !important;
-    }
-
-    /* Permanent orange Profile shortcut */
-
-    #manaV83ProgramShell #manaQuickProfile105042 {
-      display: inline-flex !important;
       visibility: visible !important;
       opacity: 1 !important;
-      align-items: center !important;
-      justify-content: center !important;
-      color: #FF7927 !important;
-      -webkit-text-fill-color: #FF7927 !important;
-      background: transparent !important;
-      border: 1px solid #FF7927 !important;
-      border-radius: 12px !important;
-      padding: 8px 12px !important;
-      font-size: 13px !important;
-      font-weight: 800 !important;
-      cursor: pointer !important;
-      min-height: 38px !important;
-      white-space: nowrap !important;
+      min-width: 0 !important;
+      color: #FFFFFF !important;
+      -webkit-text-fill-color:
+        #FFFFFF !important;
     }
 
-    #manaV83ProgramShell
-      .mana-hub-home-row:has(#manaQuickProfile105042) {
-      display: flex !important;
-      justify-content: space-between !important;
-      align-items: center !important;
-      gap: 10px !important;
-    }
-
-    /* Keep Learning navigation visible */
-
-    #manaV83ProgramShell.open #manaV83Tabs
-      button.mana-v83-tab[data-v83-tab="learning"],
-    #manaV83ProgramShell.open #manaV83Tabs
-      button.mana-v83-tab[data-v83-tab="learn"] {
-      display: flex !important;
-      visibility: visible !important;
-      opacity: 1 !important;
+    html body #manaV83ProgramShell.open
+    #manaV83Tabs
+    [data-v83-tab="learn"].active {
+      color: ${ORANGE} !important;
+      -webkit-text-fill-color:
+        ${ORANGE} !important;
     }
   `;
 
   function installStyles() {
-    if ($(STYLE_ID)) return;
+    let style = $(STYLE);
 
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
+    if (!style) {
+      style = document.createElement("style");
+      style.id = STYLE;
+      document.head.appendChild(style);
+    }
+
     style.textContent = css;
-    document.head.appendChild(style);
   }
 
-  function isStrengthOverview() {
+  /* LEARNING: PRESERVE THE ORIGINAL BUTTON
+     AND ITS EXISTING CLICK HANDLER */
+
+  let learningButton = null;
+
+  function maintainLearning() {
     const shell = $("manaV83ProgramShell");
-
-    return !!(
-      shell?.classList.contains("open") &&
-      $("manaV83Title")?.textContent
-        .trim().toUpperCase() === "MANA STRENGTH" &&
-      document.querySelector(
-        "#manaV83Tabs .mana-v83-tab.active"
-      )?.dataset.v83Tab === "overview"
-    );
-  }
-
-  function ensureStrength() {
-    if (!isStrengthOverview()) return;
-
-    const shell = $("manaV83ProgramShell");
-    const launch = $("manaV964Launchpad");
-
-    if (!shell || !launch) return;
-
-    const row = launch.querySelector(
-      ".mana-hub-home-row"
-    );
-
-    if (!row) return;
-
-    let quick = $("manaQuickProfile105042");
-
-    if (!quick) {
-      quick = document.createElement("button");
-      quick.type = "button";
-      quick.id = "manaQuickProfile105042";
-      quick.textContent = "Profile";
-
-      quick.setAttribute(
-        "aria-label",
-        "Open client profile"
-      );
-
-      quick.addEventListener("click", () => {
-        const card = launch.querySelector(
-          '.mana-v964-launch[data-v964-launch="profile"]'
-        );
-
-        if (card) {
-          card.click();
-        } else {
-          console.warn(
-            "[Mana 105042] Profile launch card missing"
-          );
-        }
-      });
-    }
-
-    if (quick.parentNode !== row) {
-      row.appendChild(quick);
-    }
-
     const tabs = $("manaV83Tabs");
 
-    tabs?.querySelectorAll(".mana-v83-tab")
-      .forEach(tab => {
-        if (/^(learning|learn)$/i.test(
-          tab.dataset.v83Tab || ""
-        )) {
-          tab.style.removeProperty("display");
-          tab.style.removeProperty("visibility");
-        }
-      });
+    if (!shell?.classList.contains("open") ||
+        !tabs) return;
+
+    const current = tabs.querySelector(
+      '[data-v83-tab="learn"]'
+    );
+
+    if (current) {
+      learningButton = current;
+      current.hidden = false;
+      current.style.removeProperty("display");
+      return;
+    }
+
+    if (learningButton &&
+        !learningButton.isConnected) {
+      tabs.appendChild(learningButton);
+    }
   }
 
-  /* Date of birth local backup */
+  /* DATE OF BIRTH — USER-SCOPED BACKUP */
 
-  function dobKey() {
-    const email = (
-      $("me-account-email")?.value || ""
-    ).trim().toLowerCase();
+  let userId = "";
+  let cloud = null;
+  let savedDob = "";
+  let cloudSaving = false;
+  let pendingCloudSave = false;
 
-    return email
-      ? "mana-dob-backup-105042:" + email
-      : null;
-  }
-
-  const validDate = value => {
+  const validDob = value => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) {
       return false;
     }
 
-    const d = new Date(value + "T12:00:00");
+    const date = new Date(value + "T12:00:00");
 
-    return (
-      !Number.isNaN(d.getTime()) &&
-      d.toISOString().slice(0,10) === value &&
-      d <= new Date()
-    );
+    return !Number.isNaN(date.getTime()) &&
+      date.toISOString().slice(0, 10) === value &&
+      date <= new Date();
   };
 
-  function saveDob() {
-    const input = $("me-dob");
+  function dobKey() {
+    return userId
+      ? "mana-client-dob:" + userId
+      : "";
+  }
+
+  function saveLocalDob(value) {
+    if (!validDob(value)) return;
+
+    savedDob = value;
+
     const key = dobKey();
 
-    if (!input || !key || !validDate(input.value)) {
-      return;
-    }
+    if (!key) return;
 
     try {
-      localStorage.setItem(key, input.value);
-    } catch (_) {}
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.warn("[Mana DOB] Local backup", error);
+    }
   }
 
   function restoreDob() {
     const screen = $("manaProfileScreen");
     const input = $("me-dob");
-    const key = dobKey();
 
-    if (
-      !screen?.classList.contains("open") ||
-      !input ||
-      !key
-    ) return;
+    if (!screen?.classList.contains("open") ||
+        !input ||
+        !savedDob ||
+        !validDob(savedDob)) return;
 
-    if (validDate(input.value)) {
-      saveDob();
+    if (validDob(input.value)) {
+      if (input.value !== savedDob) {
+        saveLocalDob(input.value);
+      }
       return;
     }
 
     if (document.activeElement === input) return;
 
-    let saved = "";
+    input.value = savedDob;
+
+    input.dispatchEvent(
+      new Event("input", { bubbles: true })
+    );
+
+    input.dispatchEvent(
+      new Event("change", { bubbles: true })
+    );
+  }
+
+  async function connectCloud() {
+    if (typeof window.supabaseClient !== "function") {
+      return;
+    }
 
     try {
-      saved = localStorage.getItem(key) || "";
-    } catch (_) {}
+      const client = await window.supabaseClient();
+      const response = await client.auth.getUser();
+      const user = response.data?.user;
 
-    if (!validDate(saved)) return;
+      if (!user) return;
 
-    input.value = saved;
+      if (userId !== user.id) {
+        userId = user.id;
+        savedDob = "";
+      }
 
-    input.dispatchEvent(
-      new Event("input", {bubbles:true})
-    );
+      cloud = client;
 
-    input.dispatchEvent(
-      new Event("change", {bubbles:true})
-    );
-  }
+      const key = dobKey();
 
-  let lastProfileOpen = false;
-  let lastDob = "";
+      if (key) {
+        const local = localStorage.getItem(key);
 
-  function checkProfile() {
-    const screen = $("manaProfileScreen");
-    const input = $("me-dob");
+        if (validDob(local) && !savedDob) {
+          savedDob = local;
+        }
+      }
 
-    const open = !!screen?.classList.contains("open");
+      const result = await cloud
+        .from("client_extended_profiles")
+        .select("details")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-    if (open && !lastProfileOpen) {
-      [0,250,800,1600].forEach(ms =>
-        setTimeout(restoreDob, ms)
+      if (result.error) {
+        console.warn(
+          "[Mana DOB] Cloud read:",
+          result.error.message
+        );
+        return;
+      }
+
+      const remoteDob = result.data?.details?.dob;
+
+      if (validDob(remoteDob)) {
+        saveLocalDob(remoteDob);
+      }
+
+      restoreDob();
+
+    } catch (error) {
+      console.warn(
+        "[Mana DOB] Connection:",
+        error
       );
     }
+  }
 
-    lastProfileOpen = open;
+  /* MERGE ONLY DOB WITH EXISTING CLOUD DETAILS */
 
-    if (!open || !input) return;
+  async function persistDob() {
+    if (cloudSaving) {
+      pendingCloudSave = true;
+      return;
+    }
 
-    if (
-      validDate(input.value) &&
-      input.value !== lastDob
-    ) {
-      lastDob = input.value;
-      saveDob();
+    if (!cloud || !userId || !validDob(savedDob)) {
+      return;
+    }
+
+    cloudSaving = true;
+
+    try {
+      const existing = await cloud
+        .from("client_extended_profiles")
+        .select("details,share_with_coach")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existing.error) throw existing.error;
+
+      const details = {
+        ...(existing.data?.details || {}),
+        dob: savedDob
+      };
+
+      const response = await cloud
+        .from("client_extended_profiles")
+        .upsert({
+          user_id: userId,
+          details,
+          share_with_coach:
+            existing.data?.share_with_coach ?? false,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: "user_id"
+        });
+
+      if (response.error) throw response.error;
+
+    } catch (error) {
+      console.warn(
+        "[Mana DOB] Cloud save:",
+        error.message || error
+      );
+    } finally {
+      cloudSaving = false;
+
+      if (pendingCloudSave) {
+        pendingCloudSave = false;
+        void persistDob();
+      }
     }
   }
 
-  /* ManaLyfe three-line heading */
+  function captureDob() {
+    const input = $("me-dob");
 
-  function repairHome() {
+    if (!input || !validDob(input.value)) return;
+
+    if (input.value !== savedDob) {
+      saveLocalDob(input.value);
+    }
+  }
+
+  function repairLyfe() {
     const heading = document.querySelector(
       "#manaV80Home #manaV80Life > h2"
     );
 
     if (!heading) return;
 
-    const lines = heading.querySelectorAll(
-      ":scope > .mana-lyfe-line-105041"
-    );
-
-    const values = [
+    const expected = [
       "Reset.",
       "Rebuild.",
       "Move Forward."
     ];
 
+    const spans = heading.querySelectorAll(
+      ":scope > .mana-lyfe-line-105041"
+    );
+
     if (
-      lines.length === 3 &&
-      values.every(
-        (value,i) => lines[i].textContent === value
+      spans.length === 3 &&
+      expected.every(
+        (text, i) => spans[i].textContent === text
       )
     ) return;
 
@@ -349,68 +441,72 @@
     )) return;
 
     heading.replaceChildren(
-      ...values.map(value => {
+      ...expected.map(text => {
         const span = document.createElement("span");
         span.className = "mana-lyfe-line-105041";
-        span.textContent = value;
+        span.textContent = text;
         return span;
       })
     );
   }
 
   function refresh() {
-    ensureStrength();
-    checkProfile();
-    repairHome();
+    maintainLearning();
+    restoreDob();
+    repairLyfe();
   }
 
   function init() {
     installStyles();
-    refresh();
+
+    void connectCloud();
 
     document.addEventListener("input", event => {
       if (event.target?.id === "me-dob") {
-        saveDob();
+        captureDob();
       }
     }, true);
 
     document.addEventListener("change", event => {
       if (event.target?.id === "me-dob") {
-        saveDob();
+        captureDob();
       }
     }, true);
 
     document.addEventListener("click", event => {
       if (event.target?.closest?.("#manaProfileSave")) {
-        saveDob();
+        captureDob();
       }
 
       if (event.target?.closest?.(
-        "#manaV83Tabs, #manaV80HomeBtn, " +
-        "[data-open-profile], #manaProfileButton"
+        "#manaV83Tabs, #manaV80HomeBtn"
       )) {
-        [0,100,400].forEach(ms =>
-          setTimeout(refresh, ms)
-        );
+        requestAnimationFrame(refresh);
       }
     }, true);
 
     window.addEventListener(
-      "mana:profile-synced",
-      () => setTimeout(refresh,250)
+      "mana:extended-profile-saved",
+      () => {
+        restoreDob();
+        void persistDob();
+      }
     );
 
     window.addEventListener(
-      "mana:program-tab-change",
-      () => requestAnimationFrame(refresh)
+      "mana:profile-synced",
+      restoreDob
     );
 
-    window.addEventListener("pageshow",refresh);
+    window.addEventListener("pageshow", () => {
+      void connectCloud();
+      refresh();
+    });
 
-    setInterval(refresh,900);
+    setInterval(refresh, 900);
 
     console.log(
-      "[Mana Movement] Stability + banners 105042 loaded"
+      "[Mana Movement] Mobile stability 105043 ready"
     );
   }
 
@@ -418,7 +514,7 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {once:true}
+      { once: true }
     );
   } else {
     init();
