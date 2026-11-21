@@ -1,74 +1,66 @@
 
 /*
- MANA MOVEMENT — BUILD 105048
+====================================================
+MANA MOVEMENT — BUILD 105050
 
- MOBILE REFRESH STABILITY
- Complete replacement for:
- mana_stability_finish_105042.js
+MOBILE REFRESH AND FLICKER REPAIR
 
- - Removes duplicate Profile shortcut
- - Preserves Profile / Goals card
- - Restores Learning navigation
- - Loads DOB after authentication
- - Restores DOB after cloud/profile loading
- - Preserves existing workout and coach logic
- - No desktop layout modifications
+COMPLETE REPLACEMENT:
+mana_stability_finish_105042.js
+
+PURPOSE
+- Stop automatic navigation re-click loops
+- Preserve the original five-tab navigation
+- Restore Learning if Overview loses its button
+- Load DOB independently of the Profile screen
+- Preserve existing Profile / Goals card
+- Remove redundant top-right Profile shortcut
+- Leave desktop layout and Coach Hub unchanged
+
+No permanent interval loops.
+No automatic tab clicks.
+No replacement of program content.
+====================================================
 */
 
 (() => {
   "use strict";
 
-  if (window.MANA_STABILITY_105048) return;
-  window.MANA_STABILITY_105048 = true;
+  const BUILD = "105050";
+  const FLAG = "MANA_STABILITY_105050";
+
+  if (window[FLAG]) return;
+  window[FLAG] = true;
 
   const $ = id => document.getElementById(id);
 
-  const STYLE_ID = "manaStabilityStyle105048";
+  const STYLE_ID = "manaStabilityStyle105050";
   const TABLE = "client_extended_profiles";
 
-  const css = `
-    /* MOBILE LEARNING NAVIGATION */
+  const DUPLICATE_PROFILE_IDS = [
+    "manaQuickProfile105042",
+    "manaQuickProfile105044",
+    "manaQuickProfile105046",
+    "manaQuickProfile105047"
+  ];
 
-    @media (max-width: 700px) {
-      #manaV83ProgramShell.open
-      #manaV83Tabs {
-        display: grid !important;
-        grid-template-columns:
-          repeat(5, minmax(0, 1fr)) !important;
-      }
+  let db = null;
+  let userId = "";
+  let savedDOB = "";
 
-      #manaV83ProgramShell.open
-      #manaV83Tabs
-      .mana-v83-tab[data-v83-tab="learn"] {
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        min-width: 0 !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color:
-          #FFFFFF !important;
-      }
+  let connecting = false;
+  let loadingProfile = false;
 
-      #manaV83ProgramShell.open
-      #manaV83Tabs
-      .mana-v83-tab.active[data-v83-tab="learn"] {
-        color: #FF7927 !important;
-        -webkit-text-fill-color:
-          #FF7927 !important;
-      }
-    }
+  let navigationObserver = null;
+  let profileObserver = null;
 
-    /* REMOVE EXTRA TOP-RIGHT PROFILE SHORTCUT */
+  let learningRepairQueued = false;
 
-    #manaQuickProfile105042,
-    #manaQuickProfile105044,
-    #manaQuickProfile105046,
-    #manaQuickProfile105047 {
-      display: none !important;
-    }
-  `;
+  /* ========================================
+     MOBILE-ONLY STYLES
+     ======================================== */
 
-  function installCSS() {
+  function installStyles() {
     let style = $(STYLE_ID);
 
     if (!style) {
@@ -77,251 +69,344 @@
       document.head.appendChild(style);
     }
 
-    style.textContent = css;
+    style.textContent = `
+      /*
+       Remove redundant Profile shortcut.
+       Keep the Profile / Goals card.
+      */
+
+      ${DUPLICATE_PROFILE_IDS
+        .map(id => "#" + id)
+        .join(",")} {
+        display: none !important;
+      }
+
+      /*
+       Maintain the original five-column
+       navigation on mobile.
+      */
+
+      @media (max-width: 700px) {
+        #manaV83ProgramShell.open
+        #manaV83Tabs {
+          display: grid !important;
+          grid-template-columns:
+            repeat(5, minmax(0, 1fr)) !important;
+        }
+
+        #manaV83ProgramShell.open
+        #manaV83Tabs
+        [data-v83-tab="learn"] {
+          display: block !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+          min-width: 0 !important;
+        }
+
+        #manaV83ProgramShell.open
+        #manaV83Tabs
+        [data-v83-tab="learn"].active {
+          color: #FF7927 !important;
+          -webkit-text-fill-color:
+            #FF7927 !important;
+        }
+      }
+    `;
   }
+
+  /* ========================================
+     REMOVE DUPLICATE PROFILE BUTTON
+     ======================================== */
 
   function removeDuplicateProfile() {
-    [
-      "manaQuickProfile105042",
-      "manaQuickProfile105044",
-      "manaQuickProfile105046",
-      "manaQuickProfile105047"
-    ].forEach(id => $(id)?.remove());
+    DUPLICATE_PROFILE_IDS.forEach(id => {
+      $(id)?.remove();
+    });
   }
 
-  /* LEARNING — USE ORIGINAL NAVIGATION */
+  /* ========================================
+     LEARNING NAVIGATION
+     ======================================== */
 
-  let savedLearnButton = null;
-  let lastRepair = 0;
-  let repairing = false;
-
-  function maintainLearning() {
+  function strengthOpen() {
     const shell = $("manaV83ProgramShell");
+
+    const title = String(
+      $("manaV83Title")?.textContent || ""
+    ).trim().toUpperCase();
+
+    return (
+      shell?.classList.contains("open") &&
+      title === "MANA STRENGTH"
+    );
+  }
+
+  function learningButtonExists() {
+    return !!document.querySelector(
+      '#manaV83Tabs [data-v83-tab="learn"]'
+    );
+  }
+
+  /*
+   Only repair when the original Strength
+   navigation has already rendered.
+
+   Do not automatically click Overview,
+   Workouts or any other tab.
+  */
+
+  function ensureLearning() {
+    if (!strengthOpen()) return;
+
     const tabs = $("manaV83Tabs");
 
-    if (!shell?.classList.contains("open") ||
-        !tabs) return;
+    if (!tabs) return;
 
     const existing = tabs.querySelector(
       '[data-v83-tab="learn"]'
     );
 
     if (existing) {
-      savedLearnButton = existing;
       existing.hidden = false;
       existing.style.removeProperty("display");
-      existing.style.removeProperty("visibility");
+      existing.style.removeProperty(
+        "visibility"
+      );
       return;
     }
 
-    /*
-      Prefer the original button, which
-      already has its proper click handler.
-    */
-
-    if (
-      savedLearnButton &&
-      !savedLearnButton.isConnected
-    ) {
-      tabs.appendChild(savedLearnButton);
-      return;
-    }
-
-    /*
-      If the tab was missing on initial
-      load, ask the original navigation
-      handler to rebuild its five buttons.
-    */
-
-    if (repairing) return;
-
-    const now = Date.now();
-
-    if (now - lastRepair < 1800) return;
-
-    const active = tabs.querySelector(
-      ".mana-v83-tab.active"
+    const originalButtons = Array.from(
+      tabs.querySelectorAll(
+        ".mana-v83-tab[data-v83-tab]"
+      )
     );
 
-    if (!active ||
-        typeof active.onclick !== "function") {
+    if (originalButtons.length < 4) {
       return;
     }
 
-    repairing = true;
-    lastRepair = now;
+    /*
+     Recreate only the missing navigation
+     control, not the entire tab bar.
+    */
 
-    try {
-      active.onclick.call(active);
-    } catch (error) {
-      console.warn(
-        "[Mana Learning] Navigation repair:",
-        error
-      );
-    } finally {
-      repairing = false;
-    }
+    const button = document.createElement(
+      "button"
+    );
+
+    button.type = "button";
+    button.className = "mana-v83-tab";
+    button.dataset.v83Tab = "learn";
+    button.textContent = "Learn";
+
+    button.addEventListener(
+      "click",
+      event => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        /*
+         Ask the original program module
+         to construct the real navigation.
+
+         This happens only when the user
+         presses Learn, never automatically.
+        */
+
+        if (
+          typeof window.openManaProgram !==
+          "function"
+        ) return;
+
+        window.openManaProgram("strength");
+
+        const realLearn =
+          $("manaV83Tabs")?.querySelector(
+            '[data-v83-tab="learn"]'
+          );
+
+        if (
+          realLearn &&
+          realLearn !== button
+        ) {
+          realLearn.click();
+        }
+      }
+    );
+
+    tabs.appendChild(button);
+
+    console.log(
+      "[Mana Learning] Missing button restored"
+    );
   }
 
-  /* DOB — AUTHENTICATED CLIENT RECOVERY */
+  /*
+   Schedule one DOM check after the existing
+   navigation completes its own rendering.
+  */
 
-  let db = null;
-  let userId = "";
-  let savedDOB = "";
-  let connecting = false;
-  let authReady = false;
-  let cloudSaving = false;
-  let lastAuthAttempt = 0;
+  function scheduleLearningCheck() {
+    if (learningRepairQueued) return;
+
+    learningRepairQueued = true;
+
+    requestAnimationFrame(() => {
+      learningRepairQueued = false;
+      ensureLearning();
+    });
+  }
+
+  function watchNavigation() {
+    const tabs = $("manaV83Tabs");
+
+    if (!tabs) return;
+
+    if (navigationObserver) {
+      navigationObserver.disconnect();
+    }
+
+    navigationObserver = new MutationObserver(
+      scheduleLearningCheck
+    );
+
+    navigationObserver.observe(tabs, {
+      childList: true
+    });
+
+    scheduleLearningCheck();
+  }
+
+  /* ========================================
+     DOB VALIDATION
+     ======================================== */
 
   function validDOB(value) {
     if (
       !/^\d{4}-\d{2}-\d{2}$/.test(
         String(value || "")
       )
-    ) return false;
+    ) {
+      return false;
+    }
 
-    const date = new Date(value + "T12:00:00");
+    const date = new Date(
+      value + "T12:00:00"
+    );
 
     return (
       !Number.isNaN(date.getTime()) &&
-      date.toISOString().slice(0, 10) === value &&
+      date.toISOString().slice(0, 10) ===
+        value &&
       date <= new Date()
     );
   }
 
-  function storageKey() {
+  function dobStorageKey() {
     return userId
       ? "mana-dob-secure-scope-" + userId
       : "";
   }
 
   function rememberDOB(value) {
-    if (!authReady || !validDOB(value)) return;
+    if (!userId || !validDOB(value)) {
+      return;
+    }
 
     savedDOB = value;
 
     try {
       localStorage.setItem(
-        storageKey(),
+        dobStorageKey(),
         value
       );
     } catch (error) {
       console.warn(
-        "[Mana DOB] Local storage:",
+        "[Mana DOB] Storage:",
         error
       );
     }
   }
 
-  function restoreDOB() {
-    const screen = $("manaProfileScreen");
-    const input = $("me-dob");
-
-    if (
-      !authReady ||
-      !screen?.classList.contains("open") ||
-      !input
-    ) return;
-
-    if (document.activeElement === input) return;
-
-    if (validDOB(input.value)) {
-      if (input.value !== savedDOB) {
-        rememberDOB(input.value);
-      }
-      return;
-    }
-
-    if (!validDOB(savedDOB)) return;
-
-    input.value = savedDOB;
-
-    input.dispatchEvent(
-      new Event("input", { bubbles: true })
-    );
-
-    input.dispatchEvent(
-      new Event("change", { bubbles: true })
-    );
-  }
+  /* ========================================
+     AUTHENTICATED DOB LOADING
+     ======================================== */
 
   async function connectClient() {
     if (connecting) return;
 
     if (
-      typeof window.supabaseClient !== "function"
-    ) return;
+      typeof window.supabaseClient !==
+      "function"
+    ) {
+      return;
+    }
 
-    const now = Date.now();
-
-    if (now - lastAuthAttempt < 1500) return;
-
-    lastAuthAttempt = now;
     connecting = true;
 
     try {
-      const client = await window.supabaseClient();
-      const auth = await client.auth.getUser();
-      const id = auth.data?.user?.id;
+      const client =
+        await window.supabaseClient();
 
-      if (!id) {
-        authReady = false;
+      const auth =
+        await client.auth.getUser();
+
+      const nextUserId =
+        auth.data?.user?.id || "";
+
+      if (!nextUserId) {
         db = null;
         userId = "";
         savedDOB = "";
         return;
       }
 
-      if (id !== userId) {
-        userId = id;
+      db = client;
+
+      if (userId !== nextUserId) {
+        userId = nextUserId;
         savedDOB = "";
       }
 
-      db = client;
+      let localDOB = "";
 
       try {
-        const local = localStorage.getItem(
-          storageKey()
-        );
-
-        if (
-          validDOB(local) &&
-          !validDOB(savedDOB)
-        ) {
-          savedDOB = local;
-        }
+        localDOB =
+          localStorage.getItem(
+            dobStorageKey()
+          ) || "";
       } catch (_) {}
 
-      const result = await db
+      if (validDOB(localDOB)) {
+        savedDOB = localDOB;
+      }
+
+      const response = await client
         .from(TABLE)
         .select("details")
-        .eq("user_id", id)
+        .eq("user_id", userId)
         .maybeSingle();
 
-      if (result.error) {
-        throw result.error;
+      if (response.error) {
+        throw response.error;
       }
 
       const remoteDOB =
-        result.data?.details?.dob;
+        response.data?.details?.dob;
 
       if (validDOB(remoteDOB)) {
-        savedDOB = remoteDOB;
-
-        try {
-          localStorage.setItem(
-            storageKey(),
-            remoteDOB
-          );
-        } catch (_) {}
+        rememberDOB(remoteDOB);
       }
 
-      authReady = true;
       restoreDOB();
+
+      console.log(
+        "[Mana DOB] Account profile loaded"
+      );
 
     } catch (error) {
       console.warn(
-        "[Mana DOB] Cloud load:",
+        "[Mana DOB] Load:",
         error.message || error
       );
     } finally {
@@ -329,106 +414,107 @@
     }
   }
 
-  async function saveDOBCloud() {
+  /* ========================================
+     RESTORE DATE WITHOUT REBUILDING PROFILE
+     ======================================== */
+
+  function restoreDOB() {
+    const screen = $("manaProfileScreen");
+    const input = $("me-dob");
+
     if (
-      cloudSaving ||
-      !authReady ||
-      !db ||
-      !userId ||
+      !screen?.classList.contains("open") ||
+      !input ||
       !validDOB(savedDOB)
     ) return;
 
-    cloudSaving = true;
-
-    const account = userId;
-    const date = savedDOB;
-
-    try {
-      const auth = await db.auth.getUser();
-
-      if (
-        auth.data?.user?.id !== account
-      ) return;
-
-      const existing = await db
-        .from(TABLE)
-        .select("details,share_with_coach")
-        .eq("user_id", account)
-        .maybeSingle();
-
-      if (existing.error) {
-        throw existing.error;
-      }
-
-      const details = {
-        ...(existing.data?.details || {}),
-        dob: date
-      };
-
-      const result = await db
-        .from(TABLE)
-        .upsert({
-          user_id: account,
-          details,
-          share_with_coach:
-            existing.data?.share_with_coach ??
-            false,
-          updated_at:
-            new Date().toISOString()
-        }, {
-          onConflict: "user_id"
-        });
-
-      if (result.error) {
-        throw result.error;
-      }
-
-    } catch (error) {
-      console.warn(
-        "[Mana DOB] Cloud save:",
-        error.message || error
-      );
-    } finally {
-      cloudSaving = false;
+    if (document.activeElement === input) {
+      return;
     }
+
+    /*
+     Preserve a valid date already entered
+     by the user. Restore only blank input.
+    */
+
+    if (validDOB(input.value)) {
+      return;
+    }
+
+    input.value = savedDOB;
+
+    /*
+     Refresh existing DOB/Age display.
+     Do not create new date elements.
+    */
+
+    input.dispatchEvent(
+      new Event("input", {
+        bubbles: true
+      })
+    );
+
+    input.dispatchEvent(
+      new Event("change", {
+        bubbles: true
+      })
+    );
   }
 
-  /* SCREEN STABILITY */
+  /* ========================================
+     WATCH PROFILE OPENING
+     ======================================== */
 
-  let refreshQueued = false;
+  function watchProfile() {
+    const screen = $("manaProfileScreen");
 
-  function maintain() {
-    removeDuplicateProfile();
-    maintainLearning();
-    restoreDOB();
-  }
+    if (!screen) return;
 
-  function scheduleMaintain() {
-    if (refreshQueued) return;
+    if (profileObserver) {
+      profileObserver.disconnect();
+    }
 
-    refreshQueued = true;
+    profileObserver = new MutationObserver(
+      () => {
+        if (
+          screen.classList.contains("open")
+        ) {
+          restoreDOB();
 
-    requestAnimationFrame(() => {
-      refreshQueued = false;
-      maintain();
+          /*
+           Existing profile modules load
+           their fields asynchronously.
+           Use bounded checks rather than
+           a permanent interval.
+          */
+
+          [150, 500, 1000].forEach(delay => {
+            setTimeout(restoreDOB, delay);
+          });
+        }
+      }
+    );
+
+    profileObserver.observe(screen, {
+      attributes: true,
+      attributeFilter: ["class"]
     });
   }
 
-  function init() {
-    installCSS();
+  /* ========================================
+     PROFILE DATA EVENTS
+     ======================================== */
 
-    /*
-      Load client profile even when starting
-      from Home or Strength Overview.
-    */
-
-    void connectClient();
-
+  function installDOBEvents() {
     document.addEventListener(
       "input",
       event => {
-        if (event.target?.id === "me-dob") {
-          rememberDOB(event.target.value);
+        if (
+          event.target?.id === "me-dob"
+        ) {
+          rememberDOB(
+            event.target.value
+          );
         }
       },
       true
@@ -437,43 +523,15 @@
     document.addEventListener(
       "change",
       event => {
-        if (event.target?.id === "me-dob") {
-          rememberDOB(event.target.value);
-        }
-      },
-      true
-    );
-
-    document.addEventListener(
-      "click",
-      event => {
         if (
-          event.target?.closest?.(
-            "#manaProfileSave"
-          )
+          event.target?.id === "me-dob"
         ) {
           rememberDOB(
-            $("me-dob")?.value
+            event.target.value
           );
-        }
-
-        if (
-          event.target?.closest?.(
-            "#manaV83Tabs"
-          )
-        ) {
-          scheduleMaintain();
         }
       },
       true
-    );
-
-    window.addEventListener(
-      "mana:extended-profile-saved",
-      () => {
-        restoreDOB();
-        void saveDOBCloud();
-      }
     );
 
     window.addEventListener(
@@ -482,67 +540,87 @@
     );
 
     window.addEventListener(
+      "mana:extended-profile-saved",
+      () => {
+        const current =
+          $("me-dob")?.value;
+
+        if (validDOB(current)) {
+          rememberDOB(current);
+        }
+
+        restoreDOB();
+      }
+    );
+  }
+
+  /* ========================================
+     STARTUP
+     ======================================== */
+
+  function init() {
+    installStyles();
+
+    removeDuplicateProfile();
+
+    watchNavigation();
+    watchProfile();
+
+    installDOBEvents();
+
+    window.addEventListener(
       "mana:program-tab-change",
-      scheduleMaintain
+      scheduleLearningCheck
     );
 
     window.addEventListener(
       "pageshow",
       () => {
         void connectClient();
-        scheduleMaintain();
+        scheduleLearningCheck();
+        restoreDOB();
       }
     );
 
     /*
-      Watch original navigation changes.
-      Do not replace working click handlers.
+     Only bounded authentication retries.
+     No permanent refresh loop.
     */
 
-    const tabs = $("manaV83Tabs");
+    void connectClient();
 
-    if (tabs) {
-      new MutationObserver(
-        scheduleMaintain
-      ).observe(tabs, {
-        childList: true
-      });
-    }
-
-    const holder = $("manaV83Content");
-
-    if (holder) {
-      new MutationObserver(
-        scheduleMaintain
-      ).observe(holder, {
-        childList: true,
-        subtree: false
-      });
-    }
+    [300, 900, 1800].forEach(delay => {
+      setTimeout(() => {
+        if (!userId) {
+          void connectClient();
+        }
+      }, delay);
+    });
 
     /*
-      Limited ongoing startup check.
-      No full profile-screen rebuilding.
+     Remove legacy Profile shortcut after
+     initial asynchronous screen rendering.
     */
 
-    setInterval(() => {
-      if (!authReady) {
-        void connectClient();
-      }
+    [150, 600].forEach(delay => {
+      setTimeout(
+        removeDuplicateProfile,
+        delay
+      );
+    });
 
-      maintain();
-    }, 1200);
-
-    maintain();
-
-    window.MANA_STABILITY_BUILD = "105048";
+    window.MANA_STABILITY_BUILD = BUILD;
 
     console.log(
-      "[Mana Movement] Stability 105048 ready"
+      "[Mana Movement] Stability " +
+      BUILD +
+      " ready"
     );
   }
 
-  if (document.readyState === "loading") {
+  if (
+    document.readyState === "loading"
+  ) {
     document.addEventListener(
       "DOMContentLoaded",
       init,
@@ -551,4 +629,5 @@
   } else {
     init();
   }
+
 })();
