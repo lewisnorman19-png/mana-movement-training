@@ -1,31 +1,30 @@
-
 /*
  MANA MOVEMENT
- PREMIUM WORKOUT SELECTOR — BUILD 100204
+ WORKOUT SELECTOR CLEANUP — BUILD 100205
 
- Complete replacement:
+ COMPLETE FILE REPLACEMENT:
  v10_02_client_custom_programs_100200.js
 
- Preserves:
- - Automatic Mana Strength workouts
- - Separate Coach Programs
- - Coach Hub Save & Assign connection
- - Existing workout completion/history
- - Client access to assigned weeks and exercises
- - Existing bottom navigation
+ GOALS
+ - Remove the extra inserted header block
+ - Keep original My Strength Program screen intact
+ - Keep only the My Workouts / Coach Programs selector
+ - Clean up Coach Programs view
+ - Remove yellow borders / lines
+ - Preserve coach-program cloud connection
+ - Preserve generated workouts and history
 */
 
 (() => {
   "use strict";
 
-  const BUILD = "100204";
+  const BUILD = "100205";
   const STYLE_ID = "mana-v1002-client-custom-style";
-  const HEADER_ID = "manaV1002TrainingHeader";
   const SELECTOR_ID = "manaV1002WorkoutSwitch";
   const PANEL_ID = "manaV1002CoachPanel";
   const LEGACY_ID = "manaV1002AssignedPrograms";
   const MODAL_ID = "manaV1002CustomProgramModal";
-  const STORAGE_KEY = "mana-strength-workout-view-100202";
+  const STORAGE_KEY = "mana-strength-workout-view-100205";
 
   const $ = id => document.getElementById(id);
 
@@ -80,17 +79,24 @@
 
   function getPrimary() {
     return assignments.find(
-      a => a.is_primary && a.status === "active" &&
-      a.custom_programs
-    ) || assignments.find(
-      a => a.status === "active" && a.custom_programs
-    ) || null;
+      a =>
+        a.is_primary &&
+        a.status === "active" &&
+        a.custom_programs
+    ) ||
+    assignments.find(
+      a =>
+        a.status === "active" &&
+        a.custom_programs
+    ) ||
+    null;
   }
 
   function readMode() {
     try {
       return sessionStorage.getItem(STORAGE_KEY) === "coach"
-        ? "coach" : "generated";
+        ? "coach"
+        : "generated";
     } catch (_) {
       return "generated";
     }
@@ -109,85 +115,26 @@
     style.id = STYLE_ID;
 
     style.textContent = `
-      #${HEADER_ID} {
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:14px;
-        padding:20px 20px 12px;
-        margin:0;
-        border:1px solid #363636;
-        border-bottom:0;
-        border-radius:18px 18px 0 0;
-        background:#111214;
-      }
-
-      .m1002-title-kicker {
-        color:#ff8126;
-        font-size:10px;
-        font-weight:900;
-        letter-spacing:.14em;
-        margin:0 0 6px;
-      }
-
-      .m1002-title {
-        margin:0;
-        color:#fff;
-        font-size:clamp(19px,3vw,24px);
-        line-height:1.18;
-        font-weight:900;
-      }
-
-      .m1002-title-sub {
-        color:#aaaeb5;
-        font-size:12px;
-        line-height:1.5;
-        margin:7px 0 0;
-      }
-
-      .m1002-title-mark {
-        display:grid;
-        place-items:center;
-        width:42px;
-        height:42px;
-        flex:0 0 42px;
-        border:1px solid #613919;
-        border-radius:13px;
-        background:#221a14;
-        color:#ff8126;
-      }
-
-      .m1002-title-mark svg {
-        width:24px;
-        height:24px;
-        stroke:currentColor;
-        fill:none;
-        stroke-width:2;
-        stroke-linecap:round;
-        stroke-linejoin:round;
-      }
-
       #${SELECTOR_ID} {
         display:grid;
         grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:7px;
-        padding:7px;
-        margin:0 0 16px;
-        border:1px solid #363636;
-        border-top:0;
-        border-radius:0 0 18px 18px;
+        gap:8px;
+        padding:6px;
+        margin:14px 0 16px;
         background:#111214;
+        border:1px solid #2f3238;
+        border-radius:16px;
       }
 
       #${SELECTOR_ID} button {
         width:100%;
         min-width:0;
         min-height:46px;
-        padding:10px 7px;
+        padding:10px 8px;
         border:1px solid transparent;
-        border-radius:11px;
-        background:#1a1b1d;
-        color:#c0c3c9;
+        border-radius:12px;
+        background:#181a1d;
+        color:#c0c4cb;
         font-family:inherit;
         font-size:12px;
         font-weight:800;
@@ -195,32 +142,31 @@
       }
 
       #${SELECTOR_ID} button.active {
-        background:#261c15;
-        border-color:#ff8126;
+        background:#261b14;
         color:#ff8126;
+        border-color:#ff8126;
+      }
+
+      #${SELECTOR_ID} button:focus-visible,
+      .m1002-program:focus-visible,
+      .m1002-back:focus-visible {
+        outline:2px solid #ff8126;
+        outline-offset:2px;
       }
 
       /*
-       Hide generated content only while
-       the coach view is selected.
-       Do not remove or rebuild it.
+       Hide original generated content only
+       while Coach Programs is selected.
+       Do not remove it from the DOM.
       */
-
       #manaV83Content.m1002-coach-mode
-      > :not(#${HEADER_ID})
-        :not(#${SELECTOR_ID})
-        :not(#${PANEL_ID}) {
+      > :not(#${SELECTOR_ID}):not(#${PANEL_ID}) {
         display:none !important;
       }
 
-      /*
-       A single compound selector is required;
-       do not insert spaces between :not().
-      */
-
       #manaV83Content.m1002-coach-mode
-      > :not(#${HEADER_ID}):not(#${SELECTOR_ID}):not(#${PANEL_ID}) {
-        display:none !important;
+      > #${SELECTOR_ID} {
+        display:grid !important;
       }
 
       #${PANEL_ID} {
@@ -233,57 +179,45 @@
         display:block !important;
       }
 
-      #manaV83Content.m1002-coach-mode
-      > #${HEADER_ID} {
-        display:flex !important;
-      }
-
-      #manaV83Content.m1002-coach-mode
-      > #${SELECTOR_ID} {
-        display:grid !important;
-      }
-
-      .m1002-empty-card {
-        padding:28px 18px;
-        border:1px solid #363636;
+      .m1002-coach-wrap {
+        border:1px solid #2f3238;
         border-radius:18px;
-        background:#141517;
-        text-align:center;
+        background:#111214;
+        overflow:hidden;
       }
 
-      .m1002-empty-icon {
-        display:grid;
-        place-items:center;
-        width:54px;
-        height:54px;
-        margin:0 auto 15px;
-        border:1px solid #653b1f;
-        border-radius:50%;
-        background:#261c16;
-        color:#ff8126;
-        font-size:25px;
+      .m1002-coach-head {
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap:12px;
+        padding:18px 18px 14px;
+        border-bottom:1px solid #23262b;
       }
 
-      .m1002-empty-title {
+      .m1002-coach-head h3 {
+        margin:0;
         color:#fff;
-        font-size:19px;
-        font-weight:900;
-        margin:0 0 9px;
+        font-size:22px;
+        line-height:1.15;
       }
 
-      .m1002-empty-copy {
-        max-width:390px;
-        margin:0 auto;
-        color:#abb0b7;
-        font-size:13px;
-        line-height:1.65;
+      .m1002-coach-sub {
+        margin:6px 0 0;
+        color:#9ea4ad;
+        font-size:12px;
+        line-height:1.55;
       }
 
-      .m1002-empty-foot {
+      .m1002-kicker {
         color:#ff8126;
-        font-size:11px;
-        font-weight:800;
-        margin:16px 0 0;
+        font-size:10px;
+        font-weight:900;
+        letter-spacing:.08em;
+      }
+
+      .m1002-coach-body {
+        padding:16px;
       }
 
       .m1002-program-list {
@@ -292,26 +226,20 @@
       }
 
       .m1002-program {
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:12px;
         width:100%;
-        padding:17px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:12px;
+        padding:16px;
         margin:0 0 10px;
-        background:#151618;
-        color:#fff;
-        border:1px solid #454545;
+        border:1px solid #32353a;
         border-radius:15px;
+        background:#17191c;
+        color:#fff;
         text-align:left;
         font-family:inherit;
         cursor:pointer;
-      }
-
-      .m1002-program:focus-visible,
-      #${SELECTOR_ID} button:focus-visible {
-        outline:2px solid #ff8126;
-        outline-offset:2px;
       }
 
       .m1002-program strong {
@@ -322,19 +250,63 @@
       .m1002-program small {
         display:block;
         margin-top:6px;
-        color:#aeb0b5;
+        color:#a7adb5;
         font-size:12px;
         line-height:1.5;
       }
 
       .m1002-pill {
         flex:0 0 auto;
-        color:#ff8126;
-        border:1px solid #774625;
-        border-radius:20px;
         padding:6px 9px;
+        border:1px solid #5b351a;
+        border-radius:20px;
+        color:#ff8126;
         font-size:10px;
         font-weight:900;
+      }
+
+      .m1002-empty-card {
+        padding:30px 18px;
+        border:1px solid #2f3238;
+        border-radius:16px;
+        background:#17191c;
+        text-align:center;
+      }
+
+      .m1002-empty-icon {
+        display:grid;
+        place-items:center;
+        width:54px;
+        height:54px;
+        margin:0 auto 14px;
+        border:1px solid #5b351a;
+        border-radius:50%;
+        background:#221913;
+        color:#ff8126;
+        font-size:22px;
+        font-weight:900;
+      }
+
+      .m1002-empty-title {
+        margin:0 0 8px;
+        color:#fff;
+        font-size:19px;
+        font-weight:900;
+      }
+
+      .m1002-empty-copy {
+        margin:0 auto;
+        max-width:420px;
+        color:#a7adb5;
+        font-size:13px;
+        line-height:1.6;
+      }
+
+      .m1002-empty-foot {
+        margin:14px 0 0;
+        color:#d3d6db;
+        font-size:11px;
+        font-weight:800;
       }
 
       .m1002-heading {
@@ -347,23 +319,16 @@
 
       .m1002-heading h3 {
         margin:0;
-        font-size:17px;
         color:#fff;
-      }
-
-      .m1002-kicker {
-        color:#ff8126;
-        font-size:10px;
-        font-weight:900;
-        letter-spacing:.08em;
+        font-size:17px;
       }
 
       .m1002-empty {
         padding:16px;
-        border:1px solid #363636;
-        border-radius:13px;
-        background:#141517;
-        color:#aeb0b5;
+        border:1px solid #2f3238;
+        border-radius:14px;
+        background:#17191c;
+        color:#a7adb5;
         font-size:13px;
         line-height:1.6;
       }
@@ -412,7 +377,7 @@
         min-height:43px;
         padding:0 15px;
         background:#18191b;
-        border:1px solid #484848;
+        border:1px solid #40444a;
         border-radius:12px;
         color:#fff;
         font-family:inherit;
@@ -422,22 +387,22 @@
       .m1002-hero {
         padding:20px;
         margin-bottom:14px;
-        background:#151618;
-        border:1px solid #6e421f;
+        border:1px solid #32353a;
         border-radius:18px;
+        background:#15171a;
       }
 
       .m1002-hero h2 {
         margin:8px 0;
-        font-size:24px;
         color:#fff;
+        font-size:24px;
       }
 
       .m1002-hero p {
         margin:0;
-        color:#afb3b9;
-        line-height:1.6;
+        color:#a7adb5;
         font-size:13px;
+        line-height:1.6;
       }
 
       .m1002-weeks {
@@ -450,10 +415,10 @@
       .m1002-weeks button {
         flex:0 0 auto;
         padding:10px 13px;
-        background:#17181a;
-        border:1px solid #444;
+        background:#17191c;
+        border:1px solid #3a3e44;
         border-radius:11px;
-        color:#bbb;
+        color:#b6bbc3;
         font-weight:800;
       }
 
@@ -464,24 +429,24 @@
 
       .m1002-day {
         margin-bottom:10px;
-        background:#141517;
-        border:1px solid #3e3e3e;
+        background:#15171a;
+        border:1px solid #30343a;
         border-radius:14px;
         overflow:hidden;
       }
 
       .m1002-day-button {
+        width:100%;
         display:flex;
         justify-content:space-between;
         align-items:center;
         gap:10px;
-        width:100%;
         padding:16px;
-        background:transparent;
         border:0;
+        background:transparent;
         color:#fff;
-        font-family:inherit;
         text-align:left;
+        font-family:inherit;
       }
 
       .m1002-day-button strong {
@@ -492,7 +457,7 @@
       .m1002-day-button small {
         display:block;
         margin-top:6px;
-        color:#adb1b7;
+        color:#a7adb5;
         font-size:12px;
       }
 
@@ -512,7 +477,7 @@
 
       .m1002-exercise {
         padding:12px 0;
-        border-top:1px solid #363636;
+        border-top:1px solid #2f3238;
       }
 
       .m1002-exercise strong {
@@ -529,62 +494,35 @@
 
       .m1002-exercise p,
       .m1002-coach-note {
-        color:#adb1b7;
+        color:#a7adb5;
         font-size:12px;
         line-height:1.6;
       }
 
       @media(max-width:420px) {
-        #${HEADER_ID} {
-          padding:17px 14px 12px;
-        }
-
-        .m1002-title {
-          font-size:19px;
-        }
-
-        .m1002-title-sub {
-          font-size:11px;
-        }
-
-        .m1002-title-mark {
-          width:38px;
-          height:38px;
-          flex-basis:38px;
-        }
-
         #${SELECTOR_ID} button {
           font-size:11px;
         }
 
+        .m1002-coach-head {
+          padding:16px 14px 12px;
+        }
+
+        .m1002-coach-head h3 {
+          font-size:19px;
+        }
+
+        .m1002-coach-body {
+          padding:14px;
+        }
+
         .m1002-empty-card {
-          padding:25px 14px;
+          padding:24px 14px;
         }
       }
     `;
 
     document.head.appendChild(style);
-  }
-
-  function headerHTML() {
-    return `
-      <div>
-        <div class="m1002-title-kicker">
-          MANA STRENGTH
-        </div>
-        <h2 class="m1002-title">
-          Your Training Programs
-        </h2>
-        <p class="m1002-title-sub">
-          Choose how you want to train.
-        </p>
-      </div>
-      <div class="m1002-title-mark" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <path d="M3 9v6M6 7v10M9 10v4M15 10v4M18 7v10M21 9v6M9 12h6"/>
-        </svg>
-      </div>
-    `;
   }
 
   function ensureModal() {
@@ -593,8 +531,8 @@
 
     modal = document.createElement("div");
     modal.id = MODAL_ID;
-    modal.setAttribute("role","dialog");
-    modal.setAttribute("aria-modal","true");
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
 
     modal.innerHTML = `
       <div class="m1002-modal-inner">
@@ -602,8 +540,11 @@
           <strong class="m1002-kicker">
             MANA STRENGTH • COACH PROGRAM
           </strong>
-          <button type="button"
-            class="m1002-back" data-m1002-close>
+          <button
+            type="button"
+            class="m1002-back"
+            data-m1002-close
+          >
             ← BACK
           </button>
         </div>
@@ -635,7 +576,7 @@
     if (!view.contains(root)) {
       const first = view.querySelector(".card");
       if (first) {
-        first.insertAdjacentElement("beforebegin",root);
+        first.insertAdjacentElement("beforebegin", root);
       } else {
         view.prepend(root);
       }
@@ -650,54 +591,46 @@
     const holder = $("manaV83Content");
     if (!holder) return null;
 
-    let header = $(HEADER_ID);
-    if (!header) {
-      header = document.createElement("section");
-      header.id = HEADER_ID;
-      header.innerHTML = headerHTML();
-    }
-
-    if (header.parentElement !== holder) {
-      holder.prepend(header);
-    }
-
     let selector = $(SELECTOR_ID);
 
     if (!selector) {
       selector = document.createElement("div");
       selector.id = SELECTOR_ID;
-      selector.setAttribute("role","group");
+      selector.setAttribute("role", "group");
       selector.setAttribute(
         "aria-label",
         "Choose workout type"
       );
 
       selector.innerHTML = `
-        <button type="button"
-          data-m1002-mode="generated">
+        <button
+          type="button"
+          data-m1002-mode="generated"
+        >
           My Workouts
         </button>
-        <button type="button"
-          data-m1002-mode="coach">
+        <button
+          type="button"
+          data-m1002-mode="coach"
+        >
           Coach Programs
         </button>
       `;
     }
 
-    if (selector.previousElementSibling !== header ||
-        selector.parentElement !== holder) {
-      header.insertAdjacentElement("afterend",selector);
+    if (selector.parentElement !== holder) {
+      holder.prepend(selector);
     }
 
     let panel = $(PANEL_ID);
+
     if (!panel) {
       panel = document.createElement("section");
       panel.id = PANEL_ID;
     }
 
-    if (panel.previousElementSibling !== selector ||
-        panel.parentElement !== holder) {
-      selector.insertAdjacentElement("afterend",panel);
+    if (panel.parentElement !== holder) {
+      selector.insertAdjacentElement("afterend", panel);
     }
 
     return holder;
@@ -718,7 +651,7 @@
         const active =
           button.dataset.m1002Mode === mode;
 
-        button.classList.toggle("active",active);
+        button.classList.toggle("active", active);
         button.setAttribute(
           "aria-pressed",
           String(active)
@@ -750,12 +683,16 @@
 
     const badge = assignment.is_primary
       ? "PRIMARY"
-      : String(assignment.status || "ACTIVE").toUpperCase();
+      : String(
+          assignment.status || "ACTIVE"
+        ).toUpperCase();
 
     return `
-      <button type="button"
+      <button
+        type="button"
         class="m1002-program"
-        data-m1002-program="${esc(program.id)}">
+        data-m1002-program="${esc(program.id)}"
+      >
         <div>
           <strong>${esc(program.name || "Coach Program")}</strong>
           <small>${esc(
@@ -771,13 +708,34 @@
     `;
   }
 
+  function coachShell(content) {
+    return `
+      <div class="m1002-coach-wrap">
+        <div class="m1002-coach-head">
+          <div>
+            <div class="m1002-kicker">MANA STRENGTH</div>
+            <h3>Coach Programs</h3>
+            <p class="m1002-coach-sub">
+              Personalised training programs built and assigned by your coach.
+            </p>
+          </div>
+          <span class="m1002-kicker">PERSONALISED</span>
+        </div>
+        <div class="m1002-coach-body">
+          ${content}
+        </div>
+      </div>
+    `;
+  }
+
   function renderCoachPanel() {
     const panel = $(PANEL_ID);
     if (!panel) return;
 
     const available = assignments.filter(
-      item => item.custom_programs &&
-        ["active","paused","completed"].includes(item.status)
+      item =>
+        item.custom_programs &&
+        ["active", "paused", "completed"].includes(item.status)
     );
 
     const primary = getPrimary();
@@ -790,35 +748,31 @@
       : available;
 
     panel.innerHTML = ordered.length
-      ? `
-        <div class="m1002-heading">
-          <h3>Your Coach Programs</h3>
-          <span class="m1002-kicker">PERSONALISED</span>
-        </div>
-        <div class="m1002-program-list">
-          ${ordered.map(programCard).join("")}
-        </div>
-      `
-      : `
-        <div class="m1002-empty-card">
-          <div class="m1002-empty-icon" aria-hidden="true">
-            ◈
+      ? coachShell(`
+          <div class="m1002-program-list">
+            ${ordered.map(programCard).join("")}
           </div>
-          <h3 class="m1002-empty-title">
-            Your Coach Programs
-          </h3>
-          <p class="m1002-empty-copy">
-            ${
-              loading
-                ? "Checking for personalised programs assigned by your coach…"
-                : "Your personalised coach-built training programs will appear here once assigned."
-            }
-          </p>
-          <p class="m1002-empty-foot">
-            Your regular workouts remain available.
-          </p>
-        </div>
-      `;
+        `)
+      : coachShell(`
+          <div class="m1002-empty-card">
+            <div class="m1002-empty-icon" aria-hidden="true">
+              ◈
+            </div>
+            <h3 class="m1002-empty-title">
+              No Coach Programs Yet
+            </h3>
+            <p class="m1002-empty-copy">
+              ${
+                loading
+                  ? "Checking for personalised programs assigned by your coach…"
+                  : "Your coach-built training programs will appear here once they’ve been assigned."
+              }
+            </p>
+            <p class="m1002-empty-foot">
+              Your regular workouts are still available under My Workouts.
+            </p>
+          </div>
+        `);
   }
 
   function renderLegacy() {
@@ -826,8 +780,9 @@
     if (!root) return;
 
     const available = assignments.filter(
-      item => item.custom_programs &&
-        ["active","paused","completed"].includes(item.status)
+      item =>
+        item.custom_programs &&
+        ["active", "paused", "completed"].includes(item.status)
     );
 
     root.innerHTML = available.length
@@ -857,6 +812,7 @@
 
     try {
       const client = await db();
+
       const {
         data: auth,
         error: authError
@@ -878,7 +834,7 @@
         assignments = [];
       }
 
-      const {data,error} = await client
+      const { data, error } = await client
         .from("client_program_assignments")
         .select(`
           id,
@@ -896,19 +852,19 @@
             source_program
           )
         `)
-        .eq("client_id",account)
-        .in("status",[
-          "active","paused","completed"
-        ])
-        .order("is_primary",{ascending:false})
-        .order("assigned_at",{ascending:false});
+        .eq("client_id", account)
+        .in("status", ["active", "paused", "completed"])
+        .order("is_primary", { ascending: false })
+        .order("assigned_at", { ascending: false });
 
       if (error) throw error;
 
       const current = await client.auth.getUser();
 
-      if (token !== requestId ||
-          current.data?.user?.id !== account) {
+      if (
+        token !== requestId ||
+        current.data?.user?.id !== account
+      ) {
         return;
       }
 
@@ -932,7 +888,6 @@
 
   function showModalMessage(message) {
     ensureModal();
-
     modalOpen = true;
     $(MODAL_ID).classList.add("open");
 
@@ -975,9 +930,9 @@
       } = await client
         .from("client_program_assignments")
         .select("id,status")
-        .eq("client_id",account)
-        .eq("program_id",programId)
-        .in("status",["active","paused","completed"])
+        .eq("client_id", account)
+        .eq("program_id", programId)
+        .in("status", ["active", "paused", "completed"])
         .maybeSingle();
 
       if (assignmentError) throw assignmentError;
@@ -992,7 +947,7 @@
       } = await client
         .from("custom_programs")
         .select("*")
-        .eq("id",programId)
+        .eq("id", programId)
         .single();
 
       if (programError) throw programError;
@@ -1003,7 +958,7 @@
       } = await client
         .from("custom_program_days")
         .select("*")
-        .eq("program_id",programId)
+        .eq("program_id", programId)
         .order("week_number")
         .order("day_number");
 
@@ -1013,26 +968,27 @@
       let exercises = [];
 
       if (dayIds.length) {
-        const {data,error} = await client
+        const { data, error } = await client
           .from("custom_program_exercises")
           .select("*")
-          .in("program_day_id",dayIds)
+          .in("program_day_id", dayIds)
           .order("sort_order");
 
         if (error) throw error;
         exercises = data || [];
       }
 
-      if (!modalOpen ||
-          currentProgramId !== programId) {
+      if (!modalOpen || currentProgramId !== programId) {
         return;
       }
 
-      renderProgram(program,days || [],exercises);
+      renderProgram(program, days || [], exercises);
 
     } catch (error) {
-      if (modalOpen &&
-          currentProgramId === programId) {
+      if (
+        modalOpen &&
+        currentProgramId === programId
+      ) {
         showModalMessage(
           "Could not load program: " +
           (error?.message || String(error))
@@ -1041,12 +997,12 @@
     }
   }
 
-  function renderProgram(program,days,exercises) {
+  function renderProgram(program, days, exercises) {
     const weeks = [
       ...new Set(
         days.map(day => Number(day.week_number) || 1)
       )
-    ].sort((a,b) => a-b);
+    ].sort((a, b) => a - b);
 
     const initialWeek = weeks[0] || 1;
 
@@ -1065,9 +1021,11 @@
 
       <div class="m1002-weeks">
         ${weeks.map(week => `
-          <button type="button"
+          <button
+            type="button"
             data-m1002-week="${week}"
-            class="${week === initialWeek ? "active" : ""}">
+            class="${week === initialWeek ? "active" : ""}"
+          >
             WEEK ${week}
           </button>
         `).join("")}
@@ -1098,64 +1056,55 @@
 
             return `
               <section class="m1002-day">
-                <button type="button"
+                <button
+                  type="button"
                   class="m1002-day-button"
-                  data-m1002-day>
+                  data-m1002-day
+                >
                   <div>
                     <strong>
-                      DAY ${esc(day.day_number)}
-                      • ${esc(day.title || "Workout")}
+                      DAY ${esc(day.day_number)} • ${esc(day.title || "Workout")}
                     </strong>
                     <small>
                       ${esc(day.workout_type || "Strength")}
-                      ${day.estimated_minutes
-                        ? " • " + esc(day.estimated_minutes) + " min"
-                        : ""}
+                      ${
+                        day.estimated_minutes
+                          ? " • " + esc(day.estimated_minutes) + " min"
+                          : ""
+                      }
                     </small>
                   </div>
                   <span class="m1002-day-arrow">⌄</span>
                 </button>
 
                 <div class="m1002-day-body">
-                  ${day.notes
-                    ? `<p class="m1002-coach-note">${esc(day.notes)}</p>`
-                    : ""}
+                  ${
+                    day.notes
+                      ? `<p class="m1002-coach-note">${esc(day.notes)}</p>`
+                      : ""
+                  }
 
-                  ${items.length
-                    ? items.map(item => `
-                      <div class="m1002-exercise">
-                        <strong>
-                          ${esc(item.exercise_name || "Exercise")}
-                        </strong>
-                        <span>
-                          ${item.sets != null
-                            ? esc(item.sets) + " sets"
-                            : ""}
-                          ${item.reps
-                            ? " × " + esc(item.reps)
-                            : ""}
-                          ${item.rest_seconds != null
-                            ? " • " + esc(item.rest_seconds) + "s rest"
-                            : ""}
-                          ${item.rpe_target
-                            ? " • RPE " + esc(item.rpe_target)
-                            : ""}
-                        </span>
-                        ${item.notes
-                          ? `<p>${esc(item.notes)}</p>`
-                          : ""}
-                      </div>
-                    `).join("")
-                    : `<div class="m1002-empty">
-                         No exercises assigned.
-                       </div>`}
+                  ${
+                    items.length
+                      ? items.map(item => `
+                        <div class="m1002-exercise">
+                          <strong>${esc(item.exercise_name || "Exercise")}</strong>
+                          <span>
+                            ${item.sets != null ? esc(item.sets) + " sets" : ""}
+                            ${item.reps ? " × " + esc(item.reps) : ""}
+                            ${item.rest_seconds != null ? " • " + esc(item.rest_seconds) + "s rest" : ""}
+                            ${item.rpe_target ? " • RPE " + esc(item.rpe_target) : ""}
+                          </span>
+                          ${item.notes ? `<p>${esc(item.notes)}</p>` : ""}
+                        </div>
+                      `).join("")
+                      : `<div class="m1002-empty">No exercises assigned.</div>`
+                  }
                 </div>
               </section>
             `;
           }).join("")
-        : `<div class="m1002-empty">
-             No workouts in this week.
-           </div>`;
+        : `<div class="m1002-empty">No workouts in this week.</div>`;
 
       $("m1002Days")
         ?.querySelector(".m1002-day")
@@ -1165,19 +1114,13 @@
     drawWeek(initialWeek);
 
     $("m1002Content").onclick = event => {
-      const week = event.target.closest(
-        "[data-m1002-week]"
-      );
-
+      const week = event.target.closest("[data-m1002-week]");
       if (week) {
         drawWeek(Number(week.dataset.m1002Week));
         return;
       }
 
-      const day = event.target.closest(
-        "[data-m1002-day]"
-      );
-
+      const day = event.target.closest("[data-m1002-day]");
       if (day) {
         day.closest(".m1002-day")
           ?.classList.toggle("open");
@@ -1208,7 +1151,7 @@
     navigationTimer = setTimeout(() => {
       navigationTimer = null;
       refreshVisibleContent(force);
-    },120);
+    }, 120);
   }
 
   function observeWorkoutContent() {
@@ -1222,15 +1165,13 @@
     contentObserver = new MutationObserver(() => {
       if (!strengthWorkoutsOpen()) return;
 
-      if (!$(HEADER_ID) ||
-          !$(SELECTOR_ID) ||
-          !$(PANEL_ID)) {
+      if (!$(SELECTOR_ID) || !$(PANEL_ID)) {
         applyMode();
       }
     });
 
-    contentObserver.observe(holder,{
-      childList:true
+    contentObserver.observe(holder, {
+      childList: true
     });
   }
 
@@ -1238,35 +1179,24 @@
     const element = event.target;
     if (!(element instanceof Element)) return;
 
-    const choice = element.closest(
-      "[data-m1002-mode]"
-    );
-
+    const choice = element.closest("[data-m1002-mode]");
     if (choice) {
       event.preventDefault();
       setMode(choice.dataset.m1002Mode);
       return;
     }
 
-    const close = element.closest(
-      "[data-m1002-close]"
-    );
-
+    const close = element.closest("[data-m1002-close]");
     if (close) {
       event.preventDefault();
       closeModal();
       return;
     }
 
-    const program = element.closest(
-      "[data-m1002-program]"
-    );
-
+    const program = element.closest("[data-m1002-program]");
     if (program) {
       event.preventDefault();
-      void openProgram(
-        program.dataset.m1002Program
-      );
+      void openProgram(program.dataset.m1002Program);
     }
   }
 
@@ -1278,10 +1208,7 @@
     ensureLegacyRoot();
     observeWorkoutContent();
 
-    document.addEventListener(
-      "click",
-      handleDocumentClick
-    );
+    document.addEventListener("click", handleDocumentClick);
 
     window.addEventListener(
       "mana:program-tab-change",
@@ -1334,7 +1261,7 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {once:true}
+      { once: true }
     );
   } else {
     init();
