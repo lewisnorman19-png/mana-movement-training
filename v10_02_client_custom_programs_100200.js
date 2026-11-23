@@ -1,154 +1,188 @@
 
 /*
  MANA MOVEMENT
- COACH PROGRAMS PREMIUM FINISH — BUILD 100206
+ COACH WORKOUTS — BUILD 100207
 
  COMPLETE REPLACEMENT:
  v10_02_client_custom_programs_100200.js
 
- PRESERVES:
- - Original My Strength Program screen
- - My Workouts / Coach Programs selector
- - Existing generated workout cards
- - All workout history and completion data
- - Coach Hub cloud assignment connection
- - Assigned program viewer
- - Weeks, exercises and coach notes
-
- POLISH:
- - No extra training header
- - No yellow Coach Programs styling
- - Orange dumbbell icon
- - Compact premium empty state
- - Black, charcoal, white, silver and orange
+ - Same Mana Strength exercise-card styling
+ - Same demonstration library
+ - Weight / rep inputs and set completion
+ - Workout timer, progress, volume
+ - Autosave and completed workout cloud logs
+ - Separate coach-program identifiers
+ - Original generated workouts untouched
 */
 
 (() => {
   "use strict";
 
-  const BUILD = "100206";
-  const STYLE_ID = "mana-v1002-client-custom-style";
-  const SELECTOR_ID = "manaV1002WorkoutSwitch";
-  const PANEL_ID = "manaV1002CoachPanel";
-  const LEGACY_ID = "manaV1002AssignedPrograms";
-  const MODAL_ID = "manaV1002CustomProgramModal";
-  const STORAGE_KEY = "mana-strength-workout-view-100205";
+  const BUILD = "100207";
+  const STYLE = "mana-v1002-client-custom-style";
+  const SWITCH = "manaV1002WorkoutSwitch";
+  const PANEL = "manaV1002CoachPanel";
+  const LEGACY = "manaV1002AssignedPrograms";
+  const MODAL = "manaV1002CustomProgramModal";
+  const MODE_KEY = "mana-strength-workout-view-100205";
 
   const $ = id => document.getElementById(id);
 
+  const esc = value => String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
   let mode = "generated";
   let assignments = [];
-  let userId = "";
+  let account = "";
   let loading = false;
-  let loadedAt = 0;
-  let requestId = 0;
-  let navigationTimer = null;
+  let loadSerial = 0;
+  let selected = null;
+  let programData = null;
+  let week = 1;
+  let session = null;
+  let saveTimer = null;
+  let saveChain = Promise.resolve();
+  let opening = 0;
+  let refreshTimer = null;
   let contentObserver = null;
-  let modalOpen = false;
-  let currentProgramId = "";
-
-  function esc(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  }
+  let elapsedTimer = null;
+  let startedAt = 0;
+  let elapsedBase = 0;
 
   async function db() {
     if (typeof window.supabaseClient !== "function") {
-      throw new Error("Mana cloud connection unavailable.");
+      throw Error("Cloud connection unavailable");
     }
     return await window.supabaseClient();
   }
 
-  function strengthWorkoutsOpen() {
-    const shell = $("manaV83ProgramShell");
-
-    if (!shell?.classList.contains("open")) {
-      return false;
-    }
-
-    const title = $("manaV83Title")
-      ?.textContent?.trim()?.toUpperCase();
-
-    const tab = document.querySelector(
-      '#manaV83Tabs [data-v83-tab].active'
-    )?.dataset.v83Tab;
-
-    return title === "MANA STRENGTH" && tab === "program";
-  }
-
-  function legacyProgramsOpen() {
-    const view = $("clientProgramsView");
-
+  function isStrengthWorkouts() {
     return !!(
-      view &&
-      !view.classList.contains("hide")
+      $("manaV83ProgramShell")?.classList.contains("open") &&
+      $("manaV83Title")?.textContent?.trim()?.toUpperCase() ===
+        "MANA STRENGTH" &&
+      document.querySelector(
+        '#manaV83Tabs [data-v83-tab].active'
+      )?.dataset.v83Tab === "program"
     );
   }
 
-  function getPrimary() {
-    return assignments.find(
-      a =>
-        a.is_primary &&
-        a.status === "active" &&
-        a.custom_programs
-    ) || assignments.find(
-      a =>
-        a.status === "active" &&
-        a.custom_programs
-    ) || null;
+  function legacyVisible() {
+    return !!(
+      $("clientProgramsView") &&
+      !$("clientProgramsView").classList.contains("hide")
+    );
   }
 
-  function readMode() {
+  function rememberedMode() {
     try {
-      return sessionStorage.getItem(STORAGE_KEY) === "coach"
-        ? "coach" : "generated";
+      return sessionStorage.getItem(MODE_KEY) === "coach"
+        ? "coach"
+        : "generated";
     } catch (_) {
       return "generated";
     }
   }
 
-  function saveMode() {
+  function rememberMode() {
     try {
-      sessionStorage.setItem(STORAGE_KEY, mode);
+      sessionStorage.setItem(MODE_KEY, mode);
     } catch (_) {}
   }
 
-  function dumbbellIcon() {
-    return `
-      <svg
-        viewBox="0 0 24 24"
-        width="27"
-        height="27"
-        fill="none"
-        stroke="#ff8126"
-        stroke-width="1.8"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M3 9v6"/>
-        <path d="M6 6v12"/>
-        <path d="M9 10v4"/>
-        <path d="M15 10v4"/>
-        <path d="M18 6v12"/>
-        <path d="M21 9v6"/>
-        <path d="M9 12h6"/>
-      </svg>
-    `;
+  function backupKey() {
+    return session && account
+      ? `mana-coach-draft-v1:${account}:${session.programId}:${session.day.id}`
+      : "";
   }
 
-  function installStyles() {
-    if ($(STYLE_ID)) return;
+  function readBackup() {
+    try {
+      return JSON.parse(
+        localStorage.getItem(backupKey()) || "null"
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function backup() {
+    if (!session) return;
+
+    try {
+      localStorage.setItem(
+        backupKey(),
+        JSON.stringify({
+          updatedAt: Date.now(),
+          startedAt,
+          elapsedBase,
+          exercises: readSets()
+        })
+      );
+    } catch (_) {}
+  }
+
+  function clearBackup() {
+    try {
+      localStorage.removeItem(backupKey());
+    } catch (_) {}
+  }
+
+  function formatTime(seconds) {
+    const s = Math.max(0, Math.floor(seconds));
+
+    return String(Math.floor(s / 60)).padStart(2, "0") +
+      ":" + String(s % 60).padStart(2, "0");
+  }
+
+  function elapsed() {
+    return elapsedBase +
+      (startedAt
+        ? Math.floor((Date.now() - startedAt) / 1000)
+        : 0);
+  }
+
+  function tickClock() {
+    const node = $("m1002Time");
+
+    if (node) {
+      node.textContent = formatTime(elapsed());
+    }
+  }
+
+  function stopClock() {
+    if (elapsedTimer) {
+      clearInterval(elapsedTimer);
+      elapsedTimer = null;
+    }
+
+    if (startedAt) {
+      elapsedBase = elapsed();
+      startedAt = 0;
+    }
+  }
+
+  function startClock() {
+    if (!startedAt) startedAt = Date.now();
+
+    if (elapsedTimer) clearInterval(elapsedTimer);
+
+    elapsedTimer = setInterval(tickClock, 1000);
+    tickClock();
+  }
+
+  function css() {
+    if ($(STYLE)) return;
 
     const style = document.createElement("style");
-    style.id = STYLE_ID;
+    style.id = STYLE;
 
     style.textContent = `
-      #${SELECTOR_ID} {
+      #${SWITCH} {
         display:grid;
         grid-template-columns:repeat(2,minmax(0,1fr));
         gap:7px;
@@ -159,162 +193,80 @@
         border-radius:15px;
       }
 
-      #${SELECTOR_ID} button {
-        width:100%;
+      #${SWITCH} button {
         min-width:0;
         min-height:46px;
-        padding:10px 8px;
-        border:1px solid transparent;
-        border-radius:11px;
         background:#191b1f;
         color:#d3d6db;
+        border:1px solid transparent;
+        border-radius:11px;
         font-family:inherit;
         font-size:12px;
         font-weight:800;
-        cursor:pointer;
       }
 
-      #${SELECTOR_ID} button.active {
+      #${SWITCH} button.active {
         background:#251b15;
         color:#ff8126;
         border-color:#ff8126;
       }
 
-      /*
-       Keep the two workout experiences
-       entirely separate.
-
-       Generated workout DOM is hidden,
-       not removed, in Coach mode.
-      */
-
       #manaV83Content.m1002-coach-mode
-      > :not(#${SELECTOR_ID}):not(#${PANEL_ID}) {
-        display:none !important;
+      > :not(#${SWITCH}):not(#${PANEL}) {
+        display:none!important;
       }
 
       #manaV83Content.m1002-coach-mode
-      > #${SELECTOR_ID} {
-        display:grid !important;
+      > #${SWITCH} {
+        display:grid!important;
       }
 
-      #${PANEL_ID} {
+      #${PANEL} {
         display:none;
         margin:0 0 16px;
       }
 
       #manaV83Content.m1002-coach-mode
-      > #${PANEL_ID} {
-        display:block !important;
+      > #${PANEL} {
+        display:block!important;
       }
 
-      /*
-       Premium Coach Programs area.
-       High-specificity styles prevent
-       older yellow/gold selectors from
-       colouring this new component.
-      */
-
-      #manaV83Content #${PANEL_ID}
-      .m1002-coach-wrap {
-        overflow:hidden;
-        border:1px solid #34383e !important;
+      #${PANEL} .m1002-shell {
+        border:1px solid #34383e;
         border-radius:17px;
-        background:#101113 !important;
-        box-shadow:none;
+        overflow:hidden;
+        background:#101113;
+        color:#fff;
       }
 
-      #manaV83Content #${PANEL_ID}
-      .m1002-coach-head {
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:12px;
-        padding:18px 20px;
-        border-bottom:1px solid #292d32 !important;
-        background:#121315 !important;
+      #${PANEL} .m1002-header {
+        padding:18px;
+        border-bottom:1px solid #292d32;
+        background:#121315;
       }
 
-      #manaV83Content #${PANEL_ID}
-      .m1002-coach-head h3 {
-        margin:4px 0 0;
-        color:#fff !important;
-        font-size:21px;
-        font-weight:900;
-        line-height:1.2;
-        letter-spacing:0;
-      }
-
-      #manaV83Content #${PANEL_ID}
-      .m1002-coach-sub {
-        color:#acb1b9 !important;
-        margin:6px 0 0;
-        font-size:12px;
-        line-height:1.5;
-      }
-
-      #manaV83Content #${PANEL_ID}
-      .m1002-kicker {
-        color:#ff8126 !important;
+      #${PANEL} .m1002-header small {
+        color:#ff8126;
         font-size:10px;
         font-weight:900;
-        letter-spacing:.11em;
+        letter-spacing:.1em;
       }
 
-      #manaV83Content #${PANEL_ID}
-      .m1002-coach-body {
-        padding:16px 18px 18px;
-        background:#101113 !important;
+      #${PANEL} .m1002-header h3 {
+        color:#fff!important;
+        font-size:20px;
+        margin:5px 0;
       }
 
-      #manaV83Content #${PANEL_ID}
-      .m1002-empty-card {
-        padding:22px 18px 23px;
-        border:1px solid #353940 !important;
-        border-radius:15px;
-        background:#17191c !important;
-        text-align:center;
-        box-shadow:none;
-      }
-
-      #manaV83Content #${PANEL_ID}
-      .m1002-empty-icon {
-        display:grid;
-        place-items:center;
-        width:50px;
-        height:50px;
-        margin:0 auto 12px;
-        border:1px solid #704223 !important;
-        border-radius:50%;
-        background:#261c16 !important;
-        color:#ff8126 !important;
-      }
-
-      #manaV83Content #${PANEL_ID}
-      .m1002-empty-title {
-        margin:0 0 8px;
-        color:#fff !important;
-        font-size:18px;
-        font-weight:900;
-        line-height:1.25;
-      }
-
-      #manaV83Content #${PANEL_ID}
-      .m1002-empty-copy {
-        max-width:400px;
-        margin:0 auto;
-        color:#b8bec6 !important;
+      #${PANEL} .m1002-header p {
+        margin:0;
+        color:#aeb4bc;
         font-size:12px;
-        line-height:1.6;
+        line-height:1.5;
       }
 
-      #manaV83Content #${PANEL_ID}
-      .m1002-empty-foot {
-        margin:11px 0 0;
-        color:#ff8126 !important;
-        font-size:11px;
-        line-height:1.5;
-        font-weight:800;
+      #${PANEL} .m1002-body {
+        padding:14px;
       }
 
       .m1002-program {
@@ -325,258 +277,430 @@
         width:100%;
         margin:0 0 10px;
         padding:16px;
-        border:1px solid #3b4047 !important;
+        border:1px solid #3b4047!important;
         border-radius:14px;
-        background:#17191c !important;
-        color:#fff !important;
+        background:#17191c!important;
+        color:#fff!important;
         font-family:inherit;
         text-align:left;
-        cursor:pointer;
       }
 
       .m1002-program strong {
         display:block;
-        color:#fff !important;
+        color:#fff!important;
         font-size:15px;
       }
 
       .m1002-program small {
         display:block;
-        margin-top:5px;
-        color:#b4bac2 !important;
+        color:#b4bac2!important;
         font-size:12px;
+        margin-top:5px;
         line-height:1.5;
       }
 
       .m1002-pill {
-        flex:0 0 auto;
-        padding:6px 9px;
-        border:1px solid #794521 !important;
+        flex-shrink:0;
+        color:#ff8126;
+        border:1px solid #794521;
         border-radius:20px;
-        color:#ff8126 !important;
+        padding:6px 9px;
         font-size:10px;
         font-weight:900;
       }
 
-      .m1002-heading {
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:10px;
-        margin:10px 0 12px;
+      .m1002-empty-card {
+        text-align:center;
+        padding:22px 15px;
+        border:1px solid #353940;
+        border-radius:15px;
+        background:#17191c;
       }
 
-      .m1002-heading h3 {
-        margin:0;
-        color:#fff !important;
-        font-size:17px;
+      .m1002-empty-icon {
+        margin:0 auto 12px;
+        width:50px;
+        height:50px;
+        border:1px solid #704223;
+        border-radius:50%;
+        background:#261c16;
+        display:grid;
+        place-items:center;
+        color:#ff8126;
       }
 
-      .m1002-empty {
-        padding:16px;
-        border:1px solid #333840 !important;
-        border-radius:13px;
-        background:#17191c !important;
-        color:#b4bac2 !important;
-        font-size:13px;
+      .m1002-empty-card h4 {
+        margin:0 0 8px;
+        color:#fff!important;
+        font-size:18px;
+      }
+
+      .m1002-empty-card p {
+        margin:0 auto;
+        color:#b8bec6;
+        font-size:12px;
         line-height:1.6;
+        max-width:380px;
       }
 
-      #${LEGACY_ID} {
+      .m1002-empty-card .m1002-foot {
+        margin-top:12px;
+        color:#ff8126;
+      }
+
+      #${LEGACY} {
         margin:12px 0;
       }
 
-      /*
-       Assigned program details modal
-      */
-
-      #${MODAL_ID} {
+      #${MODAL} {
         position:fixed;
         inset:0;
         z-index:61000;
         display:none;
-        overflow:auto;
+        overflow-y:auto;
         overscroll-behavior:contain;
-        background:#08090a;
+        background:#050505;
         color:#fff;
         padding:
-          calc(16px + env(safe-area-inset-top))
+          calc(15px + env(safe-area-inset-top))
           14px
-          calc(36px + env(safe-area-inset-bottom));
+          calc(40px + env(safe-area-inset-bottom));
       }
 
-      #${MODAL_ID}.open {
+      #${MODAL}.open {
         display:block;
       }
 
-      .m1002-modal-inner {
-        width:min(720px,100%);
+      #${MODAL} .m1002-inner {
+        max-width:620px;
         margin:auto;
       }
 
-      .m1002-modal-header {
-        position:sticky;
-        top:0;
-        z-index:2;
+      #${MODAL} .m1002-top {
         display:flex;
-        justify-content:space-between;
         align-items:center;
+        justify-content:space-between;
         gap:12px;
-        padding:10px 0 16px;
-        background:#08090a;
-      }
-
-      .m1002-back {
-        min-height:43px;
-        padding:0 15px;
-        background:#181a1e;
-        border:1px solid #41464c;
-        border-radius:12px;
-        color:#fff;
-        font-family:inherit;
-        font-weight:800;
-      }
-
-      .m1002-hero {
-        padding:19px;
-        margin-bottom:14px;
-        border:1px solid #353a40 !important;
-        border-radius:17px;
-        background:#15171a !important;
-      }
-
-      .m1002-hero h2 {
-        margin:7px 0;
-        color:#fff !important;
-        font-size:23px;
-      }
-
-      .m1002-hero p {
-        margin:0;
-        color:#b2b8c0 !important;
-        font-size:13px;
-        line-height:1.6;
-      }
-
-      .m1002-weeks {
-        display:flex;
-        gap:7px;
-        overflow-x:auto;
-        padding-bottom:12px;
-      }
-
-      .m1002-weeks button {
-        flex:0 0 auto;
-        padding:10px 13px;
-        background:#17191c;
-        border:1px solid #41464c;
-        border-radius:10px;
-        color:#c1c5ca;
-        font-weight:800;
-      }
-
-      .m1002-weeks button.active {
-        color:#ff8126 !important;
-        border-color:#ff8126 !important;
-      }
-
-      .m1002-day {
-        margin-bottom:10px;
-        overflow:hidden;
-        border:1px solid #343941 !important;
-        border-radius:14px;
-        background:#15171a !important;
-      }
-
-      .m1002-day-button {
-        display:flex;
-        justify-content:space-between;
-        align-items:center;
-        gap:10px;
-        width:100%;
-        padding:16px;
-        border:0;
-        background:transparent;
-        color:#fff;
-        font-family:inherit;
-        text-align:left;
-      }
-
-      .m1002-day-button strong {
-        display:block;
-        color:#fff !important;
-        font-size:14px;
-      }
-
-      .m1002-day-button small {
-        display:block;
-        margin-top:6px;
-        color:#aeb4bc !important;
-        font-size:12px;
-      }
-
-      .m1002-day-arrow {
-        color:#ff8126 !important;
-        font-size:21px;
-      }
-
-      .m1002-day-body {
-        display:none;
-        padding:0 15px 12px;
-      }
-
-      .m1002-day.open .m1002-day-body {
-        display:block;
-      }
-
-      .m1002-exercise {
+        position:sticky;
+        top:-15px;
+        z-index:10;
+        background:#050505;
         padding:12px 0;
-        border-top:1px solid #333840;
       }
 
-      .m1002-exercise strong {
-        display:block;
-        color:#fff !important;
-        font-size:14px;
+      #${MODAL} .m1002-kicker {
+        color:#ff8126;
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.08em;
       }
 
-      .m1002-exercise span {
-        display:block;
-        margin-top:5px;
-        color:#ff8126 !important;
+      #${MODAL} button {
+        font-family:inherit;
+      }
+
+      #${MODAL} .m1002-back {
+        padding:10px 13px;
+        background:#191a1d;
+        color:#fff;
+        border:1px solid #444;
+        border-radius:12px;
+        font-size:12px;
+        font-weight:800;
+      }
+
+      #${MODAL} .m1002-hero {
+        border:1px solid #34383e;
+        border-radius:17px;
+        background:#111214;
+        padding:17px;
+        margin-bottom:12px;
+      }
+
+      #${MODAL} .m1002-hero h2 {
+        color:#fff;
+        margin:6px 0;
+        font-size:22px;
+      }
+
+      #${MODAL} .m1002-hero p {
+        margin:0;
+        color:#adb4bd;
+        font-size:12px;
+        line-height:1.5;
+      }
+
+      #${MODAL} .m1002-weeks {
+        display:flex;
+        overflow-x:auto;
+        gap:8px;
+        margin:0 0 14px;
+      }
+
+      #${MODAL} .m1002-weeks button {
+        flex:0 0 auto;
+        background:#18191b;
+        border:1px solid #444;
+        border-radius:10px;
+        color:#ccc;
+        font-size:12px;
+        font-weight:800;
+        padding:11px 13px;
+      }
+
+      #${MODAL} .m1002-weeks button.active {
+        color:#ff8126;
+        border-color:#ff8126;
+        background:#261c16;
+      }
+
+      #${MODAL} .mana-v85-day {
+        background:#121314!important;
+        border:1px solid #34383e!important;
+        border-radius:16px;
+        padding:16px;
+        margin:0 0 12px;
+        color:#fff;
+        box-shadow:none;
+      }
+
+      #${MODAL} .m1002-day-heading {
+        font-size:11px;
+        font-weight:900;
+        letter-spacing:.06em;
+        color:#ff8126;
+      }
+
+      #${MODAL} .mana-v85-day h3 {
+        margin:7px 0;
+        color:#fff;
+        font-size:18px;
+      }
+
+      #${MODAL} .m1002-day-notes {
+        color:#b7bdc5;
+        font-size:12px;
+        line-height:1.5;
+        margin:0 0 12px;
+      }
+
+      #${MODAL} .m1002-primary {
+        width:100%;
+        min-height:45px;
+        color:#151515;
+        background:#ff8126;
+        border:0;
+        border-radius:12px;
+        font-size:13px;
+        font-weight:900;
+        padding:12px 14px;
+        margin:8px 0 0;
+      }
+
+      #${MODAL} .m1002-secondary {
+        min-height:38px;
+        padding:8px 12px;
+        border:1px solid #41454b;
+        border-radius:10px;
+        background:#17191c;
+        color:#fff;
+        font-weight:800;
         font-size:12px;
       }
 
-      .m1002-exercise p,
-      .m1002-coach-note {
-        color:#abb2bb !important;
+      #${MODAL} .m1002-actions {
+        display:flex;
+        gap:8px;
+        flex-wrap:wrap;
+        align-items:center;
+        margin:12px 0;
+      }
+
+      #${MODAL} .m1002-stats {
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:9px;
+        margin:12px 0;
+      }
+
+      #${MODAL} .m1002-stat {
+        background:#111214;
+        border:1px solid #353940;
+        border-radius:12px;
+        padding:12px;
+      }
+
+      #${MODAL} .m1002-stat small {
+        display:block;
+        color:#aaa;
+        font-size:11px;
+        margin-bottom:5px;
+      }
+
+      #${MODAL} .m1002-stat strong {
+        display:block;
+        color:#fff;
+        font-size:18px;
+      }
+
+      #${MODAL} .m1002-progress {
+        height:6px;
+        border-radius:9px;
+        background:#333;
+        overflow:hidden;
+        margin:12px 0;
+      }
+
+      #${MODAL} .m1002-progress > div {
+        background:#ff8126;
+        width:0;
+        height:100%;
+        transition:width .2s;
+      }
+
+      /*
+       Match existing Mana Strength
+       workout exercise cards and set rows.
+      */
+
+      #${MODAL} .mana-v64-card {
+        padding:16px;
+        margin:12px 0;
+        border:1px solid #34383e!important;
+        border-radius:16px;
+        background:#121314!important;
+        box-shadow:none;
+        color:#fff;
+      }
+
+      #${MODAL} .mana-v64-name {
+        font-size:17px;
+        font-weight:900;
+        color:#fff!important;
+        margin-bottom:4px;
+      }
+
+      #${MODAL} .mana-v64-target {
         font-size:12px;
+        color:#ff8126!important;
+        margin-bottom:8px;
+      }
+
+      #${MODAL} .m1002-note {
+        font-size:12px;
+        color:#b4bbc4;
         line-height:1.6;
+        margin:8px 0;
       }
 
-      @media(max-width:420px) {
-        #${SELECTOR_ID} button {
-          font-size:11px;
+      #${MODAL} .m1002-visual {
+        display:flex;
+        gap:10px;
+        align-items:center;
+        margin:8px 0 12px;
+      }
+
+      #${MODAL} .m1002-thumb {
+        width:90px;
+        height:76px;
+        object-fit:contain;
+        border:1px solid #36393e;
+        background:#0b0c0d;
+        border-radius:12px;
+      }
+
+      #${MODAL} .m1002-demo {
+        background:#191b1e;
+        color:#ff8126;
+        border:1px solid #5b3b26;
+        border-radius:10px;
+        padding:10px 12px;
+        font-size:12px;
+        font-weight:900;
+      }
+
+      #${MODAL} .mana-v64-table-head,
+      #${MODAL} .mana-v64-set {
+        display:grid;
+        grid-template-columns:
+          34px minmax(0,1fr)
+          minmax(0,1fr) 46px;
+        gap:7px;
+        align-items:center;
+        margin:7px 0;
+      }
+
+      #${MODAL} .mana-v64-table-head {
+        color:#aaa;
+        font-size:11px;
+        font-weight:800;
+        text-align:center;
+      }
+
+      #${MODAL} .mana-v64-set-number {
+        text-align:center;
+        color:#fff;
+        font-size:12px;
+      }
+
+      #${MODAL} .mana-v64-set input {
+        width:100%;
+        min-width:0;
+        min-height:40px;
+        padding:7px;
+        background:#1b1d20;
+        border:1px solid #454a50;
+        border-radius:9px;
+        color:#fff;
+        text-align:center;
+        font-size:16px;
+      }
+
+      #${MODAL} .mana-v64-check {
+        width:43px;
+        height:40px;
+        border:1px solid #545960;
+        border-radius:9px;
+        color:#aaa;
+        background:#23252a;
+        font-weight:900;
+      }
+
+      #${MODAL} .mana-v64-check.done {
+        border-color:#ff8126;
+        background:#ff8126;
+        color:#111;
+      }
+
+      #${MODAL} .m1002-caption {
+        color:#aeb5be;
+        font-size:11px;
+        line-height:1.5;
+        margin-top:9px;
+      }
+
+      #${MODAL} .m1002-status {
+        color:#b7bec7;
+        font-size:12px;
+        margin-top:12px;
+        line-height:1.5;
+      }
+
+      #${MODAL} .m1002-error {
+        color:#ff9d77;
+      }
+
+      @media(max-width:390px) {
+        #${PANEL} .m1002-header {
+          padding:15px;
         }
 
-        #manaV83Content #${PANEL_ID}
-        .m1002-coach-head {
-          padding:16px;
+        #${PANEL} .m1002-body {
+          padding:11px;
         }
 
-        #manaV83Content #${PANEL_ID}
-        .m1002-coach-head h3 {
-          font-size:19px;
-        }
-
-        #manaV83Content #${PANEL_ID}
-        .m1002-coach-body {
+        #${MODAL} .mana-v64-card {
           padding:12px;
-        }
-
-        #manaV83Content #${PANEL_ID}
-        .m1002-empty-card {
-          padding:20px 12px;
         }
       }
     `;
@@ -584,27 +708,37 @@
     document.head.appendChild(style);
   }
 
+  function dumbbell() {
+    return `
+      <svg width="26" height="26"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#ff8126"
+        stroke-width="2"
+        stroke-linecap="round">
+        <path d="M3 9v6M6 6v12M9 10v4M15 10v4M18 6v12M21 9v6M9 12h6"/>
+      </svg>
+    `;
+  }
+
   function ensureModal() {
-    let modal = $(MODAL_ID);
+    let modal = $(MODAL);
     if (modal) return modal;
 
     modal = document.createElement("div");
-    modal.id = MODAL_ID;
-
-    modal.setAttribute("role","dialog");
-    modal.setAttribute("aria-modal","true");
+    modal.id = MODAL;
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
 
     modal.innerHTML = `
-      <div class="m1002-modal-inner">
-        <div class="m1002-modal-header">
-          <strong class="m1002-kicker">
+      <div class="m1002-inner">
+        <div class="m1002-top">
+          <span class="m1002-kicker">
             MANA STRENGTH • COACH PROGRAM
-          </strong>
-          <button
-            type="button"
+          </span>
+          <button type="button"
             class="m1002-back"
-            data-m1002-close
-          >
+            data-m1002-back>
             ← BACK
           </button>
         </div>
@@ -616,69 +750,25 @@
     return modal;
   }
 
-  function closeModal() {
-    $(MODAL_ID)?.classList.remove("open");
-    modalOpen = false;
-    currentProgramId = "";
-  }
-
-  function ensureLegacyRoot() {
-    const view = $("clientProgramsView");
-    if (!view) return null;
-
-    let root = $(LEGACY_ID);
-
-    if (!root) {
-      root = document.createElement("section");
-      root.id = LEGACY_ID;
-    }
-
-    if (!view.contains(root)) {
-      const first = view.querySelector(".card");
-
-      if (first) {
-        first.insertAdjacentElement("beforebegin",root);
-      } else {
-        view.prepend(root);
-      }
-    }
-
-    return root;
-  }
-
-  function ensureStrengthRoots() {
-    if (!strengthWorkoutsOpen()) return null;
+  function ensureRoots() {
+    if (!isStrengthWorkouts()) return null;
 
     const holder = $("manaV83Content");
     if (!holder) return null;
 
-    let selector = $(SELECTOR_ID);
+    let selector = $(SWITCH);
 
     if (!selector) {
       selector = document.createElement("div");
-      selector.id = SELECTOR_ID;
-
-      selector.setAttribute(
-        "role",
-        "group"
-      );
-
-      selector.setAttribute(
-        "aria-label",
-        "Choose workout type"
-      );
+      selector.id = SWITCH;
 
       selector.innerHTML = `
-        <button
-          type="button"
-          data-m1002-mode="generated"
-        >
+        <button type="button"
+          data-m1002-mode="generated">
           My Workouts
         </button>
-        <button
-          type="button"
-          data-m1002-mode="coach"
-        >
+        <button type="button"
+          data-m1002-mode="coach">
           Coach Programs
         </button>
       `;
@@ -688,22 +778,43 @@
       holder.prepend(selector);
     }
 
-    let panel = $(PANEL_ID);
+    let panel = $(PANEL);
 
     if (!panel) {
       panel = document.createElement("section");
-      panel.id = PANEL_ID;
+      panel.id = PANEL;
     }
 
     if (panel.parentElement !== holder) {
-      selector.insertAdjacentElement("afterend",panel);
+      selector.insertAdjacentElement(
+        "afterend",
+        panel
+      );
     }
 
     return holder;
   }
 
+  function ensureLegacy() {
+    const view = $("clientProgramsView");
+    if (!view) return null;
+
+    let element = $(LEGACY);
+
+    if (!element) {
+      element = document.createElement("section");
+      element.id = LEGACY;
+    }
+
+    if (!view.contains(element)) {
+      view.prepend(element);
+    }
+
+    return element;
+  }
+
   function applyMode() {
-    const holder = ensureStrengthRoots();
+    const holder = ensureRoots();
     if (!holder) return;
 
     holder.classList.toggle(
@@ -711,55 +822,45 @@
       mode === "coach"
     );
 
-    $(SELECTOR_ID)
+    $(SWITCH)
       ?.querySelectorAll("[data-m1002-mode]")
       .forEach(button => {
         const active =
           button.dataset.m1002Mode === mode;
 
-        button.classList.toggle("active",active);
+        button.classList.toggle("active", active);
         button.setAttribute(
           "aria-pressed",
           String(active)
         );
       });
 
-    if (mode === "coach") {
-      renderCoachPanel();
-    }
+    if (mode === "coach") renderPanel();
   }
 
-  function setMode(next) {
-    if (next !== "generated" && next !== "coach") {
-      return;
-    }
+  function changeMode(next) {
+    if (
+      next !== "coach" &&
+      next !== "generated"
+    ) return;
 
     mode = next;
-    saveMode();
+    rememberMode();
     applyMode();
 
-    if (mode === "coach") {
+    if (next === "coach") {
       void loadAssignments(true);
     }
   }
 
-  function programCard(assignment) {
+  function card(assignment) {
     const program = assignment.custom_programs;
-    if (!program) return "";
-
-    const badge = assignment.is_primary
-      ? "PRIMARY"
-      : String(
-          assignment.status || "ACTIVE"
-        ).toUpperCase();
 
     return `
-      <button
-        type="button"
+      <button type="button"
         class="m1002-program"
-        data-m1002-program="${esc(program.id)}"
-      >
-        <div>
+        data-m1002-program="${esc(program.id)}">
+        <span>
           <strong>
             ${esc(program.name || "Coach Program")}
           </strong>
@@ -767,122 +868,107 @@
             ${esc(
               program.goal ||
               program.description ||
-              "Personalised coach-assigned training"
+              "Personalised training program"
             )}
           </small>
-        </div>
+        </span>
         <span class="m1002-pill">
-          ${esc(badge)}
+          ${
+            assignment.is_primary
+              ? "PRIMARY"
+              : esc(
+                  String(
+                    assignment.status
+                  ).toUpperCase()
+                )
+          }
         </span>
       </button>
     `;
   }
 
-  function coachShell(content) {
-    return `
-      <div class="m1002-coach-wrap">
-        <div class="m1002-coach-head">
-          <div>
-            <div class="m1002-kicker">
-              MANA STRENGTH
-            </div>
-            <h3>Coach Programs</h3>
-            <p class="m1002-coach-sub">
-              Personalised training built and assigned by your coach.
-            </p>
-          </div>
+  function renderPanel() {
+    const panel = $(PANEL);
+    if (!panel) return;
+
+    const rows = assignments
+      .filter(a =>
+        a.custom_programs &&
+        ["active", "paused", "completed"].includes(
+          a.status
+        )
+      )
+      .sort((a, b) =>
+        Number(!!b.is_primary) -
+        Number(!!a.is_primary)
+      );
+
+    panel.innerHTML = `
+      <div class="m1002-shell">
+        <div class="m1002-header">
+          <small>MANA STRENGTH</small>
+          <h3>Coach Programs</h3>
+          <p>
+            Personalised training built and assigned
+            by your coach.
+          </p>
         </div>
-        <div class="m1002-coach-body">
-          ${content}
+
+        <div class="m1002-body">
+          ${
+            rows.length
+              ? rows.map(card).join("")
+              : `
+                <div class="m1002-empty-card">
+                  <div class="m1002-empty-icon">
+                    ${dumbbell()}
+                  </div>
+                  <h4>No Coach Programs Yet</h4>
+                  <p>
+                    ${
+                      loading
+                        ? "Checking for your assigned programs…"
+                        : "Your coach-built training programs will appear here once assigned."
+                    }
+                  </p>
+                  <p class="m1002-foot">
+                    Your regular workouts remain available
+                    under My Workouts.
+                  </p>
+                </div>
+              `
+          }
         </div>
       </div>
     `;
   }
 
-  function renderCoachPanel() {
-    const panel = $(PANEL_ID);
-    if (!panel) return;
-
-    const available = assignments.filter(
-      item =>
-        item.custom_programs &&
-        ["active","paused","completed"].includes(
-          item.status
-        )
-    );
-
-    const primary = getPrimary();
-
-    const ordered = primary
-      ? [
-          primary,
-          ...available.filter(item => item.id !== primary.id)
-        ]
-      : available;
-
-    panel.innerHTML = ordered.length
-      ? coachShell(`
-          <div class="m1002-program-list">
-            ${ordered.map(programCard).join("")}
-          </div>
-        `)
-      : coachShell(`
-          <div class="m1002-empty-card">
-            <div class="m1002-empty-icon">
-              ${dumbbellIcon()}
-            </div>
-            <h3 class="m1002-empty-title">
-              No Coach Programs Yet
-            </h3>
-            <p class="m1002-empty-copy">
-              ${
-                loading
-                  ? "Checking for personalised programs…"
-                  : "Your coach-built training programs will appear here once they've been assigned."
-              }
-            </p>
-            <p class="m1002-empty-foot">
-              Your regular workouts remain available under My Workouts.
-            </p>
-          </div>
-        `);
-  }
-
   function renderLegacy() {
-    const root = ensureLegacyRoot();
+    const root = ensureLegacy();
     if (!root) return;
 
-    const available = assignments.filter(
-      item =>
-        item.custom_programs &&
-        ["active","paused","completed"].includes(
-          item.status
-        )
-    );
-
-    root.innerHTML = available.length
+    root.innerHTML = assignments.length
       ? `
-        <div class="m1002-heading">
-          <h3>Coach Assigned</h3>
-        </div>
-        ${available.map(programCard).join("")}
+        <h3 style="color:#fff">
+          Coach Assigned
+        </h3>
+        ${
+          assignments
+            .filter(a => a.custom_programs)
+            .map(card)
+            .join("")
+        }
       `
       : "";
   }
 
-  async function loadAssignments(force = false) {
+  async function loadAssignments() {
     if (loading) return;
 
-    if (!force && Date.now() - loadedAt < 15000) {
-      renderCoachPanel();
-      renderLegacy();
-      return;
-    }
-
     loading = true;
-    const token = ++requestId;
+    renderPanel();
 
-    renderCoachPanel();
+    const token = ++loadSerial;
 
     try {
       const client = await db();
@@ -894,49 +980,42 @@
 
       if (authError) throw authError;
 
-      const account = auth?.user?.id;
+      const id = auth?.user?.id || "";
 
-      if (!account) {
-        userId = "";
-        assignments = [];
-        loadedAt = 0;
-        return;
-      }
-
-      if (userId !== account) {
-        userId = account;
+      if (account !== id) {
+        account = id;
         assignments = [];
       }
 
-      const {data,error} = await client
+      if (!id) return;
+
+      const { data, error } = await client
         .from("client_program_assignments")
         .select(`
           id,
           status,
           is_primary,
           assigned_at,
-          start_date,
           custom_programs(
             id,
             name,
             description,
             goal,
             duration_weeks,
-            status,
-            source_program
+            status
           )
         `)
-        .eq("client_id",account)
-        .in("status",[
+        .eq("client_id", id)
+        .in("status", [
           "active",
           "paused",
           "completed"
         ])
-        .order("is_primary",{
-          ascending:false
+        .order("is_primary", {
+          ascending: false
         })
-        .order("assigned_at",{
-          ascending:false
+        .order("assigned_at", {
+          ascending: false
         });
 
       if (error) throw error;
@@ -944,170 +1023,180 @@
       const current = await client.auth.getUser();
 
       if (
-        token !== requestId ||
-        current.data?.user?.id !== account
-      ) {
-        return;
-      }
+        token !== loadSerial ||
+        current.data?.user?.id !== id
+      ) return;
 
       assignments = (data || []).filter(
         item => item.custom_programs
       );
 
-      loadedAt = Date.now();
-
     } catch (error) {
       console.warn(
         "[Mana Coach Programs]",
-        error?.message || error
+        error
       );
     } finally {
       loading = false;
-      renderCoachPanel();
+      renderPanel();
       renderLegacy();
     }
   }
 
-  function showModalMessage(message) {
+  function showModal(html) {
     ensureModal();
-
-    modalOpen = true;
-    $(MODAL_ID).classList.add("open");
-
-    $("m1002Content").innerHTML = `
-      <div class="m1002-empty">
-        ${esc(message)}
-      </div>
-    `;
+    $(MODAL).classList.add("open");
+    $("m1002Content").innerHTML = html;
   }
 
-  async function openProgram(programId) {
-    const selected = assignments.find(
-      item => item.custom_programs?.id === programId
+  function closeModal() {
+    stopClock();
+
+    if (session) {
+      backup();
+      queueSave();
+    }
+
+    session = null;
+    selected = null;
+    programData = null;
+
+    $(MODAL)?.classList.remove("open");
+  }
+
+  async function openProgram(id) {
+    const row = assignments.find(
+      item => item.custom_programs?.id === id
     );
 
-    if (!selected) return;
+    if (!row) return;
 
-    currentProgramId = programId;
-    showModalMessage("Loading your coach program…");
+    const token = ++opening;
+
+    stopClock();
+    session = null;
+    selected = row;
+
+    showModal(`
+      <p class="m1002-status">
+        Loading your coach program…
+      </p>
+    `);
 
     try {
       const client = await db();
 
       const {
-        data: auth,
-        error: authError
+        data: auth
       } = await client.auth.getUser();
 
-      if (authError) throw authError;
-
-      const account = auth?.user?.id;
-
-      if (!account || account !== userId) {
-        throw new Error("Please sign in again.");
+      if (
+        !auth?.user ||
+        auth.user.id !== account
+      ) {
+        throw Error("Sign in to view your program");
       }
 
       const {
-        data: assignment,
-        error: assignmentError
+        data: link,
+        error: linkError
       } = await client
         .from("client_program_assignments")
         .select("id,status")
-        .eq("client_id",account)
-        .eq("program_id",programId)
-        .in("status",[
+        .eq("client_id", account)
+        .eq("program_id", id)
+        .in("status", [
           "active",
           "paused",
           "completed"
         ])
         .maybeSingle();
 
-      if (assignmentError) throw assignmentError;
+      if (linkError) throw linkError;
 
-      if (!assignment) {
-        throw new Error(
-          "This program is no longer assigned."
+      if (!link) {
+        throw Error(
+          "This program is no longer assigned"
         );
       }
 
-      const {
-        data: program,
-        error: programError
-      } = await client
-        .from("custom_programs")
-        .select("*")
-        .eq("id",programId)
-        .single();
+      const [
+        { data: program, error: programError },
+        { data: days, error: daysError }
+      ] = await Promise.all([
+        client
+          .from("custom_programs")
+          .select("*")
+          .eq("id", id)
+          .single(),
 
-      if (programError) throw programError;
+        client
+          .from("custom_program_days")
+          .select("*")
+          .eq("program_id", id)
+          .order("week_number")
+          .order("day_number")
+      ]);
 
-      const {
-        data: days,
-        error: daysError
-      } = await client
-        .from("custom_program_days")
-        .select("*")
-        .eq("program_id",programId)
-        .order("week_number")
-        .order("day_number");
+      if (programError || daysError) {
+        throw programError || daysError;
+      }
 
-      if (daysError) throw daysError;
-
-      const dayIds = (days || []).map(
-        day => day.id
-      );
+      const ids = (days || []).map(day => day.id);
 
       let exercises = [];
 
-      if (dayIds.length) {
-        const {data,error} = await client
+      if (ids.length) {
+        const result = await client
           .from("custom_program_exercises")
           .select("*")
-          .in("program_day_id",dayIds)
+          .in("program_day_id", ids)
           .order("sort_order");
 
-        if (error) throw error;
+        if (result.error) throw result.error;
 
-        exercises = data || [];
+        exercises = result.data || [];
       }
 
       if (
-        !modalOpen ||
-        currentProgramId !== programId
+        token !== opening ||
+        !$(MODAL)?.classList.contains("open")
       ) return;
 
-      renderProgram(
+      programData = {
         program,
-        days || [],
+        days: days || [],
         exercises
+      };
+
+      week = Math.min(
+        ...(days || [{ week_number: 1 }])
+          .map(day =>
+            Number(day.week_number) || 1
+          )
       );
 
+      renderProgram();
+
     } catch (error) {
-      if (
-        modalOpen &&
-        currentProgramId === programId
-      ) {
-        showModalMessage(
-          "Could not load program: " +
-          (error?.message || String(error))
-        );
+      if (token === opening) {
+        showModal(`
+          <p class="m1002-error">
+            Could not load program:
+            ${esc(error.message)}
+          </p>
+        `);
       }
     }
   }
 
-  function renderProgram(program,days,exercises) {
-    const weeks = [
-      ...new Set(
-        days.map(day => Number(day.week_number) || 1)
-      )
-    ].sort((a,b) => a-b);
+  function programHeader() {
+    const program = programData.program;
 
-    const initialWeek = weeks[0] || 1;
-
-    $("m1002Content").innerHTML = `
+    return `
       <section class="m1002-hero">
         <div class="m1002-kicker">
-          COACH-ASSIGNED MANA STRENGTH
+          COACH-ASSIGNED PROGRAM
         </div>
         <h2>${esc(program.name)}</h2>
         <p>
@@ -1118,260 +1207,860 @@
           )}
         </p>
       </section>
-
-      <div class="m1002-weeks">
-        ${
-          weeks.map(week => `
-            <button
-              type="button"
-              data-m1002-week="${week}"
-              class="${
-                week === initialWeek
-                  ? "active"
-                  : ""
-              }"
-            >
-              WEEK ${week}
-            </button>
-          `).join("")
-        }
-      </div>
-
-      <div id="m1002Days"></div>
     `;
+  }
 
-    function drawWeek(week) {
-      $("m1002Content")
-        .querySelectorAll("[data-m1002-week]")
-        .forEach(button => {
-          button.classList.toggle(
-            "active",
-            Number(
-              button.dataset.m1002Week
-            ) === week
-          );
-        });
+  function renderProgram() {
+    if (!programData) return;
 
-      const currentDays = days.filter(
-        day => Number(day.week_number) === week
-      );
+    session = null;
+    stopClock();
 
-      $("m1002Days").innerHTML =
-        currentDays.length
-          ? currentDays.map(day => {
-              const items = exercises.filter(
-                item =>
-                  item.program_day_id === day.id
-              );
+    const days = programData.days;
 
-              return `
-                <section class="m1002-day">
-                  <button
-                    type="button"
-                    class="m1002-day-button"
-                    data-m1002-day
-                  >
-                    <div>
-                      <strong>
-                        DAY ${esc(day.day_number)}
-                        • ${esc(day.title || "Workout")}
-                      </strong>
-                      <small>
-                        ${esc(
-                          day.workout_type ||
-                          "Strength"
-                        )}
-                        ${
-                          day.estimated_minutes
-                            ? " • " +
-                              esc(day.estimated_minutes) +
-                              " min"
-                            : ""
-                        }
-                      </small>
+    const weeks = [
+      ...new Set(
+        days.map(day =>
+          Number(day.week_number) || 1
+        )
+      )
+    ].sort((a, b) => a - b);
+
+    showModal(
+      programHeader() +
+      `
+        <div class="m1002-weeks">
+          ${
+            weeks.map(number => `
+              <button type="button"
+                data-m1002-week="${number}"
+                class="${
+                  number === week ? "active" : ""
+                }">
+                WEEK ${number}
+              </button>
+            `).join("")
+          }
+        </div>
+
+        <div id="m1002Days">
+          ${
+            days
+              .filter(day =>
+                Number(day.week_number) === week
+              )
+              .map(day => {
+                const exercises =
+                  programData.exercises.filter(
+                    exercise =>
+                      exercise.program_day_id === day.id
+                  );
+
+                return `
+                  <article class="mana-v85-day">
+                    <div class="m1002-day-heading">
+                      WEEK ${week} • DAY ${esc(
+                        day.day_number
+                      )}
                     </div>
-                    <span class="m1002-day-arrow">
-                      ⌄
-                    </span>
-                  </button>
 
-                  <div class="m1002-day-body">
+                    <h3>
+                      ${esc(day.title || "Workout")}
+                    </h3>
+
+                    <p class="m1002-day-notes">
+                      ${esc(
+                        day.workout_type || "Strength"
+                      )}
+
+                      ${
+                        day.estimated_minutes
+                          ? " • " +
+                            esc(day.estimated_minutes) +
+                            " min"
+                          : ""
+                      }
+
+                      ${
+                        exercises.length
+                          ? " • " +
+                            exercises.length +
+                            " exercises"
+                          : ""
+                      }
+                    </p>
+
                     ${
                       day.notes
                         ? `
-                          <p class="m1002-coach-note">
+                          <p class="m1002-day-notes">
                             ${esc(day.notes)}
                           </p>
                         `
                         : ""
                     }
 
-                    ${
-                      items.length
-                        ? items.map(item => `
-                            <div class="m1002-exercise">
-                              <strong>
-                                ${esc(
-                                  item.exercise_name ||
-                                  "Exercise"
-                                )}
-                              </strong>
-                              <span>
-                                ${
-                                  item.sets != null
-                                    ? esc(item.sets) +
-                                      " sets"
-                                    : ""
-                                }
-                                ${
-                                  item.reps
-                                    ? " × " +
-                                      esc(item.reps)
-                                    : ""
-                                }
-                                ${
-                                  item.rest_seconds != null
-                                    ? " • " +
-                                      esc(item.rest_seconds) +
-                                      "s rest"
-                                    : ""
-                                }
-                                ${
-                                  item.rpe_target
-                                    ? " • RPE " +
-                                      esc(item.rpe_target)
-                                    : ""
-                                }
-                              </span>
-                              ${
-                                item.notes
-                                  ? `
-                                    <p>
-                                      ${esc(item.notes)}
-                                    </p>
-                                  `
-                                  : ""
-                              }
-                            </div>
-                          `).join("")
-                        : `
-                          <div class="m1002-empty">
-                            No exercises assigned.
-                          </div>
-                        `
-                    }
-                  </div>
-                </section>
-              `;
-            }).join("")
-          : `
-            <div class="m1002-empty">
-              No workouts in this week.
-            </div>
-          `;
+                    <button
+                      class="m1002-primary"
+                      type="button"
+                      data-m1002-start="${esc(day.id)}">
+                      START WORKOUT
+                    </button>
+                  </article>
+                `;
+              })
+              .join("") ||
+            `
+              <p class="m1002-status">
+                No workouts in this week yet.
+              </p>
+            `
+          }
+        </div>
+      `
+    );
+  }
 
-      $("m1002Days")
-        ?.querySelector(".m1002-day")
-        ?.classList.add("open");
+  function defaultReps(value) {
+    const match = String(value || "")
+      .match(/\d+/);
+
+    return match
+      ? Math.max(
+          1,
+          Math.min(100, Number(match[0]))
+        )
+      : 10;
+  }
+
+  function demoInfo(name) {
+    try {
+      return window.MANA_EXERCISE_VISUALS
+        ?.resolve?.(name) || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function setHTML(number, set) {
+    return `
+      <div class="mana-v64-set"
+        data-m1002-set>
+        <span class="mana-v64-set-number">
+          ${number}
+        </span>
+
+        <input type="number"
+          min="0"
+          max="1000"
+          step="0.5"
+          inputmode="decimal"
+          placeholder="kg"
+          aria-label="Set ${number} weight"
+          data-m1002-weight
+          value="${
+            set.weight == null
+              ? ""
+              : esc(set.weight)
+          }">
+
+        <input type="number"
+          min="0"
+          max="500"
+          step="1"
+          inputmode="numeric"
+          aria-label="Set ${number} repetitions"
+          data-m1002-reps
+          value="${
+            set.reps == null
+              ? ""
+              : esc(set.reps)
+          }">
+
+        <button
+          type="button"
+          class="mana-v64-check${
+            set.done ? " done" : ""
+          }"
+          aria-pressed="${
+            set.done ? "true" : "false"
+          }"
+          data-m1002-tick>
+          ✓
+        </button>
+      </div>
+    `;
+  }
+
+  function exerciseHTML(exercise, index, prior) {
+    const count = Math.max(
+      1,
+      Math.min(
+        20,
+        Number(exercise.sets) || 3
+      )
+    );
+
+    const previous = prior?.find(
+      item =>
+        item.id === exercise.id ||
+        item.name === exercise.exercise_name
+    );
+
+    const visual = demoInfo(
+      exercise.exercise_name
+    );
+
+    const reps = defaultReps(exercise.reps);
+
+    const sets = Array.from(
+      { length: count },
+      (_, i) =>
+        previous?.sets?.[i] || {
+          weight: "",
+          reps,
+          done: false
+        }
+    );
+
+    return `
+      <section class="mana-v64-card"
+        data-m1002-ex="${esc(exercise.id)}">
+
+        <div class="mana-v64-name">
+          ${esc(
+            exercise.exercise_name || "Exercise"
+          )}
+        </div>
+
+        <div class="mana-v64-target">
+          ${esc(count)} sets
+          • ${esc(exercise.reps || "8–12")} reps
+
+          ${
+            exercise.rest_seconds != null
+              ? " • " +
+                esc(exercise.rest_seconds) +
+                "s rest"
+              : ""
+          }
+        </div>
+
+        ${
+          exercise.rpe_target
+            ? `
+              <p class="m1002-note">
+                Target RPE:
+                ${esc(exercise.rpe_target)}
+              </p>
+            `
+            : ""
+        }
+
+        ${
+          exercise.notes
+            ? `
+              <p class="m1002-note">
+                Coach: ${esc(exercise.notes)}
+              </p>
+            `
+            : ""
+        }
+
+        <div class="m1002-visual">
+          ${
+            visual?.demo
+              ? `
+                <img class="m1002-thumb"
+                  alt="${esc(
+                    exercise.exercise_name
+                  )} demonstration"
+                  src="${esc(visual.demo)}"
+                  loading="lazy">
+              `
+              : ""
+          }
+
+          <button type="button"
+            class="m1002-demo"
+            data-m1002-demo="${esc(
+              exercise.exercise_name
+            )}">
+            ▶ VISUAL DEMO / HOW TO PERFORM
+          </button>
+        </div>
+
+        <div class="mana-v64-table-head">
+          <span>Set</span>
+          <span>Weight</span>
+          <span>Reps</span>
+          <span>Done</span>
+        </div>
+
+        <div data-m1002-sets>
+          ${
+            sets.map(
+              (set, i) => setHTML(i + 1, set)
+            ).join("")
+          }
+        </div>
+
+        <p class="m1002-caption">
+          Enter your actual weight and reps,
+          then tick each completed set.
+        </p>
+      </section>
+    `;
+  }
+
+  function readSets() {
+    if (!session) return [];
+
+    const holder = $("m1002WorkoutBody");
+
+    return [
+      ...(holder?.querySelectorAll(
+        "[data-m1002-ex]"
+      ) || [])
+    ].map(card => ({
+      id: card.dataset.m1002Ex,
+
+      name: session.exercises.find(
+        exercise =>
+          exercise.id === card.dataset.m1002Ex
+      )?.exercise_name || "",
+
+      sets: [
+        ...card.querySelectorAll(
+          "[data-m1002-set]"
+        )
+      ].map((row, i) => ({
+        set: i + 1,
+
+        weight: row.querySelector(
+          "[data-m1002-weight]"
+        )?.value || "",
+
+        reps: Number(
+          row.querySelector(
+            "[data-m1002-reps]"
+          )?.value || 0
+        ),
+
+        done:
+          row.querySelector(
+            "[data-m1002-tick]"
+          )?.classList.contains("done") ||
+          false
+      }))
+    }));
+  }
+
+  function totals(data = readSets()) {
+    let all = 0;
+    let done = 0;
+    let volume = 0;
+
+    for (const exercise of data) {
+      for (const set of exercise.sets) {
+        all++;
+
+        if (set.done) {
+          done++;
+
+          volume +=
+            (Number(set.weight) || 0) *
+            (Number(set.reps) || 0);
+        }
+      }
     }
 
-    drawWeek(initialWeek);
-
-    $("m1002Content").onclick = event => {
-      const week = event.target.closest(
-        "[data-m1002-week]"
-      );
-
-      if (week) {
-        drawWeek(
-          Number(week.dataset.m1002Week)
-        );
-        return;
-      }
-
-      const day = event.target.closest(
-        "[data-m1002-day]"
-      );
-
-      if (day) {
-        day.closest(".m1002-day")
-          ?.classList.toggle("open");
-      }
+    return {
+      all,
+      done,
+      volume: Math.round(volume * 10) / 10,
+      percent: all
+        ? Math.round(100 * done / all)
+        : 0
     };
   }
 
-  function refreshVisibleContent(force = false) {
-    if (strengthWorkoutsOpen()) {
-      applyMode();
+  function updateStats() {
+    const result = totals();
 
-      if (mode === "coach") {
-        void loadAssignments(force);
+    if ($("m1002Sets")) {
+      $("m1002Sets").textContent =
+        `${result.done} / ${result.all}`;
+    }
+
+    if ($("m1002Volume")) {
+      $("m1002Volume").textContent =
+        result.volume + " kg";
+    }
+
+    if ($("m1002Percent")) {
+      $("m1002Percent").textContent =
+        result.percent + "%";
+    }
+
+    if ($("m1002Progress")) {
+      $("m1002Progress").style.width =
+        result.percent + "%";
+    }
+
+    tickClock();
+  }
+
+  async function openDay(dayId) {
+    const day = programData?.days.find(
+      item => item.id === dayId
+    );
+
+    if (!day || !account || !selected) {
+      return;
+    }
+
+    const serial = ++opening;
+
+    stopClock();
+
+    const exercises = programData.exercises
+      .filter(exercise =>
+        exercise.program_day_id === dayId
+      );
+
+    session = {
+      day,
+      exercises,
+      programId: programData.program.id,
+      logId: null
+    };
+
+    elapsedBase = 0;
+    startedAt = Date.now();
+
+    showModal(
+      programHeader() +
+      `
+        <section class="m1002-hero">
+          <div class="m1002-kicker">
+            WEEK ${esc(day.week_number)}
+            • DAY ${esc(day.day_number)}
+          </div>
+          <h2>${esc(day.title || "Workout")}</h2>
+          <p>
+            ${esc(
+              day.notes ||
+              day.workout_type ||
+              "Strength"
+            )}
+          </p>
+        </section>
+
+        <div class="m1002-stats">
+          <div class="m1002-stat">
+            <small>Workout time</small>
+            <strong id="m1002Time">00:00</strong>
+          </div>
+          <div class="m1002-stat">
+            <small>Sets complete</small>
+            <strong id="m1002Sets">0 / 0</strong>
+          </div>
+          <div class="m1002-stat">
+            <small>Total volume</small>
+            <strong id="m1002Volume">0 kg</strong>
+          </div>
+          <div class="m1002-stat">
+            <small>Workout complete</small>
+            <strong id="m1002Percent">0%</strong>
+          </div>
+        </div>
+
+        <div class="m1002-progress">
+          <div id="m1002Progress"></div>
+        </div>
+
+        <div id="m1002WorkoutBody">
+          <p class="m1002-status">
+            Loading your previous sets…
+          </p>
+        </div>
+
+        <div class="m1002-actions">
+          <button class="m1002-secondary"
+            type="button"
+            data-m1002-save>
+            SAVE PROGRESS
+          </button>
+
+          <button class="m1002-secondary"
+            type="button"
+            data-m1002-program-back>
+            BACK TO PROGRAM
+          </button>
+        </div>
+
+        <button type="button"
+          class="m1002-primary"
+          data-m1002-complete>
+          COMPLETE WORKOUT
+        </button>
+
+        <div class="m1002-status"
+          id="m1002SaveStatus"></div>
+      `
+    );
+
+    try {
+      const client = await db();
+
+      const { data, error } = await client
+        .from("coach_workout_logs")
+        .select("*")
+        .eq("user_id", account)
+        .eq("program_id", programData.program.id)
+        .eq("program_day_id", dayId)
+        .order("updated_at", {
+          ascending: false
+        })
+        .limit(12);
+
+      if (error) throw error;
+
+      const old = (data || []).find(
+        item => item.status === "in_progress"
+      ) || null;
+
+      const latest = (data || []).find(
+        item => item.status === "completed"
+      ) || null;
+
+      const local = readBackup();
+
+      if (
+        serial !== opening ||
+        !session ||
+        session.day.id !== dayId
+      ) return;
+
+      if (old) {
+        session.logId = old.id;
+
+        elapsedBase =
+          Number(old.duration_seconds) || 0;
+
+        startedAt = Date.now();
       }
-    }
 
-    if (legacyProgramsOpen()) {
-      renderLegacy();
-      void loadAssignments(force);
-    }
-  }
+      const cloud =
+        old?.exercises ||
+        latest?.exercises ||
+        [];
 
-  function scheduleRefresh(force = false) {
-    if (navigationTimer !== null) {
-      clearTimeout(navigationTimer);
-    }
+      const useLocal =
+        local?.exercises &&
+        (
+          !old ||
+          Number(local.updatedAt) >
+          Date.parse(old.updated_at)
+        );
 
-    navigationTimer = setTimeout(() => {
-      navigationTimer = null;
-      refreshVisibleContent(force);
-    },120);
-  }
+      const prior = useLocal
+        ? local.exercises
+        : cloud;
 
-  function observeWorkoutContent() {
-    const holder = $("manaV83Content");
-    if (!holder) return;
+      if (useLocal) {
+        elapsedBase =
+          Number(local.elapsedBase) || 0;
 
-    if (contentObserver) {
-      contentObserver.disconnect();
-    }
-
-    contentObserver = new MutationObserver(() => {
-      if (!strengthWorkoutsOpen()) return;
-
-      if (!$(SELECTOR_ID) || !$(PANEL_ID)) {
-        applyMode();
+        startedAt = Date.now();
       }
-    });
 
-    contentObserver.observe(holder,{
-      childList:true
-    });
+      $("m1002WorkoutBody").innerHTML =
+        exercises.map(
+          (exercise, i) =>
+            exerciseHTML(exercise, i, prior)
+        ).join("") ||
+        `
+          <p class="m1002-status">
+            No exercises assigned.
+          </p>
+        `;
+
+      $("m1002WorkoutBody")
+        .querySelectorAll("img.m1002-thumb")
+        .forEach(img =>
+          img.addEventListener(
+            "error",
+            () => img.remove(),
+            { once: true }
+          )
+        );
+
+      updateStats();
+      startClock();
+
+    } catch (error) {
+      if (serial !== opening) return;
+
+      $("m1002WorkoutBody").innerHTML =
+        exercises.map(
+          (item, i) =>
+            exerciseHTML(item, i, [])
+        ).join("");
+
+      $("m1002SaveStatus").textContent =
+        "Cloud restore unavailable: " +
+        (error.message || error) +
+        ". Local saving remains enabled.";
+
+      updateStats();
+      startClock();
+    }
   }
 
-  function handleDocumentClick(event) {
-    const element = event.target;
-    if (!(element instanceof Element)) return;
+  function localEdit() {
+    if (!session) return;
 
-    const choice = element.closest(
+    updateStats();
+    backup();
+    scheduleSave();
+  }
+
+  function scheduleSave() {
+    clearTimeout(saveTimer);
+
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      queueSave();
+    }, 1000);
+  }
+
+  function queueSave(completed = false) {
+    if (!session) return saveChain;
+
+    const exercises = readSets();
+    const results = totals(exercises);
+
+    const snapshot = {
+      user_id: account,
+      program_id: session.programId,
+      program_day_id: session.day.id,
+
+      week_number: Number(
+        session.day.week_number
+      ),
+
+      day_number: Number(
+        session.day.day_number
+      ),
+
+      session_name:
+        session.day.title || "Workout",
+
+      status: completed
+        ? "completed"
+        : "in_progress",
+
+      started_at: new Date(
+        Date.now() - elapsed() * 1000
+      ).toISOString(),
+
+      completed_at: completed
+        ? new Date().toISOString()
+        : null,
+
+      duration_seconds: elapsed(),
+
+      exercises,
+      completed_sets: results.done,
+      total_sets: results.all,
+      total_volume: results.volume,
+      updated_at: new Date().toISOString()
+    };
+
+    let id = session.logId;
+
+    if (!id) {
+      id =
+        typeof crypto !== "undefined" &&
+        crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()
+              .toString(16).slice(2)}`;
+
+      session.logId = id;
+    }
+
+    snapshot.id = id;
+
+    const status = $("m1002SaveStatus");
+
+    if (status) {
+      status.textContent = completed
+        ? "Saving completed workout…"
+        : "Saving…";
+    }
+
+    saveChain = saveChain
+      .catch(() => {})
+      .then(async () => {
+        const client = await db();
+
+        const { error } = await client
+          .from("coach_workout_logs")
+          .upsert(snapshot, {
+            onConflict: "id"
+          });
+
+        if (error) throw error;
+      })
+      .then(() => {
+        if (completed) clearBackup();
+
+        if ($("m1002SaveStatus")) {
+          $("m1002SaveStatus").textContent =
+            completed
+              ? "Workout saved to Mana cloud ✓"
+              : "Saved ✓";
+        }
+
+        return true;
+      })
+      .catch(error => {
+        if ($("m1002SaveStatus")) {
+          $("m1002SaveStatus").textContent =
+            "Cloud save failed — local backup retained. " +
+            (error.message || error);
+        }
+
+        return false;
+      });
+
+    return saveChain;
+  }
+
+  async function completeWorkout() {
+    if (!session) return;
+
+    const data = readSets();
+    const result = totals(data);
+
+    if (!result.done) {
+      $("m1002SaveStatus").textContent =
+        "Complete at least one set first.";
+      return;
+    }
+
+    clearTimeout(saveTimer);
+    backup();
+
+    const button = document.querySelector(
+      "[data-m1002-complete]"
+    );
+
+    if (button) button.disabled = true;
+
+    const success = await queueSave(true);
+
+    if (!success) {
+      if (button) button.disabled = false;
+      return;
+    }
+
+    stopClock();
+    session = null;
+
+    showModal(`
+      <div class="m1002-hero">
+        <div class="m1002-kicker">
+          WORKOUT COMPLETE
+        </div>
+
+        <h2>Awesome work ✓</h2>
+
+        <p>
+          ${result.done} of ${result.all} sets
+          • ${result.volume} kg total volume
+        </p>
+      </div>
+
+      <button type="button"
+        class="m1002-primary"
+        data-m1002-program-back>
+        BACK TO COACH PROGRAM
+      </button>
+    `);
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "mana:coach-workout-saved",
+        {
+          detail: {
+            programId:
+              programData.program.id
+          }
+        }
+      )
+    );
+  }
+
+  function backToProgram() {
+    stopClock();
+
+    if (session) {
+      backup();
+      queueSave();
+    }
+
+    session = null;
+    renderProgram();
+  }
+
+  function handleClick(event) {
+    const target = event.target;
+
+    if (!(target instanceof Element)) return;
+
+    const choice = target.closest(
       "[data-m1002-mode]"
     );
 
     if (choice) {
       event.preventDefault();
-      setMode(choice.dataset.m1002Mode);
+
+      changeMode(
+        choice.dataset.m1002Mode
+      );
+
       return;
     }
 
-    const close = element.closest(
-      "[data-m1002-close]"
-    );
-
-    if (close) {
+    if (
+      target.closest("[data-m1002-back]")
+    ) {
       event.preventDefault();
-      closeModal();
+
+      if (session) {
+        backToProgram();
+      } else {
+        closeModal();
+      }
+
       return;
     }
 
-    const program = element.closest(
+    if (
+      target.closest(
+        "[data-m1002-program-back]"
+      )
+    ) {
+      event.preventDefault();
+      backToProgram();
+      return;
+    }
+
+    const program = target.closest(
       "[data-m1002-program]"
     );
 
@@ -1381,53 +2070,190 @@
       void openProgram(
         program.dataset.m1002Program
       );
+
+      return;
+    }
+
+    const weekButton = target.closest(
+      "[data-m1002-week]"
+    );
+
+    if (weekButton) {
+      week = Number(
+        weekButton.dataset.m1002Week
+      );
+
+      renderProgram();
+      return;
+    }
+
+    const dayButton = target.closest(
+      "[data-m1002-start]"
+    );
+
+    if (dayButton) {
+      void openDay(
+        dayButton.dataset.m1002Start
+      );
+      return;
+    }
+
+    const demo = target.closest(
+      "[data-m1002-demo]"
+    );
+
+    if (demo) {
+      const fn = window
+        .MANA_EXERCISE_VISUALS
+        ?.openDemo;
+
+      if (typeof fn === "function") {
+        void fn(
+          demo.dataset.m1002Demo
+        );
+      } else {
+        window.open(
+          "https://www.youtube.com/results?search_query=" +
+          encodeURIComponent(
+            demo.dataset.m1002Demo +
+            " technique"
+          ),
+          "_blank",
+          "noopener,noreferrer"
+        );
+      }
+
+      return;
+    }
+
+    const tick = target.closest(
+      "[data-m1002-tick]"
+    );
+
+    if (tick) {
+      tick.classList.toggle("done");
+
+      tick.setAttribute(
+        "aria-pressed",
+        String(
+          tick.classList.contains("done")
+        )
+      );
+
+      localEdit();
+      return;
+    }
+
+    if (
+      target.closest("[data-m1002-save]")
+    ) {
+      backup();
+      queueSave();
+      return;
+    }
+
+    if (
+      target.closest(
+        "[data-m1002-complete]"
+      )
+    ) {
+      void completeWorkout();
     }
   }
 
-  function init() {
-    mode = readMode();
+  function scheduleRefresh() {
+    clearTimeout(refreshTimer);
 
-    installStyles();
+    refreshTimer = setTimeout(() => {
+      if (isStrengthWorkouts()) {
+        applyMode();
+
+        if (mode === "coach") {
+          void loadAssignments();
+        }
+      } else if (legacyVisible()) {
+        renderLegacy();
+        void loadAssignments();
+      }
+    }, 160);
+  }
+
+  function observe() {
+    const holder = $("manaV83Content");
+    if (!holder) return;
+
+    contentObserver = new MutationObserver(() => {
+      if (
+        isStrengthWorkouts() &&
+        (!$(SWITCH) || !$(PANEL))
+      ) {
+        applyMode();
+      }
+    });
+
+    contentObserver.observe(holder, {
+      childList: true
+    });
+  }
+
+  function init() {
+    mode = rememberedMode();
+
+    css();
     ensureModal();
-    ensureLegacyRoot();
-    observeWorkoutContent();
+    ensureLegacy();
+    observe();
 
     document.addEventListener(
       "click",
-      handleDocumentClick
+      handleClick
+    );
+
+    document.addEventListener(
+      "input",
+      event => {
+        if (
+          event.target?.matches?.(
+            `#${MODAL} [data-m1002-weight],` +
+            `#${MODAL} [data-m1002-reps]`
+          )
+        ) {
+          localEdit();
+        }
+      }
     );
 
     window.addEventListener(
       "mana:program-tab-change",
-      () => scheduleRefresh(true)
+      scheduleRefresh
+    );
+
+    window.addEventListener(
+      "pageshow",
+      scheduleRefresh
+    );
+
+    window.addEventListener(
+      "mana:profile-synced",
+      scheduleRefresh
     );
 
     document.querySelector(
       '#bottomNav [data-page="programs"]'
     )?.addEventListener(
       "click",
-      () => scheduleRefresh(true)
-    );
-
-    window.addEventListener(
-      "pageshow",
-      () => scheduleRefresh(true)
-    );
-
-    window.addEventListener(
-      "mana:profile-synced",
-      () => scheduleRefresh(true)
+      scheduleRefresh
     );
 
     window.addEventListener(
       "mana:logout",
       () => {
-        requestId++;
-        userId = "";
+        loadSerial++;
+        account = "";
         assignments = [];
-        loadedAt = 0;
+
         closeModal();
-        renderCoachPanel();
+        renderPanel();
         renderLegacy();
       }
     );
@@ -1435,12 +2261,13 @@
     window.refreshManaAssignedPrograms =
       () => loadAssignments(true);
 
-    window.MANA_CLIENT_CUSTOM_PROGRAM_BUILD = BUILD;
+    window.MANA_CLIENT_CUSTOM_PROGRAM_BUILD =
+      BUILD;
 
-    scheduleRefresh(true);
+    scheduleRefresh();
 
     console.log(
-      "[Mana Movement] Coach Programs " +
+      "[Mana Movement] Coach workouts " +
       BUILD
     );
   }
@@ -1449,7 +2276,7 @@
     document.addEventListener(
       "DOMContentLoaded",
       init,
-      {once:true}
+      { once: true }
     );
   } else {
     init();
