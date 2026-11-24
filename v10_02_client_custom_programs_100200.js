@@ -1,36 +1,51 @@
 
-/* MANA MOVEMENT — COACH WORKOUTS BUILD 100209
-   COMPLETE REPLACEMENT: v10_02_client_custom_programs_100200.js
-   Uses original Mana muscle library and separate coach cloud logs.
-   Carousel, per-exercise repeat kg/tick-all, finishers, full tick-all,
-   optional 1–5 workout rating and comments. */
-(() => {
-  'use strict';
+/*
+ MANA MOVEMENT — COACH WORKOUTS
+ BUILD 100210
 
-  const BUILD = '100209';
-  const SW = 'manaV1002WorkoutSwitch';
-  const PANEL = 'manaV1002CoachPanel';
-  const LEGACY = 'manaV1002AssignedPrograms';
-  const MODAL = 'manaV1002CustomProgramModal';
-  const STYLE = 'mana-v1002-client-custom-style';
-  const MODE_KEY = 'mana-strength-workout-view-100205';
+ COMPLETE FILE REPLACEMENT
+ v10_02_client_custom_programs_100200.js
+
+ - One exercise per carousel page
+ - No extra workout heading above exercise cards
+ - Previous / Next navigation only beneath carousel
+ - Complete Workout inside final carousel page
+ - Automatic cloud saving retained
+ - Repeat weight across exercise sets
+ - Tick All Sets and Tick All Workout
+ - Cardio / Core finishers
+ - Workout rating 1–5 and comments
+ - Original muscle images and demonstrations
+ - Generated workouts remain separate
+*/
+
+(() => {
+  "use strict";
+
+  const BUILD = "100210";
+  const SWITCH = "manaV1002WorkoutSwitch";
+  const PANEL = "manaV1002CoachPanel";
+  const LEGACY = "manaV1002AssignedPrograms";
+  const MODAL = "manaV1002CustomProgramModal";
+  const STYLE = "mana-v1002-client-custom-style";
+  const MODE_KEY = "mana-strength-workout-view-100205";
 
   const $ = id => document.getElementById(id);
 
-  const esc = v => String(v ?? '').replace(
+  const esc = value => String(value ?? "").replace(
     /[&<>"']/g,
-    c => ({
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
-    }[c])
+    character => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[character])
   );
 
-  let mode = 'generated';
+  let mode = "generated";
   let assignments = [];
-  let account = '';
+  let account = "";
   let loadedAt = 0;
   let loading = false;
   let loadingSerial = 0;
@@ -42,67 +57,70 @@
   let serial = 0;
   let slide = 0;
 
-  let saveTimer = 0;
+  let saveTimer = null;
   let saveChain = Promise.resolve();
   let elapsedBase = 0;
   let startedAt = 0;
-  let clockTimer = 0;
-  let scrollTimer = 0;
-  let navTimer = 0;
+  let clockTimer = null;
+  let scrollTimer = null;
+  let navTimer = null;
 
   let finishers = {};
-  let cardioEquipment = 'Bike';
+  let cardioEquipment = "Bike";
   let cardioMinutes = 10;
   let coreRound = 0;
   let coreTicks = [[], [], []];
   let rating = 0;
-  let comment = '';
+  let comment = "";
 
-  const CORE = [
+  const CORE_ROUTINES = [
     [
-      ['Dead Bug', '10 per side'],
-      ['Plank', '30 seconds'],
-      ['Crunch', '15 reps']
+      ["Dead Bug", "10 per side"],
+      ["Plank", "30 seconds"],
+      ["Crunch", "15 reps"]
     ],
     [
-      ['Bird Dog', '10 per side'],
-      ['Side Plank', '30 seconds per side'],
-      ['Russian Twist', '20 total']
+      ["Bird Dog", "10 per side"],
+      ["Side Plank", "30 seconds per side"],
+      ["Russian Twist", "20 total"]
     ],
     [
-      ['Reverse Crunch', '15 reps'],
-      ['Plank Shoulder Tap', '20 total'],
-      ['Mountain Climber', '30 seconds']
+      ["Reverse Crunch", "15 reps"],
+      ["Plank Shoulder Tap", "20 total"],
+      ["Mountain Climber", "30 seconds"]
     ],
     [
-      ['Bicycle Crunch', '20 total'],
-      ['Dead Bug', '10 per side'],
-      ['Hollow Hold', '20 seconds']
+      ["Bicycle Crunch", "20 total"],
+      ["Dead Bug", "10 per side"],
+      ["Hollow Hold", "20 seconds"]
     ]
   ];
 
-  const db = async () => {
-    if (typeof window.supabaseClient !== 'function') {
-      throw Error('Cloud connection unavailable');
+  async function db() {
+    if (typeof window.supabaseClient !== "function") {
+      throw Error("Cloud connection unavailable");
     }
-    return window.supabaseClient();
-  };
 
-  function workoutOpen() {
+    return await window.supabaseClient();
+  }
+
+  function workoutTabOpen() {
     return !!(
-      $('manaV83ProgramShell')?.classList.contains('open') &&
-      $('manaV83Title')?.textContent?.trim()?.toUpperCase() ===
-        'MANA STRENGTH' &&
+      $("manaV83ProgramShell")?.classList.contains("open") &&
+      $("manaV83Title")?.textContent
+        ?.trim()?.toUpperCase() === "MANA STRENGTH" &&
       document.querySelector(
         '#manaV83Tabs [data-v83-tab].active'
-      )?.dataset.v83Tab === 'program'
+      )?.dataset.v83Tab === "program"
     );
   }
 
   function legacyOpen() {
+    const view = $("clientProgramsView");
+
     return !!(
-      $('clientProgramsView') &&
-      !$('clientProgramsView').classList.contains('hide')
+      view &&
+      !view.classList.contains("hide")
     );
   }
 
@@ -114,9 +132,19 @@
     );
   }
 
+  function formatTime(seconds) {
+    const value = Math.max(0, Math.floor(seconds));
+
+    return String(Math.floor(value / 60)).padStart(2, "0") +
+      ":" +
+      String(value % 60).padStart(2, "0");
+  }
+
   function stopClock() {
-    if (clockTimer) clearInterval(clockTimer);
-    clockTimer = 0;
+    if (clockTimer) {
+      clearInterval(clockTimer);
+      clockTimer = null;
+    }
 
     if (startedAt) {
       elapsedBase = clockSeconds();
@@ -130,37 +158,34 @@
     if (clockTimer) clearInterval(clockTimer);
 
     clockTimer = setInterval(() => {
-      if ($('m1002Time')) {
-        $('m1002Time').textContent =
-          formatTime(clockSeconds());
+      const timer = $("m1002Time");
+
+      if (timer) {
+        timer.textContent = formatTime(clockSeconds());
       }
     }, 1000);
   }
 
-  function formatTime(s) {
-    s = Math.max(0, Math.floor(s));
-
-    return String(Math.floor(s / 60)).padStart(2, '0') +
-      ':' + String(s % 60).padStart(2, '0');
+  function dumbbellIcon() {
+    return `
+      <svg viewBox="0 0 24 24"
+        width="26" height="26"
+        fill="none" stroke="#ff8126"
+        stroke-width="2"
+        stroke-linecap="round">
+        <path d="M3 9v6M6 6v12M9 10v4M15 10v4M18 6v12M21 9v6M9 12h6"/>
+      </svg>
+    `;
   }
 
-  function icon() {
-    return `<svg viewBox="0 0 24 24"
-      width="26" height="26"
-      fill="none" stroke="#ff8126"
-      stroke-width="2" stroke-linecap="round">
-      <path d="M3 9v6M6 6v12M9 10v4M15 10v4M18 6v12M21 9v6M9 12h6"/>
-    </svg>`;
-  }
-
-  function installStyle() {
+  function installStyles() {
     if ($(STYLE)) return;
 
-    const st = document.createElement('style');
-    st.id = STYLE;
+    const style = document.createElement("style");
+    style.id = STYLE;
 
-    st.textContent = `
-      #${SW} {
+    style.textContent = `
+      #${SWITCH} {
         display:grid;
         grid-template-columns:repeat(2,minmax(0,1fr));
         gap:7px;
@@ -171,7 +196,7 @@
         border-radius:15px;
       }
 
-      #${SW} button {
+      #${SWITCH} button {
         width:100%;
         min-width:0;
         min-height:46px;
@@ -186,18 +211,19 @@
         cursor:pointer;
       }
 
-      #${SW} button.active {
+      #${SWITCH} button.active {
         background:#251b15;
         color:#ff8126;
         border-color:#ff8126;
       }
 
       #manaV83Content.m1002-coach-mode
-      >:not(#${SW}):not(#${PANEL}) {
+      >:not(#${SWITCH}):not(#${PANEL}) {
         display:none!important;
       }
 
-      #manaV83Content.m1002-coach-mode>#${SW} {
+      #manaV83Content.m1002-coach-mode
+      >#${SWITCH} {
         display:grid!important;
       }
 
@@ -206,7 +232,8 @@
         margin-bottom:16px;
       }
 
-      #manaV83Content.m1002-coach-mode>#${PANEL} {
+      #manaV83Content.m1002-coach-mode
+      >#${PANEL} {
         display:block!important;
       }
 
@@ -225,7 +252,7 @@
       }
 
       #${PANEL} .m1002-panel-head small,
-      .m1002-kicker {
+      #${MODAL} .m1002-kicker {
         color:#ff8126!important;
         font-size:10px;
         font-weight:900;
@@ -453,6 +480,7 @@
       }
 
       #${MODAL} .m1002-primary {
+        display:block;
         width:100%;
         min-height:45px;
         background:#ff8126;
@@ -464,6 +492,11 @@
         font-weight:900;
         font-size:13px;
       }
+
+      /*
+       Exercise carousel
+       No extra workout banner.
+      */
 
       #${MODAL} .m1002-position {
         display:flex;
@@ -693,6 +726,10 @@
         color:#111;
       }
 
+      /*
+       Only navigation beneath carousel
+      */
+
       #${MODAL} .m1002-nav {
         display:grid;
         grid-template-columns:1fr 1fr;
@@ -732,7 +769,11 @@
         color:#b3bac4;
         font-size:12px;
         line-height:1.5;
-        margin:12px 0;
+        margin:8px 0;
+      }
+
+      #${MODAL} .m1002-status:empty {
+        display:none;
       }
 
       #${MODAL} .m1002-finishers {
@@ -899,6 +940,20 @@
         background:#ff8126;
       }
 
+      /*
+       Completion action belongs on
+       final carousel page only.
+      */
+
+      #${MODAL} .m1002-final-complete {
+        margin-top:17px;
+      }
+
+      #${MODAL} .m1002-final-complete:disabled {
+        opacity:.55;
+        cursor:default;
+      }
+
       @media(max-width:420px) {
         #${MODAL} .mana-v64-card {
           padding:13px;
@@ -925,18 +980,19 @@
       }
     `;
 
-    document.head.appendChild(st);
+    document.head.appendChild(style);
   }
 
   function ensureModal() {
     if ($(MODAL)) return;
 
-    const m = document.createElement('div');
-    m.id = MODAL;
-    m.setAttribute('role', 'dialog');
-    m.setAttribute('aria-modal', 'true');
+    const modal = document.createElement("div");
+    modal.id = MODAL;
 
-    m.innerHTML = `
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+
+    modal.innerHTML = `
       <div class="m1002-inner">
         <div class="m1002-top">
           <span class="m1002-kicker">
@@ -954,28 +1010,29 @@
       </div>
     `;
 
-    document.body.appendChild(m);
+    document.body.appendChild(modal);
   }
 
   function showModal(html) {
     ensureModal();
-    $(MODAL).classList.add('open');
-    $('m1002Content').innerHTML = html;
+
+    $(MODAL).classList.add("open");
+    $("m1002Content").innerHTML = html;
   }
 
   function ensureRoots() {
-    if (!workoutOpen()) return;
+    if (!workoutTabOpen()) return null;
 
-    const holder = $('manaV83Content');
-    if (!holder) return;
+    const holder = $("manaV83Content");
+    if (!holder) return null;
 
-    let sw = $(SW);
+    let selector = $(SWITCH);
 
-    if (!sw) {
-      sw = document.createElement('div');
-      sw.id = SW;
+    if (!selector) {
+      selector = document.createElement("div");
+      selector.id = SWITCH;
 
-      sw.innerHTML = `
+      selector.innerHTML = `
         <button type="button"
           data-m1002-mode="generated">
           My Workouts
@@ -988,40 +1045,40 @@
       `;
     }
 
-    if (sw.parentElement !== holder) {
-      holder.prepend(sw);
+    if (selector.parentElement !== holder) {
+      holder.prepend(selector);
     }
 
     let panel = $(PANEL);
 
     if (!panel) {
-      panel = document.createElement('section');
+      panel = document.createElement("section");
       panel.id = PANEL;
     }
 
     if (panel.parentElement !== holder) {
-      sw.insertAdjacentElement('afterend', panel);
+      selector.insertAdjacentElement("afterend", panel);
     }
 
     return holder;
   }
 
   function ensureLegacy() {
-    const view = $('clientProgramsView');
+    const view = $("clientProgramsView");
     if (!view) return null;
 
-    let el = $(LEGACY);
+    let element = $(LEGACY);
 
-    if (!el) {
-      el = document.createElement('section');
-      el.id = LEGACY;
+    if (!element) {
+      element = document.createElement("section");
+      element.id = LEGACY;
     }
 
-    if (!view.contains(el)) {
-      view.prepend(el);
+    if (!view.contains(element)) {
+      view.prepend(element);
     }
 
-    return el;
+    return element;
   }
 
   function applyMode() {
@@ -1029,24 +1086,32 @@
     if (!holder) return;
 
     holder.classList.toggle(
-      'm1002-coach-mode',
-      mode === 'coach'
+      "m1002-coach-mode",
+      mode === "coach"
     );
 
-    $(SW)?.querySelectorAll(
-      '[data-m1002-mode]'
-    ).forEach(b => {
-      const active = b.dataset.m1002Mode === mode;
+    $(SWITCH)
+      ?.querySelectorAll("[data-m1002-mode]")
+      .forEach(button => {
+        const active =
+          button.dataset.m1002Mode === mode;
 
-      b.classList.toggle('active', active);
-      b.setAttribute('aria-pressed', String(active));
-    });
+        button.classList.toggle("active", active);
 
-    if (mode === 'coach') renderPanel();
+        button.setAttribute(
+          "aria-pressed",
+          String(active)
+        );
+      });
+
+    if (mode === "coach") renderPanel();
   }
 
   function changeMode(value) {
-    if (!['generated', 'coach'].includes(value)) return;
+    if (
+      value !== "generated" &&
+      value !== "coach"
+    ) return;
 
     mode = value;
 
@@ -1056,35 +1121,37 @@
 
     applyMode();
 
-    if (mode === 'coach') {
+    if (mode === "coach") {
       void loadAssignments(true);
     }
   }
 
-  function programCard(a) {
+  function programCard(assignment) {
+    const program = assignment.custom_programs;
+
     return `
       <button type="button"
         class="m1002-program"
-        data-m1002-program="${esc(a.custom_programs.id)}">
+        data-m1002-program="${esc(program.id)}">
 
         <span>
           <strong>
-            ${esc(a.custom_programs.name)}
+            ${esc(program.name)}
           </strong>
 
           <small>
             ${esc(
-              a.custom_programs.goal ||
-              a.custom_programs.description ||
-              'Personalised training program'
+              program.goal ||
+              program.description ||
+              "Personalised training program"
             )}
           </small>
         </span>
 
         <span class="m1002-pill">
-          ${a.is_primary
-            ? 'PRIMARY'
-            : esc(a.status.toUpperCase())}
+          ${assignment.is_primary
+            ? "PRIMARY"
+            : esc(assignment.status.toUpperCase())}
         </span>
       </button>
     `;
@@ -1095,9 +1162,11 @@
     if (!holder) return;
 
     const list = assignments.filter(
-      a =>
-        a.custom_programs &&
-        ['active', 'paused', 'completed'].includes(a.status)
+      assignment =>
+        assignment.custom_programs &&
+        ["active", "paused", "completed"].includes(
+          assignment.status
+        )
     );
 
     holder.innerHTML = `
@@ -1105,27 +1174,28 @@
         <div class="m1002-panel-head">
           <small>MANA STRENGTH</small>
           <h3>Coach Programs</h3>
+
           <p>
-            Personalised training built and assigned
-            by your coach.
+            Personalised training built and
+            assigned by your coach.
           </p>
         </div>
 
         <div class="m1002-panel-body">
           ${list.length
-            ? list.map(programCard).join('')
+            ? list.map(programCard).join("")
             : `
               <div class="m1002-empty">
                 <div class="m1002-empty-icon">
-                  ${icon()}
+                  ${dumbbellIcon()}
                 </div>
 
                 <h4>No Coach Programs Yet</h4>
 
                 <p>
                   ${loading
-                    ? 'Checking assigned programs…'
-                    : 'Your coach-built programs will appear here once assigned.'}
+                    ? "Checking assigned programs…"
+                    : "Your coach-built programs will appear here once assigned."}
                 </p>
 
                 <p>
@@ -1140,22 +1210,30 @@
   }
 
   function renderLegacy() {
-    const root = ensureLegacy();
-    if (!root) return;
+    const holder = ensureLegacy();
+    if (!holder) return;
 
-    root.innerHTML = assignments.length
-      ? `<h3 style="color:#fff">Coach Assigned</h3>` +
-        assignments
-          .filter(a => a.custom_programs)
-          .map(programCard)
-          .join('')
-      : '';
+    const list = assignments.filter(
+      assignment => assignment.custom_programs
+    );
+
+    holder.innerHTML = list.length
+      ? `
+        <h3 style="color:#fff">
+          Coach Assigned
+        </h3>
+
+        ${list.map(programCard).join("")}
+      `
+      : "";
   }
 
   async function loadAssignments(force = false) {
+    if (loading) return;
+
     if (
-      loading ||
-      (!force && Date.now() - loadedAt < 20000)
+      !force &&
+      Date.now() - loadedAt < 20000
     ) return;
 
     loading = true;
@@ -1164,26 +1242,26 @@
     const token = ++loadingSerial;
 
     try {
-      const c = await db();
+      const client = await db();
 
       const {
         data: auth,
         error: authError
-      } = await c.auth.getUser();
+      } = await client.auth.getUser();
 
       if (authError) throw authError;
 
-      const id = auth?.user?.id || '';
+      const userId = auth?.user?.id || "";
 
-      if (account !== id) {
-        account = id;
+      if (account !== userId) {
+        account = userId;
         assignments = [];
       }
 
-      if (!id) return;
+      if (!userId) return;
 
-      const { data, error } = await c
-        .from('client_program_assignments')
+      const { data, error } = await client
+        .from("client_program_assignments")
         .select(`
           id,
           status,
@@ -1198,30 +1276,34 @@
             status
           )
         `)
-        .eq('client_id', id)
-        .in('status', ['active', 'paused', 'completed'])
-        .order('is_primary', { ascending: false })
-        .order('assigned_at', { ascending: false });
+        .eq("client_id", userId)
+        .in("status", [
+          "active",
+          "paused",
+          "completed"
+        ])
+        .order("is_primary", { ascending: false })
+        .order("assigned_at", { ascending: false });
 
       if (error) throw error;
 
-      const latest = await c.auth.getUser();
+      const current = await client.auth.getUser();
 
       if (
         token !== loadingSerial ||
-        latest.data?.user?.id !== id
+        current.data?.user?.id !== userId
       ) return;
 
       assignments = (data || []).filter(
-        a => a.custom_programs
+        assignment => assignment.custom_programs
       );
 
       loadedAt = Date.now();
 
-    } catch (e) {
+    } catch (error) {
       console.warn(
-        '[Mana Coach Programs]',
-        e?.message || e
+        "[Mana Coach Programs]",
+        error?.message || error
       );
     } finally {
       loading = false;
@@ -1243,11 +1325,11 @@
     selected = null;
     programData = null;
 
-    $(MODAL)?.classList.remove('open');
+    $(MODAL)?.classList.remove("open");
   }
 
   function programHeader() {
-    const p = programData?.program;
+    const program = programData?.program;
 
     return `
       <section class="m1002-hero">
@@ -1255,13 +1337,15 @@
           COACH-ASSIGNED PROGRAM
         </span>
 
-        <h2>${esc(p?.name || 'Coach Program')}</h2>
+        <h2>
+          ${esc(program?.name || "Coach Program")}
+        </h2>
 
         <p>
           ${esc(
-            p?.description ||
-            p?.goal ||
-            'Your personalised training program'
+            program?.description ||
+            program?.goal ||
+            "Your personalised training program"
           )}
         </p>
       </section>
@@ -1269,17 +1353,17 @@
   }
 
   async function openProgram(id) {
-    const row = assignments.find(
-      a => a.custom_programs?.id === id
+    const assignment = assignments.find(
+      item => item.custom_programs?.id === id
     );
 
-    if (!row) return;
+    if (!assignment) return;
 
     const token = ++serial;
 
     stopClock();
     session = null;
-    selected = row;
+    selected = assignment;
 
     showModal(`
       <p class="m1002-status">
@@ -1288,84 +1372,100 @@
     `);
 
     try {
-      const c = await db();
-      const { data: auth } = await c.auth.getUser();
+      const client = await db();
+
+      const { data: auth } =
+        await client.auth.getUser();
 
       if (auth?.user?.id !== account) {
-        throw Error('Sign in to view your program');
+        throw Error("Sign in to view your program");
       }
 
-      const link = await c
-        .from('client_program_assignments')
-        .select('id')
-        .eq('client_id', account)
-        .eq('program_id', id)
-        .in('status', ['active', 'paused', 'completed'])
+      const link = await client
+        .from("client_program_assignments")
+        .select("id")
+        .eq("client_id", account)
+        .eq("program_id", id)
+        .in("status", [
+          "active",
+          "paused",
+          "completed"
+        ])
         .maybeSingle();
 
       if (link.error) throw link.error;
 
       if (!link.data) {
-        throw Error('Program is no longer assigned');
+        throw Error("Program is no longer assigned");
       }
 
-      const [p, d] = await Promise.all([
-        c.from('custom_programs')
-          .select('*')
-          .eq('id', id)
-          .single(),
+      const [programResult, daysResult] =
+        await Promise.all([
+          client
+            .from("custom_programs")
+            .select("*")
+            .eq("id", id)
+            .single(),
 
-        c.from('custom_program_days')
-          .select('*')
-          .eq('program_id', id)
-          .order('week_number')
-          .order('day_number')
-      ]);
+          client
+            .from("custom_program_days")
+            .select("*")
+            .eq("program_id", id)
+            .order("week_number")
+            .order("day_number")
+        ]);
 
-      if (p.error || d.error) {
-        throw p.error || d.error;
+      if (programResult.error || daysResult.error) {
+        throw programResult.error || daysResult.error;
       }
 
-      const days = d.data || [];
+      const days = daysResult.data || [];
       let exercises = [];
 
       if (days.length) {
-        const e = await c
-          .from('custom_program_exercises')
-          .select('*')
-          .in('program_day_id', days.map(x => x.id))
-          .order('sort_order');
+        const exerciseResult = await client
+          .from("custom_program_exercises")
+          .select("*")
+          .in(
+            "program_day_id",
+            days.map(day => day.id)
+          )
+          .order("sort_order");
 
-        if (e.error) throw e.error;
+        if (exerciseResult.error) {
+          throw exerciseResult.error;
+        }
 
-        exercises = e.data || [];
+        exercises = exerciseResult.data || [];
       }
 
       if (
         token !== serial ||
-        !$(MODAL)?.classList.contains('open')
+        !$(MODAL)?.classList.contains("open")
       ) return;
 
       programData = {
-        program: p.data,
+        program: programResult.data,
         days,
         exercises
       };
 
       week = days.length
-        ? Math.min(...days.map(x =>
-            Number(x.week_number) || 1
-          ))
+        ? Math.min(
+            ...days.map(
+              day => Number(day.week_number) || 1
+            )
+          )
         : 1;
 
       renderProgram();
 
-    } catch (e) {
+    } catch (error) {
       if (token === serial) {
         showModal(`
           <p class="m1002-status">
             Could not load program:
-            ${esc(e.message)}
+            ${esc(error.message)}
           </p>
         `);
       }
@@ -1381,7 +1481,7 @@
     const weeks = [
       ...new Set(
         programData.days.map(
-          x => Number(x.week_number) || 1
+          day => Number(day.week_number) || 1
         )
       )
     ].sort((a, b) => a - b);
@@ -1390,55 +1490,69 @@
       programHeader() +
       `
         <div class="m1002-weeks">
-          ${weeks.map(n => `
+          ${weeks.map(number => `
             <button type="button"
-              data-m1002-week="${n}"
-              class="${n === week ? 'active' : ''}">
-              WEEK ${n}
+              data-m1002-week="${number}"
+              class="${number === week ? "active" : ""}">
+              WEEK ${number}
             </button>
-          `).join('')}
+          `).join("")}
         </div>
 
         ${programData.days
-          .filter(d => Number(d.week_number) === week)
-          .map(d => {
-            const count = programData.exercises.filter(
-              e => e.program_day_id === d.id
-            ).length;
+          .filter(
+            day => Number(day.week_number) === week
+          )
+          .map(day => {
+            const exerciseCount =
+              programData.exercises.filter(
+                exercise =>
+                  exercise.program_day_id === day.id
+              ).length;
 
             return `
               <section class="mana-v85-day">
                 <div class="m1002-day-label">
-                  WEEK ${week} • DAY ${esc(d.day_number)}
+                  WEEK ${week}
+                  • DAY ${esc(day.day_number)}
                 </div>
 
-                <h3>${esc(d.title || 'Workout')}</h3>
+                <h3>
+                  ${esc(day.title || "Workout")}
+                </h3>
 
                 <p class="m1002-muted">
-                  ${esc(d.workout_type || 'Strength')}
-                  • ${count} exercises
-                  ${d.estimated_minutes
-                    ? ' • ' + esc(d.estimated_minutes) + ' min'
-                    : ''}
+                  ${esc(day.workout_type || "Strength")}
+                  • ${exerciseCount} exercises
+
+                  ${day.estimated_minutes
+                    ? " • " +
+                      esc(day.estimated_minutes) +
+                      " min"
+                    : ""}
                 </p>
 
-                ${d.notes
-                  ? `<p class="m1002-muted">
-                       ${esc(d.notes)}
-                     </p>`
-                  : ''}
+                ${day.notes
+                  ? `
+                    <p class="m1002-muted">
+                      ${esc(day.notes)}
+                    </p>
+                  `
+                  : ""}
 
                 <button type="button"
                   class="m1002-primary"
-                  data-m1002-start="${esc(d.id)}">
+                  data-m1002-start="${esc(day.id)}">
                   START WORKOUT
                 </button>
               </section>
             `;
-          }).join('') ||
-          `<p class="m1002-status">
-             No workouts in this week.
-           </p>`}
+          }).join("") ||
+          `
+            <p class="m1002-status">
+              No workouts in this week.
+            </p>
+          `}
       `
     );
   }
@@ -1449,38 +1563,43 @@
     const images = api?.muscleAssets || {};
 
     return {
-      target: info.target || 'Full Body',
-      image: images[info.muscle || 'fullbody'] || ''
+      target: info.target || "Full Body",
+      image: images[info.muscle || "fullbody"] || ""
     };
   }
 
   function muscleHTML(name) {
-    const v = visualInfo(name);
+    const visual = visualInfo(name);
 
     return `
       <div class="m1002-muscle">
         <div class="m1002-muscle-frame">
-          ${v.image
+          ${visual.image
             ? `
               <img
-                src="${esc(v.image)}"
+                src="${esc(visual.image)}"
                 alt="Target muscles for ${esc(name)}"
                 loading="lazy">
 
-              <span class="m1002-muscle-fallback" hidden>
-                ${esc(v.target)}
+              <span
+                class="m1002-muscle-fallback"
+                hidden>
+                ${esc(visual.target)}
               </span>
             `
             : `
               <span class="m1002-muscle-fallback">
-                ${esc(v.target)}
+                ${esc(visual.target)}
               </span>
             `}
         </div>
 
         <div class="m1002-muscle-copy">
           <small>PRIMARY TARGET</small>
-          <strong>${esc(v.target)}</strong>
+
+          <strong>
+            ${esc(visual.target)}
+          </strong>
 
           <button type="button"
             class="m1002-demo"
@@ -1492,106 +1611,122 @@
     `;
   }
 
-  function defaultReps(s) {
-    const m = String(s || '').match(/\d+/);
+  function defaultReps(value) {
+    const match = String(value || "").match(/\d+/);
 
-    return m
-      ? Math.max(1, Math.min(100, Number(m[0])))
+    return match
+      ? Math.max(1, Math.min(100, Number(match[0])))
       : 10;
   }
 
-  function setHTML(n, s) {
+  function setHTML(number, set) {
     return `
       <div class="mana-v64-set" data-m1002-set>
         <span class="mana-v64-set-number">
-          ${n}
+          ${number}
         </span>
 
-        <input type="number"
-          min="0" max="1000" step="0.5"
+        <input
+          type="number"
+          min="0"
+          max="1000"
+          step="0.5"
           inputmode="decimal"
           placeholder="kg"
-          aria-label="Set ${n} weight"
+          aria-label="Set ${number} weight"
           data-m1002-weight
-          value="${s.weight == null
-            ? ''
-            : esc(s.weight)}">
+          value="${set.weight == null
+            ? ""
+            : esc(set.weight)}">
 
-        <input type="number"
-          min="0" max="500" step="1"
+        <input
+          type="number"
+          min="0"
+          max="500"
+          step="1"
           inputmode="numeric"
-          aria-label="Set ${n} reps"
+          aria-label="Set ${number} reps"
           data-m1002-reps
-          value="${s.reps == null
-            ? ''
-            : esc(s.reps)}">
+          value="${set.reps == null
+            ? ""
+            : esc(set.reps)}">
 
         <button type="button"
-          class="mana-v64-check${s.done ? ' done' : ''}"
+          class="mana-v64-check${set.done ? " done" : ""}"
           data-m1002-tick
-          aria-pressed="${!!s.done}">
+          aria-pressed="${!!set.done}">
           ✓
         </button>
       </div>
     `;
   }
 
-  function exerciseHTML(e, prior, completed) {
+  function exerciseHTML(exercise, prior, completed) {
     const count = Math.max(
       1,
-      Math.min(20, Number(e.sets) || 3)
+      Math.min(20, Number(exercise.sets) || 3)
     );
 
-    const old = (prior || []).find(
-      a => a.id === e.id ||
-        a.name === e.exercise_name
+    const previous = (prior || []).find(
+      item =>
+        item.id === exercise.id ||
+        item.name === exercise.exercise_name
     );
 
     const sets = Array.from(
       { length: count },
-      (_, i) => ({
-        weight: old?.sets?.[i]?.weight ?? '',
-        reps: old?.sets?.[i]?.reps ??
-          defaultReps(e.reps),
+      (_, index) => ({
+        weight:
+          previous?.sets?.[index]?.weight ?? "",
+
+        reps:
+          previous?.sets?.[index]?.reps ??
+          defaultReps(exercise.reps),
+
         done: completed
           ? false
-          : !!old?.sets?.[i]?.done
+          : !!previous?.sets?.[index]?.done
       })
     );
 
     return `
       <section class="mana-v64-card"
-        data-m1002-ex="${esc(e.id)}">
+        data-m1002-ex="${esc(exercise.id)}">
 
         <div class="mana-v64-name">
-          ${esc(e.exercise_name)}
+          ${esc(exercise.exercise_name)}
         </div>
 
         <div class="mana-v64-target">
           ${count} sets
-          • ${esc(e.reps || '8–12')} reps
-          ${e.rest_seconds != null
-            ? ' • ' + esc(e.rest_seconds) + 's rest'
-            : ''}
+          • ${esc(exercise.reps || "8–12")} reps
+
+          ${exercise.rest_seconds != null
+            ? " • " +
+              esc(exercise.rest_seconds) +
+              "s rest"
+            : ""}
         </div>
 
-        ${muscleHTML(e.exercise_name)}
+        ${muscleHTML(exercise.exercise_name)}
 
-        ${e.rpe_target
+        ${exercise.rpe_target
           ? `
             <p class="m1002-note">
-              Target RPE: ${esc(e.rpe_target)}
+              Target RPE:
+              ${esc(exercise.rpe_target)}
             </p>
           `
-          : ''}
+          : ""}
 
-        ${e.notes
+        ${exercise.notes
           ? `
             <p class="m1002-note">
-              Coach: ${esc(e.notes)}
+              Coach:
+              ${esc(exercise.notes)}
             </p>
           `
-          : ''}
+          : ""}
 
         <div class="mana-v64-table-head">
           <span>Set</span>
@@ -1601,14 +1736,16 @@
         </div>
 
         <div data-m1002-sets>
-          ${sets.map((s, i) =>
-            setHTML(i + 1, s)
-          ).join('')}
+          ${sets.map(
+            (set, index) =>
+              setHTML(index + 1, set)
+          ).join("")}
         </div>
 
         <p class="m1002-muted">
-          Entering a weight repeats it across this
-          exercise. Reps can be changed per set.
+          Entering a weight repeats it across
+          this exercise. Reps can be changed
+          individually.
         </p>
 
         <button type="button"
@@ -1621,9 +1758,12 @@
   }
 
   function coreRoutine() {
-    return CORE[
-      ((Number(session?.day?.day_number) || 1) - 1) %
-      CORE.length
+    const day = Number(
+      session?.day?.day_number
+    ) || 1;
+
+    return CORE_ROUTINES[
+      (day - 1) % CORE_ROUTINES.length
     ];
   }
 
@@ -1658,6 +1798,7 @@
         </div>
 
         <div id="m1002FinisherPanel"></div>
+
         <div id="m1002FinisherSaved"
           class="m1002-saved"></div>
 
@@ -1668,8 +1809,8 @@
         </button>
 
         <p class="m1002-muted">
-          Use Tick All when you followed the
-          prescribed sets and reps without changes.
+          Use Tick All when you followed
+          the prescribed sets and reps.
           Cardio and Core are optional.
         </p>
 
@@ -1683,13 +1824,13 @@
           <label>Workout rating (1–5)</label>
 
           <div class="m1002-rating">
-            ${[1, 2, 3, 4, 5].map(n => `
+            ${[1, 2, 3, 4, 5].map(number => `
               <button type="button"
-                data-m1002-rating="${n}"
-                aria-pressed="${rating === n}">
-                ${n}
+                data-m1002-rating="${number}"
+                aria-pressed="${rating === number}">
+                ${number}
               </button>
-            `).join('')}
+            `).join("")}
           </div>
 
           <label for="m1002WorkoutComment">
@@ -1701,6 +1842,17 @@
             maxlength="500"
             placeholder="How did you feel? Anything to remember for next time?">${esc(comment)}</textarea>
         </div>
+
+        <button type="button"
+          class="m1002-primary m1002-final-complete"
+          data-m1002-complete>
+          COMPLETE WORKOUT ✓
+        </button>
+
+        <p class="m1002-muted">
+          Your sets, finishers and feedback
+          will be saved together.
+        </p>
       </div>
     `;
   }
@@ -1710,20 +1862,23 @@
 
     if (finishers.cardio?.completed) {
       messages.push(
-        `Cardio: ${finishers.cardio.equipment}, ` +
-        `${finishers.cardio.durationMinutes} min`
+        "Cardio: " +
+        finishers.cardio.equipment +
+        ", " +
+        finishers.cardio.durationMinutes +
+        " min"
       );
     }
 
     if (finishers.core?.completed) {
-      messages.push('Core: 3 rounds');
+      messages.push("Core: 3 rounds");
     }
 
-    if ($('m1002FinisherSaved')) {
-      $('m1002FinisherSaved').textContent =
+    if ($("m1002FinisherSaved")) {
+      $("m1002FinisherSaved").textContent =
         messages.length
-          ? '✓ Added: ' + messages.join(' · ')
-          : '';
+          ? "✓ Added: " + messages.join(" · ")
+          : "";
     }
 
     refreshRatings();
@@ -1732,55 +1887,65 @@
   function refreshRatings() {
     document.querySelectorAll(
       `#${MODAL} [data-m1002-rating]`
-    ).forEach(b => {
-      const yes =
-        Number(b.dataset.m1002Rating) === rating;
+    ).forEach(button => {
+      const active =
+        Number(button.dataset.m1002Rating) === rating;
 
-      b.classList.toggle('active', yes);
-      b.setAttribute('aria-pressed', String(yes));
+      button.classList.toggle("active", active);
+
+      button.setAttribute(
+        "aria-pressed",
+        String(active)
+      );
     });
   }
 
   function openCardio() {
-    const el = $('m1002FinisherPanel');
-    if (!el) return;
+    const panel = $("m1002FinisherPanel");
+    if (!panel) return;
 
-    el.innerHTML = `
+    panel.innerHTML = `
       <div class="m1002-finisher-panel">
         <h4>Cardio Finisher</h4>
 
         <p class="m1002-muted">
-          Choose equipment and a 10–20 minute session.
+          Choose equipment and a
+          10–20 minute session.
         </p>
 
         <div class="m1002-options">
           ${[
-            'Bike',
-            'Rower',
-            'Treadmill',
-            'Bodyweight'
-          ].map(n => `
+            "Bike",
+            "Rower",
+            "Treadmill",
+            "Bodyweight"
+          ].map(name => `
             <button type="button"
-              class="${n === cardioEquipment ? 'active' : ''}"
-              data-m1002-cardio-equipment="${esc(n)}">
-              ${esc(n)}
+              class="${name === cardioEquipment
+                ? "active"
+                : ""}"
+              data-m1002-cardio-equipment="${esc(name)}">
+              ${esc(name)}
             </button>
-          `).join('')}
+          `).join("")}
         </div>
 
         <div class="m1002-options">
-          ${[10, 15, 20].map(n => `
+          ${[10, 15, 20].map(minutes => `
             <button type="button"
-              class="${n === cardioMinutes ? 'active' : ''}"
-              data-m1002-cardio-minutes="${n}">
-              ${n} MIN
+              class="${minutes === cardioMinutes
+                ? "active"
+                : ""}"
+              data-m1002-cardio-minutes="${minutes}">
+              ${minutes} MIN
             </button>
-          `).join('')}
+          `).join("")}
         </div>
 
         <p class="m1002-muted">
-          Warm up for 2–3 minutes, complete
-          your main effort, then cool down.
+          Warm up for 2–3 minutes,
+          complete your main effort,
+          then cool down.
         </p>
 
         <div class="m1002-actions">
@@ -1801,13 +1966,13 @@
   }
 
   function openCore() {
-    const el = $('m1002FinisherPanel');
-    if (!el) return;
+    const panel = $("m1002FinisherPanel");
+    if (!panel) return;
 
     const routine = coreRoutine();
     const current = coreTicks[coreRound] || [];
 
-    el.innerHTML = `
+    panel.innerHTML = `
       <div class="m1002-finisher-panel">
         <h4>Core Finisher</h4>
 
@@ -1816,30 +1981,35 @@
         </p>
 
         <div class="m1002-options">
-          ${[0, 1, 2].map(n => `
+          ${[0, 1, 2].map(number => `
             <button type="button"
-              data-m1002-core-round="${n}"
-              class="${n === coreRound ? 'active' : ''}">
-              ROUND ${n + 1}
-              ${coreTicks[n]?.length === routine.length
-                ? ' ✓'
-                : ''}
+              data-m1002-core-round="${number}"
+              class="${number === coreRound
+                ? "active"
+                : ""}">
+              ROUND ${number + 1}
+
+              ${coreTicks[number]?.length === routine.length
+                ? " ✓"
+                : ""}
             </button>
-          `).join('')}
+          `).join("")}
         </div>
 
-        ${routine.map(([name, reps], i) => `
+        ${routine.map(([name, reps], index) => `
           <label class="m1002-core-item">
             <input type="checkbox"
-              data-m1002-core-check="${i}"
-              ${current.includes(i) ? 'checked' : ''}>
+              data-m1002-core-check="${index}"
+              ${current.includes(index)
+                ? "checked"
+                : ""}>
 
             <span>
               <strong>${esc(name)}</strong>
               <small>${esc(reps)}</small>
             </span>
           </label>
-        `).join('')}
+        `).join("")}
 
         <div class="m1002-actions">
           <button type="button"
@@ -1866,11 +2036,11 @@
             class="m1002-secondary"
             data-m1002-core-next
             ${current.length !== routine.length
-              ? 'disabled'
-              : ''}>
+              ? "disabled"
+              : ""}>
             ${coreRound === 2
-              ? 'FINISH CORE'
-              : 'NEXT ROUND'}
+              ? "FINISH CORE"
+              : "NEXT ROUND"}
           </button>
         </div>
       </div>
@@ -1879,8 +2049,8 @@
 
   function slides() {
     return [
-      ...($('m1002Carousel')
-        ?.querySelectorAll('.m1002-slide') || [])
+      ...($("m1002Carousel")
+        ?.querySelectorAll(".m1002-slide") || [])
     ];
   }
 
@@ -1888,30 +2058,32 @@
     return session?.exercises.length || 0;
   }
 
-  function completeCard(i) {
+  function completeCard(index) {
     const ticks = [
-      ...(slides()[i]
-        ?.querySelectorAll('[data-m1002-tick]') || [])
+      ...(slides()[index]
+        ?.querySelectorAll("[data-m1002-tick]") || [])
     ];
 
     return !!ticks.length &&
-      ticks.every(t => t.classList.contains('done'));
+      ticks.every(
+        tick => tick.classList.contains("done")
+      );
   }
 
-  function navigate(i, smooth = true) {
-    const c = $('m1002Carousel');
-    const arr = slides();
+  function navigate(index, smooth = true) {
+    const carousel = $("m1002Carousel");
+    const allSlides = slides();
 
-    if (!c || !arr.length) return;
+    if (!carousel || !allSlides.length) return;
 
     slide = Math.max(
       0,
-      Math.min(i, arr.length - 1)
+      Math.min(index, allSlides.length - 1)
     );
 
-    c.scrollTo({
-      left: c.clientWidth * slide,
-      behavior: smooth ? 'smooth' : 'auto'
+    carousel.scrollTo({
+      left: carousel.clientWidth * slide,
+      behavior: smooth ? "smooth" : "auto"
     });
 
     renderNavigation();
@@ -1919,165 +2091,185 @@
 
   function renderNavigation() {
     const total = exerciseCount() + 1;
-    const finish = slide === exerciseCount();
+    const onFinal = slide === exerciseCount();
 
-    if ($('m1002Position')) {
-      $('m1002Position').textContent =
-        finish
-          ? 'Optional Finishers + Feedback'
-          : `Exercise ${slide + 1} of ${exerciseCount()}`;
+    if ($("m1002Position")) {
+      $("m1002Position").textContent =
+        onFinal
+          ? "Optional Finishers + Feedback"
+          : "Exercise " +
+            (slide + 1) +
+            " of " +
+            exerciseCount();
     }
 
-    if ($('m1002Dots')) {
-      $('m1002Dots').innerHTML =
-        Array.from({ length: total }, (_, i) => `
-          <button type="button"
-            class="m1002-dot
-              ${i === slide ? 'active' : ''}
-              ${i < exerciseCount() && completeCard(i)
-                ? 'done'
-                : ''}"
-            data-m1002-slide="${i}"
-            aria-label="${i === exerciseCount()
-              ? 'Finishers and feedback'
-              : 'Exercise ' + (i + 1)}">
-          </button>
-        `).join('');
+    if ($("m1002Dots")) {
+      $("m1002Dots").innerHTML =
+        Array.from(
+          { length: total },
+          (_, index) => `
+            <button type="button"
+              class="m1002-dot
+                ${index === slide ? "active" : ""}
+                ${index < exerciseCount() &&
+                  completeCard(index)
+                    ? "done"
+                    : ""}"
+              data-m1002-slide="${index}"
+              aria-label="${index === exerciseCount()
+                ? "Finishers and feedback"
+                : "Exercise " + (index + 1)}">
+            </button>
+          `
+        ).join("");
     }
 
-    if ($('m1002Previous')) {
-      $('m1002Previous').disabled = slide === 0;
+    if ($("m1002Previous")) {
+      $("m1002Previous").disabled =
+        slide === 0;
     }
 
-    if ($('m1002Next')) {
-      $('m1002Next').disabled = slide === total - 1;
+    if ($("m1002Next")) {
+      $("m1002Next").disabled =
+        slide === total - 1;
 
-      $('m1002Next').textContent =
+      $("m1002Next").textContent =
         slide === exerciseCount() - 1
-          ? 'FINISHERS ›'
-          : 'NEXT ›';
+          ? "FINISHERS ›"
+          : "NEXT ›";
     }
 
     syncTickAll();
   }
 
   function syncTickAll() {
-    slides().forEach(s => {
-      const b = s.querySelector(
-        '[data-m1002-tick-exercise]'
+    slides().forEach(page => {
+      const button = page.querySelector(
+        "[data-m1002-tick-exercise]"
       );
 
-      if (b) {
-        const checks = [
-          ...s.querySelectorAll('[data-m1002-tick]')
-        ];
+      if (!button) return;
 
-        const complete =
-          !!checks.length &&
-          checks.every(t => t.classList.contains('done'));
-
-        b.classList.toggle('done', complete);
-
-        b.textContent = complete
-          ? 'ALL SETS COMPLETE ✓'
-          : 'TICK ALL SETS ✓';
-      }
-    });
-
-    const all = $('m1002Carousel')
-      ?.querySelector('[data-m1002-tick-workout]');
-
-    if (all) {
-      const ticks = [
-        ...$('m1002Carousel')
-          .querySelectorAll('[data-m1002-tick]')
+      const checks = [
+        ...page.querySelectorAll("[data-m1002-tick]")
       ];
 
       const complete =
-        !!ticks.length &&
-        ticks.every(t => t.classList.contains('done'));
+        !!checks.length &&
+        checks.every(
+          check => check.classList.contains("done")
+        );
 
-      all.classList.toggle('done', complete);
+      button.classList.toggle("done", complete);
 
-      all.textContent = complete
-        ? 'ALL WORKOUT SETS COMPLETE ✓'
-        : 'TICK ALL WORKOUT ✓';
-    }
+      button.textContent = complete
+        ? "ALL SETS COMPLETE ✓"
+        : "TICK ALL SETS ✓";
+    });
+
+    const carousel = $("m1002Carousel");
+
+    const button = carousel?.querySelector(
+      "[data-m1002-tick-workout]"
+    );
+
+    if (!button) return;
+
+    const checks = [
+      ...carousel.querySelectorAll(
+        "[data-m1002-tick]"
+      )
+    ];
+
+    const complete =
+      !!checks.length &&
+      checks.every(
+        check => check.classList.contains("done")
+      );
+
+    button.classList.toggle("done", complete);
+
+    button.textContent = complete
+      ? "ALL WORKOUT SETS COMPLETE ✓"
+      : "TICK ALL WORKOUT ✓";
   }
 
   function readSets() {
     if (!session) return [];
 
     return [
-      ...($('m1002Carousel')
-        ?.querySelectorAll('[data-m1002-ex]') || [])
+      ...($("m1002Carousel")
+        ?.querySelectorAll("[data-m1002-ex]") || [])
     ].map(card => ({
       id: card.dataset.m1002Ex,
 
       name: session.exercises.find(
-        e => e.id === card.dataset.m1002Ex
-      )?.exercise_name || '',
+        exercise =>
+          exercise.id === card.dataset.m1002Ex
+      )?.exercise_name || "",
 
       sets: [
-        ...card.querySelectorAll('[data-m1002-set]')
-      ].map((row, i) => ({
-        set: i + 1,
+        ...card.querySelectorAll("[data-m1002-set]")
+      ].map((row, index) => ({
+        set: index + 1,
 
         weight:
-          row.querySelector('[data-m1002-weight]')
-            ?.value || '',
+          row.querySelector("[data-m1002-weight]")
+            ?.value || "",
 
         reps: Number(
-          row.querySelector('[data-m1002-reps]')
+          row.querySelector("[data-m1002-reps]")
             ?.value || 0
         ),
 
-        done: !!row.querySelector('[data-m1002-tick]')
-          ?.classList.contains('done')
+        done: !!row
+          .querySelector("[data-m1002-tick]")
+          ?.classList.contains("done")
       }))
     }));
   }
 
-  function totals(data = readSets()) {
-    let all = 0;
-    let done = 0;
+  function totals(exercises = readSets()) {
+    let totalSets = 0;
+    let doneSets = 0;
     let volume = 0;
 
-    for (const ex of data) {
-      for (const s of ex.sets) {
-        all++;
+    for (const exercise of exercises) {
+      for (const set of exercise.sets) {
+        totalSets++;
 
-        if (s.done) {
-          done++;
+        if (set.done) {
+          doneSets++;
+
           volume +=
-            (Number(s.weight) || 0) *
-            (Number(s.reps) || 0);
+            (Number(set.weight) || 0) *
+            (Number(set.reps) || 0);
         }
       }
     }
 
     return {
-      all,
-      done,
-      volume: Math.round(volume * 10) / 10,
-      percent: all
-        ? Math.round(done / all * 100)
+      all: totalSets,
+      done: doneSets,
+
+      volume:
+        Math.round(volume * 10) / 10,
+
+      percent: totalSets
+        ? Math.round(
+            doneSets / totalSets * 100
+          )
         : 0
     };
   }
 
-  function localEdit() {
-    if (!session) return;
-
-    renderNavigation();
-    backup();
-    scheduleSave();
-  }
-
   function backupKey() {
     return session && account
-      ? `mana-coach-draft-v1:${account}:${session.programId}:${session.day.id}`
-      : '';
+      ? "mana-coach-draft-v1:" +
+        account + ":" +
+        session.programId + ":" +
+        session.day.id
+      : "";
   }
 
   function backup() {
@@ -2101,7 +2293,8 @@
   function readBackup() {
     try {
       return JSON.parse(
-        localStorage.getItem(backupKey()) || 'null'
+        localStorage.getItem(backupKey()) ||
+        "null"
       );
     } catch (_) {
       return null;
@@ -2114,11 +2307,19 @@
     } catch (_) {}
   }
 
+  function localEdit() {
+    if (!session) return;
+
+    renderNavigation();
+    backup();
+    scheduleSave();
+  }
+
   function scheduleSave() {
     clearTimeout(saveTimer);
 
     saveTimer = setTimeout(() => {
-      saveTimer = 0;
+      saveTimer = null;
       queueSave(false);
     }, 1000);
   }
@@ -2126,8 +2327,8 @@
   function queueSave(completed = false) {
     if (!session) return saveChain;
 
-    const data = readSets();
-    const t = totals(data);
+    const exercises = readSets();
+    const result = totals(exercises);
 
     if (!session.logId) {
       session.logId = crypto.randomUUID();
@@ -2140,8 +2341,11 @@
       program_day_id: session.day.id,
       week_number: Number(session.day.week_number),
       day_number: Number(session.day.day_number),
-      session_name: session.day.title || 'Workout',
-      status: completed ? 'completed' : 'in_progress',
+      session_name: session.day.title || "Workout",
+
+      status: completed
+        ? "completed"
+        : "in_progress",
 
       started_at: new Date(
         Date.now() - clockSeconds() * 1000
@@ -2152,50 +2356,52 @@
         : null,
 
       duration_seconds: clockSeconds(),
-      exercises: data,
+      exercises,
       finishers: JSON.parse(JSON.stringify(finishers)),
       workout_rating: rating || null,
       workout_comment: comment.trim() || null,
-      completed_sets: t.done,
-      total_sets: t.all,
-      total_volume: t.volume,
+      completed_sets: result.done,
+      total_sets: result.all,
+      total_volume: result.volume,
       updated_at: new Date().toISOString()
     };
 
-    if ($('m1002SaveStatus')) {
-      $('m1002SaveStatus').textContent =
-        completed
-          ? 'Saving completed workout…'
-          : 'Saving…';
+    const status = $("m1002SaveStatus");
+
+    if (status && completed) {
+      status.textContent =
+        "Saving completed workout…";
     }
 
     saveChain = saveChain
       .catch(() => false)
       .then(async () => {
-        const c = await db();
+        const client = await db();
 
-        const { error } = await c
-          .from('coach_workout_logs')
-          .upsert(snapshot, { onConflict: 'id' });
+        const { error } = await client
+          .from("coach_workout_logs")
+          .upsert(snapshot, {
+            onConflict: "id"
+          });
 
         if (error) throw error;
 
-        if (completed) clearBackup();
+        if (completed) {
+          clearBackup();
+        }
 
-        if ($('m1002SaveStatus')) {
-          $('m1002SaveStatus').textContent =
-            completed
-              ? 'Workout saved to Mana cloud ✓'
-              : 'Saved ✓';
+        if ($("m1002SaveStatus") && completed) {
+          $("m1002SaveStatus").textContent =
+            "Workout saved to Mana cloud ✓";
         }
 
         return true;
       })
-      .catch(e => {
-        if ($('m1002SaveStatus')) {
-          $('m1002SaveStatus').textContent =
-            'Cloud save failed — local backup kept. ' +
-            (e.message || e);
+      .catch(error => {
+        if ($("m1002SaveStatus")) {
+          $("m1002SaveStatus").textContent =
+            "Cloud save failed — local backup kept. " +
+            (error.message || error);
         }
 
         return false;
@@ -2206,7 +2412,7 @@
 
   async function openDay(dayId) {
     const day = programData?.days.find(
-      d => d.id === dayId
+      item => item.id === dayId
     );
 
     if (!day || !account || !selected) return;
@@ -2216,7 +2422,8 @@
     stopClock();
 
     const exercises = programData.exercises.filter(
-      e => e.program_day_id === dayId
+      exercise =>
+        exercise.program_day_id === dayId
     );
 
     session = {
@@ -2231,101 +2438,78 @@
     startedAt = Date.now();
     finishers = {};
     rating = 0;
-    comment = '';
+    comment = "";
     coreTicks = [[], [], []];
     coreRound = 0;
 
-    showModal(
-      programHeader() +
-      `
-        <section class="m1002-hero">
-          <div class="m1002-kicker">
-            WEEK ${esc(day.week_number)}
-            • DAY ${esc(day.day_number)}
-          </div>
+    /*
+     No programHeader() here.
 
-          <h2>${esc(day.title || 'Workout')}</h2>
+     No separate workout title.
+     No time/stats banner.
 
-          <p>
-            ${esc(
-              day.notes ||
-              day.workout_type ||
-              'Strength'
-            )}
+     The workout begins directly
+     with carousel navigation.
+    */
+
+    showModal(`
+      <div class="m1002-position">
+        <span id="m1002Position">
+          Exercise 1
+        </span>
+
+        <small>
+          Swipe left / right
+        </small>
+      </div>
+
+      <div id="m1002Dots"
+        class="m1002-dots"></div>
+
+      <div id="m1002Carousel"
+        class="m1002-carousel">
+
+        <div class="m1002-slide">
+          <p class="m1002-status">
+            Loading your previous sets…
           </p>
-        </section>
-
-        <div class="m1002-position">
-          <span id="m1002Position">
-            Exercise 1
-          </span>
-
-          <small>Swipe left / right</small>
         </div>
+      </div>
 
-        <div id="m1002Dots" class="m1002-dots"></div>
+      <p class="m1002-status"
+        id="m1002SaveStatus"></p>
 
-        <div id="m1002Carousel" class="m1002-carousel">
-          <div class="m1002-slide">
-            <p class="m1002-status">
-              Loading your previous sets…
-            </p>
-          </div>
-        </div>
-
-        <div class="m1002-nav">
-          <button type="button"
-            id="m1002Previous"
-            data-m1002-previous>
-            ‹ PREVIOUS
-          </button>
-
-          <button type="button"
-            class="next"
-            id="m1002Next"
-            data-m1002-next>
-            NEXT ›
-          </button>
-        </div>
-
-        <div class="m1002-actions">
-          <button type="button"
-            class="m1002-secondary"
-            data-m1002-save>
-            SAVE PROGRESS
-          </button>
-
-          <button type="button"
-            class="m1002-secondary"
-            data-m1002-program-back>
-            BACK TO PROGRAM
-          </button>
-        </div>
-
+      <div class="m1002-nav">
         <button type="button"
-          class="m1002-primary"
-          data-m1002-complete>
-          COMPLETE WORKOUT
+          id="m1002Previous"
+          data-m1002-previous>
+          ‹ PREVIOUS
         </button>
 
-        <p class="m1002-status"
-          id="m1002SaveStatus"></p>
-      `
-    );
+        <button type="button"
+          class="next"
+          id="m1002Next"
+          data-m1002-next>
+          NEXT ›
+        </button>
+      </div>
+    `);
 
     let prior = [];
     let fromCompleted = false;
 
     try {
-      const c = await db();
+      const client = await db();
 
-      const { data, error } = await c
-        .from('coach_workout_logs')
-        .select('*')
-        .eq('user_id', account)
-        .eq('program_id', session.programId)
-        .eq('program_day_id', dayId)
-        .order('updated_at', { ascending: false })
+      const { data, error } = await client
+        .from("coach_workout_logs")
+        .select("*")
+        .eq("user_id", account)
+        .eq("program_id", session.programId)
+        .eq("program_day_id", dayId)
+        .order("updated_at", {
+          ascending: false
+        })
         .limit(12);
 
       if (error) throw error;
@@ -2336,22 +2520,24 @@
       ) return;
 
       const active = (data || []).find(
-        r => r.status === 'in_progress'
+        item => item.status === "in_progress"
       );
 
       const completed = (data || []).find(
-        r => r.status === 'completed'
+        item => item.status === "completed"
       );
 
       const local = readBackup();
 
       if (active) {
         session.logId = active.id;
+
         elapsedBase =
           Number(active.duration_seconds) || 0;
       }
 
-      fromCompleted = !active && !!completed;
+      fromCompleted =
+        !active && !!completed;
 
       prior =
         active?.exercises ||
@@ -2360,7 +2546,7 @@
 
       finishers = active?.finishers || {};
       rating = Number(active?.workout_rating) || 0;
-      comment = active?.workout_comment || '';
+      comment = active?.workout_comment || "";
 
       if (
         local?.exercises &&
@@ -2373,18 +2559,18 @@
         prior = local.exercises;
         finishers = local.finishers || {};
         rating = Number(local.rating) || 0;
-        comment = local.comment || '';
+        comment = local.comment || "";
         elapsedBase = Number(local.elapsed) || 0;
         fromCompleted = false;
       }
 
-    } catch (e) {
+    } catch (error) {
       if (token !== serial) return;
 
-      if ($('m1002SaveStatus')) {
-        $('m1002SaveStatus').textContent =
-          'Cloud restore unavailable. ' +
-          (e.message || e);
+      if ($("m1002SaveStatus")) {
+        $("m1002SaveStatus").textContent =
+          "Cloud restore unavailable. " +
+          (error.message || error);
       }
     }
 
@@ -2393,14 +2579,18 @@
       session?.day.id !== dayId
     ) return;
 
-    $('m1002Carousel').innerHTML =
-      exercises.map(e => `
+    $("m1002Carousel").innerHTML =
+      exercises.map(exercise => `
         <div class="m1002-slide">
           <div class="m1002-slide-inner">
-            ${exerciseHTML(e, prior, fromCompleted)}
+            ${exerciseHTML(
+              exercise,
+              prior,
+              fromCompleted
+            )}
           </div>
         </div>
-      `).join('') +
+      `).join("") +
       `
         <div class="m1002-slide">
           <div class="m1002-slide-inner">
@@ -2411,32 +2601,33 @@
 
     document.querySelectorAll(
       `#${MODAL} .m1002-muscle-frame img`
-    ).forEach(img => {
-      img.addEventListener(
-        'error',
+    ).forEach(image => {
+      image.addEventListener(
+        "error",
         () => {
-          img.hidden = true;
+          image.hidden = true;
 
-          if (img.nextElementSibling) {
-            img.nextElementSibling.hidden = false;
+          if (image.nextElementSibling) {
+            image.nextElementSibling.hidden = false;
           }
         },
         { once: true }
       );
     });
 
-    $('m1002Carousel').addEventListener(
-      'scroll',
+    $("m1002Carousel").addEventListener(
+      "scroll",
       () => {
         clearTimeout(scrollTimer);
 
         scrollTimer = setTimeout(() => {
-          const c = $('m1002Carousel');
+          const carousel = $("m1002Carousel");
 
-          if (!c?.clientWidth) return;
+          if (!carousel?.clientWidth) return;
 
           slide = Math.round(
-            c.scrollLeft / c.clientWidth
+            carousel.scrollLeft /
+            carousel.clientWidth
           );
 
           renderNavigation();
@@ -2453,28 +2644,31 @@
   async function completeWorkout() {
     if (!session) return;
 
-    const t = totals();
+    const result = totals();
 
-    if (!t.done) {
-      $('m1002SaveStatus').textContent =
-        'Complete at least one set first, or use ' +
-        'Tick All Workout on the last page.';
+    if (!result.done) {
+      if ($("m1002SaveStatus")) {
+        $("m1002SaveStatus").textContent =
+          "Complete at least one set first, " +
+          "or use Tick All Workout.";
+      }
+
       return;
     }
 
     clearTimeout(saveTimer);
     backup();
 
-    const btn = document.querySelector(
+    const button = document.querySelector(
       `#${MODAL} [data-m1002-complete]`
     );
 
-    if (btn) btn.disabled = true;
+    if (button) button.disabled = true;
 
     const success = await queueSave(true);
 
     if (!success) {
-      if (btn) btn.disabled = false;
+      if (button) button.disabled = false;
       return;
     }
 
@@ -2487,28 +2681,41 @@
           WORKOUT COMPLETE
         </span>
 
-        <h2>Awesome work ✓</h2>
+        <h2>
+          Awesome work ✓
+        </h2>
 
         <p>
-          ${t.done}/${t.all} sets
-          • ${t.volume} kg total volume
+          ${result.done}/${result.all} sets
+          • ${result.volume} kg total volume
           • ${formatTime(elapsedBase)}
         </p>
 
         <p>
           ${rating
-            ? `Rating: ${rating}/5`
-            : 'No rating added'}
-          ${comment ? ' • Notes saved' : ''}
+            ? "Rating: " + rating + "/5"
+            : "No rating added"}
+
+          ${comment
+            ? " • Notes saved"
+            : ""}
         </p>
 
         ${finishers.cardio?.completed
-          ? '<p>✓ Cardio finisher completed</p>'
-          : ''}
+          ? `
+            <p>
+              ✓ Cardio finisher completed
+            </p>
+          `
+          : ""}
 
         ${finishers.core?.completed
-          ? '<p>✓ Core finisher completed</p>'
-          : ''}
+          ? `
+            <p>
+              ✓ Core finisher completed
+            </p>
+          `
+          : ""}
       </section>
 
       <button type="button"
@@ -2519,11 +2726,14 @@
     `);
 
     window.dispatchEvent(
-      new CustomEvent('mana:coach-workout-saved', {
-        detail: {
-          programId: programData?.program?.id
+      new CustomEvent(
+        "mana:coach-workout-saved",
+        {
+          detail: {
+            programId: programData?.program?.id
+          }
         }
-      })
+      )
     );
   }
 
@@ -2542,153 +2752,213 @@
 
   function tickAllWithin(root) {
     const buttons = [
-      ...(root?.querySelectorAll('[data-m1002-tick]') || [])
+      ...(root?.querySelectorAll(
+        "[data-m1002-tick]"
+      ) || [])
     ];
 
     if (!buttons.length) return;
 
-    buttons.forEach(b => {
-      b.classList.add('done');
-      b.setAttribute('aria-pressed', 'true');
+    buttons.forEach(button => {
+      button.classList.add("done");
+
+      button.setAttribute(
+        "aria-pressed",
+        "true"
+      );
     });
 
     localEdit();
   }
 
   function handleClick(event) {
-    const el = event.target;
+    const element = event.target;
 
-    if (!(el instanceof Element)) return;
+    if (!(element instanceof Element)) return;
 
-    let t;
+    let button;
 
-    if ((t = el.closest('[data-m1002-mode]'))) {
-      changeMode(t.dataset.m1002Mode);
+    if ((button = element.closest(
+      "[data-m1002-mode]"
+    ))) {
+      changeMode(button.dataset.m1002Mode);
       return;
     }
 
-    if (el.closest('[data-m1002-back]')) {
-      if (session) backToProgram();
-      else closeModal();
+    if (element.closest("[data-m1002-back]")) {
+      if (session) {
+        backToProgram();
+      } else {
+        closeModal();
+      }
+
       return;
     }
 
-    if (el.closest('[data-m1002-program-back]')) {
+    if (element.closest(
+      "[data-m1002-program-back]"
+    )) {
       backToProgram();
       return;
     }
 
-    if ((t = el.closest('[data-m1002-program]'))) {
-      void openProgram(t.dataset.m1002Program);
+    if ((button = element.closest(
+      "[data-m1002-program]"
+    ))) {
+      void openProgram(
+        button.dataset.m1002Program
+      );
       return;
     }
 
-    if ((t = el.closest('[data-m1002-week]'))) {
-      week = Number(t.dataset.m1002Week);
+    if ((button = element.closest(
+      "[data-m1002-week]"
+    ))) {
+      week = Number(
+        button.dataset.m1002Week
+      );
+
       renderProgram();
       return;
     }
 
-    if ((t = el.closest('[data-m1002-start]'))) {
-      void openDay(t.dataset.m1002Start);
+    if ((button = element.closest(
+      "[data-m1002-start]"
+    ))) {
+      void openDay(
+        button.dataset.m1002Start
+      );
       return;
     }
 
-    if ((t = el.closest('[data-m1002-demo]'))) {
-      const name = t.dataset.m1002Demo;
-      const fn = window.MANA_EXERCISE_VISUALS?.openDemo;
+    if ((button = element.closest(
+      "[data-m1002-demo]"
+    ))) {
+      const name = button.dataset.m1002Demo;
+      const api = window.MANA_EXERCISE_VISUALS;
+      const openDemo = api?.openDemo;
 
-      if (typeof fn === 'function') {
-        void fn(name);
+      if (typeof openDemo === "function") {
+        void openDemo(name);
       } else {
         window.open(
-          'https://www.youtube.com/results?search_query=' +
-          encodeURIComponent(name + ' technique'),
-          '_blank',
-          'noopener,noreferrer'
+          "https://www.youtube.com/results?search_query=" +
+          encodeURIComponent(name + " technique"),
+          "_blank",
+          "noopener,noreferrer"
         );
       }
 
       return;
     }
 
-    if (el.closest('[data-m1002-previous]')) {
+    if (element.closest(
+      "[data-m1002-previous]"
+    )) {
       navigate(slide - 1);
       return;
     }
 
-    if (el.closest('[data-m1002-next]')) {
+    if (element.closest(
+      "[data-m1002-next]"
+    )) {
       navigate(slide + 1);
       return;
     }
 
-    if ((t = el.closest('[data-m1002-slide]'))) {
-      navigate(Number(t.dataset.m1002Slide));
+    if ((button = element.closest(
+      "[data-m1002-slide]"
+    ))) {
+      navigate(
+        Number(button.dataset.m1002Slide)
+      );
       return;
     }
 
-    if ((t = el.closest('[data-m1002-tick]'))) {
-      t.classList.toggle('done');
+    if ((button = element.closest(
+      "[data-m1002-tick]"
+    ))) {
+      button.classList.toggle("done");
 
-      t.setAttribute(
-        'aria-pressed',
-        String(t.classList.contains('done'))
+      button.setAttribute(
+        "aria-pressed",
+        String(
+          button.classList.contains("done")
+        )
       );
 
       localEdit();
       return;
     }
 
-    if ((t = el.closest('[data-m1002-tick-exercise]'))) {
+    if ((button = element.closest(
+      "[data-m1002-tick-exercise]"
+    ))) {
       tickAllWithin(
-        t.closest('[data-m1002-ex]')
+        button.closest("[data-m1002-ex]")
       );
       return;
     }
 
-    if (el.closest('[data-m1002-tick-workout]')) {
-      tickAllWithin($('m1002Carousel'));
+    if (element.closest(
+      "[data-m1002-tick-workout]"
+    )) {
+      tickAllWithin(
+        $("m1002Carousel")
+      );
       return;
     }
 
-    if ((t = el.closest('[data-m1002-rating]'))) {
-      rating = Number(t.dataset.m1002Rating);
+    if ((button = element.closest(
+      "[data-m1002-rating]"
+    ))) {
+      rating = Number(
+        button.dataset.m1002Rating
+      );
+
       refreshRatings();
       localEdit();
       return;
     }
 
-    if ((t = el.closest('[data-m1002-finisher]'))) {
-      if (t.dataset.m1002Finisher === 'cardio') {
+    if ((button = element.closest(
+      "[data-m1002-finisher]"
+    ))) {
+      if (
+        button.dataset.m1002Finisher === "cardio"
+      ) {
         openCardio();
       } else {
         openCore();
       }
+
       return;
     }
 
-    if ((t = el.closest(
-      '[data-m1002-cardio-equipment]'
+    if ((button = element.closest(
+      "[data-m1002-cardio-equipment]"
     ))) {
       cardioEquipment =
-        t.dataset.m1002CardioEquipment;
+        button.dataset.m1002CardioEquipment;
 
       openCardio();
       return;
     }
 
-    if ((t = el.closest(
-      '[data-m1002-cardio-minutes]'
+    if ((button = element.closest(
+      "[data-m1002-cardio-minutes]"
     ))) {
       cardioMinutes = Number(
-        t.dataset.m1002CardioMinutes
+        button.dataset.m1002CardioMinutes
       );
 
       openCardio();
       return;
     }
 
-    if (el.closest('[data-m1002-cardio-complete]')) {
+    if (element.closest(
+      "[data-m1002-cardio-complete]"
+    )) {
       finishers.cardio = {
         completed: true,
         equipment: cardioEquipment,
@@ -2697,41 +2967,58 @@
         completedAt: new Date().toISOString()
       };
 
-      $('m1002FinisherPanel').innerHTML = '';
+      $("m1002FinisherPanel").innerHTML = "";
+
       showFinisherStatus();
       localEdit();
       return;
     }
 
-    if ((t = el.closest('[data-m1002-core-round]'))) {
-      coreRound = Number(t.dataset.m1002CoreRound);
-      openCore();
-      return;
-    }
-
-    if (el.closest('[data-m1002-core-tick-round]')) {
-      coreTicks[coreRound] =
-        coreRoutine().map((_, i) => i);
-
-      openCore();
-      return;
-    }
-
-    if (el.closest('[data-m1002-core-tick-all]')) {
-      coreTicks = [0, 1, 2].map(() =>
-        coreRoutine().map((_, i) => i)
+    if ((button = element.closest(
+      "[data-m1002-core-round]"
+    ))) {
+      coreRound = Number(
+        button.dataset.m1002CoreRound
       );
 
       openCore();
       return;
     }
 
-    if (el.closest('[data-m1002-core-next]')) {
+    if (element.closest(
+      "[data-m1002-core-tick-round]"
+    )) {
+      coreTicks[coreRound] =
+        coreRoutine().map(
+          (_, index) => index
+        );
+
+      openCore();
+      return;
+    }
+
+    if (element.closest(
+      "[data-m1002-core-tick-all]"
+    )) {
+      coreTicks = [0, 1, 2].map(
+        () =>
+          coreRoutine().map(
+            (_, index) => index
+          )
+      );
+
+      openCore();
+      return;
+    }
+
+    if (element.closest(
+      "[data-m1002-core-next]"
+    )) {
       const count = coreRoutine().length;
 
-      if (coreTicks[coreRound].length !== count) {
-        return;
-      }
+      if (
+        coreTicks[coreRound].length !== count
+      ) return;
 
       if (coreRound < 2) {
         coreRound++;
@@ -2739,9 +3026,11 @@
         return;
       }
 
-      if (!coreTicks.every(a => a.length === count)) {
+      if (!coreTicks.every(
+        items => items.length === count
+      )) {
         coreRound = coreTicks.findIndex(
-          a => a.length !== count
+          items => items.length !== count
         );
 
         openCore();
@@ -2751,6 +3040,7 @@
       finishers.core = {
         completed: true,
         rounds: 3,
+
         exercises: coreRoutine().map(
           ([name, target]) => ({
             name,
@@ -2758,49 +3048,53 @@
             roundsCompleted: 3
           })
         ),
+
         completedAt: new Date().toISOString()
       };
 
-      $('m1002FinisherPanel').innerHTML = '';
+      $("m1002FinisherPanel").innerHTML = "";
+
       showFinisherStatus();
       localEdit();
       return;
     }
 
-    if (el.closest('[data-m1002-finisher-close]')) {
-      $('m1002FinisherPanel').innerHTML = '';
+    if (element.closest(
+      "[data-m1002-finisher-close]"
+    )) {
+      $("m1002FinisherPanel").innerHTML = "";
       return;
     }
 
-    if (el.closest('[data-m1002-save]')) {
-      backup();
-      queueSave();
-      return;
-    }
-
-    if (el.closest('[data-m1002-complete]')) {
+    if (element.closest(
+      "[data-m1002-complete]"
+    )) {
       void completeWorkout();
     }
   }
 
   function handleInput(event) {
-    const t = event.target;
+    const target = event.target;
 
     if (
-      !(t instanceof Element) ||
-      !t.closest(`#${MODAL}`)
+      !(target instanceof Element) ||
+      !target.closest(`#${MODAL}`)
     ) return;
 
-    if (t.matches('[data-m1002-weight]')) {
-      const value = t.value;
-      const card = t.closest('[data-m1002-ex]');
+    if (target.matches(
+      "[data-m1002-weight]"
+    )) {
+      const value = target.value;
+      const card = target.closest(
+        "[data-m1002-ex]"
+      );
 
       if (card) {
         card.querySelectorAll(
-          '[data-m1002-weight]'
-        ).forEach(other => {
-          if (other !== t) {
-            other.value = value;
+          "[data-m1002-weight]"
+        ).forEach(input => {
+          if (input !== target) {
+            input.value = value;
           }
         });
       }
@@ -2809,29 +3103,39 @@
       return;
     }
 
-    if (t.matches('[data-m1002-reps]')) {
+    if (target.matches(
+      "[data-m1002-reps]"
+    )) {
       localEdit();
       return;
     }
 
-    if (t.id === 'm1002WorkoutComment') {
-      comment = t.value.slice(0, 500);
+    if (target.id === "m1002WorkoutComment") {
+      comment = target.value.slice(0, 500);
       localEdit();
       return;
     }
 
-    if (t.matches('[data-m1002-core-check]')) {
-      const n = Number(t.dataset.m1002CoreCheck);
-      const set = new Set(coreTicks[coreRound]);
+    if (target.matches(
+      "[data-m1002-core-check]"
+    )) {
+      const index = Number(
+        target.dataset.m1002CoreCheck
+      );
 
-      if (t.checked) {
-        set.add(n);
+      const ticks = new Set(
+        coreTicks[coreRound]
+      );
+
+      if (target.checked) {
+        ticks.add(index);
       } else {
-        set.delete(n);
+        ticks.delete(index);
       }
 
-      coreTicks[coreRound] =
-        [...set].sort((a, b) => a - b);
+      coreTicks[coreRound] = [
+        ...ticks
+      ].sort((a, b) => a - b);
 
       openCore();
     }
@@ -2841,10 +3145,10 @@
     clearTimeout(navTimer);
 
     navTimer = setTimeout(() => {
-      if (workoutOpen()) {
+      if (workoutTabOpen()) {
         applyMode();
 
-        if (mode === 'coach') {
+        if (mode === "coach") {
           void loadAssignments();
         }
       } else if (legacyOpen()) {
@@ -2855,27 +3159,25 @@
   }
 
   function init() {
-    mode = (() => {
-      try {
-        return sessionStorage.getItem(MODE_KEY) === 'coach'
-          ? 'coach'
-          : 'generated';
-      } catch (_) {
-        return 'generated';
-      }
-    })();
+    try {
+      mode = sessionStorage.getItem(MODE_KEY) === "coach"
+        ? "coach"
+        : "generated";
+    } catch (_) {
+      mode = "generated";
+    }
 
-    installStyle();
+    installStyles();
     ensureModal();
     ensureLegacy();
 
-    const holder = $('manaV83Content');
+    const holder = $("manaV83Content");
 
     if (holder) {
       new MutationObserver(() => {
         if (
-          workoutOpen() &&
-          (!$(SW) || !$(PANEL))
+          workoutTabOpen() &&
+          (!$(SWITCH) || !$(PANEL))
         ) {
           applyMode();
         }
@@ -2884,58 +3186,74 @@
       });
     }
 
-    document.addEventListener('click', handleClick);
-    document.addEventListener('input', handleInput);
-    document.addEventListener('change', handleInput);
+    document.addEventListener(
+      "click",
+      handleClick
+    );
+
+    document.addEventListener(
+      "input",
+      handleInput
+    );
+
+    document.addEventListener(
+      "change",
+      handleInput
+    );
 
     window.addEventListener(
-      'mana:program-tab-change',
+      "mana:program-tab-change",
       scheduleRefresh
     );
 
     window.addEventListener(
-      'pageshow',
+      "pageshow",
       scheduleRefresh
     );
 
     window.addEventListener(
-      'mana:profile-synced',
+      "mana:profile-synced",
       scheduleRefresh
     );
 
     document.querySelector(
       '#bottomNav [data-page="programs"]'
     )?.addEventListener(
-      'click',
+      "click",
       scheduleRefresh
     );
 
-    window.addEventListener('mana:logout', () => {
-      loadingSerial++;
-      account = '';
-      assignments = [];
-      loadedAt = 0;
+    window.addEventListener(
+      "mana:logout",
+      () => {
+        loadingSerial++;
+        account = "";
+        assignments = [];
+        loadedAt = 0;
 
-      closeModal();
-      renderPanel();
-      renderLegacy();
-    });
+        closeModal();
+        renderPanel();
+        renderLegacy();
+      }
+    );
 
     window.refreshManaAssignedPrograms =
       () => loadAssignments(true);
 
-    window.MANA_CLIENT_CUSTOM_PROGRAM_BUILD = BUILD;
+    window.MANA_CLIENT_CUSTOM_PROGRAM_BUILD =
+      BUILD;
 
     scheduleRefresh();
 
     console.log(
-      '[Mana Movement] Coach workouts ' + BUILD
+      "[Mana Movement] Coach workouts " +
+      BUILD
     );
   }
 
-  if (document.readyState === 'loading') {
+  if (document.readyState === "loading") {
     document.addEventListener(
-      'DOMContentLoaded',
+      "DOMContentLoaded",
       init,
       { once: true }
     );
