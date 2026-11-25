@@ -1,26 +1,31 @@
 
 /*
  MANA MOVEMENT — COACH WORKOUTS
- COMPLETE BUILD 100211
+ COMPLETE BUILD 100213
 
  Full replacement:
  v10_02_client_custom_programs_100200.js
 
+ Based on working Build 100211.
+ Only functional change:
+ - Missing or zero saved reps now use prescribed reps.
+ - Valid saved reps remain unchanged.
+
+ Retained:
  - Coach workout carousel
- - Navigation arrows immediately below active card
- - Original muscle illustrations and demos
+ - Navigation arrows directly below active card
+ - Muscle illustrations and demos
  - Repeat weight, individual reps and Tick All
  - Cardio and Core finishers
  - Rating and comments
  - Original-style Workout Complete summary
- - Coach workout data linked to Progress tab
- - Separate Supabase coach workout history
+ - Coach workout Progress records
 */
 
 (() => {
   "use strict";
 
-  const BUILD = "100211";
+  const BUILD = "100213";
   const SW = "manaV1002WorkoutSwitch";
   const PANEL = "manaV1002CoachPanel";
   const LEGACY = "manaV1002AssignedPrograms";
@@ -670,8 +675,8 @@
       }
 
       #${MODAL} .m1002-note {
-        font-size:12px;
         color:#b9c0c9;
+        font-size:12px;
         line-height:1.6;
         margin:8px 0;
       }
@@ -1818,9 +1823,20 @@
         weight:
           previous?.sets?.[index]?.weight ?? "",
 
+        /*
+          BUILD 100213 REP FIX
+
+          Older saved workouts may contain 0 reps.
+          0 should not overwrite the prescribed reps.
+
+          Keep saved reps when they are positive.
+          Otherwise use the coach's prescribed
+          starting reps, e.g. 6 from "6-10".
+        */
         reps:
-          previous?.sets?.[index]?.reps ??
-          defaultReps(exercise.reps),
+          Number(previous?.sets?.[index]?.reps) > 0
+            ? Number(previous.sets[index].reps)
+            : defaultReps(exercise.reps),
 
         done: completed
           ? false
@@ -2207,10 +2223,9 @@
   }
 
   /*
-   NEW: Active-card height.
-   This prevents the last, taller
-   finisher slide from pushing the
-   Previous/Next arrows downward.
+   Active-card height.
+   Keeps Previous/Next directly beneath
+   the visible exercise.
   */
 
   function fitSlide() {
@@ -3417,7 +3432,6 @@
       navigate(
         Number(button.dataset.m1002Slide)
       );
-
       return;
     }
 
@@ -3443,7 +3457,6 @@
       tickAll(
         button.closest("[data-m1002-ex]")
       );
-
       return;
     }
 
