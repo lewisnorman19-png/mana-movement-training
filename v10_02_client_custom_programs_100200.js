@@ -1,114 +1,86 @@
 
 /*
-  MANA MOVEMENT — COACH PROGRAMS
-  BUILD 100212
+ MANA MOVEMENT — COACH WORKOUTS
+ COMPLETE BUILD 100211
 
-  COMPLETE FILE REPLACEMENT
-  v10_02_client_custom_programs_100200.js
+ Full replacement:
+ v10_02_client_custom_programs_100200.js
 
-  - Original Mana Strength carousel styling
-  - Orange/white Coach Programs navigation
-  - Orange muscle-target illustrations
-  - Exercise demos
-  - Repeat weights, editable reps, Tick All Sets
-  - Optional Cardio and Core with Finish & Save
-  - Tick All Workout
-  - Workout rating and comments
-  - Original-style Workout Complete summary
-  - Progress: My Workouts / Coach Programs
-  - Existing Mana Strength Progress styling
-  - Separate authenticated coach workout records
+ - Coach workout carousel
+ - Navigation arrows immediately below active card
+ - Original muscle illustrations and demos
+ - Repeat weight, individual reps and Tick All
+ - Cardio and Core finishers
+ - Rating and comments
+ - Original-style Workout Complete summary
+ - Coach workout data linked to Progress tab
+ - Separate Supabase coach workout history
 */
 
 (() => {
   "use strict";
 
-  const BUILD = "100212";
+  const BUILD = "100211";
+  const SW = "manaV1002WorkoutSwitch";
+  const PANEL = "manaV1002CoachPanel";
+  const LEGACY = "manaV1002AssignedPrograms";
+  const MODAL = "manaV1002CustomProgramModal";
+  const STYLE = "mana-v1002-client-custom-style";
+  const MODE_KEY = "mana-strength-workout-view-100205";
+  const PROGRESS = "m1002CoachProgress";
+  const ROOT = "manaV993StrengthProgress";
+
   const $ = id => document.getElementById(id);
 
-  const IDS = {
-    style: "manaCoach100212Style",
-    switcher: "manaV1002WorkoutSwitch",
-    panel: "manaV1002CoachPanel",
-    legacy: "manaV1002AssignedPrograms",
-    modal: "manaV1002CustomProgramModal",
-    progressSwitch: "manaCoachProgressSwitch",
-    progress: "manaCoachProgressResults",
-    progressRoot: "manaV993StrengthProgress"
-  };
+  const esc = value => String(value ?? "").replace(
+    /[&<>"']/g,
+    character => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[character])
+  );
 
-  const esc = value => String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
-  const num = value => {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
-  };
-
-  const format = value =>
-    Math.round(num(value) * 10) / 10;
-
-  const clockText = seconds => {
-    seconds = Math.max(0, Math.floor(num(seconds)));
-    return String(Math.floor(seconds / 60))
-      .padStart(2, "0") + ":" +
-      String(seconds % 60).padStart(2, "0");
-  };
-
-  const dateText = value => {
-    const d = new Date(value || Date.now());
-    return Number.isNaN(d.getTime())
-      ? "—"
-      : d.toLocaleDateString("en-AU");
-  };
-
-  let workoutMode = "generated";
-  let progressMode = "generated";
-  let progressPeriod = "weekly";
-  let progressDetail = "workouts";
-  let progressExercise = "";
-
-  let userId = "";
+  let mode = "generated";
   let assignments = [];
-  let assignmentsLoading = false;
-  let assignmentsLoadedAt = 0;
+  let account = "";
+  let loadedAt = 0;
+  let loading = false;
+  let loadSeq = 0;
 
   let program = null;
   let assignment = null;
   let week = 1;
   let session = null;
-  let openToken = 0;
+  let openSeq = 0;
+  let slide = 0;
 
-  let currentSlide = 0;
+  let saveTimer = 0;
+  let saveChain = Promise.resolve();
+  let elapsedBase = 0;
+  let startedAt = 0;
+  let clockTimer = 0;
+  let scrollTimer = 0;
+
   let finishers = {};
-  let rating = 0;
-  let comment = "";
-
   let cardioEquipment = "Bike";
   let cardioMinutes = 10;
   let coreRound = 0;
   let coreTicks = [[], [], []];
 
-  let startedAt = 0;
-  let elapsedBase = 0;
+  let rating = 0;
+  let comment = "";
 
-  let saveTimer = null;
-  let saveQueue = Promise.resolve();
-  let scrollTimer = null;
-  let refreshTimer = null;
-  let resizeObserver = null;
-
-  let coachLogs = [];
+  let progressLogs = [];
   let progressUser = "";
   let progressLoading = false;
-  let progressError = "";
-  let progressLoadedAt = 0;
-  let progressRequest = 0;
-  let renderVersion = 0;
+  let progressLoaded = 0;
+  let progressSequence = 0;
+
+  let refreshTimer = 0;
+  let resizeObserver = null;
 
   const CORE = [
     [
@@ -135,21 +107,13 @@
 
   async function db() {
     if (typeof window.supabaseClient !== "function") {
-      throw new Error("Mana cloud is unavailable");
+      throw Error("Cloud connection unavailable");
     }
-    return window.supabaseClient();
+
+    return await window.supabaseClient();
   }
 
-  async function signedInUser() {
-    const client = await db();
-    const result = await client.auth.getUser();
-
-    if (result.error) throw result.error;
-
-    return result.data?.user?.id || "";
-  }
-
-  function elapsed() {
+  function clock() {
     return elapsedBase + (
       startedAt
         ? Math.floor((Date.now() - startedAt) / 1000)
@@ -157,177 +121,252 @@
     );
   }
 
+  function time(seconds) {
+    const value = Math.max(0, Number(seconds) || 0);
+
+    return (
+      String(Math.floor(value / 60)).padStart(2, "0") +
+      ":" +
+      String(Math.floor(value % 60)).padStart(2, "0")
+    );
+  }
+
   function stopClock() {
+    if (clockTimer) clearInterval(clockTimer);
+
+    clockTimer = 0;
+
     if (startedAt) {
-      elapsedBase = elapsed();
+      elapsedBase = clock();
       startedAt = 0;
     }
   }
 
-  function workoutTabOpen() {
+  function startClock() {
+    if (!startedAt) startedAt = Date.now();
+
+    if (clockTimer) clearInterval(clockTimer);
+
+    clockTimer = setInterval(() => {}, 1000);
+  }
+
+  function workoutTab() {
     return !!(
       $("manaV83ProgramShell")?.classList.contains("open") &&
       $("manaV83Title")?.textContent
         ?.trim()?.toUpperCase() === "MANA STRENGTH" &&
       document.querySelector(
-        '#manaV83Tabs [data-v83-tab="program"].active'
-      )
+        '#manaV83Tabs [data-v83-tab].active'
+      )?.dataset.v83Tab === "program"
     );
   }
 
-  function progressTabOpen() {
+  function progressTab() {
     return !!(
       $("manaV83ProgramShell")?.classList.contains("open") &&
       $("manaV83Title")?.textContent
         ?.trim()?.toUpperCase() === "MANA STRENGTH" &&
       document.querySelector(
-        '#manaV83Tabs [data-v83-tab="progress"].active'
-      ) &&
-      $(IDS.progressRoot)
+        '#manaV83Tabs [data-v83-tab].active'
+      )?.dataset.v83Tab === "progress" &&
+      $(ROOT)
     );
   }
 
-  function legacyOpen() {
+  function legacyTab() {
     return !!(
       $("clientProgramsView") &&
       !$("clientProgramsView").classList.contains("hide")
     );
   }
 
+  function icon() {
+    return `
+      <svg viewBox="0 0 24 24"
+        width="25" height="25"
+        fill="none"
+        stroke="#ff8126"
+        stroke-width="2">
+        <path d="M3 9v6M6 6v12M9 10v4M15 10v4M18 6v12M21 9v6M9 12h6"/>
+      </svg>
+    `;
+  }
+
   function installStyles() {
-    if ($(IDS.style)) return;
+    if ($(STYLE)) return;
 
     const style = document.createElement("style");
-    style.id = IDS.style;
+    style.id = STYLE;
 
     style.textContent = `
-      #${IDS.switcher},
-      #${IDS.progressSwitch} {
+      #${SW} {
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:7px;
         padding:6px;
-        margin:10px 0 15px;
-        border-radius:15px;
+        margin:12px 0 15px;
         background:#101113;
-        border:1px solid #34383e;
+        border:1px solid #30343a;
+        border-radius:15px;
       }
 
-      #${IDS.switcher} button,
-      #${IDS.progressSwitch} button {
+      #${SW} button {
         min-width:0;
-        min-height:44px;
-        padding:9px 5px;
+        min-height:46px;
         border:1px solid transparent;
-        border-radius:10px;
+        border-radius:11px;
         background:#191b1f;
-        color:#f5f5f5!important;
-        -webkit-text-fill-color:#f5f5f5!important;
-        font:800 12px inherit;
+        color:#d3d6db;
+        font-size:12px;
+        font-weight:800;
+        font-family:inherit;
         cursor:pointer;
       }
 
-      #${IDS.switcher} button.active,
-      #${IDS.progressSwitch} button.active {
-        background:#271c15!important;
-        color:#ff8126!important;
-        -webkit-text-fill-color:#ff8126!important;
-        border-color:#ff8126!important;
+      #${SW} button.active {
+        color:#ff8126;
+        background:#251b15;
+        border-color:#ff8126;
       }
 
-      #manaV83Content.m100212-coach
-      >:not(#${IDS.switcher}):not(#${IDS.panel}) {
+      #manaV83Content.m1002-coach-mode
+      >:not(#${SW}):not(#${PANEL}) {
         display:none!important;
       }
 
-      #${IDS.panel} {
-        display:none;
+      #manaV83Content.m1002-coach-mode>#${SW} {
+        display:grid!important;
       }
 
-      #manaV83Content.m100212-coach
-      >#${IDS.panel} {
+      #${PANEL} {
+        display:none;
+        margin-bottom:16px;
+      }
+
+      #manaV83Content.m1002-coach-mode>#${PANEL} {
         display:block!important;
       }
 
-      #${IDS.panel} .mc-shell {
+      #${PANEL} .m1002-shell {
         background:#101113;
         border:1px solid #34383e;
-        border-radius:16px;
+        border-radius:17px;
         overflow:hidden;
+        color:#fff;
       }
 
-      #${IDS.panel} .mc-head {
-        padding:17px;
+      #${PANEL} .m1002-head {
         background:#121315;
-        border-bottom:1px solid #30343a;
+        padding:18px;
+        border-bottom:1px solid #292d32;
       }
 
-      #${IDS.panel} .mc-head h3,
-      #${IDS.panel} .mc-program strong {
-        color:#fff!important;
-        -webkit-text-fill-color:#fff!important;
-      }
-
-      #${IDS.panel} .mc-head h3 {
+      #${PANEL} .m1002-head h3 {
+        color:#fff;
         font-size:20px;
         margin:5px 0;
       }
 
-      #${IDS.panel} .mc-body {
-        padding:13px;
+      #${PANEL} .m1002-head p {
+        font-size:12px;
+        line-height:1.5;
+        color:#adb4bd;
+        margin:0;
       }
 
-      .mc-kicker {
+      #${PANEL} .m1002-body {
+        padding:14px;
+      }
+
+      .m1002-kicker {
         color:#ff8126!important;
         font-size:10px;
         font-weight:900;
         letter-spacing:.09em;
       }
 
-      .mc-muted {
-        color:#b5bbc4;
-        font-size:12px;
-        line-height:1.55;
-      }
-
-      .mc-program {
-        width:100%;
+      .m1002-program {
         display:flex;
         justify-content:space-between;
         align-items:center;
-        gap:10px;
-        padding:15px;
-        margin-bottom:9px;
-        background:#17191c;
-        color:#fff!important;
-        border:1px solid #3b4047;
-        border-radius:13px;
+        gap:12px;
+        width:100%;
+        padding:16px;
+        margin:0 0 10px;
         text-align:left;
+        color:#fff;
+        background:#17191c;
+        border:1px solid #3b4047;
+        border-radius:14px;
         font-family:inherit;
+        cursor:pointer;
       }
 
-      .mc-program strong {
+      .m1002-program strong {
+        color:#fff;
         display:block;
         font-size:15px;
       }
 
-      .mc-program small {
+      .m1002-program small {
         display:block;
-        color:#b5bbc4;
-        font-size:12px;
         margin-top:5px;
+        color:#b4bac2;
+        font-size:12px;
       }
 
-      .mc-pill {
-        color:#ff8126;
-        border:1px solid #774524;
-        padding:6px 8px;
+      .m1002-pill {
+        flex-shrink:0;
+        border:1px solid #794521;
         border-radius:20px;
+        color:#ff8126;
+        padding:6px 9px;
         font-size:10px;
         font-weight:900;
       }
 
-      #${IDS.modal} {
+      .m1002-empty {
+        text-align:center;
+        background:#17191c;
+        padding:22px 15px;
+        border:1px solid #353940;
+        border-radius:15px;
+      }
+
+      .m1002-empty h4 {
+        color:#fff;
+        margin:8px 0;
+        font-size:18px;
+      }
+
+      .m1002-empty p {
+        color:#b8bec6;
+        margin:0;
+        font-size:12px;
+        line-height:1.6;
+      }
+
+      .m1002-empty p:last-child {
+        color:#ff8126;
+        margin-top:12px;
+      }
+
+      .m1002-empty-icon {
+        display:grid;
+        place-items:center;
+        margin:auto;
+        width:48px;
+        height:48px;
+        border-radius:50%;
+        border:1px solid #704223;
+        background:#261c16;
+      }
+
+      #${LEGACY} {
+        margin:12px 0;
+      }
+
+      #${MODAL} {
         position:fixed;
         inset:0;
         z-index:61000;
@@ -342,178 +381,206 @@
           calc(30px + env(safe-area-inset-bottom));
       }
 
-      #${IDS.modal}.open {
+      #${MODAL}.open {
         display:block;
       }
 
-      #${IDS.modal} .mc-inner {
-        max-width:680px;
+      #${MODAL} .m1002-inner {
+        width:min(680px,100%);
         margin:auto;
       }
 
-      #${IDS.modal} button {
+      #${MODAL} button {
         font-family:inherit;
         cursor:pointer;
       }
 
-      #${IDS.modal} .mc-top {
+      #${MODAL} .m1002-top {
         position:sticky;
         top:-12px;
         z-index:10;
         display:flex;
-        justify-content:space-between;
         align-items:center;
-        gap:10px;
+        justify-content:space-between;
+        gap:8px;
         padding:11px 0;
         background:#050505;
       }
 
-      #${IDS.modal} .mc-back,
-      #${IDS.modal} .mc-secondary {
-        padding:10px 12px;
-        min-height:40px;
-        border:1px solid #454a50;
-        border-radius:10px;
+      #${MODAL} .m1002-back,
+      #${MODAL} .m1002-secondary {
+        min-height:38px;
+        padding:9px 12px;
         background:#191b1e;
+        border:1px solid #42464d;
+        border-radius:10px;
         color:#fff;
-        font-size:12px;
         font-weight:800;
+        font-size:12px;
       }
 
-      #${IDS.modal} .mc-hero,
-      #${IDS.modal} .mc-day {
+      #${MODAL} .m1002-hero {
+        background:#111214;
         border:1px solid #34383e;
-        border-radius:16px;
-        background:#121314;
+        border-radius:17px;
         padding:16px;
-        margin:0 0 12px;
+        margin-bottom:12px;
       }
 
-      #${IDS.modal} .mc-hero h2 {
+      #${MODAL} .m1002-hero h2 {
         color:#fff;
+        margin:5px 0;
+        font-size:22px;
+      }
+
+      #${MODAL} .m1002-hero p,
+      #${MODAL} .m1002-muted {
+        color:#b1b8c1;
         margin:6px 0;
-        font-size:21px;
+        font-size:12px;
+        line-height:1.5;
       }
 
-      #${IDS.modal} .mc-day h3 {
-        color:#fff;
-        margin:7px 0;
-        font-size:18px;
-      }
-
-      #${IDS.modal} .mc-primary {
-        display:block;
-        width:100%;
-        padding:12px;
-        min-height:45px;
-        border:0;
-        border-radius:11px;
-        background:#ff8126!important;
-        color:#151515!important;
-        font-size:13px;
-        font-weight:900;
-        margin-top:12px;
-      }
-
-      #${IDS.modal} .mc-primary:disabled {
-        opacity:.5;
-      }
-
-      #${IDS.modal} .mc-weeks {
+      #${MODAL} .m1002-weeks {
         display:flex;
         gap:8px;
         overflow-x:auto;
         margin-bottom:13px;
       }
 
-      #${IDS.modal} .mc-weeks button {
+      #${MODAL} .m1002-weeks button {
         flex:0 0 auto;
-        padding:10px 13px;
-        background:#191b1e;
+        padding:11px 13px;
         border:1px solid #444;
         border-radius:10px;
-        color:#fff;
+        background:#191b1e;
+        color:#ccc;
         font-size:12px;
         font-weight:800;
       }
 
-      #${IDS.modal} .mc-weeks button.active {
-        background:#271c15;
-        color:#ff8126;
+      #${MODAL} .m1002-weeks button.active {
         border-color:#ff8126;
+        background:#261c16;
+        color:#ff8126;
       }
 
-      #${IDS.modal} .mc-position {
+      #${MODAL} .mana-v85-day {
+        background:#121314;
+        border:1px solid #34383e;
+        border-radius:16px;
+        padding:16px;
+        margin-bottom:12px;
+        color:#fff;
+      }
+
+      #${MODAL} .mana-v85-day h3 {
+        color:#fff;
+        font-size:18px;
+        margin:7px 0;
+      }
+
+      #${MODAL} .m1002-primary {
+        display:block;
+        width:100%;
+        min-height:45px;
+        background:#ff8126;
+        border:0;
+        border-radius:12px;
+        padding:12px;
+        color:#141414;
+        font-weight:900;
+        font-size:13px;
+        margin-top:10px;
+      }
+
+      #${MODAL} .m1002-primary:disabled {
+        opacity:.5;
+      }
+
+      #${MODAL} .m1002-position {
         display:flex;
         justify-content:space-between;
-        gap:9px;
-        margin:5px 0 8px;
+        gap:8px;
+        align-items:center;
+        margin:3px 0 7px;
         color:#fff;
         font-size:12px;
         font-weight:800;
       }
 
-      #${IDS.modal} .mc-position small {
-        color:#aeb6c0;
+      #${MODAL} .m1002-position small {
+        color:#aab0b8;
         font-size:11px;
+        font-weight:500;
       }
 
-      #${IDS.modal} .mc-dots {
+      #${MODAL} .m1002-dots {
         display:flex;
         justify-content:center;
         flex-wrap:wrap;
-        gap:7px;
-        margin:9px 0;
+        gap:8px;
+        margin:8px 0 10px;
       }
 
-      #${IDS.modal} .mc-dot {
+      #${MODAL} .m1002-dot {
         width:9px;
         height:9px;
         padding:0;
         border:0;
         border-radius:50%;
-        background:#565b62;
+        background:#545960;
       }
 
-      #${IDS.modal} .mc-dot.active {
-        width:23px;
+      #${MODAL} .m1002-dot.active {
+        width:24px;
         border-radius:8px;
         background:#ff8126;
       }
 
-      #${IDS.modal} .mc-dot.done {
+      #${MODAL} .m1002-dot.done {
         background:#ff8126;
         opacity:.65;
       }
 
-      #${IDS.modal} .mc-carousel {
+      /*
+       ACTIVE SLIDE HEIGHT FIX:
+       The carousel no longer inherits
+       the height of its tallest slide.
+      */
+
+      #${MODAL} .m1002-carousel {
         display:flex;
         align-items:flex-start;
-        width:100%;
         overflow-x:auto;
         overflow-y:hidden;
+        width:100%;
         scroll-snap-type:x mandatory;
         scroll-behavior:smooth;
-        scrollbar-width:none;
+        overscroll-behavior-inline:contain;
         -webkit-overflow-scrolling:touch;
-        transition:height .15s;
+        scrollbar-width:none;
+        transition:height .15s ease;
       }
 
-      #${IDS.modal} .mc-carousel::-webkit-scrollbar {
+      #${MODAL} .m1002-carousel::-webkit-scrollbar {
         display:none;
       }
 
-      #${IDS.modal} .mc-slide {
+      #${MODAL} .m1002-slide {
         flex:0 0 100%;
         min-width:0;
         box-sizing:border-box;
         scroll-snap-align:start;
         scroll-snap-stop:always;
+      }
+
+      #${MODAL} .m1002-slide-inner {
         padding:1px;
       }
 
-      #${IDS.modal} .mana-v64-card {
-        padding:15px;
+      #${MODAL} .mana-v64-card {
+        padding:16px;
         margin:0;
         background:#121314!important;
         border:1px solid #34383e!important;
@@ -522,478 +589,541 @@
         box-shadow:none;
       }
 
-      #${IDS.modal} .mana-v64-name {
-        color:#fff!important;
+      #${MODAL} .mana-v64-name {
+        color:#fff;
         font-size:18px;
         font-weight:900;
         margin-bottom:6px;
       }
 
-      #${IDS.modal} .mana-v64-target {
-        color:#ff8126!important;
+      #${MODAL} .mana-v64-target {
+        color:#ff8126;
         font-size:12px;
+        line-height:1.5;
       }
 
-      #${IDS.modal} .mc-muscle {
+      #${MODAL} .m1002-muscle {
         display:flex;
         align-items:center;
-        gap:11px;
+        gap:12px;
+        padding:11px;
         margin:12px 0;
-        padding:10px;
-        background:#0b0c0d;
         border:1px solid #34383e;
-        border-radius:12px;
+        border-radius:13px;
+        background:#0b0c0d;
       }
 
-      #${IDS.modal} .mc-muscle-frame {
-        flex:0 0 105px;
-        width:105px;
-        height:124px;
+      #${MODAL} .m1002-muscle-frame {
         display:grid;
         place-items:center;
+        flex:0 0 105px;
+        width:105px;
+        height:125px;
+        background:#151618;
         border-radius:10px;
         overflow:hidden;
-        background:#151618;
       }
 
-      #${IDS.modal} .mc-muscle-frame img {
+      #${MODAL} .m1002-muscle-frame img {
         width:100%;
         height:100%;
         object-fit:contain;
       }
 
-      #${IDS.modal} .mc-muscle-copy {
-        min-width:0;
-        flex:1;
+      #${MODAL} .m1002-muscle-fallback {
+        color:#ff8126;
+        font-size:11px;
+        font-weight:900;
+        text-align:center;
+        padding:8px;
       }
 
-      #${IDS.modal} .mc-muscle-copy strong {
+      #${MODAL} .m1002-muscle-copy {
+        flex:1;
+        min-width:0;
+      }
+
+      #${MODAL} .m1002-muscle-copy small {
+        display:block;
+        color:#ff8126;
+        font-size:10px;
+        font-weight:900;
+        margin-bottom:5px;
+      }
+
+      #${MODAL} .m1002-muscle-copy strong {
         display:block;
         color:#fff;
         font-size:13px;
+        line-height:1.5;
       }
 
-      #${IDS.modal} .mc-demo {
-        display:block;
+      #${MODAL} .m1002-demo {
         margin-top:10px;
-        padding:10px;
-        color:#ff8126;
+        padding:9px 11px;
         background:#241b16;
         border:1px solid #714324;
         border-radius:10px;
+        color:#ff8126;
         font-size:11px;
         font-weight:900;
       }
 
-      #${IDS.modal} .mana-v64-table-head,
-      #${IDS.modal} .mana-v64-set {
+      #${MODAL} .m1002-note {
+        font-size:12px;
+        color:#b9c0c9;
+        line-height:1.6;
+        margin:8px 0;
+      }
+
+      #${MODAL} .mana-v64-table-head,
+      #${MODAL} .mana-v64-set {
         display:grid;
         grid-template-columns:
-          30px minmax(0,1fr)
-          minmax(0,1fr) 44px;
+          32px minmax(0,1fr)
+          minmax(0,1fr) 45px;
         gap:7px;
         align-items:center;
         margin:8px 0;
       }
 
-      #${IDS.modal} .mana-v64-table-head {
-        color:#afb5bd;
+      #${MODAL} .mana-v64-table-head {
+        color:#afb5bc;
+        text-align:center;
         font-size:11px;
         font-weight:800;
-        text-align:center;
       }
 
-      #${IDS.modal} .mana-v64-set-number {
+      #${MODAL} .mana-v64-set-number {
+        color:#fff;
         font-size:12px;
         text-align:center;
-        color:#fff;
       }
 
-      #${IDS.modal} .mana-v64-set input {
-        width:100%;
+      #${MODAL} .mana-v64-set input {
+        display:block;
         min-width:0;
+        width:100%;
         min-height:42px;
+        padding:7px;
         background:#1b1d20;
         border:1px solid #454a50;
         border-radius:9px;
-        padding:7px;
         color:#fff;
         text-align:center;
         font-size:16px;
       }
 
-      #${IDS.modal} .mana-v64-check {
-        width:42px;
+      #${MODAL} .mana-v64-check {
+        width:43px;
         height:42px;
+        background:#23252a;
         border:1px solid #545960;
         border-radius:9px;
-        background:#23252a;
         color:#aaa;
         font-weight:900;
       }
 
-      #${IDS.modal} .mana-v64-check.done {
+      #${MODAL} .mana-v64-check.done {
         background:#ff8126;
-        color:#111;
         border-color:#ff8126;
-      }
-
-      #${IDS.modal} .mc-tick-all {
-        width:100%;
-        min-height:42px;
-        margin-top:13px;
-        border:1px solid #ff8126;
-        border-radius:10px;
-        background:#261d16;
-        color:#ff8126;
-        font-size:12px;
-        font-weight:900;
-      }
-
-      #${IDS.modal} .mc-tick-all.done {
-        background:#ff8126;
         color:#111;
       }
 
-      #${IDS.modal} .mc-nav {
+      /*
+       NAVIGATION SITS DIRECTLY
+       UNDER THE ACTIVE EXERCISE.
+      */
+
+      #${MODAL} .m1002-nav {
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:8px;
-        margin:6px 0;
+        margin:6px 0 0;
+        padding:0;
       }
 
-      #${IDS.modal} .mc-nav button {
+      #${MODAL} .m1002-nav button {
         min-height:43px;
         background:#191b1e;
         border:1px solid #444;
-        border-radius:10px;
+        border-radius:11px;
         color:#fff;
         font-size:12px;
         font-weight:900;
       }
 
-      #${IDS.modal} .mc-nav button.next {
-        color:#ff8126;
+      #${MODAL} .m1002-nav button.next {
         background:#241b15;
+        color:#ff8126;
         border-color:#ff8126;
       }
 
-      #${IDS.modal} .mc-nav button:disabled {
+      #${MODAL} .m1002-nav button:disabled {
         opacity:.38;
       }
 
-      #${IDS.modal} .mc-final {
-        padding:15px;
+      #${MODAL} .m1002-status {
+        color:#b3bac4;
+        font-size:12px;
+        line-height:1.5;
+        margin:8px 0;
+      }
+
+      #${MODAL} .m1002-status:empty {
+        display:none;
+      }
+
+      #${MODAL} .m1002-finishers {
+        background:#121314;
         border:1px solid #34383e;
         border-radius:16px;
-        background:#121314;
+        padding:16px;
       }
 
-      #${IDS.modal} .mc-final h3 {
+      #${MODAL} .m1002-finishers h3,
+      #${MODAL} .m1002-feedback h3 {
         color:#fff;
         font-size:19px;
-        margin:6px 0;
+        margin:5px 0 8px;
       }
 
-      #${IDS.modal} .mc-finisher-options {
+      #${MODAL} .m1002-finisher-pair {
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:9px;
-        margin:13px 0;
+        margin:14px 0;
       }
 
-      #${IDS.modal} .mc-finisher-options button {
-        min-height:68px;
+      #${MODAL} .m1002-finisher-option {
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        align-items:center;
+        gap:5px;
+        min-height:70px;
         background:#191b1f;
-        color:#fff;
         border:1px solid #4a4d53;
-        border-radius:12px;
+        border-radius:13px;
+        color:#fff;
         font-size:13px;
         font-weight:900;
       }
 
-      #${IDS.modal} .mc-finisher-options button.done {
-        border-color:#ff8126;
-        color:#ff8126;
-      }
-
-      #${IDS.modal} .mc-finisher-options small {
-        display:block;
+      #${MODAL} .m1002-finisher-option small {
+        color:#aeb6bf;
         font-size:11px;
         font-weight:500;
-        margin-top:5px;
-        color:#b1b7c0;
       }
 
-      #${IDS.modal} .mc-finisher-card,
-      #${IDS.modal} .mc-feedback {
-        padding:12px;
-        border:1px solid #383d44;
-        border-radius:12px;
+      #${MODAL} .m1002-finisher-panel,
+      #${MODAL} .m1002-feedback {
+        padding:13px;
         background:#17191c;
+        border:1px solid #383d44;
+        border-radius:13px;
         margin-top:12px;
       }
 
-      #${IDS.modal} .mc-options {
+      #${MODAL} .m1002-finisher-panel h4 {
+        color:#fff;
+        margin:0 0 10px;
+        font-size:15px;
+      }
+
+      #${MODAL} .m1002-options,
+      #${MODAL} .m1002-rating {
         display:flex;
         flex-wrap:wrap;
         gap:7px;
         margin:11px 0;
       }
 
-      #${IDS.modal} .mc-options button {
+      #${MODAL} .m1002-options button,
+      #${MODAL} .m1002-rating button {
         padding:9px 11px;
+        background:#25272a;
         border:1px solid #44484e;
         border-radius:9px;
-        background:#25272a;
-        color:#ccc;
-        font-size:11px;
+        color:#c8ccd2;
+        font-size:12px;
         font-weight:800;
       }
 
-      #${IDS.modal} .mc-options button.active {
+      #${MODAL} .m1002-options button.active,
+      #${MODAL} .m1002-rating button.active {
+        background:#2a201a;
         border-color:#ff8126;
         color:#ff8126;
-        background:#2a201a;
       }
 
-      #${IDS.modal} .mc-core-item {
+      #${MODAL} .m1002-rating button {
+        flex:1;
+        min-width:38px;
+        font-size:16px;
+      }
+
+      #${MODAL} .m1002-feedback label {
+        display:block;
+        color:#fff;
+        font-size:12px;
+        font-weight:800;
+        margin-top:12px;
+      }
+
+      #${MODAL} .m1002-feedback textarea {
+        width:100%;
+        min-height:85px;
+        padding:12px;
+        margin-top:8px;
+        background:#202226;
+        border:1px solid #4a4e54;
+        border-radius:10px;
+        color:#fff;
+        font-family:inherit;
+        font-size:14px;
+        resize:vertical;
+      }
+
+      #${MODAL} .m1002-core-item {
         display:flex;
-        gap:10px;
         align-items:center;
-        padding:10px 0;
-        border-bottom:1px solid #333;
+        gap:11px;
+        padding:11px 0;
+        border-bottom:1px solid #34383e;
         color:#fff;
         font-size:12px;
       }
 
-      #${IDS.modal} .mc-core-item input {
+      #${MODAL} .m1002-core-item input {
         width:20px;
         height:20px;
         accent-color:#ff8126;
       }
 
-      #${IDS.modal} .mc-core-item small {
+      #${MODAL} .m1002-core-item strong,
+      #${MODAL} .m1002-core-item small {
         display:block;
+      }
+
+      #${MODAL} .m1002-core-item small {
         color:#b5bdc6;
         margin-top:4px;
       }
 
-      #${IDS.modal} .mc-rating {
-        display:grid;
-        grid-template-columns:repeat(5,1fr);
-        gap:7px;
+      #${MODAL} .m1002-saved {
+        color:#ff8126;
+        font-size:12px;
+        font-weight:800;
+        line-height:1.6;
         margin:10px 0;
       }
 
-      #${IDS.modal} .mc-rating button {
-        padding:11px 0;
-        border:1px solid #444;
-        border-radius:9px;
-        background:#242629;
-        color:#fff;
-        font-size:16px;
-      }
-
-      #${IDS.modal} .mc-rating button.active {
-        border-color:#ff8126;
-        color:#ff8126;
-        background:#2a201a;
-      }
-
-      #${IDS.modal} .mc-feedback label {
-        display:block;
-        color:#fff;
-        margin-top:12px;
-        font-size:12px;
-        font-weight:800;
-      }
-
-      #${IDS.modal} .mc-feedback textarea {
+      #${MODAL} .m1002-tick-all {
         display:block;
         width:100%;
-        min-height:88px;
-        padding:12px;
-        margin-top:8px;
-        border:1px solid #4a4e54;
-        border-radius:10px;
-        background:#202226;
-        color:#fff;
-        font:14px inherit;
-        resize:vertical;
-      }
-
-      #${IDS.modal} .mc-status {
-        color:#b9c0c8;
+        margin:12px 0 0;
+        padding:11px;
+        background:#261d16;
+        border:1px solid #ff8126;
+        border-radius:11px;
+        color:#ff8126;
         font-size:12px;
-        line-height:1.6;
-        margin:7px 0;
+        font-weight:900;
       }
 
-      #${IDS.modal} .mc-status:empty {
-        display:none;
+      #${MODAL} .m1002-tick-all.done {
+        background:#ff8126;
+        color:#111;
       }
 
-      #${IDS.modal} .mc-summary {
-        padding:12px 0;
+      #${MODAL} .m1002-final-complete {
+        margin-top:14px;
+      }
+
+      /*
+       ORIGINAL-STYLE WORKOUT SUMMARY
+      */
+
+      #${MODAL} .m1002-summary {
         text-align:center;
+        padding:10px 0;
       }
 
-      #${IDS.modal} .mc-summary-check {
+      #${MODAL} .m1002-summary-check {
         display:grid;
         place-items:center;
-        margin:4px auto 13px;
-        width:66px;
-        height:66px;
+        width:68px;
+        height:68px;
+        margin:3px auto 12px;
         border:2px solid #ff8126;
         border-radius:50%;
         background:#251b15;
         color:#ff8126;
-        font-size:30px;
+        font-size:32px;
+        font-weight:900;
       }
 
-      #${IDS.modal} .mc-summary h1 {
+      #${MODAL} .m1002-summary h1 {
         color:#fff;
         font-size:26px;
-        margin:7px 0;
+        margin:6px 0;
       }
 
-      #${IDS.modal} .mc-summary-grid {
+      #${MODAL} .m1002-summary-name {
+        color:#bdc3cb;
+        font-size:13px;
+        margin:6px 0 18px;
+      }
+
+      #${MODAL} .m1002-summary-grid {
         display:grid;
         grid-template-columns:1fr 1fr;
-        gap:9px;
-        margin:18px 0;
+        gap:10px;
+        margin:15px 0;
         text-align:left;
       }
 
-      #${IDS.modal} .mc-summary-stat {
-        padding:14px;
+      #${MODAL} .m1002-summary-stat {
         background:#141517;
         border:1px solid #373c43;
-        border-radius:13px;
+        border-radius:14px;
+        padding:15px;
       }
 
-      #${IDS.modal} .mc-summary-stat small {
+      #${MODAL} .m1002-summary-stat small {
+        display:block;
         color:#a8b0ba;
         font-size:11px;
       }
 
-      #${IDS.modal} .mc-summary-stat strong {
+      #${MODAL} .m1002-summary-stat strong {
         display:block;
-        margin:6px 0;
         color:#fff;
         font-size:23px;
+        margin:6px 0;
       }
 
-      #${IDS.modal} .mc-summary-note {
-        text-align:left;
-        padding:14px;
-        margin:11px 0;
+      #${MODAL} .m1002-summary-stat span {
+        color:#a8b0ba;
+        font-size:10px;
+      }
+
+      #${MODAL} .m1002-summary-note {
+        background:#111214;
         border:1px solid #34383e;
         border-radius:12px;
-        background:#111214;
+        padding:14px;
+        text-align:left;
+        margin:12px 0;
         color:#c2c7ce;
         font-size:12px;
         line-height:1.7;
       }
 
-      #${IDS.progressRoot}.mc-coach-progress
-      >:not(#${IDS.progressSwitch}):not(#${IDS.progress}) {
-        display:none!important;
+      /*
+       COACH TRAINING IN PROGRESS TAB
+      */
+
+      #${PROGRESS} {
+        margin:18px 0 14px;
+        padding:15px;
+        border:1px solid #353940;
+        border-radius:16px;
+        background:#111315;
+        color:#fff;
       }
 
-      #${IDS.progressSwitch} {
-        margin:10px 0 14px;
+      #${PROGRESS} h3 {
+        margin:5px 0 7px;
+        color:#fff;
+        font-size:19px;
       }
 
-      #${IDS.progress} {
-        display:none;
-        margin:0;
-        padding:0;
-        background:transparent;
-        border:0;
+      #${PROGRESS} p {
+        color:#b0b7c0;
+        font-size:12px;
+        line-height:1.5;
       }
 
-      #${IDS.progressRoot}.mc-coach-progress
-      >#${IDS.progress} {
-        display:block!important;
+      #${PROGRESS} .m1002-progress-stats {
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:8px;
+        margin:14px 0;
       }
 
-      #${IDS.progress} .mana-v993-head h2,
-      #${IDS.progress} .mana-v993-panel h3,
-      #${IDS.progress} .mana-v993-row-title {
-        color:#fff!important;
-      }
-
-      #${IDS.progress} .mana-v993-metric-value {
-        color:#ff8126!important;
-      }
-
-      #${IDS.progress} .mana-v993-period.active,
-      #${IDS.progress} .mana-v993-detail-btn.active {
-        color:#ff8126!important;
-        border-color:#ff8126!important;
-      }
-
-      #${IDS.progress} .mc-history {
-        display:block;
+      #${PROGRESS} .m1002-progress-stat {
         padding:12px;
-        margin:8px 0;
+        background:#1a1c1f;
+        border:1px solid #353940;
+        border-radius:12px;
+      }
+
+      #${PROGRESS} .m1002-progress-stat small {
+        display:block;
+        font-size:10px;
+        color:#aaa;
+        margin-bottom:5px;
+      }
+
+      #${PROGRESS} .m1002-progress-stat strong {
+        font-size:19px;
+        color:#fff;
+      }
+
+      #${PROGRESS} .m1002-history {
+        margin-top:10px;
+        padding:12px;
         background:#191b1e;
         border:1px solid #383c42;
         border-radius:11px;
-        color:#fff;
       }
 
-      #${IDS.progress} .mc-history summary {
+      #${PROGRESS} .m1002-history summary {
         color:#fff;
+        cursor:pointer;
         font-size:13px;
         font-weight:800;
-        cursor:pointer;
-      }
-
-      #${IDS.progress} .mc-history small {
-        display:block;
-        color:#b5bcc5;
-        margin:6px 0;
-        font-size:11px;
-      }
-
-      #${IDS.progress} .mc-history-exercise {
-        padding:9px 0;
-        border-top:1px solid #373c42;
-        font-size:12px;
         line-height:1.6;
       }
 
-      #${IDS.progress} .mc-history-exercise strong {
-        color:#fff;
+      #${PROGRESS} .m1002-history small {
+        display:block;
+        color:#aaa;
+        font-size:11px;
+        margin:3px 0;
       }
 
-      #${IDS.progress} select {
-        width:100%;
-        padding:11px;
-        margin:10px 0;
-        background:#191b1e;
-        border:1px solid #454a50;
-        border-radius:10px;
+      #${PROGRESS} .m1002-history-exercise {
+        border-top:1px solid #383c42;
+        padding:8px 0;
+        color:#c2c8d0;
+        font-size:12px;
+      }
+
+      #${PROGRESS} .m1002-history-exercise strong {
         color:#fff;
       }
 
       @media(max-width:420px) {
-        #${IDS.modal} .mana-v64-card {
-          padding:12px;
+        #${MODAL} .mana-v64-card {
+          padding:13px;
         }
 
-        #${IDS.modal} .mc-muscle {
-          gap:9px;
+        #${MODAL} .m1002-muscle {
+          gap:10px;
           padding:9px;
         }
 
-        #${IDS.modal} .mc-muscle-frame {
+        #${MODAL} .m1002-muscle-frame {
           width:95px;
           flex-basis:95px;
-          height:115px;
+          height:116px;
+        }
+
+        #${PANEL} .m1002-body {
+          padding:11px;
         }
       }
     `;
@@ -1001,210 +1131,273 @@
     document.head.appendChild(style);
   }
 
-  function ensureModal() {
-    let modal = $(IDS.modal);
-    if (modal) return modal;
+  function modal() {
+    let element = $(MODAL);
 
-    modal = document.createElement("div");
-    modal.id = IDS.modal;
+    if (element) return element;
 
-    modal.innerHTML = `
-      <div class="mc-inner">
-        <div class="mc-top">
-          <span class="mc-kicker">
+    element = document.createElement("div");
+    element.id = MODAL;
+
+    element.setAttribute("role", "dialog");
+    element.setAttribute("aria-modal", "true");
+
+    element.innerHTML = `
+      <div class="m1002-inner">
+        <div class="m1002-top">
+          <span class="m1002-kicker">
             MANA STRENGTH • COACH PROGRAM
           </span>
+
           <button type="button"
-            class="mc-back"
-            data-mc-back>
+            class="m1002-back"
+            data-m1002-back>
             ← BACK
           </button>
         </div>
-        <div id="mcContent"></div>
+
+        <div id="m1002Content"></div>
       </div>
     `;
 
-    document.body.appendChild(modal);
-    return modal;
+    document.body.appendChild(element);
+
+    return element;
   }
 
-  function showModal(html) {
-    ensureModal().classList.add("open");
-    $("mcContent").innerHTML = html;
-    $(IDS.modal).scrollTop = 0;
+  function show(html) {
+    modal().classList.add("open");
+    $("m1002Content").innerHTML = html;
   }
 
-  function ensureWorkoutRoots() {
-    if (!workoutTabOpen()) return;
+  function ensureRoots() {
+    if (!workoutTab()) return null;
 
     const holder = $("manaV83Content");
-    if (!holder) return;
+    if (!holder) return null;
 
-    let switcher = $(IDS.switcher);
+    let selector = $(SW);
 
-    if (!switcher) {
-      switcher = document.createElement("div");
-      switcher.id = IDS.switcher;
-      switcher.innerHTML = `
+    if (!selector) {
+      selector = document.createElement("div");
+      selector.id = SW;
+
+      selector.innerHTML = `
         <button type="button"
-          data-mc-mode="generated">
+          data-m1002-mode="generated">
           My Workouts
         </button>
+
         <button type="button"
-          data-mc-mode="coach">
+          data-m1002-mode="coach">
           Coach Programs
         </button>
       `;
     }
 
-    if (switcher.parentElement !== holder) {
-      holder.prepend(switcher);
+    if (selector.parentElement !== holder) {
+      holder.prepend(selector);
     }
 
-    let panel = $(IDS.panel);
+    let panel = $(PANEL);
 
     if (!panel) {
       panel = document.createElement("section");
-      panel.id = IDS.panel;
+      panel.id = PANEL;
     }
 
     if (panel.parentElement !== holder) {
-      switcher.after(panel);
+      selector.insertAdjacentElement("afterend", panel);
     }
 
+    return holder;
+  }
+
+  function ensureLegacy() {
+    const view = $("clientProgramsView");
+    if (!view) return null;
+
+    let element = $(LEGACY);
+
+    if (!element) {
+      element = document.createElement("section");
+      element.id = LEGACY;
+    }
+
+    if (!view.contains(element)) {
+      view.prepend(element);
+    }
+
+    return element;
+  }
+
+  function applyMode() {
+    const holder = ensureRoots();
+    if (!holder) return;
+
     holder.classList.toggle(
-      "m100212-coach",
-      workoutMode === "coach"
+      "m1002-coach-mode",
+      mode === "coach"
     );
 
-    switcher.querySelectorAll("button").forEach(button => {
-      const active =
-        button.dataset.mcMode === workoutMode;
+    $(SW)?.querySelectorAll(
+      "[data-m1002-mode]"
+    ).forEach(button => {
+      const active = button.dataset.m1002Mode === mode;
+
       button.classList.toggle("active", active);
       button.setAttribute("aria-pressed", String(active));
     });
+
+    if (mode === "coach") renderPanel();
   }
 
-  function setWorkoutMode(value) {
+  function setMode(value) {
     if (!["generated", "coach"].includes(value)) return;
 
-    workoutMode = value;
+    mode = value;
 
     try {
-      sessionStorage.setItem(
-        "mana-strength-workout-view-100205",
-        workoutMode
-      );
+      sessionStorage.setItem(MODE_KEY, mode);
     } catch (_) {}
 
-    ensureWorkoutRoots();
+    applyMode();
 
-    if (value === "coach") {
-      renderAssignments();
+    if (mode === "coach") {
       void loadAssignments(true);
     }
   }
 
-  function programCard(item) {
-    const p = item.custom_programs;
+  function programCard(assignment) {
+    const item = assignment.custom_programs;
 
     return `
       <button type="button"
-        class="mc-program"
-        data-mc-program="${esc(p.id)}">
+        class="m1002-program"
+        data-m1002-program="${esc(item.id)}">
+
         <span>
-          <strong>${esc(p.name)}</strong>
+          <strong>${esc(item.name)}</strong>
+
           <small>
-            ${esc(p.goal || p.description ||
-              "Personalised training program")}
+            ${esc(
+              item.goal ||
+              item.description ||
+              "Personalised training program"
+            )}
           </small>
         </span>
-        <span class="mc-pill">
-          ${item.is_primary
+
+        <span class="m1002-pill">
+          ${assignment.is_primary
             ? "PRIMARY"
-            : esc(item.status.toUpperCase())}
+            : esc(assignment.status.toUpperCase())}
         </span>
       </button>
     `;
   }
 
-  function renderAssignments() {
-    const panel = $(IDS.panel);
-    if (!panel) return;
+  function renderPanel() {
+    const holder = $(PANEL);
+    if (!holder) return;
 
     const rows = assignments.filter(
-      a => a.custom_programs
+      item =>
+        item.custom_programs &&
+        ["active", "paused", "completed"].includes(
+          item.status
+        )
     );
 
-    panel.innerHTML = `
-      <section class="mc-shell">
-        <div class="mc-head">
-          <span class="mc-kicker">MANA STRENGTH</span>
+    holder.innerHTML = `
+      <div class="m1002-shell">
+        <div class="m1002-head">
+          <small class="m1002-kicker">
+            MANA STRENGTH
+          </small>
+
           <h3>Coach Programs</h3>
-          <p class="mc-muted">
+
+          <p>
             Personalised training built and
             assigned by your coach.
           </p>
         </div>
 
-        <div class="mc-body">
+        <div class="m1002-body">
           ${rows.length
             ? rows.map(programCard).join("")
             : `
-              <div class="mc-day">
-                <h3 style="color:#fff">
-                  No Coach Programs Yet
-                </h3>
-                <p class="mc-muted">
-                  ${assignmentsLoading
+              <div class="m1002-empty">
+                <div class="m1002-empty-icon">
+                  ${icon()}
+                </div>
+
+                <h4>No Coach Programs Yet</h4>
+
+                <p>
+                  ${loading
                     ? "Checking assigned programs…"
-                    : "Your assigned programs will appear here."}
+                    : "Your coach-built programs will appear here once assigned."}
+                </p>
+
+                <p>
+                  Your regular workouts remain
+                  available under My Workouts.
                 </p>
               </div>
             `}
         </div>
-      </section>
+      </div>
     `;
+  }
 
-    const legacy = $("clientProgramsView");
+  function renderLegacy() {
+    const holder = ensureLegacy();
+    if (!holder) return;
 
-    if (legacy) {
-      let root = $(IDS.legacy);
+    const rows = assignments.filter(
+      item => item.custom_programs
+    );
 
-      if (!root) {
-        root = document.createElement("section");
-        root.id = IDS.legacy;
-      }
-
-      if (!legacy.contains(root)) legacy.prepend(root);
-
-      root.innerHTML = rows.length
-        ? rows.map(programCard).join("")
-        : "";
-    }
+    holder.innerHTML = rows.length
+      ? `
+        <h3 style="color:#fff">
+          Coach Assigned
+        </h3>
+        ${rows.map(programCard).join("")}
+      `
+      : "";
   }
 
   async function loadAssignments(force = false) {
-    if (assignmentsLoading) return;
-
     if (
-      !force &&
-      Date.now() - assignmentsLoadedAt < 20000
+      loading ||
+      (!force && Date.now() - loadedAt < 20000)
     ) return;
 
-    assignmentsLoading = true;
-    renderAssignments();
+    loading = true;
+    renderPanel();
+
+    const token = ++loadSeq;
 
     try {
       const client = await db();
-      const current = await signedInUser();
 
-      if (current !== userId) {
-        userId = current;
+      const auth = await client.auth.getUser();
+
+      if (auth.error) throw auth.error;
+
+      const userId = auth.data?.user?.id || "";
+
+      if (account !== userId) {
+        account = userId;
         assignments = [];
+        progressUser = "";
+        progressLogs = [];
       }
 
-      if (!current) return;
+      if (!userId) return;
 
       const result = await client
         .from("client_program_assignments")
@@ -1214,134 +1407,198 @@
           is_primary,
           assigned_at,
           custom_programs(
-            id,name,description,goal,
-            duration_weeks,status
+            id,
+            name,
+            description,
+            goal,
+            duration_weeks,
+            status
           )
         `)
-        .eq("client_id", current)
-        .in("status", ["active", "paused", "completed"])
+        .eq("client_id", userId)
+        .in("status", [
+          "active",
+          "paused",
+          "completed"
+        ])
         .order("is_primary", { ascending: false })
         .order("assigned_at", { ascending: false });
 
       if (result.error) throw result.error;
 
+      const current = await client.auth.getUser();
+
+      if (
+        token !== loadSeq ||
+        current.data?.user?.id !== userId
+      ) return;
+
       assignments = (result.data || []).filter(
-        a => a.custom_programs
+        item => item.custom_programs
       );
 
-      assignmentsLoadedAt = Date.now();
+      loadedAt = Date.now();
 
     } catch (error) {
-      console.warn("[Mana Coach Programs]", error);
+      console.warn(
+        "[Mana Coach Programs]",
+        error.message || error
+      );
     } finally {
-      assignmentsLoading = false;
-      renderAssignments();
+      loading = false;
+      renderPanel();
+      renderLegacy();
     }
   }
 
   function closeModal() {
-    ++openToken;
+    ++openSeq;
+    stopClock();
 
     if (session) {
       backup();
-      void saveSession();
+      queueSave();
     }
 
-    stopClock();
-    resizeObserver?.disconnect();
-
     session = null;
-    program = null;
     assignment = null;
+    program = null;
 
-    $(IDS.modal)?.classList.remove("open");
+    $(MODAL)?.classList.remove("open");
+  }
+
+  function programHeader() {
+    const item = program?.program;
+
+    return `
+      <section class="m1002-hero">
+        <span class="m1002-kicker">
+          COACH-ASSIGNED PROGRAM
+        </span>
+
+        <h2>
+          ${esc(item?.name || "Coach Program")}
+        </h2>
+
+        <p>
+          ${esc(
+            item?.description ||
+            item?.goal ||
+            "Your personalised training program"
+          )}
+        </p>
+      </section>
+    `;
   }
 
   async function openProgram(id) {
     const selected = assignments.find(
-      a => a.custom_programs?.id === id
+      item => item.custom_programs?.id === id
     );
 
     if (!selected) return;
 
-    const token = ++openToken;
+    const token = ++openSeq;
 
-    assignment = selected;
+    stopClock();
     session = null;
+    assignment = selected;
 
-    showModal(`
-      <p class="mc-status">
+    show(`
+      <p class="m1002-status">
         Loading your coach program…
       </p>
     `);
 
     try {
       const client = await db();
+      const auth = await client.auth.getUser();
 
-      if (await signedInUser() !== userId) {
-        throw Error("Sign in to open your program");
+      if (auth.data?.user?.id !== account) {
+        throw Error("Sign in to view your program");
       }
 
       const link = await client
         .from("client_program_assignments")
         .select("id")
-        .eq("client_id", userId)
+        .eq("client_id", account)
         .eq("program_id", id)
-        .in("status", ["active", "paused", "completed"])
+        .in("status", [
+          "active",
+          "paused",
+          "completed"
+        ])
         .maybeSingle();
 
       if (link.error) throw link.error;
 
       if (!link.data) {
-        throw Error("This program is not assigned");
+        throw Error("Program is no longer assigned");
       }
 
-      const [p, d] = await Promise.all([
-        client.from("custom_programs")
-          .select("*").eq("id", id).single(),
+      const [programResult, dayResult] =
+        await Promise.all([
+          client
+            .from("custom_programs")
+            .select("*")
+            .eq("id", id)
+            .single(),
 
-        client.from("custom_program_days")
-          .select("*").eq("program_id", id)
-          .order("week_number")
-          .order("day_number")
-      ]);
+          client
+            .from("custom_program_days")
+            .select("*")
+            .eq("program_id", id)
+            .order("week_number")
+            .order("day_number")
+        ]);
 
-      if (p.error || d.error) throw p.error || d.error;
+      if (programResult.error || dayResult.error) {
+        throw programResult.error || dayResult.error;
+      }
 
-      const days = d.data || [];
+      const days = dayResult.data || [];
       let exercises = [];
 
       if (days.length) {
         const result = await client
           .from("custom_program_exercises")
           .select("*")
-          .in("program_day_id", days.map(x => x.id))
+          .in(
+            "program_day_id",
+            days.map(day => day.id)
+          )
           .order("sort_order");
 
         if (result.error) throw result.error;
+
         exercises = result.data || [];
       }
 
-      if (token !== openToken) return;
+      if (
+        token !== openSeq ||
+        !$(MODAL)?.classList.contains("open")
+      ) return;
 
       program = {
-        program: p.data,
+        program: programResult.data,
         days,
         exercises
       };
 
       week = days.length
-        ? Math.min(...days.map(
-            d => Number(d.week_number) || 1
-          ))
+        ? Math.min(
+            ...days.map(
+              day => Number(day.week_number) || 1
+            )
+          )
         : 1;
 
       renderProgram();
 
     } catch (error) {
-      if (token === openToken) {
-        showModal(`
-          <p class="mc-status">
+      if (token === openSeq) {
+        show(`
+          <p class="m1002-status">
             Could not load program:
             ${esc(error.message)}
           </p>
@@ -1356,65 +1613,84 @@
     session = null;
     stopClock();
 
-    const weeks = [...new Set(
-      program.days.map(d => Number(d.week_number) || 1)
-    )].sort((a, b) => a - b);
+    const weeks = [
+      ...new Set(
+        program.days.map(
+          day => Number(day.week_number) || 1
+        )
+      )
+    ].sort((a, b) => a - b);
 
-    showModal(`
-      <div class="mc-hero">
-        <span class="mc-kicker">
-          COACH-ASSIGNED PROGRAM
-        </span>
-        <h2>${esc(program.program.name)}</h2>
-        <p class="mc-muted">
-          ${esc(program.program.description ||
-            program.program.goal || "")}
-        </p>
-      </div>
+    const cards = program.days
+      .filter(
+        day => Number(day.week_number) === week
+      )
+      .map(day => {
+        const exerciseCount = program.exercises.filter(
+          exercise =>
+            exercise.program_day_id === day.id
+        ).length;
 
-      <div class="mc-weeks">
-        ${weeks.map(n => `
-          <button type="button"
-            data-mc-week="${n}"
-            class="${n === week ? "active" : ""}">
-            WEEK ${n}
-          </button>
-        `).join("")}
-      </div>
+        return `
+          <section class="mana-v85-day">
+            <span class="m1002-kicker">
+              WEEK ${week}
+              • DAY ${esc(day.day_number)}
+            </span>
 
-      ${program.days
-        .filter(d => Number(d.week_number) === week)
-        .map(day => {
-          const count = program.exercises.filter(
-            e => e.program_day_id === day.id
-          ).length;
+            <h3>
+              ${esc(day.title || "Workout")}
+            </h3>
 
-          return `
-            <div class="mc-day">
-              <span class="mc-kicker">
-                WEEK ${week} • DAY ${esc(day.day_number)}
-              </span>
-              <h3>${esc(day.title || "Workout")}</h3>
-              <p class="mc-muted">
-                ${esc(day.workout_type || "Strength")}
-                • ${count} exercises
-                ${day.estimated_minutes
-                  ? " • " + esc(day.estimated_minutes) + " min"
-                  : ""}
-              </p>
-              ${day.notes
-                ? `<p class="mc-muted">${esc(day.notes)}</p>`
+            <p class="m1002-muted">
+              ${esc(day.workout_type || "Strength")}
+              • ${exerciseCount} exercises
+
+              ${day.estimated_minutes
+                ? " • " +
+                  esc(day.estimated_minutes) +
+                  " min"
                 : ""}
-              <button type="button"
-                class="mc-primary"
-                data-mc-start="${esc(day.id)}">
-                START WORKOUT
-              </button>
-            </div>
-          `;
-        }).join("") ||
-        '<p class="mc-status">No workouts this week.</p>'}
-    `);
+            </p>
+
+            ${day.notes
+              ? `
+                <p class="m1002-muted">
+                  ${esc(day.notes)}
+                </p>
+              `
+              : ""}
+
+            <button type="button"
+              class="m1002-primary"
+              data-m1002-start="${esc(day.id)}">
+              START WORKOUT
+            </button>
+          </section>
+        `;
+      })
+      .join("");
+
+    show(
+      programHeader() +
+      `
+        <div class="m1002-weeks">
+          ${weeks.map(number => `
+            <button type="button"
+              data-m1002-week="${number}"
+              class="${number === week ? "active" : ""}">
+              WEEK ${number}
+            </button>
+          `).join("")}
+        </div>
+
+        ${cards || `
+          <p class="m1002-status">
+            No workouts in this week.
+          </p>
+        `}
+      `
+    );
   }
 
   function visual(name) {
@@ -1423,34 +1699,47 @@
 
     return {
       target: info.target || "Full Body",
-      image: api?.muscleAssets?.[
-        info.muscle || "fullbody"
-      ] || ""
+      image:
+        api?.muscleAssets?.[
+          info.muscle || "fullbody"
+        ] || ""
     };
   }
 
   function muscleHTML(name) {
-    const v = visual(name);
+    const info = visual(name);
 
     return `
-      <div class="mc-muscle">
-        <div class="mc-muscle-frame">
-          ${v.image
-            ? `<img src="${esc(v.image)}"
-                alt="${esc(v.target)} target muscles"
-                loading="lazy">`
-            : `<span class="mc-kicker">
-                ${esc(v.target)}
-              </span>`}
+      <div class="m1002-muscle">
+        <div class="m1002-muscle-frame">
+          ${info.image
+            ? `
+              <img
+                src="${esc(info.image)}"
+                alt="Target muscles for ${esc(name)}"
+                loading="lazy">
+
+              <span class="m1002-muscle-fallback" hidden>
+                ${esc(info.target)}
+              </span>
+            `
+            : `
+              <span class="m1002-muscle-fallback">
+                ${esc(info.target)}
+              </span>
+            `}
         </div>
 
-        <div class="mc-muscle-copy">
-          <span class="mc-kicker">PRIMARY TARGET</span>
-          <strong>${esc(v.target)}</strong>
+        <div class="m1002-muscle-copy">
+          <small>PRIMARY TARGET</small>
+
+          <strong>
+            ${esc(info.target)}
+          </strong>
 
           <button type="button"
-            class="mc-demo"
-            data-mc-demo="${esc(name)}">
+            class="m1002-demo"
+            data-m1002-demo="${esc(name)}">
             ▶ PLAY DEMO
           </button>
         </div>
@@ -1460,32 +1749,50 @@
 
   function defaultReps(value) {
     const match = String(value || "").match(/\d+/);
-    return match ? Math.min(100, Number(match[0])) : 10;
+
+    return match
+      ? Math.max(
+          1,
+          Math.min(100, Number(match[0]))
+        )
+      : 10;
   }
 
-  function setHTML(index, set) {
+  function setHTML(number, set) {
     return `
-      <div class="mana-v64-set" data-mc-set>
+      <div class="mana-v64-set" data-m1002-set>
         <span class="mana-v64-set-number">
-          ${index + 1}
+          ${number}
         </span>
 
-        <input type="number"
-          min="0" step=".5" inputmode="decimal"
+        <input
+          type="number"
+          min="0"
+          max="1000"
+          step="0.5"
+          inputmode="decimal"
           placeholder="kg"
-          data-mc-weight
-          aria-label="Set ${index + 1} weight"
-          value="${esc(set.weight ?? "")}">
+          aria-label="Set ${number} weight"
+          data-m1002-weight
+          value="${set.weight == null
+            ? ""
+            : esc(set.weight)}">
 
-        <input type="number"
-          min="0" step="1" inputmode="numeric"
-          data-mc-reps
-          aria-label="Set ${index + 1} reps"
-          value="${esc(set.reps ?? "")}">
+        <input
+          type="number"
+          min="0"
+          max="500"
+          step="1"
+          inputmode="numeric"
+          aria-label="Set ${number} reps"
+          data-m1002-reps
+          value="${set.reps == null
+            ? ""
+            : esc(set.reps)}">
 
         <button type="button"
-          class="mana-v64-check ${set.done ? "done" : ""}"
-          data-mc-tick
+          class="mana-v64-check${set.done ? " done" : ""}"
+          data-m1002-tick
           aria-pressed="${!!set.done}">
           ✓
         </button>
@@ -1493,50 +1800,71 @@
     `;
   }
 
-  function exerciseHTML(exercise, previous, fromCompleted) {
-    const old = (previous || []).find(
-      e => e.id === exercise.id ||
-        e.name === exercise.exercise_name
+  function exerciseHTML(exercise, prior, completed) {
+    const count = Math.max(
+      1,
+      Math.min(20, Number(exercise.sets) || 3)
     );
 
-    const n = Math.max(
-      1, Math.min(20, num(exercise.sets) || 3)
+    const previous = (prior || []).find(
+      item =>
+        item.id === exercise.id ||
+        item.name === exercise.exercise_name
     );
 
-    const sets = Array.from({ length: n }, (_, i) => ({
-      weight: old?.sets?.[i]?.weight ?? "",
-      reps: old?.sets?.[i]?.reps ??
-        defaultReps(exercise.reps),
-      done: !fromCompleted && !!old?.sets?.[i]?.done
-    }));
+    const sets = Array.from(
+      { length: count },
+      (_, index) => ({
+        weight:
+          previous?.sets?.[index]?.weight ?? "",
+
+        reps:
+          previous?.sets?.[index]?.reps ??
+          defaultReps(exercise.reps),
+
+        done: completed
+          ? false
+          : !!previous?.sets?.[index]?.done
+      })
+    );
 
     return `
-      <div class="mana-v64-card"
-        data-mc-ex="${esc(exercise.id)}">
+      <section class="mana-v64-card"
+        data-m1002-ex="${esc(exercise.id)}">
 
         <div class="mana-v64-name">
           ${esc(exercise.exercise_name)}
         </div>
 
         <div class="mana-v64-target">
-          ${n} sets • ${esc(exercise.reps || "8–12")} reps
-          ${exercise.rest_seconds == null
-            ? ""
-            : " • " + esc(exercise.rest_seconds) + "s rest"}
+          ${count} sets
+          • ${esc(exercise.reps || "8–12")} reps
+
+          ${exercise.rest_seconds != null
+            ? " • " +
+              esc(exercise.rest_seconds) +
+              "s rest"
+            : ""}
         </div>
 
         ${muscleHTML(exercise.exercise_name)}
 
         ${exercise.rpe_target
-          ? `<p class="mc-muted">
-              Target RPE ${esc(exercise.rpe_target)}
-            </p>`
+          ? `
+            <p class="m1002-note">
+              Target RPE:
+              ${esc(exercise.rpe_target)}
+            </p>
+          `
           : ""}
 
         ${exercise.notes
-          ? `<p class="mc-muted">
-              Coach: ${esc(exercise.notes)}
-            </p>`
+          ? `
+            <p class="m1002-note">
+              Coach:
+              ${esc(exercise.notes)}
+            </p>
+          `
           : ""}
 
         <div class="mana-v64-table-head">
@@ -1546,84 +1874,87 @@
           <span>Done</span>
         </div>
 
-        ${sets.map(setHTML).join("")}
+        <div data-m1002-sets>
+          ${sets.map(
+            (set, index) =>
+              setHTML(index + 1, set)
+          ).join("")}
+        </div>
 
-        <p class="mc-muted">
-          Weight repeats across this exercise.
-          Reps remain editable per set.
+        <p class="m1002-muted">
+          Entering a weight repeats it across
+          this exercise. Reps can be changed
+          individually.
         </p>
 
         <button type="button"
-          class="mc-tick-all"
-          data-mc-tick-exercise>
+          class="m1002-tick-all"
+          data-m1002-tick-exercise>
           TICK ALL SETS ✓
         </button>
-      </div>
+      </section>
     `;
   }
 
   function coreRoutine() {
-    const day = num(session?.day?.day_number) || 1;
-    return CORE[(day - 1) % CORE.length];
+    const day = Number(
+      session?.day?.day_number
+    ) || 1;
+
+    return CORE[
+      (day - 1) % CORE.length
+    ];
   }
 
   function finalHTML() {
     return `
-      <div class="mc-final">
-        <span class="mc-kicker">
+      <div class="m1002-finishers">
+        <span class="m1002-kicker">
           OPTIONAL FINISHERS
         </span>
 
         <h3>Cardio & Core</h3>
 
-        <p class="mc-muted">
-          Add either finisher or both.
-          Each finisher has its own Save action.
+        <p class="m1002-muted">
+          Add Cardio, Core or both at the
+          end of your Strength workout.
         </p>
 
-        <div class="mc-finisher-options">
+        <div class="m1002-finisher-pair">
           <button type="button"
-            data-mc-finisher="cardio"
-            class="${finishers.cardio?.completed
-              ? "done" : ""}">
+            class="m1002-finisher-option"
+            data-m1002-finisher="cardio">
             ♥ CARDIO
-            <small>
-              ${finishers.cardio?.completed
-                ? "COMPLETED ✓"
-                : "10–20 minutes"}
-            </small>
+            <small>10–20 minutes</small>
           </button>
 
           <button type="button"
-            data-mc-finisher="core"
-            class="${finishers.core?.completed
-              ? "done" : ""}">
+            class="m1002-finisher-option"
+            data-m1002-finisher="core">
             ◎ CORE
-            <small>
-              ${finishers.core?.completed
-                ? "COMPLETED ✓"
-                : "3 rounds"}
-            </small>
+            <small>3 rounds</small>
           </button>
         </div>
 
-        <div id="mcFinisherDetails"></div>
-        <p class="mc-status" id="mcFinisherStatus"></p>
+        <div id="m1002FinisherPanel"></div>
+
+        <div id="m1002FinisherSaved"
+          class="m1002-saved"></div>
 
         <button type="button"
-          class="mc-tick-all"
-          data-mc-tick-workout>
+          class="m1002-tick-all"
+          data-m1002-tick-workout>
           TICK ALL WORKOUT ✓
         </button>
 
-        <p class="mc-muted">
-          Tick All Workout marks the prescribed
-          strength sets complete without changing
-          their recorded weights or reps.
+        <p class="m1002-muted">
+          Use Tick All if you followed
+          the prescribed sets and reps.
+          Cardio and Core are optional.
         </p>
 
-        <div class="mc-feedback">
-          <span class="mc-kicker">
+        <div class="m1002-feedback">
+          <span class="m1002-kicker">
             SESSION FEEDBACK
           </span>
 
@@ -1631,123 +1962,186 @@
 
           <label>Workout rating (1–5)</label>
 
-          <div class="mc-rating">
-            ${[1, 2, 3, 4, 5].map(n => `
+          <div class="m1002-rating">
+            ${[1, 2, 3, 4, 5].map(number => `
               <button type="button"
-                data-mc-rating="${n}"
-                class="${rating === n ? "active" : ""}">
-                ${n}
+                data-m1002-rating="${number}"
+                aria-pressed="${rating === number}">
+                ${number}
               </button>
             `).join("")}
           </div>
 
-          <label for="mcWorkoutComment">
+          <label for="m1002WorkoutComment">
             Comments (optional)
           </label>
 
           <textarea
-            id="mcWorkoutComment"
+            id="m1002WorkoutComment"
             maxlength="500"
             placeholder="How did you feel? Anything to remember for next time?">${esc(comment)}</textarea>
         </div>
 
         <button type="button"
-          class="mc-primary"
-          data-mc-complete>
+          class="m1002-primary m1002-final-complete"
+          data-m1002-complete>
           COMPLETE WORKOUT ✓
         </button>
 
-        <p class="mc-status" id="mcCompleteStatus"></p>
+        <p class="m1002-muted">
+          Your completed sets, finishers
+          and feedback will be saved together.
+        </p>
       </div>
     `;
   }
 
-  function cardioHTML() {
-    return `
-      <div class="mc-finisher-card">
-        <h3>Cardio Finisher</h3>
+  function ratings() {
+    document.querySelectorAll(
+      `#${MODAL} [data-m1002-rating]`
+    ).forEach(button => {
+      const active =
+        Number(button.dataset.m1002Rating) === rating;
 
-        <p class="mc-muted">
-          Select the session you've completed.
+      button.classList.toggle("active", active);
+
+      button.setAttribute(
+        "aria-pressed",
+        String(active)
+      );
+    });
+  }
+
+  function finisherStatus() {
+    const messages = [];
+
+    if (finishers.cardio?.completed) {
+      messages.push(
+        "Cardio: " +
+        finishers.cardio.equipment +
+        ", " +
+        finishers.cardio.durationMinutes +
+        " min"
+      );
+    }
+
+    if (finishers.core?.completed) {
+      messages.push("Core: 3 rounds");
+    }
+
+    if ($("m1002FinisherSaved")) {
+      $("m1002FinisherSaved").textContent =
+        messages.length
+          ? "✓ Added: " + messages.join(" · ")
+          : "";
+    }
+
+    ratings();
+    fitSlide();
+  }
+
+  function openCardio() {
+    const panel = $("m1002FinisherPanel");
+    if (!panel) return;
+
+    panel.innerHTML = `
+      <div class="m1002-finisher-panel">
+        <h4>Cardio Finisher</h4>
+
+        <p class="m1002-muted">
+          Choose equipment and a
+          10–20 minute session.
         </p>
 
-        <div class="mc-options">
-          ${["Bike", "Rower", "Treadmill", "Bodyweight"]
-            .map(name => `
-              <button type="button"
-                data-mc-equipment="${esc(name)}"
-                class="${cardioEquipment === name
-                  ? "active" : ""}">
-                ${esc(name)}
-              </button>
-            `).join("")}
+        <div class="m1002-options">
+          ${[
+            "Bike",
+            "Rower",
+            "Treadmill",
+            "Bodyweight"
+          ].map(name => `
+            <button type="button"
+              class="${name === cardioEquipment
+                ? "active"
+                : ""}"
+              data-m1002-cardio-equipment="${esc(name)}">
+              ${esc(name)}
+            </button>
+          `).join("")}
         </div>
 
-        <div class="mc-options">
+        <div class="m1002-options">
           ${[10, 15, 20].map(minutes => `
             <button type="button"
-              data-mc-minutes="${minutes}"
-              class="${cardioMinutes === minutes
-                ? "active" : ""}">
+              class="${minutes === cardioMinutes
+                ? "active"
+                : ""}"
+              data-m1002-cardio-minutes="${minutes}">
               ${minutes} MIN
             </button>
           `).join("")}
         </div>
 
-        <p class="mc-muted">
-          Include an appropriate warm-up
-          and cool-down.
+        <p class="m1002-muted">
+          Warm up for 2–3 minutes,
+          complete the main effort
+          and cool down.
         </p>
 
         <button type="button"
-          class="mc-primary"
-          data-mc-cardio-save>
-          FINISH & SAVE CARDIO ✓
+          class="m1002-secondary"
+          data-m1002-finisher-close>
+          CLOSE
         </button>
 
         <button type="button"
-          class="mc-secondary"
-          style="width:100%;margin-top:8px"
-          data-mc-finisher-close>
-          CLOSE
+          class="m1002-secondary"
+          data-m1002-cardio-complete>
+          LOG COMPLETION ✓
         </button>
       </div>
     `;
+
+    fitSlide();
   }
 
-  function coreHTML() {
+  function openCore() {
+    const panel = $("m1002FinisherPanel");
+    if (!panel) return;
+
     const routine = coreRoutine();
-    const current = coreTicks[coreRound];
+    const current = coreTicks[coreRound] || [];
 
-    const allDone = coreTicks.every(
-      row => row.length === routine.length
-    );
+    panel.innerHTML = `
+      <div class="m1002-finisher-panel">
+        <h4>Core Finisher</h4>
 
-    return `
-      <div class="mc-finisher-card">
-        <h3>Core Finisher</h3>
-
-        <p class="mc-muted">
+        <p class="m1002-muted">
           Round ${coreRound + 1} of 3
         </p>
 
-        <div class="mc-options">
-          ${[0, 1, 2].map(n => `
+        <div class="m1002-options">
+          ${[0, 1, 2].map(number => `
             <button type="button"
-              data-mc-core-round="${n}"
-              class="${coreRound === n ? "active" : ""}">
-              ROUND ${n + 1}
-              ${coreTicks[n].length === routine.length
-                ? " ✓" : ""}
+              data-m1002-core-round="${number}"
+              class="${number === coreRound
+                ? "active"
+                : ""}">
+              ROUND ${number + 1}
+
+              ${coreTicks[number]?.length === routine.length
+                ? " ✓"
+                : ""}
             </button>
           `).join("")}
         </div>
 
-        ${routine.map(([name, reps], i) => `
-          <label class="mc-core-item">
+        ${routine.map(([name, reps], index) => `
+          <label class="m1002-core-item">
             <input type="checkbox"
-              data-mc-core-check="${i}"
-              ${current.includes(i) ? "checked" : ""}>
+              data-m1002-core-check="${index}"
+              ${current.includes(index) ? "checked" : ""}>
+
             <span>
               <strong>${esc(name)}</strong>
               <small>${esc(reps)}</small>
@@ -1755,308 +2149,246 @@
           </label>
         `).join("")}
 
-        <div class="mc-options">
+        <div class="m1002-options">
           <button type="button"
-            data-mc-core-tick-round>
+            data-m1002-core-tick-round>
             TICK ALL ROUND
           </button>
 
           <button type="button"
-            data-mc-core-tick-all>
+            data-m1002-core-tick-all>
             TICK ALL 3 ROUNDS
           </button>
         </div>
 
-        ${!allDone && coreRound < 2
-          ? `
-            <button type="button"
-              class="mc-secondary"
-              style="width:100%;margin-top:9px"
-              data-mc-core-next>
-              NEXT ROUND →
-            </button>
-          `
-          : ""}
+        <div class="m1002-options">
+          <button type="button"
+            data-m1002-finisher-close>
+            CLOSE
+          </button>
 
-        <button type="button"
-          class="mc-primary"
-          data-mc-core-save
-          ${allDone ? "" : "disabled"}>
-          FINISH & SAVE CORE ✓
-        </button>
-
-        <p class="mc-muted">
-          Complete all three rounds to enable saving.
-        </p>
-
-        <button type="button"
-          class="mc-secondary"
-          style="width:100%;margin-top:8px"
-          data-mc-finisher-close>
-          CLOSE
-        </button>
+          <button type="button"
+            data-m1002-core-next
+            ${current.length !== routine.length
+              ? "disabled"
+              : ""}>
+            ${coreRound === 2
+              ? "FINISH CORE"
+              : "NEXT ROUND"}
+          </button>
+        </div>
       </div>
     `;
-  }
 
-  function showFinisher(kind) {
-    const node = $("mcFinisherDetails");
-    if (!node) return;
-
-    node.innerHTML = kind === "cardio"
-      ? cardioHTML()
-      : coreHTML();
-
-    fitCarousel();
-  }
-
-  function refreshFinal() {
-    const slide = $("mcCarousel")
-      ?.querySelector(".mc-slide:last-child");
-
-    if (!slide) return;
-
-    const scroll = $(IDS.modal)?.scrollTop || 0;
-
-    slide.innerHTML = finalHTML();
-
-    if (finishers.cardio?.completed ||
-        finishers.core?.completed) {
-      $("mcFinisherStatus").textContent = [
-        finishers.cardio?.completed
-          ? "Cardio saved ✓" : "",
-        finishers.core?.completed
-          ? "Core saved ✓" : ""
-      ].filter(Boolean).join(" • ");
-    }
-
-    if ($(IDS.modal)) $(IDS.modal).scrollTop = scroll;
-
-    syncTicks();
-    fitCarousel();
-  }
-
-  async function saveFinisher(kind) {
-    if (!session) return;
-
-    if (kind === "cardio") {
-      finishers.cardio = {
-        completed: true,
-        equipment: cardioEquipment,
-        durationMinutes: cardioMinutes,
-        actualMinutes: cardioMinutes,
-        completedAt: new Date().toISOString()
-      };
-    } else {
-      const routine = coreRoutine();
-
-      if (!coreTicks.every(
-        row => row.length === routine.length
-      )) return;
-
-      finishers.core = {
-        completed: true,
-        rounds: 3,
-        exercises: routine.map(([name, reps]) => ({
-          name,
-          target: reps,
-          roundsCompleted: 3
-        })),
-        completedAt: new Date().toISOString()
-      };
-    }
-
-    backup();
-    clearTimeout(saveTimer);
-
-    const details = $("mcFinisherDetails");
-
-    if (details) {
-      details.innerHTML = `
-        <p class="mc-status">
-          Saving ${kind} to Mana cloud…
-        </p>
-      `;
-    }
-
-    const saved = await saveSession();
-
-    if (saved) {
-      refreshFinal();
-    } else if (details) {
-      details.innerHTML = `
-        <p class="mc-status">
-          Cloud save failed. Your local backup
-          is retained. Retry saving this finisher.
-        </p>
-        <button type="button"
-          class="mc-primary"
-          data-mc-retry-finisher="${kind}">
-          RETRY SAVE
-        </button>
-      `;
-    }
+    fitSlide();
   }
 
   function slides() {
     return [
-      ...($("mcCarousel")
-        ?.querySelectorAll(".mc-slide") || [])
+      ...($("m1002Carousel")
+        ?.querySelectorAll(".m1002-slide") || [])
     ];
   }
 
-  function fitCarousel() {
-    requestAnimationFrame(() => {
-      const carousel = $("mcCarousel");
-      const active = slides()[currentSlide];
+  function count() {
+    return session?.exercises?.length || 0;
+  }
 
-      if (carousel && active) {
-        const height = Math.ceil(active.scrollHeight);
-        if (height > 0) {
-          carousel.style.height = height + "px";
-        }
+  function completeCard(index) {
+    const ticks = [
+      ...(slides()[index]
+        ?.querySelectorAll("[data-m1002-tick]") || [])
+    ];
+
+    return !!ticks.length &&
+      ticks.every(
+        tick => tick.classList.contains("done")
+      );
+  }
+
+  /*
+   NEW: Active-card height.
+   This prevents the last, taller
+   finisher slide from pushing the
+   Previous/Next arrows downward.
+  */
+
+  function fitSlide() {
+    requestAnimationFrame(() => {
+      const carousel = $("m1002Carousel");
+      const page = slides()[slide];
+
+      if (!carousel || !page) return;
+
+      const height = Math.ceil(page.scrollHeight);
+
+      if (height > 0) {
+        carousel.style.height = height + "px";
       }
     });
   }
 
   function navigate(index, smooth = true) {
-    const carousel = $("mcCarousel");
-    const pages = slides();
+    const carousel = $("m1002Carousel");
+    const allSlides = slides();
 
-    if (!carousel || !pages.length) return;
+    if (!carousel || !allSlides.length) return;
 
-    currentSlide = Math.max(
-      0, Math.min(index, pages.length - 1)
+    slide = Math.max(
+      0,
+      Math.min(index, allSlides.length - 1)
     );
 
+    fitSlide();
+
     carousel.scrollTo({
-      left: carousel.clientWidth * currentSlide,
+      left: carousel.clientWidth * slide,
       behavior: smooth ? "smooth" : "auto"
     });
 
-    updateNavigation();
-    fitCarousel();
+    renderNavigation();
   }
 
-  function updateNavigation() {
-    const total = slides().length;
+  function renderNavigation() {
+    const total = count() + 1;
 
-    if (!total) return;
-
-    if ($("mcPosition")) {
-      $("mcPosition").textContent =
-        currentSlide === total - 1
-          ? "Cardio, Core & Feedback"
-          : `Exercise ${currentSlide + 1} of ${total - 1}`;
+    if ($("m1002Position")) {
+      $("m1002Position").textContent =
+        slide === count()
+          ? "Optional Finishers + Feedback"
+          : "Exercise " +
+            (slide + 1) +
+            " of " +
+            count();
     }
 
-    if ($("mcDots")) {
-      $("mcDots").innerHTML = slides().map((page, i) => {
-        const ticks = [
-          ...page.querySelectorAll("[data-mc-tick]")
-        ];
-
-        const done = ticks.length &&
-          ticks.every(t => t.classList.contains("done"));
-
-        return `
-          <button type="button"
-            class="mc-dot
-              ${i === currentSlide ? "active" : ""}
-              ${done ? "done" : ""}"
-            data-mc-slide="${i}"
-            aria-label="Page ${i + 1}">
-          </button>
-        `;
-      }).join("");
+    if ($("m1002Dots")) {
+      $("m1002Dots").innerHTML =
+        Array.from(
+          { length: total },
+          (_, index) => `
+            <button type="button"
+              class="m1002-dot
+                ${index === slide ? "active" : ""}
+                ${index < count() &&
+                  completeCard(index)
+                    ? "done"
+                    : ""}"
+              data-m1002-slide="${index}"
+              aria-label="${index === count()
+                ? "Finishers and feedback"
+                : "Exercise " + (index + 1)}">
+            </button>
+          `
+        ).join("");
     }
 
-    if ($("mcPrevious")) {
-      $("mcPrevious").disabled = currentSlide === 0;
+    if ($("m1002Previous")) {
+      $("m1002Previous").disabled =
+        slide === 0;
     }
 
-    if ($("mcNext")) {
-      $("mcNext").disabled = currentSlide === total - 1;
+    if ($("m1002Next")) {
+      $("m1002Next").disabled =
+        slide === total - 1;
 
-      $("mcNext").textContent =
-        currentSlide === total - 2
+      $("m1002Next").textContent =
+        slide === count() - 1
           ? "FINISHERS ›"
           : "NEXT ›";
     }
 
     syncTicks();
+    fitSlide();
   }
 
   function syncTicks() {
     slides().forEach(page => {
       const button = page.querySelector(
-        "[data-mc-tick-exercise]"
+        "[data-m1002-tick-exercise]"
       );
 
       if (!button) return;
 
-      const ticks = [
-        ...page.querySelectorAll("[data-mc-tick]")
+      const checks = [
+        ...page.querySelectorAll(
+          "[data-m1002-tick]"
+        )
       ];
 
-      const done = ticks.length &&
-        ticks.every(t => t.classList.contains("done"));
+      const done =
+        !!checks.length &&
+        checks.every(
+          check => check.classList.contains("done")
+        );
 
-      button.classList.toggle("done", !!done);
+      button.classList.toggle("done", done);
 
       button.textContent = done
         ? "ALL SETS COMPLETE ✓"
         : "TICK ALL SETS ✓";
     });
 
-    const button = $("mcCarousel")?.querySelector(
-      "[data-mc-tick-workout]"
+    const carousel = $("m1002Carousel");
+
+    const button = carousel?.querySelector(
+      "[data-m1002-tick-workout]"
     );
 
-    if (button) {
-      const ticks = [
-        ...$("mcCarousel").querySelectorAll(
-          "[data-mc-tick]"
-        )
-      ];
+    if (!button) return;
 
-      const done = ticks.length &&
-        ticks.every(t => t.classList.contains("done"));
+    const checks = [
+      ...carousel.querySelectorAll(
+        "[data-m1002-tick]"
+      )
+    ];
 
-      button.classList.toggle("done", !!done);
+    const done =
+      !!checks.length &&
+      checks.every(
+        check => check.classList.contains("done")
+      );
 
-      button.textContent = done
-        ? "ALL WORKOUT SETS COMPLETE ✓"
-        : "TICK ALL WORKOUT ✓";
-    }
+    button.classList.toggle("done", done);
+
+    button.textContent = done
+      ? "ALL WORKOUT SETS COMPLETE ✓"
+      : "TICK ALL WORKOUT ✓";
   }
 
   function readSets() {
     if (!session) return [];
 
     return [
-      ...($("mcCarousel")
-        ?.querySelectorAll("[data-mc-ex]") || [])
+      ...($("m1002Carousel")
+        ?.querySelectorAll("[data-m1002-ex]") || [])
     ].map(card => ({
-      id: card.dataset.mcEx,
+      id: card.dataset.m1002Ex,
 
       name: session.exercises.find(
-        e => e.id === card.dataset.mcEx
+        exercise =>
+          exercise.id === card.dataset.m1002Ex
       )?.exercise_name || "",
 
       sets: [
-        ...card.querySelectorAll("[data-mc-set]")
-      ].map((row, i) => ({
-        set: i + 1,
-        weight: row.querySelector(
-          "[data-mc-weight]"
-        )?.value || "",
-        reps: num(row.querySelector(
-          "[data-mc-reps]"
-        )?.value),
-        done: !!row.querySelector(
-          "[data-mc-tick]"
-        )?.classList.contains("done")
+        ...card.querySelectorAll(
+          "[data-m1002-set]"
+        )
+      ].map((row, index) => ({
+        set: index + 1,
+
+        weight:
+          row.querySelector("[data-m1002-weight]")
+            ?.value || "",
+
+        reps: Number(
+          row.querySelector("[data-m1002-reps]")
+            ?.value || 0
+        ),
+
+        done: !!row
+          .querySelector("[data-m1002-tick]")
+          ?.classList.contains("done")
       }))
     }));
   }
@@ -2066,21 +2398,25 @@
     let done = 0;
     let volume = 0;
 
-    data.forEach(exercise => {
-      (exercise.sets || []).forEach(set => {
+    for (const exercise of data) {
+      for (const set of exercise.sets) {
         all++;
 
         if (set.done) {
           done++;
-          volume += num(set.weight) * num(set.reps);
+
+          volume +=
+            (Number(set.weight) || 0) *
+            (Number(set.reps) || 0);
         }
-      });
-    });
+      }
+    }
 
     return {
       all,
       done,
-      volume: format(volume),
+      volume: Math.round(volume * 10) / 10,
+
       percent: all
         ? Math.round(done / all * 100)
         : 0
@@ -2088,8 +2424,11 @@
   }
 
   function backupKey() {
-    return session && userId
-      ? `mana-coach-draft-v1:${userId}:${session.programId}:${session.day.id}`
+    return session && account
+      ? "mana-coach-draft-v1:" +
+        account + ":" +
+        session.programId + ":" +
+        session.day.id
       : "";
   }
 
@@ -2097,14 +2436,17 @@
     if (!session) return;
 
     try {
-      localStorage.setItem(backupKey(), JSON.stringify({
-        updatedAt: Date.now(),
-        elapsed: elapsed(),
-        exercises: readSets(),
-        finishers,
-        rating,
-        comment
-      }));
+      localStorage.setItem(
+        backupKey(),
+        JSON.stringify({
+          updatedAt: Date.now(),
+          elapsed: clock(),
+          exercises: readSets(),
+          finishers,
+          rating,
+          comment
+        })
+      );
     } catch (_) {}
   }
 
@@ -2127,49 +2469,54 @@
   function localEdit() {
     if (!session) return;
 
-    syncTicks();
-    updateNavigation();
+    renderNavigation();
     backup();
 
     clearTimeout(saveTimer);
 
-    saveTimer = setTimeout(() => {
-      saveTimer = null;
-      void saveSession();
-    }, 1000);
+    saveTimer = setTimeout(
+      () => queueSave(),
+      1000
+    );
   }
 
-  function saveSession(completed = false) {
-    if (!session) return Promise.resolve(false);
+  function queueSave(completed = false) {
+    if (!session) return saveChain;
 
-    const active = session;
-    const exerciseData = readSets();
-    const result = totals(exerciseData);
+    const exercises = readSets();
+    const result = totals(exercises);
 
-    if (!active.logId) {
-      active.logId = crypto.randomUUID();
+    if (!session.logId) {
+      session.logId = crypto.randomUUID();
     }
 
-    const seconds = elapsed();
-
     const snapshot = {
-      id: active.logId,
-      user_id: userId,
-      program_id: active.programId,
-      program_day_id: active.day.id,
-      week_number: num(active.day.week_number),
-      day_number: num(active.day.day_number),
-      session_name: active.day.title || "Workout",
-      status: completed ? "completed" : "in_progress",
+      id: session.logId,
+      user_id: account,
+      program_id: session.programId,
+      program_day_id: session.day.id,
+      week_number: Number(session.day.week_number),
+      day_number: Number(session.day.day_number),
+      session_name: session.day.title || "Workout",
+
+      status: completed
+        ? "completed"
+        : "in_progress",
+
       started_at: new Date(
-        Date.now() - seconds * 1000
+        Date.now() - clock() * 1000
       ).toISOString(),
+
       completed_at: completed
         ? new Date().toISOString()
         : null,
-      duration_seconds: seconds,
-      exercises: exerciseData,
-      finishers: JSON.parse(JSON.stringify(finishers)),
+
+      duration_seconds: clock(),
+      exercises,
+
+      finishers:
+        JSON.parse(JSON.stringify(finishers)),
+
       workout_rating: rating || null,
       workout_comment: comment.trim() || null,
       completed_sets: result.done,
@@ -2178,20 +2525,23 @@
       updated_at: new Date().toISOString()
     };
 
-    const operation = saveQueue
+    if (completed && $("m1002SaveStatus")) {
+      $("m1002SaveStatus").textContent =
+        "Saving completed workout…";
+    }
+
+    saveChain = saveChain
       .catch(() => false)
       .then(async () => {
         const client = await db();
 
-        if (await signedInUser() !== userId) {
-          throw Error("Sign-in changed");
-        }
-
-        const response = await client
+        const result = await client
           .from("coach_workout_logs")
-          .upsert(snapshot, { onConflict: "id" });
+          .upsert(snapshot, {
+            onConflict: "id"
+          });
 
-        if (response.error) throw response.error;
+        if (result.error) throw result.error;
 
         if (completed) clearBackup();
 
@@ -2200,77 +2550,92 @@
       .catch(error => {
         console.warn("[Mana Coach Save]", error);
 
-        const status =
-          $("mcCompleteStatus") || $("mcFinisherStatus");
-
-        if (status) {
-          status.textContent =
-            "Cloud save failed: " +
+        if ($("m1002SaveStatus")) {
+          $("m1002SaveStatus").textContent =
+            "Cloud save failed — local backup kept. " +
             (error.message || error);
         }
 
         return false;
       });
 
-    saveQueue = operation;
-    return operation;
+    return saveChain;
   }
 
   async function openDay(id) {
-    const day = program?.days.find(d => d.id === id);
-    if (!day || !userId || !assignment) return;
+    const day = program?.days.find(
+      item => item.id === id
+    );
 
-    const token = ++openToken;
+    if (!day || !account || !assignment) return;
+
+    const token = ++openSeq;
 
     stopClock();
 
+    const exercises = program.exercises.filter(
+      exercise =>
+        exercise.program_day_id === id
+    );
+
     session = {
       day,
+      exercises,
       programId: program.program.id,
-      exercises: program.exercises.filter(
-        e => e.program_day_id === id
-      ),
       logId: null
     };
 
+    slide = 0;
     elapsedBase = 0;
     startedAt = Date.now();
-    currentSlide = 0;
     finishers = {};
     rating = 0;
     comment = "";
     coreTicks = [[], [], []];
     coreRound = 0;
 
-    showModal(`
-      <div class="mc-position">
-        <span id="mcPosition">Exercise 1</span>
+    show(`
+      <div class="m1002-position">
+        <span id="m1002Position">
+          Exercise 1
+        </span>
+
         <small>Swipe left / right</small>
       </div>
 
-      <div id="mcDots" class="mc-dots"></div>
+      <div id="m1002Dots"
+        class="m1002-dots"></div>
 
-      <div id="mcCarousel" class="mc-carousel">
-        <div class="mc-slide">
-          <p class="mc-status">
+      <div id="m1002Carousel"
+        class="m1002-carousel">
+
+        <div class="m1002-slide">
+          <p class="m1002-status">
             Loading your previous sets…
           </p>
         </div>
       </div>
 
-      <div class="mc-nav">
+      <div class="m1002-nav">
         <button type="button"
-          id="mcPrevious" data-mc-previous>
+          id="m1002Previous"
+          data-m1002-previous>
           ‹ PREVIOUS
         </button>
+
         <button type="button"
-          class="next" id="mcNext" data-mc-next>
+          class="next"
+          id="m1002Next"
+          data-m1002-next>
           NEXT ›
         </button>
       </div>
+
+      <p class="m1002-status"
+        id="m1002SaveStatus"></p>
     `);
 
-    let previous = [];
+    let prior = [];
     let fromCompleted = false;
 
     try {
@@ -2279,238 +2644,265 @@
       const result = await client
         .from("coach_workout_logs")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", account)
         .eq("program_id", session.programId)
         .eq("program_day_id", id)
-        .order("updated_at", { ascending: false })
+        .order("updated_at", {
+          ascending: false
+        })
         .limit(12);
 
       if (result.error) throw result.error;
-      if (token !== openToken) return;
+
+      if (
+        token !== openSeq ||
+        session?.day.id !== id
+      ) return;
 
       const active = (result.data || []).find(
-        x => x.status === "in_progress"
+        item => item.status === "in_progress"
       );
 
       const completed = (result.data || []).find(
-        x => x.status === "completed"
+        item => item.status === "completed"
       );
 
       const local = readBackup();
 
       if (active) {
         session.logId = active.id;
-        elapsedBase = num(active.duration_seconds);
+
+        elapsedBase =
+          Number(active.duration_seconds) || 0;
       }
 
-      previous =
+      fromCompleted = !active && !!completed;
+
+      prior =
         active?.exercises ||
         completed?.exercises ||
         [];
 
-      fromCompleted = !active && !!completed;
-
       finishers = active?.finishers || {};
-      rating = num(active?.workout_rating);
+      rating = Number(active?.workout_rating) || 0;
       comment = active?.workout_comment || "";
 
       if (
         local?.exercises &&
-        (!active ||
-          num(local.updatedAt) >
-          Date.parse(active.updated_at))
+        (
+          !active ||
+          Number(local.updatedAt) >
+            Date.parse(active.updated_at)
+        )
       ) {
-        previous = local.exercises;
+        prior = local.exercises;
         finishers = local.finishers || {};
-        rating = num(local.rating);
+        rating = Number(local.rating) || 0;
         comment = local.comment || "";
-        elapsedBase = num(local.elapsed);
+        elapsedBase = Number(local.elapsed) || 0;
         fromCompleted = false;
       }
 
-      if (finishers.core?.completed) {
-        const indices = coreRoutine().map((_, i) => i);
-        coreTicks = [
-          [...indices],
-          [...indices],
-          [...indices]
-        ];
-      }
-
     } catch (error) {
-      console.warn("[Mana Coach Restore]", error);
+      if (token !== openSeq) return;
+
+      if ($("m1002SaveStatus")) {
+        $("m1002SaveStatus").textContent =
+          "Cloud restore unavailable: " +
+          (error.message || error);
+      }
     }
 
-    if (token !== openToken || !session) return;
+    if (
+      token !== openSeq ||
+      session?.day.id !== id
+    ) return;
 
-    $("mcCarousel").innerHTML =
-      session.exercises.map(exercise => `
-        <div class="mc-slide">
-          ${exerciseHTML(
-            exercise,
-            previous,
-            fromCompleted
-          )}
+    $("m1002Carousel").innerHTML =
+      exercises.map(exercise => `
+        <div class="m1002-slide">
+          <div class="m1002-slide-inner">
+            ${exerciseHTML(
+              exercise,
+              prior,
+              fromCompleted
+            )}
+          </div>
         </div>
       `).join("") +
       `
-        <div class="mc-slide">
-          ${finalHTML()}
+        <div class="m1002-slide">
+          <div class="m1002-slide-inner">
+            ${finalHTML()}
+          </div>
         </div>
       `;
 
     document.querySelectorAll(
-      `#${IDS.modal} .mc-muscle-frame img`
+      `#${MODAL} .m1002-muscle-frame img`
     ).forEach(image => {
-      image.addEventListener("error", () => {
-        const fallback = document.createElement("span");
-        fallback.className = "mc-kicker";
-        fallback.textContent = image.alt;
-        image.replaceWith(fallback);
-      }, { once: true });
+      image.addEventListener(
+        "error",
+        () => {
+          image.hidden = true;
+
+          if (image.nextElementSibling) {
+            image.nextElementSibling.hidden = false;
+          }
+        },
+        { once: true }
+      );
     });
 
-    const carousel = $("mcCarousel");
+    $("m1002Carousel").addEventListener(
+      "scroll",
+      () => {
+        clearTimeout(scrollTimer);
 
-    carousel.addEventListener("scroll", () => {
-      clearTimeout(scrollTimer);
+        scrollTimer = setTimeout(() => {
+          const carousel = $("m1002Carousel");
 
-      scrollTimer = setTimeout(() => {
-        if (!carousel.clientWidth) return;
+          if (!carousel?.clientWidth) return;
 
-        currentSlide = Math.max(
-          0,
-          Math.min(
-            slides().length - 1,
-            Math.round(
-              carousel.scrollLeft / carousel.clientWidth
+          slide = Math.max(
+            0,
+            Math.min(
+              slides().length - 1,
+              Math.round(
+                carousel.scrollLeft /
+                carousel.clientWidth
+              )
             )
-          )
-        );
+          );
 
-        updateNavigation();
-        fitCarousel();
-      }, 75);
-    }, { passive: true });
+          renderNavigation();
+        }, 75);
+      },
+      { passive: true }
+    );
 
     resizeObserver?.disconnect();
 
     if (typeof ResizeObserver === "function") {
-      resizeObserver = new ResizeObserver(fitCarousel);
-
-      slides().forEach(page =>
-        resizeObserver.observe(page)
+      resizeObserver = new ResizeObserver(
+        () => fitSlide()
       );
+
+      slides().forEach(element => {
+        resizeObserver.observe(
+          element.firstElementChild || element
+        );
+      });
     }
 
-    if (finishers.cardio?.completed ||
-        finishers.core?.completed) {
-      refreshFinal();
-    }
-
+    finisherStatus();
     navigate(0, false);
+    startClock();
   }
 
-  function summaryHTML(record) {
-    const sets = totals(record.exercises);
-    const metric = (label, value, sub) => `
-      <div class="mc-summary-stat">
+  /*
+   ORIGINAL-STYLE COMPLETION SUMMARY
+  */
+
+  function summaryHTML(result, seconds) {
+    const stat = (label, value, description) => `
+      <div class="m1002-summary-stat">
         <small>${label}</small>
         <strong>${value}</strong>
-        <small>${sub}</small>
+        <span>${description}</span>
       </div>
     `;
 
-    const notes = [];
-
-    if (record.finishers?.cardio?.completed) {
-      notes.push(
-        "✓ Cardio: " +
-        esc(record.finishers.cardio.equipment) +
-        " • " +
-        num(record.finishers.cardio.durationMinutes) +
-        " minutes"
-      );
-    }
-
-    if (record.finishers?.core?.completed) {
-      notes.push("✓ Core: 3 rounds completed");
-    }
-
-    if (record.workout_rating) {
-      notes.push(
-        "Workout rating: " +
-        record.workout_rating + "/5"
-      );
-    }
-
-    if (record.workout_comment) {
-      notes.push(
-        "Comment: " + esc(record.workout_comment)
-      );
-    }
-
     return `
-      <div class="mc-summary">
-        <div class="mc-summary-check">✓</div>
+      <div class="m1002-summary">
+        <div class="m1002-summary-check">
+          ✓
+        </div>
 
-        <span class="mc-kicker">
-          MANA STRENGTH
+        <span class="m1002-kicker">
+          MANA STRENGTH • COACH PROGRAM
         </span>
 
         <h1>Workout Complete</h1>
 
-        <p class="mc-muted">
-          ${esc(record.session_name)}
-        </p>
+        <div class="m1002-summary-name">
+          ${esc(session?.day?.title || "Strength Session")}
+        </div>
 
-        <div class="mc-summary-grid">
-          ${metric(
+        <div class="m1002-summary-grid">
+          ${stat(
             "Sets",
-            `${sets.done}/${sets.all}`,
+            result.done + " / " + result.all,
             "Completed"
           )}
 
-          ${metric(
+          ${stat(
             "Completion",
-            `${sets.percent}%`,
+            result.percent + "%",
             "Session"
           )}
 
-          ${metric(
+          ${stat(
             "Volume",
-            `${sets.volume} kg`,
+            result.volume + " kg",
             "Total lifted"
           )}
 
-          ${metric(
+          ${stat(
             "Time",
-            clockText(record.duration_seconds),
+            time(seconds),
             "Workout duration"
           )}
         </div>
 
-        <div class="mc-summary-note">
+        <div class="m1002-summary-note">
           <strong>Session complete.</strong>
+
           <div>
             Strong work. Recover well and keep building.
           </div>
 
-          ${notes.map(line => `
-            <div>${line}</div>
-          `).join("")}
+          ${rating
+            ? `<div>Rating: ${rating}/5</div>`
+            : ""}
+
+          ${comment
+            ? `
+              <div>
+                Comment: ${esc(comment)}
+              </div>
+            `
+            : ""}
+
+          ${finishers.cardio?.completed
+            ? `
+              <div>
+                ✓ Cardio:
+                ${esc(finishers.cardio.equipment)}
+                ${finishers.cardio.durationMinutes} min
+              </div>
+            `
+            : ""}
+
+          ${finishers.core?.completed
+            ? `
+              <div>
+                ✓ Core: 3 rounds
+              </div>
+            `
+            : ""}
         </div>
 
         <button type="button"
-          class="mc-primary"
-          data-mc-view-progress>
+          class="m1002-primary"
+          data-m1002-summary-progress>
           VIEW PROGRESS →
         </button>
 
         <button type="button"
-          class="mc-secondary"
+          class="m1002-secondary"
           style="width:100%;margin-top:9px"
-          data-mc-program-back>
+          data-m1002-program-back>
           BACK TO COACH PROGRAM
         </button>
       </div>
@@ -2523,12 +2915,9 @@
     const result = totals();
 
     if (!result.done) {
-      const status = $("mcCompleteStatus");
-
-      if (status) {
-        status.textContent =
-          "Complete at least one set, or use " +
-          "Tick All Workout.";
+      if ($("m1002SaveStatus")) {
+        $("m1002SaveStatus").textContent =
+          "Complete a set first, or use Tick All Workout.";
       }
 
       return;
@@ -2538,34 +2927,32 @@
     backup();
 
     const button = document.querySelector(
-      `[data-mc-complete]`
+      `#${MODAL} [data-m1002-complete]`
     );
 
     if (button) button.disabled = true;
 
-    const record = {
-      session_name: session.day.title || "Workout",
-      duration_seconds: elapsed(),
-      exercises: readSets(),
-      finishers: JSON.parse(JSON.stringify(finishers)),
-      workout_rating: rating,
-      workout_comment: comment
-    };
+    const seconds = clock();
+    const workoutName = session.day.title;
 
-    const saved = await saveSession(true);
+    const success = await queueSave(true);
 
-    if (!saved) {
+    if (!success) {
       if (button) button.disabled = false;
       return;
     }
 
     stopClock();
+
+    show(
+      summaryHTML(result, seconds).replace(
+        "Strength Session",
+        esc(workoutName || "Strength Session")
+      )
+    );
+
     session = null;
-
-    showModal(summaryHTML(record));
-
-    progressLoadedAt = 0;
-    renderVersion++;
+    progressLoaded = 0;
 
     window.dispatchEvent(
       new CustomEvent("mana:coach-workout-saved", {
@@ -2577,680 +2964,427 @@
   }
 
   function backToProgram() {
-    ++openToken;
+    ++openSeq;
+    stopClock();
+
+    resizeObserver?.disconnect();
 
     if (session) {
       backup();
-      void saveSession();
+      queueSave();
     }
 
-    stopClock();
-    resizeObserver?.disconnect();
     session = null;
-
     renderProgram();
   }
 
   function tickAll(root) {
-    const buttons = [
-      ...(root?.querySelectorAll("[data-mc-tick]") || [])
+    const ticks = [
+      ...(root?.querySelectorAll(
+        "[data-m1002-tick]"
+      ) || [])
     ];
 
-    buttons.forEach(button => {
+    ticks.forEach(button => {
       button.classList.add("done");
-      button.setAttribute("aria-pressed", "true");
+
+      button.setAttribute(
+        "aria-pressed",
+        "true"
+      );
     });
 
-    if (buttons.length) localEdit();
+    if (ticks.length) localEdit();
   }
 
   /*
-    PROGRESS — SAME MANA STRENGTH
-    LAYOUT, COACH WORKOUT DATA
+   CLOUD DATA TO PROGRESS TAB
+   Completed coach workouts remain separate
+   from the generated-program history.
   */
 
-  function rangeLogs(logs) {
-    const now = new Date();
-    const start = new Date(now);
-
-    if (progressPeriod === "daily") {
-      start.setHours(0, 0, 0, 0);
-    } else if (progressPeriod === "weekly") {
-      const day = (now.getDay() + 6) % 7;
-      start.setDate(now.getDate() - day);
-      start.setHours(0, 0, 0, 0);
-    } else {
-      start.setDate(1);
-      start.setHours(0, 0, 0, 0);
-    }
-
-    return logs.filter(log =>
-      new Date(
-        log.completed_at || log.updated_at
-      ) >= start
-    );
-  }
-
-  function exerciseMap(logs) {
-    const map = new Map();
-
-    logs.slice().reverse().forEach(log => {
-      (log.exercises || []).forEach(exercise => {
-        const name = exercise.name || "Exercise";
-
-        if (!map.has(name)) map.set(name, []);
-
-        const completed = (exercise.sets || [])
-          .filter(set => set.done);
-
-        if (!completed.length) return;
-
-        const best = Math.max(
-          0,
-          ...completed.map(set => num(set.weight))
-        );
-
-        const maxSet = completed.find(
-          set => num(set.weight) === best
-        );
-
-        const volume = completed.reduce(
-          (sum, set) =>
-            sum + num(set.weight) * num(set.reps),
-          0
-        );
-
-        map.get(name).push({
-          date: log.completed_at || log.updated_at,
-          weight: best,
-          reps: num(maxSet?.reps),
-          volume: format(volume),
-          e1rm: format(
-            best * (1 + num(maxSet?.reps) / 30)
-          )
-        });
-      });
-    });
-
-    return map;
-  }
-
-  function coachMetric(label, percent, sub) {
-    percent = Math.max(
-      0,
-      Math.min(100, Math.round(num(percent)))
+  function progressHTML(logs) {
+    const completed = logs.filter(
+      item => item.status === "completed"
     );
 
-    return `
-      <div class="mana-v993-metric">
-        <div class="mana-v993-metric-label">
-          ${esc(label)}
-        </div>
-
-        <div class="mana-v993-metric-value">
-          ${percent}%
-        </div>
-
-        <div class="mana-v993-metric-sub">
-          ${esc(sub)}
-        </div>
-
-        <div class="mana-v993-track">
-          <div class="mana-v993-fill"
-            style="width:${percent}%"></div>
-        </div>
-      </div>
-    `;
-  }
-
-  function coachRow(title, description, value) {
-    return `
-      <div class="mana-v993-row">
-        <div>
-          <div class="mana-v993-row-title">
-            ${esc(title)}
-          </div>
-          <div class="mana-v993-row-sub">
-            ${esc(description)}
-          </div>
-        </div>
-
-        <div class="mana-v993-row-value">
-          ${esc(value)}
-        </div>
-      </div>
-    `;
-  }
-
-  function progressDetailHTML(logs) {
-    const map = exerciseMap(logs);
-
-    const panel = (kicker, title, body) => `
-      <section class="mana-v993-panel">
-        <div class="mana-v993-panel-head">
-          <div>
-            <div class="mana-v993-panel-kicker">
-              ${esc(kicker)}
-            </div>
-            <h3>${esc(title)}</h3>
-          </div>
-        </div>
-        ${body}
-      </section>
-    `;
-
-    if (progressDetail === "workouts") {
-      const volume = logs.reduce(
-        (sum, log) => sum + num(log.total_volume),
-        0
-      );
-
-      const totalsHTML = `
-        <div class="mana-v993-summary-grid">
-          ${[
-            ["WORKOUTS", logs.length],
-            ["VOLUME", format(volume) + " kg"],
-            ["EXERCISES", map.size]
-          ].map(([label, value]) => `
-            <div class="mana-v993-summary">
-              <span>${esc(label)}</span>
-              <strong>${esc(value)}</strong>
-            </div>
-          `).join("")}
-        </div>
-      `;
-
-      const rows = logs.map(log => `
-        <details class="mc-history">
-          <summary>
-            ${esc(log.session_name || "Workout")}
-          </summary>
-
-          <small>
-            ${dateText(log.completed_at)}
-            • Week ${esc(log.week_number)}
-            • Day ${esc(log.day_number)}
-          </small>
-
-          <small>
-            ${num(log.completed_sets)}/${num(log.total_sets)}
-            sets • ${format(log.total_volume)} kg
-            • ${clockText(log.duration_seconds)}
-          </small>
-
-          ${(log.exercises || []).map(exercise => `
-            <div class="mc-history-exercise">
-              <strong>${esc(exercise.name)}</strong>
-              <div>
-                ${(exercise.sets || []).map(set => `
-                  Set ${num(set.set)}:
-                  ${format(set.weight)} kg ×
-                  ${num(set.reps)} reps
-                  ${set.done ? "✓" : ""}
-                `).join(" • ")}
-              </div>
-            </div>
-          `).join("")}
-
-          ${log.finishers?.cardio?.completed
-            ? `<small>
-                Cardio: ${esc(log.finishers.cardio.equipment)}
-                • ${num(log.finishers.cardio.durationMinutes)}
-                minutes ✓
-              </small>`
-            : ""}
-
-          ${log.finishers?.core?.completed
-            ? `<small>Core: 3 rounds ✓</small>`
-            : ""}
-
-          ${log.workout_rating
-            ? `<small>
-                Rating: ${num(log.workout_rating)}/5
-              </small>`
-            : ""}
-
-          ${log.workout_comment
-            ? `<p class="mc-muted">
-                ${esc(log.workout_comment)}
-              </p>`
-            : ""}
-        </details>
-      `).join("");
-
-      return panel(
-        "TRAINING HISTORY",
-        "Workouts Complete",
-        totalsHTML + (rows ||
-          '<div class="mana-v993-empty">No completed workouts in this period.</div>')
-      );
-    }
-
-    if (progressDetail === "pbs") {
-      const bests = [...map.entries()].map(
-        ([name, entries]) => ({
-          name,
-          best: entries.reduce(
-            (a, b) => !a || b.e1rm > a.e1rm ? b : a,
-            null
-          )
-        })
-      ).sort((a, b) => b.best.e1rm - a.best.e1rm);
-
-      return panel(
-        "STRENGTH",
-        "Personal Bests",
-        bests.map(item => coachRow(
-          item.name,
-          `${item.best.weight} kg × ${item.best.reps} reps`,
-          `${item.best.e1rm} kg E1RM`
-        )).join("") ||
-        '<div class="mana-v993-empty">No recorded lifts yet.</div>'
-      );
-    }
-
-    if (progressDetail === "exercise") {
-      const names = [...map.keys()].sort();
-
-      if (!names.length) {
-        return panel(
-          "EXERCISES",
-          "By Exercise",
-          '<div class="mana-v993-empty">Exercise history will appear here.</div>'
-        );
-      }
-
-      if (!map.has(progressExercise)) {
-        progressExercise = names[0];
-      }
-
-      const options = `
-        <select id="mcProgressExercise"
-          aria-label="Select exercise">
-          ${names.map(name => `
-            <option value="${esc(name)}"
-              ${name === progressExercise
-                ? "selected" : ""}>
-              ${esc(name)}
-            </option>
-          `).join("")}
-        </select>
-      `;
-
-      const rows = (map.get(progressExercise) || [])
-        .slice().reverse().map(entry => coachRow(
-          dateText(entry.date),
-          `${entry.weight} kg × ${entry.reps} reps • ${entry.volume} kg volume`,
-          `${entry.e1rm} kg E1RM`
-        )).join("");
-
-      return panel("EXERCISES", "By Exercise",
-        options + rows);
-    }
-
-    const entries = [...map.entries()].flatMap(
-      ([name, values]) => values.map(
-        entry => ({ name, ...entry })
-      )
-    ).sort((a, b) =>
-      new Date(b.date) - new Date(a.date)
+    const allSets = completed.reduce(
+      (sum, item) =>
+        sum + (Number(item.completed_sets) || 0),
+      0
     );
 
-    return panel(
-      "STRENGTH",
-      "Weight Progression",
-      entries.map(entry => coachRow(
-        entry.name,
-        `${dateText(entry.date)} • ${entry.reps} reps`,
-        `${entry.weight} kg`
-      )).join("") ||
-      '<div class="mana-v993-empty">Weight history will appear here.</div>'
-    );
-  }
-
-  function coachProgressHTML() {
-    const logs = rangeLogs(coachLogs);
-
-    const sets = logs.reduce(
-      (sum, log) => sum + num(log.total_sets), 0
+    const volume = completed.reduce(
+      (sum, item) =>
+        sum + (Number(item.total_volume) || 0),
+      0
     );
 
-    const completedSets = logs.reduce(
-      (sum, log) => sum + num(log.completed_sets), 0
+    const seconds = completed.reduce(
+      (sum, item) =>
+        sum + (Number(item.duration_seconds) || 0),
+      0
     );
 
-    const cardioCount = logs.filter(
-      log => log.finishers?.cardio?.completed
+    const cardio = completed.reduce(
+      (sum, item) =>
+        sum + (
+          item.finishers?.cardio?.completed
+            ? Number(
+                item.finishers.cardio.actualMinutes ||
+                item.finishers.cardio.durationMinutes ||
+                0
+              )
+            : 0
+        ),
+      0
+    );
+
+    const core = completed.filter(
+      item => item.finishers?.core?.completed
     ).length;
 
-    const coreCount = logs.filter(
-      log => log.finishers?.core?.completed
-    ).length;
-
-    const ratings = logs.filter(
-      log => num(log.workout_rating) > 0
+    const ratings = completed.filter(
+      item => Number(item.workout_rating) > 0
     );
 
     const average = ratings.length
-      ? ratings.reduce(
-          (sum, log) => sum + num(log.workout_rating),
-          0
-        ) / ratings.length
-      : 0;
+      ? (
+          ratings.reduce(
+            (sum, item) =>
+              sum + Number(item.workout_rating),
+            0
+          ) / ratings.length
+        ).toFixed(1)
+      : "—";
 
-    const count = logs.length || 1;
+    const exerciseNames = new Set(
+      completed.flatMap(
+        item =>
+          (item.exercises || []).map(
+            exercise => exercise.name
+          )
+      )
+    );
+
+    const stat = (title, value) => `
+      <div class="m1002-progress-stat">
+        <small>${title}</small>
+        <strong>${value}</strong>
+      </div>
+    `;
 
     return `
-      <div class="mana-v993-head">
-        <div class="mana-v993-kicker">
-          MANA STRENGTH • COACH PROGRAMS
-        </div>
+      <span class="m1002-kicker">
+        MANA STRENGTH • COACH PROGRAMS
+      </span>
 
-        <h2>Your Progress</h2>
+      <h3>Coach Workout Progress</h3>
 
-        <p>
-          Your coach-assigned workouts,
-          using the Mana Strength progress layout.
-        </p>
+      <p>
+        Completed coach-assigned sessions,
+        saved independently from My Workouts.
+      </p>
+
+      <div class="m1002-progress-stats">
+        ${stat("WORKOUTS", completed.length)}
+        ${stat("SETS COMPLETE", allSets)}
+        ${stat("TOTAL VOLUME", Math.round(volume) + " kg")}
+        ${stat("WORKOUT TIME", Math.round(seconds / 60) + " min")}
+        ${stat("CARDIO", cardio + " min")}
+        ${stat("CORE", core + " sessions")}
+        ${stat("AVERAGE RATING", average + "/5")}
+        ${stat("EXERCISES", exerciseNames.size)}
       </div>
 
-      <div class="mana-v993-periods">
-        ${[
-          ["daily", "DAILY"],
-          ["weekly", "WEEKLY"],
-          ["monthly", "MONTHLY"]
-        ].map(([key, label]) => `
-          <button type="button"
-            class="mana-v993-period
-              ${progressPeriod === key ? "active" : ""}"
-            data-mc-period="${key}">
-            ${label}
-          </button>
+      <h3>Coach Training History</h3>
+
+      ${!completed.length
+        ? `
+          <p>
+            No completed Coach Programs workouts yet.
+          </p>
+        `
+        : completed.map(item => `
+          <details class="m1002-history">
+            <summary>
+              ${esc(item.session_name || "Workout")}
+              •
+              ${new Date(
+                item.completed_at || item.updated_at
+              ).toLocaleDateString("en-AU")}
+            </summary>
+
+            <small>
+              Week ${esc(item.week_number)}
+              • Day ${esc(item.day_number)}
+              • ${esc(item.completed_sets)}
+              / ${esc(item.total_sets)} sets
+              • ${Math.round(Number(item.total_volume) || 0)} kg
+              • ${time(Number(item.duration_seconds) || 0)}
+            </small>
+
+            ${(item.exercises || []).map(exercise => `
+              <div class="m1002-history-exercise">
+                <strong>${esc(exercise.name)}</strong>
+
+                <div>
+                  ${(exercise.sets || []).map(set => `
+                    Set ${esc(set.set)}:
+                    ${esc(set.weight || 0)} kg
+                    × ${esc(set.reps || 0)} reps
+                    ${set.done ? "✓" : ""}
+                  `).join(" · ")}
+                </div>
+              </div>
+            `).join("")}
+
+            ${item.finishers?.cardio?.completed
+              ? `
+                <small>
+                  Cardio:
+                  ${esc(item.finishers.cardio.equipment)}
+                  • ${esc(item.finishers.cardio.durationMinutes)} min
+                </small>
+              `
+              : ""}
+
+            ${item.finishers?.core?.completed
+              ? `
+                <small>
+                  Core: 3 rounds
+                </small>
+              `
+              : ""}
+
+            ${item.workout_rating
+              ? `
+                <small>
+                  Rating ${esc(item.workout_rating)}/5
+                </small>
+              `
+              : ""}
+
+            ${item.workout_comment
+              ? `
+                <p>
+                  ${esc(item.workout_comment)}
+                </p>
+              `
+              : ""}
+          </details>
         `).join("")}
-      </div>
-
-      <div class="mana-v993-metrics">
-        ${coachMetric(
-          "WORKOUTS",
-          sets ? completedSets / sets * 100 : 0,
-          `${logs.length} completed sessions`
-        )}
-
-        ${coachMetric(
-          "CARDIO",
-          cardioCount / count * 100,
-          `${cardioCount} sessions with cardio`
-        )}
-
-        ${coachMetric(
-          "CORE",
-          coreCount / count * 100,
-          `${coreCount} sessions with core`
-        )}
-
-        ${coachMetric(
-          "RATING",
-          average / 5 * 100,
-          ratings.length
-            ? `${average.toFixed(1)}/5 average`
-            : "No ratings yet"
-        )}
-      </div>
-
-      <div class="mana-v993-detail-nav">
-        ${[
-          ["weight", "WEIGHT PROGRESSION"],
-          ["pbs", "PERSONAL BESTS"],
-          ["exercise", "BY EXERCISE"],
-          ["workouts", "WORKOUTS COMPLETE"]
-        ].map(([key, label]) => `
-          <button type="button"
-            class="mana-v993-detail-btn
-              ${progressDetail === key ? "active" : ""}"
-            data-mc-detail="${key}">
-            ${label}
-          </button>
-        `).join("")}
-      </div>
-
-      <div id="mcProgressDetails">
-        ${progressDetailHTML(logs)}
-      </div>
-
-      ${progressError
-        ? `<p class="mc-muted">
-            ${esc(progressError)}
-          </p>`
-        : ""}
     `;
   }
 
-  function mountProgress() {
-    if (!progressTabOpen()) return;
+  function progressMount() {
+    if (!progressTab()) return;
 
-    const root = $(IDS.progressRoot);
+    const root = $(ROOT);
     if (!root) return;
 
-    let switcher = $(IDS.progressSwitch);
-    let panel = $(IDS.progress);
-
-    if (!switcher) {
-      switcher = document.createElement("div");
-      switcher.id = IDS.progressSwitch;
-
-      switcher.innerHTML = `
-        <button type="button"
-          data-mc-progress-mode="generated">
-          My Workouts
-        </button>
-
-        <button type="button"
-          data-mc-progress-mode="coach">
-          Coach Programs
-        </button>
-      `;
-    }
+    let panel = $(PROGRESS);
 
     if (!panel) {
       panel = document.createElement("section");
-      panel.id = IDS.progress;
+      panel.id = PROGRESS;
+      root.appendChild(panel);
     }
 
-    if (switcher.parentElement !== root) {
-      root.prepend(switcher);
-    }
+    if (
+      panel.dataset.m1002User !== progressUser ||
+      panel.dataset.m1002Count !==
+        String(progressLogs.length)
+    ) {
+      panel.innerHTML = progressLoading
+        ? `
+          <p>
+            Loading coach workout history…
+          </p>
+        `
+        : progressHTML(progressLogs);
 
-    if (panel.parentElement !== root) {
-      switcher.after(panel);
-    }
-
-    root.classList.toggle(
-      "mc-coach-progress",
-      progressMode === "coach"
-    );
-
-    switcher.querySelectorAll("button").forEach(b => {
-      const active =
-        b.dataset.mcProgressMode === progressMode;
-
-      b.classList.toggle("active", active);
-    });
-
-    if (progressMode === "coach") {
-      const signature = [
-        progressUser,
-        progressLoadedAt,
-        progressPeriod,
-        progressDetail,
-        progressExercise,
-        progressLoading,
-        progressError,
-        renderVersion
-      ].join("|");
-
-      if (panel.dataset.signature !== signature) {
-        panel.innerHTML = progressLoading
-          ? '<p class="mc-muted">Loading coach workouts…</p>'
-          : coachProgressHTML();
-
-        panel.dataset.signature = signature;
-      }
+      panel.dataset.m1002User = progressUser;
+      panel.dataset.m1002Count =
+        String(progressLogs.length);
     }
   }
 
   async function loadProgress(force = false) {
-    if (!progressTabOpen()) return;
-    if (progressLoading) return;
+    if (!progressTab()) return;
+
+    progressMount();
 
     if (
-      !force &&
-      Date.now() - progressLoadedAt < 15000 &&
-      progressUser
-    ) {
-      mountProgress();
-      return;
-    }
+      progressLoading ||
+      (!force && Date.now() - progressLoaded < 25000)
+    ) return;
 
     progressLoading = true;
-    progressError = "";
-    mountProgress();
 
-    const token = ++progressRequest;
+    const token = ++progressSequence;
 
     try {
       const client = await db();
-      const current = await signedInUser();
+      const auth = await client.auth.getUser();
 
-      if (!current) {
-        coachLogs = [];
+      const userId = auth.data?.user?.id;
+
+      if (!userId) {
         progressUser = "";
-        progressError = "Sign in to see workout history.";
+        progressLogs = [];
         return;
       }
 
       const result = await client
         .from("coach_workout_logs")
         .select("*")
-        .eq("user_id", current)
+        .eq("user_id", userId)
         .eq("status", "completed")
-        .order("completed_at", { ascending: false })
+        .order("completed_at", {
+          ascending: false
+        })
         .limit(500);
 
       if (result.error) throw result.error;
-      if (token !== progressRequest) return;
 
-      progressUser = current;
-      coachLogs = result.data || [];
-      progressLoadedAt = Date.now();
+      if (token !== progressSequence) return;
+
+      progressUser = userId;
+      progressLogs = result.data || [];
+      progressLoaded = Date.now();
 
     } catch (error) {
-      console.warn("[Mana Coach Progress]", error);
-      progressError =
-        "Unable to load coach workout results: " +
-        (error.message || error);
+      console.warn(
+        "[Mana Coach Progress]",
+        error.message || error
+      );
     } finally {
       progressLoading = false;
-      renderVersion++;
-      mountProgress();
+
+      if ($(PROGRESS)) {
+        $(PROGRESS).dataset.m1002Count = "";
+      }
+
+      progressMount();
     }
   }
 
-  function goToProgress() {
-    closeModal();
-    progressMode = "coach";
+  function viewProgress() {
+    ++openSeq;
+    stopClock();
 
-    const button = document.querySelector(
+    session = null;
+    assignment = null;
+    program = null;
+
+    $(MODAL)?.classList.remove("open");
+
+    const progressButton = document.querySelector(
       '#manaV83Tabs [data-v83-tab="progress"]'
     );
 
-    button?.click();
+    if (progressButton) {
+      progressButton.click();
 
-    setTimeout(() => {
-      mountProgress();
-      void loadProgress(true);
-    }, 250);
+      setTimeout(
+        () => void loadProgress(true),
+        350
+      );
+
+    } else {
+      if (
+        typeof window.openManaProgram === "function"
+      ) {
+        window.openManaProgram("strength");
+      }
+
+      setTimeout(() => {
+        document.querySelector(
+          '#manaV83Tabs [data-v83-tab="progress"]'
+        )?.click();
+      }, 300);
+
+      setTimeout(
+        () => void loadProgress(true),
+        650
+      );
+    }
   }
 
-  /*
-    INTERACTIONS
-  */
+  function onClick(event) {
+    const element = event.target;
 
-  function handleClick(event) {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
+    if (!(element instanceof Element)) return;
 
     let button;
 
-    if ((button = target.closest("[data-mc-mode]"))) {
-      setWorkoutMode(button.dataset.mcMode);
+    if ((button = element.closest(
+      "[data-m1002-mode]"
+    ))) {
+      setMode(button.dataset.m1002Mode);
       return;
     }
 
-    if ((button = target.closest(
-      "[data-mc-progress-mode]"
-    ))) {
-      progressMode = button.dataset.mcProgressMode;
-      mountProgress();
-
-      if (progressMode === "coach") {
-        void loadProgress();
+    if (element.closest("[data-m1002-back]")) {
+      if (session) {
+        backToProgram();
+      } else {
+        closeModal();
       }
 
       return;
     }
 
-    if ((button = target.closest("[data-mc-period]"))) {
-      progressPeriod = button.dataset.mcPeriod;
-      renderVersion++;
-      mountProgress();
+    if (element.closest(
+      "[data-m1002-summary-progress]"
+    )) {
+      viewProgress();
       return;
     }
 
-    if ((button = target.closest("[data-mc-detail]"))) {
-      progressDetail = button.dataset.mcDetail;
-      renderVersion++;
-      mountProgress();
-      return;
-    }
-
-    if (target.closest("[data-mc-back]")) {
-      if (session) backToProgram();
-      else closeModal();
-      return;
-    }
-
-    if (target.closest("[data-mc-program-back]")) {
+    if (element.closest(
+      "[data-m1002-program-back]"
+    )) {
       backToProgram();
       return;
     }
 
-    if (target.closest("[data-mc-view-progress]")) {
-      goToProgress();
+    if ((button = element.closest(
+      "[data-m1002-program]"
+    ))) {
+      void openProgram(
+        button.dataset.m1002Program
+      );
+
       return;
     }
 
-    if ((button = target.closest("[data-mc-program]"))) {
-      void openProgram(button.dataset.mcProgram);
-      return;
-    }
-
-    if ((button = target.closest("[data-mc-week]"))) {
-      week = num(button.dataset.mcWeek);
+    if ((button = element.closest(
+      "[data-m1002-week]"
+    ))) {
+      week = Number(button.dataset.m1002Week);
       renderProgram();
       return;
     }
 
-    if ((button = target.closest("[data-mc-start]"))) {
-      void openDay(button.dataset.mcStart);
+    if ((button = element.closest(
+      "[data-m1002-start]"
+    ))) {
+      void openDay(button.dataset.m1002Start);
       return;
     }
 
-    if ((button = target.closest("[data-mc-demo]"))) {
-      const name = button.dataset.mcDemo;
-      const fn = window.MANA_EXERCISE_VISUALS?.openDemo;
+    if ((button = element.closest(
+      "[data-m1002-demo]"
+    ))) {
+      const name = button.dataset.m1002Demo;
 
-      if (typeof fn === "function") {
-        void fn(name);
+      const openDemo =
+        window.MANA_EXERCISE_VISUALS?.openDemo;
+
+      if (typeof openDemo === "function") {
+        void openDemo(name);
       } else {
         window.open(
           "https://www.youtube.com/results?search_query=" +
@@ -3263,298 +3397,419 @@
       return;
     }
 
-    if (target.closest("[data-mc-previous]")) {
-      navigate(currentSlide - 1);
+    if (element.closest(
+      "[data-m1002-previous]"
+    )) {
+      navigate(slide - 1);
       return;
     }
 
-    if (target.closest("[data-mc-next]")) {
-      navigate(currentSlide + 1);
+    if (element.closest(
+      "[data-m1002-next]"
+    )) {
+      navigate(slide + 1);
       return;
     }
 
-    if ((button = target.closest("[data-mc-slide]"))) {
-      navigate(num(button.dataset.mcSlide));
+    if ((button = element.closest(
+      "[data-m1002-slide]"
+    ))) {
+      navigate(
+        Number(button.dataset.m1002Slide)
+      );
+
       return;
     }
 
-    if ((button = target.closest("[data-mc-tick]"))) {
+    if ((button = element.closest(
+      "[data-m1002-tick]"
+    ))) {
       button.classList.toggle("done");
+
       button.setAttribute(
         "aria-pressed",
-        String(button.classList.contains("done"))
+        String(
+          button.classList.contains("done")
+        )
       );
+
       localEdit();
       return;
     }
 
-    if ((button = target.closest(
-      "[data-mc-tick-exercise]"
+    if ((button = element.closest(
+      "[data-m1002-tick-exercise]"
     ))) {
-      tickAll(button.closest("[data-mc-ex]"));
+      tickAll(
+        button.closest("[data-m1002-ex]")
+      );
+
       return;
     }
 
-    if (target.closest("[data-mc-tick-workout]")) {
-      tickAll($("mcCarousel"));
+    if (element.closest(
+      "[data-m1002-tick-workout]"
+    )) {
+      tickAll($("m1002Carousel"));
       return;
     }
 
-    if ((button = target.closest("[data-mc-rating]"))) {
-      rating = num(button.dataset.mcRating);
+    if ((button = element.closest(
+      "[data-m1002-rating]"
+    ))) {
+      rating = Number(
+        button.dataset.m1002Rating
+      );
 
-      document.querySelectorAll(
-        `[data-mc-rating]`
-      ).forEach(b => {
-        b.classList.toggle(
-          "active",
-          num(b.dataset.mcRating) === rating
+      ratings();
+      localEdit();
+      return;
+    }
+
+    if ((button = element.closest(
+      "[data-m1002-finisher]"
+    ))) {
+      if (
+        button.dataset.m1002Finisher === "cardio"
+      ) {
+        openCardio();
+      } else {
+        openCore();
+      }
+
+      return;
+    }
+
+    if ((button = element.closest(
+      "[data-m1002-cardio-equipment]"
+    ))) {
+      cardioEquipment =
+        button.dataset.m1002CardioEquipment;
+
+      openCardio();
+      return;
+    }
+
+    if ((button = element.closest(
+      "[data-m1002-cardio-minutes]"
+    ))) {
+      cardioMinutes = Number(
+        button.dataset.m1002CardioMinutes
+      );
+
+      openCardio();
+      return;
+    }
+
+    if (element.closest(
+      "[data-m1002-cardio-complete]"
+    )) {
+      finishers.cardio = {
+        completed: true,
+        equipment: cardioEquipment,
+        durationMinutes: cardioMinutes,
+        actualMinutes: cardioMinutes,
+        completedAt: new Date().toISOString()
+      };
+
+      $("m1002FinisherPanel").innerHTML = "";
+
+      finisherStatus();
+      localEdit();
+      return;
+    }
+
+    if ((button = element.closest(
+      "[data-m1002-core-round]"
+    ))) {
+      coreRound = Number(
+        button.dataset.m1002CoreRound
+      );
+
+      openCore();
+      return;
+    }
+
+    if (element.closest(
+      "[data-m1002-core-tick-round]"
+    )) {
+      coreTicks[coreRound] =
+        coreRoutine().map(
+          (_, index) => index
         );
+
+      openCore();
+      return;
+    }
+
+    if (element.closest(
+      "[data-m1002-core-tick-all]"
+    )) {
+      coreTicks = [0, 1, 2].map(
+        () => coreRoutine().map(
+          (_, index) => index
+        )
+      );
+
+      openCore();
+      return;
+    }
+
+    if (element.closest(
+      "[data-m1002-core-next]"
+    )) {
+      const total = coreRoutine().length;
+
+      if (
+        coreTicks[coreRound].length !== total
+      ) return;
+
+      if (coreRound < 2) {
+        coreRound++;
+        openCore();
+        return;
+      }
+
+      if (!coreTicks.every(
+        items => items.length === total
+      )) {
+        coreRound = coreTicks.findIndex(
+          items => items.length !== total
+        );
+
+        openCore();
+        return;
+      }
+
+      finishers.core = {
+        completed: true,
+        rounds: 3,
+
+        exercises: coreRoutine().map(
+          ([name, target]) => ({
+            name,
+            target,
+            roundsCompleted: 3
+          })
+        ),
+
+        completedAt: new Date().toISOString()
+      };
+
+      $("m1002FinisherPanel").innerHTML = "";
+
+      finisherStatus();
+      localEdit();
+      return;
+    }
+
+    if (element.closest(
+      "[data-m1002-finisher-close]"
+    )) {
+      $("m1002FinisherPanel").innerHTML = "";
+      fitSlide();
+      return;
+    }
+
+    if (element.closest(
+      "[data-m1002-complete]"
+    )) {
+      void completeWorkout();
+    }
+  }
+
+  function onInput(event) {
+    const target = event.target;
+
+    if (
+      !(target instanceof Element) ||
+      !target.closest("#" + MODAL)
+    ) return;
+
+    if (target.matches(
+      "[data-m1002-weight]"
+    )) {
+      const card = target.closest(
+        "[data-m1002-ex]"
+      );
+
+      card?.querySelectorAll(
+        "[data-m1002-weight]"
+      ).forEach(input => {
+        if (input !== target) {
+          input.value = target.value;
+        }
       });
 
       localEdit();
       return;
     }
 
-    if ((button = target.closest(
-      "[data-mc-finisher]"
-    ))) {
-      showFinisher(button.dataset.mcFinisher);
-      return;
-    }
-
-    if ((button = target.closest("[data-mc-equipment]"))) {
-      cardioEquipment = button.dataset.mcEquipment;
-      showFinisher("cardio");
-      return;
-    }
-
-    if ((button = target.closest("[data-mc-minutes]"))) {
-      cardioMinutes = num(button.dataset.mcMinutes);
-      showFinisher("cardio");
-      return;
-    }
-
-    if (target.closest("[data-mc-cardio-save]")) {
-      void saveFinisher("cardio");
-      return;
-    }
-
-    if ((button = target.closest(
-      "[data-mc-retry-finisher]"
-    ))) {
-      void saveFinisher(button.dataset.mcRetryFinisher);
-      return;
-    }
-
-    if ((button = target.closest(
-      "[data-mc-core-round]"
-    ))) {
-      coreRound = num(button.dataset.mcCoreRound);
-      showFinisher("core");
-      return;
-    }
-
-    if (target.closest("[data-mc-core-tick-round]")) {
-      coreTicks[coreRound] =
-        coreRoutine().map((_, i) => i);
-
-      showFinisher("core");
-      return;
-    }
-
-    if (target.closest("[data-mc-core-tick-all]")) {
-      const indices = coreRoutine().map((_, i) => i);
-
-      coreTicks = [
-        [...indices],
-        [...indices],
-        [...indices]
-      ];
-
-      showFinisher("core");
-      return;
-    }
-
-    if (target.closest("[data-mc-core-next]")) {
-      coreRound = Math.min(2, coreRound + 1);
-      showFinisher("core");
-      return;
-    }
-
-    if (target.closest("[data-mc-core-save]")) {
-      void saveFinisher("core");
-      return;
-    }
-
-    if (target.closest("[data-mc-finisher-close]")) {
-      $("mcFinisherDetails").innerHTML = "";
-      fitCarousel();
-      return;
-    }
-
-    if (target.closest("[data-mc-complete]")) {
-      void completeWorkout();
-    }
-  }
-
-  function handleInput(event) {
-    const target = event.target;
-
-    if (!(target instanceof Element)) return;
-
-    if (target.id === "mcProgressExercise") {
-      progressExercise = target.value;
-      renderVersion++;
-      mountProgress();
-      return;
-    }
-
-    if (!target.closest("#" + IDS.modal)) return;
-
-    if (target.matches("[data-mc-weight]")) {
-      const card = target.closest("[data-mc-ex]");
-
-      card?.querySelectorAll("[data-mc-weight]")
-        .forEach(input => {
-          if (input !== target) {
-            input.value = target.value;
-          }
-        });
-
+    if (target.matches(
+      "[data-m1002-reps]"
+    )) {
       localEdit();
       return;
     }
 
-    if (target.matches("[data-mc-reps]")) {
-      localEdit();
-      return;
-    }
-
-    if (target.id === "mcWorkoutComment") {
+    if (target.id === "m1002WorkoutComment") {
       comment = target.value.slice(0, 500);
       localEdit();
       return;
     }
 
-    if (target.matches("[data-mc-core-check]")) {
-      const index = num(target.dataset.mcCoreCheck);
-      const current = new Set(coreTicks[coreRound]);
+    if (target.matches(
+      "[data-m1002-core-check]"
+    )) {
+      const index = Number(
+        target.dataset.m1002CoreCheck
+      );
 
-      if (target.checked) current.add(index);
-      else current.delete(index);
+      const checked = new Set(
+        coreTicks[coreRound]
+      );
+
+      if (target.checked) {
+        checked.add(index);
+      } else {
+        checked.delete(index);
+      }
 
       coreTicks[coreRound] = [
-        ...current
+        ...checked
       ].sort((a, b) => a - b);
 
-      showFinisher("core");
+      openCore();
     }
   }
 
-  function refresh() {
+  function scheduleRefresh() {
     clearTimeout(refreshTimer);
 
     refreshTimer = setTimeout(() => {
-      if (workoutTabOpen()) {
-        ensureWorkoutRoots();
-        renderAssignments();
+      if (workoutTab()) {
+        applyMode();
 
-        if (workoutMode === "coach") {
+        if (mode === "coach") {
           void loadAssignments();
         }
       }
 
-      if (legacyOpen()) {
+      if (legacyTab()) {
+        renderLegacy();
         void loadAssignments();
       }
 
-      if (progressTabOpen()) {
-        mountProgress();
-
-        if (progressMode === "coach") {
-          void loadProgress();
-        }
+      if (progressTab()) {
+        progressMount();
+        void loadProgress();
       }
-    }, 170);
+    }, 160);
   }
 
   function init() {
-    installStyles();
-    ensureModal();
-
     try {
-      workoutMode =
-        sessionStorage.getItem(
-          "mana-strength-workout-view-100205"
-        ) === "coach"
-          ? "coach"
-          : "generated";
+      mode = sessionStorage.getItem(MODE_KEY) === "coach"
+        ? "coach"
+        : "generated";
     } catch (_) {}
 
-    document.addEventListener("click", handleClick);
-    document.addEventListener("input", handleInput);
-
-    document.addEventListener("change", event => {
-      if (event.target?.matches?.(
-        "[data-mc-core-check],#mcProgressExercise"
-      )) {
-        handleInput(event);
-      }
-    });
-
-    [
-      "mana:program-tab-change",
-      "mana:profile-synced",
-      "pageshow",
-      "mana:coach-workout-saved"
-    ].forEach(name => {
-      window.addEventListener(name, refresh);
-    });
-
-    document.addEventListener("click", event => {
-      if (event.target.closest(
-        '#manaV83Tabs [data-v83-tab]'
-      )) {
-        setTimeout(refresh, 120);
-      }
-    }, true);
+    installStyles();
+    modal();
+    ensureLegacy();
 
     const holder = $("manaV83Content");
 
     if (holder) {
       new MutationObserver(() => {
         if (
-          workoutTabOpen() &&
-          (!$(IDS.switcher) || !$(IDS.panel))
+          workoutTab() &&
+          (!$(SW) || !$(PANEL))
         ) {
-          refresh();
+          applyMode();
         }
 
         if (
-          progressTabOpen() &&
-          (!$(IDS.progressSwitch) ||
-           !$(IDS.progress))
+          progressTab() &&
+          !$(PROGRESS)
         ) {
-          refresh();
+          scheduleRefresh();
         }
-      }).observe(holder, { childList: true });
+      }).observe(holder, {
+        childList: true
+      });
     }
 
-    window.addEventListener("resize", fitCarousel);
+    document.addEventListener(
+      "click",
+      onClick
+    );
 
-    window.addEventListener("mana:logout", () => {
-      userId = "";
-      assignments = [];
-      assignmentsLoadedAt = 0;
-      coachLogs = [];
-      progressUser = "";
-      progressLoadedAt = 0;
-      ++progressRequest;
+    document.addEventListener(
+      "input",
+      onInput
+    );
 
-      closeModal();
-      refresh();
+    document.addEventListener(
+      "change",
+      onInput
+    );
+
+    [
+      "mana:program-tab-change",
+      "pageshow",
+      "mana:profile-synced",
+      "mana:coach-workout-saved"
+    ].forEach(eventName => {
+      window.addEventListener(
+        eventName,
+        scheduleRefresh
+      );
     });
+
+    document.querySelector(
+      '#bottomNav [data-page="programs"]'
+    )?.addEventListener(
+      "click",
+      scheduleRefresh
+    );
+
+    document.querySelector(
+      '#manaV83Tabs [data-v83-tab="progress"]'
+    )?.addEventListener(
+      "click",
+      () => {
+        setTimeout(
+          () => void loadProgress(),
+          200
+        );
+      }
+    );
+
+    window.addEventListener(
+      "resize",
+      fitSlide
+    );
+
+    window.addEventListener(
+      "mana:logout",
+      () => {
+        ++loadSeq;
+        ++progressSequence;
+
+        account = "";
+        assignments = [];
+        loadedAt = 0;
+
+        progressUser = "";
+        progressLogs = [];
+        progressLoaded = 0;
+
+        closeModal();
+        renderPanel();
+        renderLegacy();
+      }
+    );
 
     window.refreshManaAssignedPrograms =
       () => loadAssignments(true);
@@ -3562,12 +3817,13 @@
     window.refreshManaCoachProgress =
       () => loadProgress(true);
 
-    window.MANA_CLIENT_CUSTOM_PROGRAM_BUILD = BUILD;
+    window.MANA_CLIENT_CUSTOM_PROGRAM_BUILD =
+      BUILD;
 
-    refresh();
+    scheduleRefresh();
 
     console.log(
-      "[Mana Movement] Coach Programs Build " + BUILD
+      "[Mana Movement] Coach workouts " + BUILD
     );
   }
 
