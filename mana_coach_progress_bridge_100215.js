@@ -1,44 +1,63 @@
 
 /*
- MANA MOVEMENT — COACH PROGRAMS PROGRESS BRIDGE
- COMPLETE BUILD 100215
+ MANA MOVEMENT
+ COACH PROGRAMS PROGRESS BRIDGE
+ COMPLETE BUILD 100216
 
- Full new file:
+ Full replacement:
  mana_coach_progress_bridge_100215.js
 
- Load AFTER:
- v10_02_client_custom_programs_100200.js
- v9_93_strength_progress_simple.js
-
- This file changes only the Progress UI.
- It does not edit workout recording or summaries.
+ - Original Mana Strength Progress layout
+ - Original Workouts / Protein / Calories / Rest metrics
+ - Original Weight Progression layout and body-weight data
+ - Personal Bests with estimated 1RM
+ - By Exercise selector and training history
+ - Workouts Complete summary and individual records
+ - Cardio, Core, ratings and comments
+ - Preserves existing Coach Programs cloud data
+ - No changes to workout logging or exercise cards
 */
 
 (() => {
   "use strict";
 
-  const BUILD = "100215";
+  const BUILD = "100216";
+
   const ROOT = "manaV993StrengthProgress";
   const HOLDER = "manaV83Content";
+
   const PANEL = "m1002CoachProgress";
   const SWITCH = "m1002ProgressSwitch";
-  const STYLE = "manaCoachProgressBridge100215Style";
+
+  const STYLE = "manaCoachProgressBridge100216Style";
+
+  const $ = id => document.getElementById(id);
 
   const esc = value => String(value ?? "").replace(
     /[&<>"']/g,
-    c => ({
+    character => ({
       "&": "&amp;",
       "<": "&lt;",
       ">": "&gt;",
       '"': "&quot;",
       "'": "&#39;"
-    }[c])
+    }[character])
   );
 
-  const $ = id => document.getElementById(id);
-  const n = value => Number(value) || 0;
+  const num = value => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : 0;
+  };
 
-  const date = value => {
+  const decimal = value =>
+    num(value).toLocaleString("en-AU", {
+      maximumFractionDigits: 1
+    });
+
+  const number = value =>
+    Math.round(num(value)).toLocaleString("en-AU");
+
+  const formatDate = value => {
     const d = new Date(value || 0);
 
     return Number.isNaN(d.getTime())
@@ -46,211 +65,297 @@
       : d.toLocaleDateString("en-AU");
   };
 
-  const fmt = value => n(value).toLocaleString(
-    "en-AU",
-    { maximumFractionDigits: 1 }
-  );
+  const percent = (value, total) =>
+    total
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round(num(value) / num(total) * 100)
+          )
+        )
+      : 0;
 
-  const mins = seconds => Math.round(n(seconds) / 60);
+  function safeJSON(key, fallback) {
+    try {
+      const value = localStorage.getItem(key);
+
+      return value
+        ? JSON.parse(value)
+        : fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
 
   let view = "generated";
   let period = "all";
   let detail = "workouts";
+  let selectedExercise = "";
 
-  let rows = [];
-  let user = "";
-  let fetched = 0;
+  let logs = [];
+  let userId = "";
+
   let loading = false;
+  let loadedAt = 0;
   let error = "";
-  let requestId = 0;
+  let request = 0;
+
+  let originalMetrics = "";
   let scheduled = false;
 
-  let observer = null;
+  let holderObserver = null;
   let panelObserver = null;
   let observedPanel = null;
 
-  function isStrengthProgress() {
+  function progressOpen() {
     return !!(
       $("manaV83ProgramShell")?.classList.contains("open") &&
       $("manaV83Title")?.textContent
-        ?.trim().toUpperCase() === "MANA STRENGTH" &&
+        ?.trim()
+        .toUpperCase() === "MANA STRENGTH" &&
       document.querySelector(
         '#manaV83Tabs [data-v83-tab="progress"].active'
-      )
+      ) &&
+      $(ROOT)
     );
   }
 
-  function clearStaleWorkoutMode() {
-    if (!document.querySelector(
+  function clearWorkoutMode() {
+    const current = document.querySelector(
       '#manaV83Tabs [data-v83-tab="program"].active'
-    )) {
+    );
+
+    if (!current) {
       $(HOLDER)?.classList.remove("m1002-coach-mode");
     }
   }
 
-  function injectStyles() {
+  function installStyles() {
     if ($(STYLE)) return;
 
     const style = document.createElement("style");
     style.id = STYLE;
 
     style.textContent = `
-      #${PANEL} .m100215-head {
-        margin:14px 0 16px;
+      /*
+       Match the original Mana Strength
+       Progress typography, sizing and panels.
+      */
+
+      #${SWITCH}{
+        display:grid!important;
+        grid-template-columns:1fr 1fr;
+        gap:7px;
+        padding:5px;
+        margin:0 0 15px;
+        background:#090909;
+        border:1px solid #292929;
+        border-radius:14px;
       }
 
-      #${PANEL} .m100215-head h2 {
-        color:#fff!important;
-        font-size:24px;
-        margin:6px 0;
-      }
-
-      #${PANEL} .m100215-sub {
-        color:#aeb5be;
-        font-size:12px;
-        line-height:1.5;
-      }
-
-      #${PANEL} .m100215-kicker {
-        color:#ff8126;
-        font-size:10px;
-        font-weight:900;
-        letter-spacing:.1em;
-      }
-
-      #${PANEL} .m100215-bar,
-      #${PANEL} .m100215-detail-nav {
-        display:grid;
-        grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:8px;
-        margin:12px 0;
-      }
-
-      #${PANEL} button.m100215-choice {
-        display:block;
-        width:100%;
-        min-height:45px;
-        padding:9px 7px;
-        border:1px solid #383e45!important;
-        border-radius:11px;
-        background:#1a1c20!important;
-        color:#fff!important;
-        -webkit-text-fill-color:#fff!important;
-        font-family:inherit;
+      #${SWITCH} button{
+        min-width:0;
+        min-height:43px;
+        padding:9px;
+        background:transparent!important;
+        border:0!important;
+        border-radius:10px;
+        color:#aaa!important;
+        -webkit-text-fill-color:#aaa!important;
         font-size:11px;
-        font-weight:800;
+        font-weight:900;
+        font-family:inherit;
         cursor:pointer;
       }
 
-      #${PANEL} button.m100215-choice.active {
-        border-color:#ff8126!important;
-        background:#291e17!important;
-        color:#ff8126!important;
-        -webkit-text-fill-color:#ff8126!important;
+      #${SWITCH} button.active{
+        background:#f3d875!important;
+        color:#111!important;
+        -webkit-text-fill-color:#111!important;
       }
 
-      #${PANEL} .m100215-stats {
-        display:grid;
-        grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:9px;
-        margin:13px 0;
+      #${ROOT}.m1002-show-coach
+      > #${PANEL}{
+        display:block!important;
       }
 
-      #${PANEL} .m100215-stat {
-        background:#17191d;
-        border:1px solid #343940;
-        border-radius:13px;
-        padding:13px;
-        min-width:0;
-      }
-
-      #${PANEL} .m100215-stat small {
-        display:block;
-        color:#aeb5bf;
-        font-size:10px;
-      }
-
-      #${PANEL} .m100215-stat strong {
-        display:block;
+      #${PANEL}{
+        display:none;
+        width:100%;
         color:#fff;
-        font-size:23px;
-        margin-top:6px;
+      }
+
+      #${ROOT}.m1002-show-coach #${PANEL}{
+        display:block!important;
+      }
+
+      #${PANEL} .mana-v993-head h2,
+      #${PANEL} .mana-v993-panel h3{
+        color:#fff!important;
+      }
+
+      #${PANEL} .mana-v993-periods{
+        grid-template-columns:repeat(4,minmax(0,1fr));
+      }
+
+      #${PANEL} .mana-v993-period{
+        min-width:0;
+        padding:8px 4px;
+        font-size:9px;
+      }
+
+      #${PANEL} .mana-v993-metrics{
+        grid-template-columns:repeat(4,minmax(0,1fr));
+      }
+
+      #${PANEL} .mana-v993-detail-nav{
+        grid-template-columns:repeat(4,minmax(0,1fr));
+      }
+
+      #${PANEL} .mana-v993-detail-btn{
+        min-width:0;
+        white-space:normal;
+      }
+
+      #${PANEL} .mana-v993-metric-value{
         overflow-wrap:anywhere;
       }
 
-      #${PANEL} .m100215-panel {
-        background:#111315;
-        border:1px solid #34383e;
-        border-radius:15px;
-        padding:14px;
-        margin:13px 0;
-        color:#fff;
+      #${PANEL} .mana-v993-row-value{
+        overflow-wrap:anywhere;
       }
 
-      #${PANEL} .m100215-panel h3 {
-        font-size:18px;
-        color:#fff!important;
-        margin:4px 0 12px;
+      #${PANEL} .mana-v993-row-title{
+        color:#eee;
       }
 
-      #${PANEL} .m100215-row {
+      #${PANEL} .mana-v993-row-sub{
+        color:#888;
+      }
+
+      #${PANEL} .mana-v993-empty{
+        color:#929292;
+      }
+
+      #${PANEL} .mana-v993-summary-grid{
+        grid-template-columns:repeat(3,minmax(0,1fr));
+      }
+
+      #${PANEL} .m100216-note{
+        margin-top:10px;
+        font-size:11px;
+        color:#999;
+        line-height:1.6;
+      }
+
+      #${PANEL} .m100216-history{
+        margin-top:11px;
+      }
+
+      #${PANEL} .m100216-history details{
+        border-top:1px solid #292929;
         padding:12px 0;
-        border-top:1px solid #33383f;
-        font-size:12px;
-        line-height:1.55;
-        color:#c9cdd4;
       }
 
-      #${PANEL} .m100215-row strong {
+      #${PANEL} .m100216-history summary{
+        display:grid;
+        grid-template-columns:minmax(0,1fr) auto;
+        gap:10px;
+        align-items:center;
+        color:#eee;
+        font-size:12px;
+        font-weight:900;
+        cursor:pointer;
+        list-style:none;
+      }
+
+      #${PANEL} .m100216-history summary::-webkit-details-marker{
+        display:none;
+      }
+
+      #${PANEL} .m100216-history summary small{
+        display:block;
+        color:#888;
+        font-size:10px;
+        line-height:1.5;
+        font-weight:500;
+        margin-top:4px;
+      }
+
+      #${PANEL} .m100216-history summary b{
+        color:#f3d875;
+        font-size:12px;
+        text-align:right;
+      }
+
+      #${PANEL} .m100216-history-body{
+        margin-top:11px;
+        padding:11px;
+        background:#090909;
+        border:1px solid #2a2a2a;
+        border-radius:11px;
+      }
+
+      #${PANEL} .m100216-exercise{
+        padding:8px 0;
+        border-bottom:1px solid #292929;
+      }
+
+      #${PANEL} .m100216-exercise:last-child{
+        border-bottom:0;
+      }
+
+      #${PANEL} .m100216-exercise strong{
         display:block;
         color:#fff;
-        font-size:13px;
-      }
-
-      #${PANEL} details.m100215-session {
-        border:1px solid #363b42;
-        border-radius:11px;
-        margin:9px 0;
-        padding:12px;
-        background:#1a1c20;
-      }
-
-      #${PANEL} details.m100215-session summary {
-        font-size:13px;
-        color:#fff;
-        font-weight:800;
-        cursor:pointer;
-      }
-
-      #${PANEL} details.m100215-session p {
-        color:#c6cbd1;
         font-size:12px;
-        line-height:1.55;
-        margin:9px 0;
+        margin-bottom:5px;
       }
 
-      #${PANEL} .m100215-error {
-        color:#ffb38b!important;
-        white-space:pre-wrap;
+      #${PANEL} .m100216-exercise small{
+        display:block;
+        color:#999;
+        font-size:11px;
+        line-height:1.6;
       }
 
-      #${PANEL} .m100215-empty {
-        color:#b6bdc6;
+      #${PANEL} .m100216-finisher{
+        padding:9px 0;
+        color:#f3d875;
+        font-size:11px;
+        font-weight:800;
+      }
+
+      #${PANEL} .m100216-error{
+        padding:11px;
+        border:1px solid #8d5934;
+        border-radius:10px;
+        color:#ffb38b;
         font-size:12px;
         line-height:1.6;
       }
 
-      #${ROOT}.m1002-show-coach > #${PANEL} {
-        display:block!important;
-      }
-
-      @media(max-width:420px) {
-        #${PANEL} .m100215-stat {
-          padding:11px;
+      @media(max-width:600px){
+        #${PANEL} .mana-v993-metrics,
+        #${PANEL} .mana-v993-detail-nav{
+          grid-template-columns:repeat(2,minmax(0,1fr));
         }
 
-        #${PANEL} .m100215-stat strong {
-          font-size:20px;
+        #${PANEL} .mana-v993-periods{
+          grid-template-columns:repeat(4,minmax(0,1fr));
+        }
+
+        #${PANEL} .mana-v993-summary-grid{
+          grid-template-columns:repeat(3,minmax(0,1fr));
+        }
+
+        #${PANEL} .mana-v993-summary{
+          padding:9px 7px;
+        }
+
+        #${PANEL} .mana-v993-summary strong{
+          font-size:14px;
         }
       }
     `;
@@ -258,8 +363,130 @@
     document.head.appendChild(style);
   }
 
-  function periodRows() {
-    if (period === "all") return rows;
+  /*
+   Original Progress data:
+   Protein, Calories and Rest are copied from
+   the original Mana Strength metric cards.
+
+   Coach workout totals are calculated from
+   completed coach_workout_logs.
+  */
+
+  function captureOriginalMetrics() {
+    const root = $(ROOT);
+
+    if (!root) return;
+
+    const source = [
+      ...root.children
+    ].find(
+      element => element.classList
+        ?.contains("mana-v993-metrics")
+    );
+
+    if (source) {
+      originalMetrics = source.outerHTML;
+    }
+  }
+
+  function originalMetricCards() {
+    if (!originalMetrics) return [];
+
+    const parser = document.createElement("div");
+    parser.innerHTML = originalMetrics;
+
+    return [
+      ...parser.querySelectorAll(".mana-v993-metric")
+    ].map(element => element.outerHTML);
+  }
+
+  function metric(label, value, sub, fill) {
+    return `
+      <div class="mana-v993-metric">
+        <div class="mana-v993-metric-label">
+          ${esc(label)}
+        </div>
+
+        <div class="mana-v993-metric-value">
+          ${esc(value)}%
+        </div>
+
+        <div class="mana-v993-metric-sub">
+          ${esc(sub)}
+        </div>
+
+        <div class="mana-v993-track">
+          <div class="mana-v993-fill"
+            style="width:${Math.min(100, num(fill))}%">
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function coachMetrics(selectedLogs) {
+    const originals = originalMetricCards();
+
+    const originalWorkout = originals[0]
+      ? (() => {
+          const temp = document.createElement("div");
+          temp.innerHTML = originals[0];
+
+          return temp.querySelector(
+            ".mana-v993-metric-sub"
+          )?.textContent || "";
+        })()
+      : "";
+
+    const targetMatch = originalWorkout.match(
+      /of\s+(\d+)\s+planned/i
+    );
+
+    const planned = targetMatch
+      ? Number(targetMatch[1])
+      : 0;
+
+    const completed = selectedLogs.length;
+
+    const fraction = planned
+      ? percent(completed, planned)
+      : completed
+        ? 100
+        : 0;
+
+    const workoutCard = metric(
+      "WORKOUTS",
+      fraction,
+      planned && period !== "all"
+        ? `${completed} of ${planned} planned`
+        : `${completed} completed coach workouts`,
+      fraction
+    );
+
+    const otherCards = [
+      ["PROTEIN", "Set protein target in Profile"],
+      ["CALORIES", "Set calorie target in Profile"],
+      ["REST", "No recovery data yet"]
+    ];
+
+    return `
+      <div class="mana-v993-metrics">
+        ${workoutCard}
+
+        ${otherCards.map(([label, fallback], i) =>
+          originals[i + 1] || metric(
+            label,
+            0,
+            fallback,
+            0
+          )
+        ).join("")}
+      </div>
+    `;
+  }
+
+  function filteredLogs() {
+    if (period === "all") return logs;
 
     const now = new Date();
     const start = new Date(now);
@@ -272,6 +499,7 @@
       start.setDate(
         now.getDate() - (now.getDay() + 6) % 7
       );
+
       start.setHours(0, 0, 0, 0);
     }
 
@@ -280,50 +508,91 @@
       start.setHours(0, 0, 0, 0);
     }
 
-    return rows.filter(
-      r => new Date(r.completed_at || r.updated_at) >= start
-    );
+    return logs.filter(log => {
+      const completed = new Date(
+        log.completed_at || log.updated_at
+      );
+
+      return completed >= start;
+    });
   }
 
-  function exerciseHistory(logs) {
+  function exerciseMap(rows) {
     const map = new Map();
 
-    logs.slice().reverse().forEach(log => {
+    rows.slice().reverse().forEach(log => {
+      const date = log.completed_at || log.updated_at;
+
       const exercises = Array.isArray(log.exercises)
         ? log.exercises
         : [];
 
-      exercises.forEach(ex => {
-        const name = String(
-          ex.name || "Unnamed exercise"
+      exercises.forEach(exercise => {
+        const name = String(exercise.name || "").trim();
+
+        if (!name) return;
+
+        const sets = (
+          Array.isArray(exercise.sets)
+            ? exercise.sets
+            : []
+        ).filter(
+          set =>
+            set.done ||
+            num(set.weight) > 0 ||
+            num(set.reps) > 0
         );
+
+        if (!sets.length) return;
 
         if (!map.has(name)) {
           map.set(name, []);
         }
 
-        const sets = (
-          Array.isArray(ex.sets) ? ex.sets : []
-        ).filter(s => s.done);
+        const maxWeight = Math.max(
+          0,
+          ...sets.map(set => num(set.weight))
+        );
 
-        if (!sets.length) return;
+        const repsAtMax = Math.max(
+          0,
+          ...sets
+            .filter(set =>
+              num(set.weight) === maxWeight
+            )
+            .map(set => num(set.reps))
+        );
 
-        const weights = sets.map(
-          s => n(s.weight)
+        const e1RM = Math.max(
+          0,
+          ...sets.map(set => {
+            const weight = num(set.weight);
+            const reps = num(set.reps);
+
+            if (!weight || !reps) return 0;
+
+            return reps === 1
+              ? weight
+              : Math.round(
+                  weight * (1 + reps / 30) * 10
+                ) / 10;
+          })
         );
 
         const volume = sets.reduce(
-          (total, s) =>
-            total + n(s.weight) * n(s.reps),
+          (total, set) =>
+            total +
+            num(set.weight) * num(set.reps),
           0
         );
 
         map.get(name).push({
-          date: log.completed_at || log.updated_at,
-          sets: sets.length,
-          best: Math.max(...weights),
-          reps: Math.max(...sets.map(s => n(s.reps))),
-          volume
+          date,
+          maxWeight,
+          repsAtMax,
+          best1RM: e1RM,
+          volume,
+          sets
         });
       });
     });
@@ -331,427 +600,716 @@
     return map;
   }
 
-  function stat(label, value) {
+  function summaryCard(label, value) {
     return `
-      <div class="m100215-stat">
-        <small>${esc(label)}</small>
+      <div class="mana-v993-summary">
+        <span>${esc(label)}</span>
         <strong>${esc(value)}</strong>
       </div>
     `;
   }
 
-  function sessionRows(logs) {
-    if (!logs.length) {
-      return `
-        <p class="m100215-empty">
-          No completed Coach Programs workouts
-          in this period. Select ALL TIME
-          to see earlier sessions.
-        </p>
-      `;
-    }
-
-    return logs.map(log => {
-      const exercises = Array.isArray(log.exercises)
-        ? log.exercises
-        : [];
-
-      const f = log.finishers || {};
-
-      return `
-        <details class="m100215-session">
-          <summary>
-            ${esc(log.session_name || "Coach Workout")}
-            • ${esc(date(
-              log.completed_at || log.updated_at
-            ))}
-          </summary>
-
-          <p>
-            Week ${esc(log.week_number)}
-            • Day ${esc(log.day_number)}
-
-            <br>
-            ${fmt(log.completed_sets)}
-            / ${fmt(log.total_sets)} sets
-
-            • ${fmt(log.total_volume)} kg
-            • ${mins(log.duration_seconds)} min
-          </p>
-
-          ${exercises.map(ex => `
-            <div class="m100215-row">
-              <strong>
-                ${esc(ex.name || "Exercise")}
-              </strong>
-
-              ${(Array.isArray(ex.sets)
-                ? ex.sets
-                : []
-              ).map(s => `
-                Set ${esc(s.set)}:
-                ${fmt(s.weight)} kg ×
-                ${fmt(s.reps)} reps
-                ${s.done ? "✓" : ""}
-              `).join(" • ")}
+  function panel(kicker, title, content) {
+    return `
+      <div class="mana-v993-panel">
+        <div class="mana-v993-panel-head">
+          <div>
+            <div class="mana-v993-panel-kicker">
+              ${esc(kicker)}
             </div>
-          `).join("")}
 
-          ${f.cardio?.completed
-            ? `
-              <p>
-                ✓ Cardio:
-                ${esc(f.cardio.equipment || "")}
-                • ${fmt(
-                  f.cardio.actualMinutes ||
-                  f.cardio.durationMinutes
-                )} min
-              </p>
-            `
-            : ""}
+            <h3>${esc(title)}</h3>
+          </div>
+        </div>
 
-          ${f.core?.completed
-            ? `
-              <p>
-                ✓ Core:
-                ${fmt(f.core.rounds || 3)} rounds
-              </p>
-            `
-            : ""}
-
-          ${log.workout_rating
-            ? `
-              <p>
-                Rating:
-                ${fmt(log.workout_rating)} / 5
-              </p>
-            `
-            : ""}
-
-          ${log.workout_comment
-            ? `
-              <p>
-                Comments:
-                ${esc(log.workout_comment)}
-              </p>
-            `
-            : ""}
-        </details>
-      `;
-    }).join("");
+        ${content}
+      </div>
+    `;
   }
 
-  function detailRows(logs) {
-    const all = exerciseHistory(logs);
+  function empty(text) {
+    return `
+      <div class="mana-v993-empty">
+        ${esc(text)}
+      </div>
+    `;
+  }
 
-    if (detail === "workouts") {
-      return sessionRows(logs);
+  function weightPanel() {
+    const values = safeJSON(
+      "mana-strength-v947-body-weight",
+      []
+    );
+
+    const entries = Array.isArray(values)
+      ? values.filter(
+          item =>
+            item &&
+            item.date &&
+            num(item.weight) > 0
+        ).sort(
+          (a, b) =>
+            new Date(a.date) - new Date(b.date)
+        )
+      : [];
+
+    const profile = safeJSON(
+      "mana-profile-v67",
+      {}
+    );
+
+    const starting = entries.length
+      ? num(entries[0].weight)
+      : num(profile.weight);
+
+    const current = entries.length
+      ? num(entries[entries.length - 1].weight)
+      : num(profile.weight);
+
+    const change = current - starting;
+
+    const rows = entries
+      .slice()
+      .reverse()
+      .slice(0, 8)
+      .map(entry => `
+        <div class="mana-v993-row">
+          <div>
+            <div class="mana-v993-row-title">
+              ${esc(formatDate(
+                entry.date + "T12:00:00"
+              ))}
+            </div>
+
+            <div class="mana-v993-row-sub">
+              Body-weight check-in
+            </div>
+          </div>
+
+          <div class="mana-v993-row-value">
+            ${num(entry.weight).toFixed(1)} kg
+          </div>
+        </div>
+      `).join("");
+
+    return panel(
+      "WEIGHT",
+      "Weight Progression",
+      `
+        <div class="mana-v993-summary-grid">
+          ${summaryCard(
+            "START",
+            starting
+              ? starting.toFixed(1) + " kg"
+              : "—"
+          )}
+
+          ${summaryCard(
+            "CURRENT",
+            current
+              ? current.toFixed(1) + " kg"
+              : "—"
+          )}
+
+          ${summaryCard(
+            "CHANGE",
+            starting && current
+              ? (change > 0 ? "+" : "") +
+                change.toFixed(1) + " kg"
+              : "—"
+          )}
+        </div>
+
+        <div style="margin-top:13px">
+          ${rows || empty(
+            "No body-weight check-ins yet."
+          )}
+        </div>
+      `
+    );
+  }
+
+  function personalBestPanel() {
+    const map = exerciseMap(logs);
+    const bests = [];
+
+    map.forEach((entries, name) => {
+      let best = null;
+
+      entries.forEach(entry => {
+        if (
+          !best ||
+          entry.best1RM > best.best1RM
+        ) {
+          best = { name, ...entry };
+        }
+      });
+
+      if (best) bests.push(best);
+    });
+
+    bests.sort(
+      (a, b) => b.best1RM - a.best1RM
+    );
+
+    const content = bests
+      .slice(0, 12)
+      .map(item => `
+        <div class="mana-v993-row">
+          <div>
+            <div class="mana-v993-row-title">
+              ${esc(item.name)}
+            </div>
+
+            <div class="mana-v993-row-sub">
+              ${esc(formatDate(item.date))}
+              • best set
+              ${decimal(item.maxWeight)} kg
+              × ${decimal(item.repsAtMax)}
+            </div>
+          </div>
+
+          <div class="mana-v993-row-value">
+            ${decimal(item.best1RM)} kg
+
+            <br>
+
+            <span style="color:#666;font-size:8px">
+              EST. 1RM
+            </span>
+          </div>
+        </div>
+      `).join("");
+
+    return panel(
+      "STRENGTH",
+      "Personal Bests",
+      content || empty(
+        "Complete some weighted exercises and your PBs will appear here."
+      )
+    );
+  }
+
+  function byExercisePanel() {
+    const map = exerciseMap(logs);
+
+    const names = [
+      ...map.keys()
+    ].sort(
+      (a, b) => a.localeCompare(b)
+    );
+
+    if (!names.length) {
+      return panel(
+        "EXERCISES",
+        "By Exercise",
+        empty(
+          "Exercise history will appear here after completed Strength workouts."
+        )
+      );
     }
 
-    if (!all.size) {
-      return `
-        <p class="m100215-empty">
-          No completed exercise data for this
-          period. Select ALL TIME to see
-          earlier sessions.
-        </p>
-      `;
+    if (
+      !selectedExercise ||
+      !map.has(selectedExercise)
+    ) {
+      selectedExercise = names[0];
+    }
+
+    const entries = map.get(selectedExercise) || [];
+
+    const first = entries[0];
+    const last = entries[entries.length - 1];
+
+    const bestLoad = Math.max(
+      0,
+      ...entries.map(e => e.maxWeight)
+    );
+
+    const best1RM = Math.max(
+      0,
+      ...entries.map(e => e.best1RM)
+    );
+
+    const loadChange =
+      first && last
+        ? last.maxWeight - first.maxWeight
+        : 0;
+
+    const history = entries
+      .slice()
+      .reverse()
+      .slice(0, 8)
+      .map(entry => `
+        <div class="mana-v993-row">
+          <div>
+            <div class="mana-v993-row-title">
+              ${esc(formatDate(entry.date))}
+            </div>
+
+            <div class="mana-v993-row-sub">
+              ${decimal(entry.maxWeight)} kg
+              × ${decimal(entry.repsAtMax)}
+              • ${number(entry.volume)} kg volume
+            </div>
+          </div>
+
+          <div class="mana-v993-row-value">
+            ${decimal(entry.best1RM)} kg
+
+            <br>
+
+            <span style="color:#666;font-size:8px">
+              E1RM
+            </span>
+          </div>
+        </div>
+      `).join("");
+
+    return panel(
+      "EXERCISE HISTORY",
+      "By Exercise",
+      `
+        <select
+          id="manaCoach216ExerciseSelect"
+          class="mana-v993-exercise-select">
+
+          ${names.map(name => `
+            <option
+              value="${esc(name)}"
+              ${name === selectedExercise
+                ? "selected"
+                : ""}>
+              ${esc(name)}
+            </option>
+          `).join("")}
+        </select>
+
+        <div class="mana-v993-summary-grid">
+          ${summaryCard(
+            "SESSIONS",
+            entries.length
+          )}
+
+          ${summaryCard(
+            "BEST LOAD",
+            bestLoad
+              ? decimal(bestLoad) + " kg"
+              : "—"
+          )}
+
+          ${summaryCard(
+            "LOAD CHANGE",
+            entries.length > 1
+              ? (loadChange > 0 ? "+" : "") +
+                decimal(loadChange) + " kg"
+              : "—"
+          )}
+        </div>
+
+        <div class="m100216-note">
+          Best estimated 1RM:
+          <strong style="color:#f3d875">
+            ${best1RM
+              ? decimal(best1RM) + " kg"
+              : "—"}
+          </strong>
+        </div>
+
+        <div style="margin-top:10px">
+          ${history}
+        </div>
+      `
+    );
+  }
+
+  function workoutHistory(log) {
+    const exercises = Array.isArray(log.exercises)
+      ? log.exercises
+      : [];
+
+    const finishers = log.finishers || {};
+
+    return `
+      <div class="m100216-history-body">
+        ${exercises.map(exercise => `
+          <div class="m100216-exercise">
+            <strong>${esc(
+              exercise.name || "Exercise"
+            )}</strong>
+
+            <small>
+              ${(Array.isArray(exercise.sets)
+                ? exercise.sets
+                : []
+              ).map(set => `
+                Set ${esc(set.set)}:
+                ${decimal(set.weight)} kg ×
+                ${decimal(set.reps)} reps
+                ${set.done ? "✓" : ""}
+              `).join(" • ")}
+            </small>
+          </div>
+        `).join("")}
+
+        ${finishers.cardio?.completed
+          ? `
+            <div class="m100216-finisher">
+              ✓ Cardio:
+              ${esc(
+                finishers.cardio.equipment || ""
+              )}
+              • ${number(
+                finishers.cardio.actualMinutes ||
+                finishers.cardio.durationMinutes
+              )} min
+            </div>
+          `
+          : ""}
+
+        ${finishers.core?.completed
+          ? `
+            <div class="m100216-finisher">
+              ✓ Core:
+              ${number(
+                finishers.core.rounds || 3
+              )} rounds
+            </div>
+          `
+          : ""}
+
+        ${log.workout_rating
+          ? `
+            <div class="m100216-note">
+              Workout rating:
+              ${decimal(log.workout_rating)}/5
+            </div>
+          `
+          : ""}
+
+        ${log.workout_comment
+          ? `
+            <div class="m100216-note">
+              Comments:
+              ${esc(log.workout_comment)}
+            </div>
+          `
+          : ""}
+      </div>
+    `;
+  }
+
+  function workoutPanel() {
+    const completed = logs.slice().sort(
+      (a, b) =>
+        new Date(
+          b.completed_at || b.updated_at
+        ) -
+        new Date(
+          a.completed_at || a.updated_at
+        )
+    );
+
+    const totalVolume = completed.reduce(
+      (sum, log) =>
+        sum + num(log.total_volume),
+      0
+    );
+
+    const totalExercises = exerciseMap(
+      completed
+    ).size;
+
+    const history = completed
+      .slice(0, 15)
+      .map(log => {
+        const duration = Math.round(
+          num(log.duration_seconds) / 60
+        );
+
+        const completion = percent(
+          log.completed_sets,
+          log.total_sets
+        );
+
+        return `
+          <details>
+            <summary>
+              <span>
+                ${esc(
+                  log.session_name ||
+                  "Strength Workout"
+                )}
+
+                <small>
+                  ${esc(formatDate(
+                    log.completed_at ||
+                    log.updated_at
+                  ))}
+                  • ${duration} min
+                  • ${completion}% complete
+                </small>
+              </span>
+
+              <b>
+                ${number(log.total_volume)} kg
+
+                <br>
+
+                <span style="color:#777;font-size:8px">
+                  VOLUME
+                </span>
+              </b>
+            </summary>
+
+            ${workoutHistory(log)}
+          </details>
+        `;
+      })
+      .join("");
+
+    return panel(
+      "TRAINING HISTORY",
+      "Workouts Complete",
+      `
+        <div class="mana-v993-summary-grid">
+          ${summaryCard(
+            "WORKOUTS",
+            completed.length
+          )}
+
+          ${summaryCard(
+            "VOLUME",
+            number(totalVolume)
+          )}
+
+          ${summaryCard(
+            "EXERCISES",
+            totalExercises
+          )}
+        </div>
+
+        <div class="m100216-history">
+          ${history || empty(
+            "Completed workouts will appear here."
+          )}
+        </div>
+      `
+    );
+  }
+
+  function detailPanel() {
+    if (detail === "weight") {
+      return weightPanel();
     }
 
     if (detail === "pbs") {
-      return [...all].map(([name, entries]) => {
-        const best = Math.max(
-          ...entries.map(x => x.best)
-        );
-
-        const bestReps = Math.max(
-          ...entries.map(x => x.reps)
-        );
-
-        return `
-          <div class="m100215-row">
-            <strong>${esc(name)}</strong>
-
-            Heaviest completed set:
-            ${fmt(best)} kg
-
-            • Highest reps:
-            ${fmt(bestReps)}
-          </div>
-        `;
-      }).join("");
+      return personalBestPanel();
     }
 
     if (detail === "exercise") {
-      return [...all].map(([name, entries]) => {
-        const sets = entries.reduce(
-          (a, e) => a + e.sets,
-          0
-        );
-
-        const volume = entries.reduce(
-          (a, e) => a + e.volume,
-          0
-        );
-
-        return `
-          <div class="m100215-row">
-            <strong>${esc(name)}</strong>
-
-            ${entries.length} sessions
-            • ${sets} completed sets
-            • ${fmt(volume)} kg total volume
-          </div>
-        `;
-      }).join("");
+      return byExercisePanel();
     }
 
-    return [...all].map(([name, entries]) => `
-      <div class="m100215-row">
-        <strong>${esc(name)}</strong>
-
-        ${entries.map(e => `
-          ${esc(date(e.date))}:
-          ${fmt(e.best)} kg
-        `).join(" • ")}
-      </div>
-    `).join("");
+    return workoutPanel();
   }
 
-  function choice(value, label, attr, active) {
+  function button(value, title, attribute, current) {
     return `
       <button type="button"
-        class="m100215-choice
-          ${active === value ? "active" : ""}"
-        ${attr}="${value}">
-        ${label}
+        class="${
+          attribute === "data-m100216-period"
+            ? "mana-v993-period"
+            : "mana-v993-detail-btn"
+        } ${current === value ? "active" : ""}"
+        ${attribute}="${value}">
+        ${title}
       </button>
     `;
   }
 
   function coachHTML() {
-    const logs = periodRows();
-
-    const completedSets = logs.reduce(
-      (sum, row) => sum + n(row.completed_sets),
-      0
-    );
-
-    const totalVolume = logs.reduce(
-      (sum, row) => sum + n(row.total_volume),
-      0
-    );
-
-    const cardio = logs.filter(
-      row => row.finishers?.cardio?.completed
-    );
-
-    const core = logs.filter(
-      row => row.finishers?.core?.completed
-    );
-
-    const cardioMinutes = cardio.reduce(
-      (sum, row) =>
-        sum + n(
-          row.finishers.cardio.actualMinutes ||
-          row.finishers.cardio.durationMinutes
-        ),
-      0
-    );
-
-    const titles = {
-      weight: "Weight Progression",
-      pbs: "Personal Bests",
-      exercise: "By Exercise",
-      workouts: "Workouts Complete"
-    };
+    const selectedLogs = filteredLogs();
 
     return `
-      <div data-m100215-ui="1">
-        <div class="m100215-head">
-          <span class="m100215-kicker">
-            MANA STRENGTH • COACH PROGRAMS
-          </span>
+      <div data-m100216-root="true">
+        <div class="mana-v993-head">
+          <div class="mana-v993-kicker">
+            MANA STRENGTH • PROGRESS
+          </div>
 
           <h2>Your Progress</h2>
 
-          <p class="m100215-sub">
-            Completed coach-assigned workouts,
-            separately tracked from My Workouts.
+          <p>
+            Keep the important numbers simple.
+            Tap below when you want more detail.
           </p>
         </div>
 
-        <div class="m100215-bar">
-          ${choice(
-            "daily", "DAILY",
-            "data-m100215-period", period
+        <div class="mana-v993-periods">
+          ${button(
+            "daily",
+            "DAILY",
+            "data-m100216-period",
+            period
           )}
 
-          ${choice(
-            "weekly", "WEEKLY",
-            "data-m100215-period", period
+          ${button(
+            "weekly",
+            "WEEKLY",
+            "data-m100216-period",
+            period
           )}
 
-          ${choice(
-            "monthly", "MONTHLY",
-            "data-m100215-period", period
+          ${button(
+            "monthly",
+            "MONTHLY",
+            "data-m100216-period",
+            period
           )}
 
-          ${choice(
-            "all", "ALL TIME",
-            "data-m100215-period", period
-          )}
-        </div>
-
-        <div class="m100215-stats">
-          ${stat("WORKOUTS", logs.length)}
-          ${stat("SETS COMPLETE", completedSets)}
-          ${stat(
-            "TOTAL VOLUME",
-            fmt(totalVolume) + " kg"
-          )}
-          ${stat(
-            "CARDIO",
-            cardio.length + " / " +
-            fmt(cardioMinutes) + " min"
-          )}
-          ${stat(
-            "CORE",
-            core.length + " sessions"
-          )}
-          ${stat(
-            "TRAINING TIME",
-            logs.reduce(
-              (sum, row) =>
-                sum + mins(row.duration_seconds),
-              0
-            ) + " min"
+          ${button(
+            "all",
+            "ALL TIME",
+            "data-m100216-period",
+            period
           )}
         </div>
 
-        <div class="m100215-detail-nav">
-          ${choice(
-            "weight", "WEIGHT PROGRESSION",
-            "data-m100215-detail", detail
+        ${coachMetrics(selectedLogs)}
+
+        <div class="mana-v993-detail-nav">
+          ${button(
+            "weight",
+            "WEIGHT PROGRESSION",
+            "data-m100216-detail",
+            detail
           )}
 
-          ${choice(
-            "pbs", "PERSONAL BESTS",
-            "data-m100215-detail", detail
+          ${button(
+            "pbs",
+            "PERSONAL BESTS",
+            "data-m100216-detail",
+            detail
           )}
 
-          ${choice(
-            "exercise", "BY EXERCISE",
-            "data-m100215-detail", detail
+          ${button(
+            "exercise",
+            "BY EXERCISE",
+            "data-m100216-detail",
+            detail
           )}
 
-          ${choice(
-            "workouts", "WORKOUTS COMPLETE",
-            "data-m100215-detail", detail
+          ${button(
+            "workouts",
+            "WORKOUTS COMPLETE",
+            "data-m100216-detail",
+            detail
           )}
         </div>
 
-        <section class="m100215-panel">
-          <span class="m100215-kicker">
-            COACH TRAINING HISTORY
-          </span>
+        <div id="manaCoach216Detail">
+          ${loading && !loadedAt
+            ? panel(
+                "COACH PROGRAMS",
+                "Loading",
+                empty("Loading coach workout results…")
+              )
+            : detailPanel()}
+        </div>
 
-          <h3>${titles[detail]}</h3>
-
-          ${loading && !fetched
-            ? `
-              <p class="m100215-empty">
-                Loading your saved coach workouts…
-              </p>
-            `
-            : detailRows(logs)}
-
-          ${error
-            ? `
-              <p class="m100215-error">
-                Unable to load coach history:
-                ${esc(error)}
-              </p>
-            `
-            : ""}
-        </section>
+        ${error
+          ? `
+            <div class="m100216-error">
+              Unable to refresh coach results:
+              ${esc(error)}
+            </div>
+          `
+          : ""}
       </div>
     `;
   }
 
-  function ensureCoachPanel() {
-    const root = $(ROOT);
+  function ensureRoots() {
+    if (!progressOpen()) return null;
 
-    if (!root || !isStrengthProgress()) {
-      return null;
+    const root = $(ROOT);
+    if (!root) return null;
+
+    let switcher = $(SWITCH);
+
+    if (!switcher) {
+      switcher = document.createElement("div");
+      switcher.id = SWITCH;
     }
 
-    let sw = $(SWITCH);
+    if (switcher.parentElement !== root) {
+      root.prepend(switcher);
+    }
 
-    if (!sw) {
-      sw = document.createElement("div");
-      sw.id = SWITCH;
-
-      sw.innerHTML = `
+    if (
+      !switcher.querySelector("[data-m100216-view]")
+    ) {
+      switcher.innerHTML = `
         <button type="button"
-          data-m1002-progress-mode="generated">
+          data-m100216-view="generated">
           My Workouts
         </button>
 
         <button type="button"
-          data-m1002-progress-mode="coach">
+          data-m100216-view="coach">
           Coach Programs
         </button>
       `;
     }
 
-    if (sw.parentElement !== root) {
-      root.prepend(sw);
+    let panelElement = $(PANEL);
+
+    if (!panelElement) {
+      panelElement = document.createElement("section");
+      panelElement.id = PANEL;
     }
 
-    let panel = $(PANEL);
-
-    if (!panel) {
-      panel = document.createElement("section");
-      panel.id = PANEL;
+    if (panelElement.parentElement !== root) {
+      switcher.after(panelElement);
     }
 
-    if (panel.parentElement !== root) {
-      sw.after(panel);
-    }
-
-    if (observedPanel !== panel) {
+    if (observedPanel !== panelElement) {
       panelObserver?.disconnect();
 
-      observedPanel = panel;
+      observedPanel = panelElement;
 
       panelObserver = new MutationObserver(() => {
         if (
           view === "coach" &&
-          isStrengthProgress() &&
-          !panel.querySelector("[data-m100215-ui]")
+          progressOpen() &&
+          !panelElement.querySelector(
+            "[data-m100216-root]"
+          )
         ) {
           schedule();
         }
       });
 
-      panelObserver.observe(panel, {
+      panelObserver.observe(panelElement, {
         childList: true
       });
     }
 
-    return panel;
+    return panelElement;
   }
 
-  function paint() {
-    clearStaleWorkoutMode();
+  function renderCoach(force = false) {
+    clearWorkoutMode();
 
-    if (!isStrengthProgress()) return;
+    if (!progressOpen()) return;
 
+    captureOriginalMetrics();
+
+    const panelElement = ensureRoots();
     const root = $(ROOT);
-    const panel = ensureCoachPanel();
 
-    if (!root || !panel) return;
+    if (!panelElement || !root) return;
 
     root.classList.toggle(
       "m1002-show-coach",
@@ -759,44 +1317,51 @@
     );
 
     $(SWITCH)?.querySelectorAll(
-      "[data-m1002-progress-mode]"
+      "[data-m100216-view]"
     ).forEach(button => {
       button.classList.toggle(
         "active",
-        button.dataset.m1002ProgressMode === view
+        button.dataset.m100216View === view
       );
     });
 
     if (view !== "coach") return;
 
-    if (!panel.querySelector("[data-m100215-ui]")) {
-      panel.innerHTML = coachHTML();
+    if (
+      force ||
+      !panelElement.querySelector(
+        "[data-m100216-root]"
+      )
+    ) {
+      panelElement.innerHTML = coachHTML();
     }
   }
 
-  async function fetchLogs(force = false) {
-    if (loading || !isStrengthProgress()) return;
+  async function loadLogs(force = false) {
+    if (!progressOpen() || loading) return;
 
     if (
       !force &&
-      fetched &&
-      Date.now() - fetched < 20000
-    ) return;
+      loadedAt &&
+      Date.now() - loadedAt < 20000
+    ) {
+      return;
+    }
 
     loading = true;
     error = "";
 
-    const token = ++requestId;
+    const token = ++request;
 
     try {
       if (
         typeof window.supabaseClient !== "function"
       ) {
-        throw Error("Cloud connection unavailable");
+        throw Error("Mana cloud connection unavailable");
       }
 
-      const client = await window.supabaseClient();
-      const auth = await client.auth.getUser();
+      const db = await window.supabaseClient();
+      const auth = await db.auth.getUser();
 
       if (auth.error) throw auth.error;
 
@@ -804,11 +1369,11 @@
 
       if (!id) {
         throw Error(
-          "Please sign in to view your workouts"
+          "Please sign in to view coach workout history"
         );
       }
 
-      const response = await client
+      const response = await db
         .from("coach_workout_logs")
         .select("*")
         .eq("user_id", id)
@@ -818,30 +1383,19 @@
         })
         .limit(500);
 
-      if (response.error) {
-        throw response.error;
-      }
+      if (response.error) throw response.error;
+      if (token !== request) return;
 
-      if (token !== requestId) return;
-
-      user = id;
-      rows = response.data || [];
-      fetched = Date.now();
+      userId = id;
+      logs = response.data || [];
+      loadedAt = Date.now();
 
     } catch (e) {
       error = String(e.message || e);
-      fetched = Date.now();
-
+      loadedAt = Date.now();
     } finally {
       loading = false;
-
-      const panel = $(PANEL);
-
-      if (panel) {
-        panel.innerHTML = "";
-      }
-
-      paint();
+      renderCoach(true);
     }
   }
 
@@ -852,30 +1406,32 @@
 
     setTimeout(() => {
       scheduled = false;
-      paint();
 
-      if (
-        view === "coach" &&
-        isStrengthProgress()
-      ) {
-        void fetchLogs();
+      clearWorkoutMode();
+
+      if (!progressOpen()) return;
+
+      renderCoach();
+
+      if (view === "coach") {
+        void loadLogs();
       }
-    }, 220);
+    }, 210);
   }
 
-  function onClick(event) {
+  function handleClick(event) {
     const target = event.target;
 
-    if (!(target instanceof Element)) {
-      return;
-    }
+    if (!(target instanceof Element)) return;
 
-    const tab = target.closest(
+    const appTab = target.closest(
       "#manaV83Tabs [data-v83-tab]"
     );
 
-    if (tab) {
-      if (tab.dataset.v83Tab !== "program") {
+    if (appTab) {
+      if (
+        appTab.dataset.v83Tab !== "program"
+      ) {
         $(HOLDER)?.classList.remove(
           "m1002-coach-mode"
         );
@@ -884,90 +1440,100 @@
       schedule();
     }
 
-    const toggle = target.closest(
-      "[data-m1002-progress-mode]"
+    const viewButton = target.closest(
+      "[data-m100216-view]"
     );
 
-    if (toggle) {
+    if (viewButton) {
       view =
-        toggle.dataset.m1002ProgressMode === "coach"
+        viewButton.dataset.m100216View === "coach"
           ? "coach"
           : "generated";
 
-      schedule();
+      renderCoach(true);
 
       if (view === "coach") {
-        setTimeout(
-          () => void fetchLogs(),
-          260
-        );
+        void loadLogs();
       }
 
       return;
     }
 
     const periodButton = target.closest(
-      "[data-m100215-period]"
+      "[data-m100216-period]"
     );
 
-    const detailButton = target.closest(
-      "[data-m100215-detail]"
-    );
-
-    if (periodButton || detailButton) {
-      if (periodButton) {
-        period = periodButton.dataset.m100215Period;
-      }
-
-      if (detailButton) {
-        detail = detailButton.dataset.m100215Detail;
-      }
-
-      const panel = $(PANEL);
-
-      if (panel) {
-        panel.innerHTML = "";
-      }
-
-      paint();
+    if (periodButton) {
+      period = periodButton.dataset.m100216Period;
+      renderCoach(true);
+      return;
     }
 
-    if (target.closest(
-      "[data-m1002-progress-go]"
-    )) {
+    const detailButton = target.closest(
+      "[data-m100216-detail]"
+    );
+
+    if (detailButton) {
+      detail = detailButton.dataset.m100216Detail;
+      renderCoach(true);
+      return;
+    }
+
+    if (
+      target.closest(
+        "[data-m1002-progress-go]"
+      )
+    ) {
       view = "coach";
+
       schedule();
 
       setTimeout(
-        () => void fetchLogs(true),
-        450
+        () => void loadLogs(true),
+        400
       );
     }
   }
 
+  function handleChange(event) {
+    const target = event.target;
+
+    if (
+      target?.id === "manaCoach216ExerciseSelect"
+    ) {
+      selectedExercise = target.value;
+      renderCoach(true);
+    }
+  }
+
   function init() {
-    injectStyles();
+    installStyles();
 
     const holder = $(HOLDER);
 
     if (holder) {
-      observer = new MutationObserver(() => {
-        clearStaleWorkoutMode();
+      holderObserver = new MutationObserver(() => {
+        clearWorkoutMode();
 
-        if (isStrengthProgress()) {
+        if (progressOpen()) {
           schedule();
         }
       });
 
-      observer.observe(holder, {
+      holderObserver.observe(holder, {
         childList: true
       });
     }
 
     document.addEventListener(
       "click",
-      onClick,
+      handleClick,
       true
+    );
+
+    document.addEventListener(
+      "change",
+      handleChange
     );
 
     window.addEventListener(
@@ -976,34 +1542,46 @@
     );
 
     window.addEventListener(
+      "pageshow",
+      schedule
+    );
+
+    window.addEventListener(
       "mana:coach-workout-saved",
       () => {
-        fetched = 0;
+        loadedAt = 0;
         view = "coach";
         schedule();
       }
     );
 
     window.addEventListener(
-      "pageshow",
-      schedule
+      "mana:profile-synced",
+      () => {
+        if (view === "coach") {
+          renderCoach(true);
+        }
+      }
     );
 
     window.addEventListener(
       "mana:logout",
       () => {
-        requestId++;
-        rows = [];
-        user = "";
-        fetched = 0;
-        view = "generated";
+        ++request;
+
+        logs = [];
+        userId = "";
+        loadedAt = 0;
         error = "";
+
+        view = "generated";
+
         schedule();
       }
     );
 
     window.refreshManaCoachProgressBridge =
-      () => fetchLogs(true);
+      () => loadLogs(true);
 
     window.MANA_COACH_PROGRESS_BRIDGE_BUILD =
       BUILD;
