@@ -1,39 +1,24 @@
 
 /*
  MANA MOVEMENT — COACH WORKOUTS
- COMPLETE BUILD 100213
-
- Full replacement:
+ BUILD 100214
+ COMPLETE REPLACEMENT
  v10_02_client_custom_programs_100200.js
-
- Based on working Build 100211.
- Only functional change:
- - Missing or zero saved reps now use prescribed reps.
- - Valid saved reps remain unchanged.
-
- Retained:
- - Coach workout carousel
- - Navigation arrows directly below active card
- - Muscle illustrations and demos
- - Repeat weight, individual reps and Tick All
- - Cardio and Core finishers
- - Rating and comments
- - Original-style Workout Complete summary
- - Coach workout Progress records
 */
 
 (() => {
   "use strict";
 
-  const BUILD = "100213";
+  const BUILD = "100214";
   const SW = "manaV1002WorkoutSwitch";
   const PANEL = "manaV1002CoachPanel";
   const LEGACY = "manaV1002AssignedPrograms";
   const MODAL = "manaV1002CustomProgramModal";
   const STYLE = "mana-v1002-client-custom-style";
   const MODE_KEY = "mana-strength-workout-view-100205";
-  const PROGRESS = "m1002CoachProgress";
   const ROOT = "manaV993StrengthProgress";
+  const PROGRESS = "m1002CoachProgress";
+  const PSW = "m1002ProgressSwitch";
 
   const $ = id => document.getElementById(id);
 
@@ -53,39 +38,40 @@
   let account = "";
   let loadedAt = 0;
   let loading = false;
-  let loadSeq = 0;
+  let loadingSerial = 0;
 
-  let program = null;
-  let assignment = null;
+  let programData = null;
+  let selected = null;
   let week = 1;
   let session = null;
-  let openSeq = 0;
+  let serial = 0;
   let slide = 0;
 
-  let saveTimer = 0;
+  let saveTimer = null;
   let saveChain = Promise.resolve();
   let elapsedBase = 0;
   let startedAt = 0;
-  let clockTimer = 0;
-  let scrollTimer = 0;
+  let scrollTimer = null;
+  let refreshTimer = null;
+  let resizeObserver = null;
 
   let finishers = {};
   let cardioEquipment = "Bike";
   let cardioMinutes = 10;
   let coreRound = 0;
   let coreTicks = [[], [], []];
-
   let rating = 0;
   let comment = "";
 
+  let progressMode = "generated";
+  let progressPeriod = "all";
+  let progressDetail = "workouts";
   let progressLogs = [];
   let progressUser = "";
   let progressLoading = false;
-  let progressLoaded = 0;
-  let progressSequence = 0;
-
-  let refreshTimer = 0;
-  let resizeObserver = null;
+  let progressError = "";
+  let progressLoadAt = 0;
+  let progressToken = 0;
 
   const CORE = [
     [
@@ -112,13 +98,12 @@
 
   async function db() {
     if (typeof window.supabaseClient !== "function") {
-      throw Error("Cloud connection unavailable");
+      throw new Error("Mana cloud unavailable");
     }
-
-    return await window.supabaseClient();
+    return window.supabaseClient();
   }
 
-  function clock() {
+  function clockSeconds() {
     return elapsedBase + (
       startedAt
         ? Math.floor((Date.now() - startedAt) / 1000)
@@ -126,85 +111,55 @@
     );
   }
 
-  function time(seconds) {
-    const value = Math.max(0, Number(seconds) || 0);
-
-    return (
-      String(Math.floor(value / 60)).padStart(2, "0") +
-      ":" +
-      String(Math.floor(value % 60)).padStart(2, "0")
-    );
+  function formatTime(seconds) {
+    const n = Math.max(0, Math.floor(Number(seconds) || 0));
+    return String(Math.floor(n / 60)).padStart(2, "0") +
+      ":" + String(n % 60).padStart(2, "0");
   }
 
   function stopClock() {
-    if (clockTimer) clearInterval(clockTimer);
-
-    clockTimer = 0;
-
     if (startedAt) {
-      elapsedBase = clock();
+      elapsedBase = clockSeconds();
       startedAt = 0;
     }
   }
 
-  function startClock() {
-    if (!startedAt) startedAt = Date.now();
-
-    if (clockTimer) clearInterval(clockTimer);
-
-    clockTimer = setInterval(() => {}, 1000);
-  }
-
-  function workoutTab() {
+  function workoutOpen() {
     return !!(
       $("manaV83ProgramShell")?.classList.contains("open") &&
       $("manaV83Title")?.textContent
         ?.trim()?.toUpperCase() === "MANA STRENGTH" &&
       document.querySelector(
-        '#manaV83Tabs [data-v83-tab].active'
-      )?.dataset.v83Tab === "program"
+        '#manaV83Tabs [data-v83-tab="program"].active'
+      )
     );
   }
 
-  function progressTab() {
+  function progressOpen() {
     return !!(
       $("manaV83ProgramShell")?.classList.contains("open") &&
-      $("manaV83Title")?.textContent
-        ?.trim()?.toUpperCase() === "MANA STRENGTH" &&
       document.querySelector(
-        '#manaV83Tabs [data-v83-tab].active'
-      )?.dataset.v83Tab === "progress" &&
+        '#manaV83Tabs [data-v83-tab="progress"].active'
+      ) &&
       $(ROOT)
     );
   }
 
-  function legacyTab() {
+  function legacyOpen() {
     return !!(
       $("clientProgramsView") &&
       !$("clientProgramsView").classList.contains("hide")
     );
   }
 
-  function icon() {
-    return `
-      <svg viewBox="0 0 24 24"
-        width="25" height="25"
-        fill="none"
-        stroke="#ff8126"
-        stroke-width="2">
-        <path d="M3 9v6M6 6v12M9 10v4M15 10v4M18 6v12M21 9v6M9 12h6"/>
-      </svg>
-    `;
-  }
-
-  function installStyles() {
+  function installStyle() {
     if ($(STYLE)) return;
 
     const style = document.createElement("style");
     style.id = STYLE;
 
     style.textContent = `
-      #${SW} {
+      #${SW},#${PSW}{
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:7px;
@@ -214,164 +169,110 @@
         border:1px solid #30343a;
         border-radius:15px;
       }
-
-      #${SW} button {
+      #${SW} button,#${PSW} button{
+        width:100%;
         min-width:0;
         min-height:46px;
+        padding:10px 7px;
+        background:#191b1f;
+        color:#fff!important;
+        -webkit-text-fill-color:#fff!important;
         border:1px solid transparent;
         border-radius:11px;
-        background:#191b1f;
-        color:#d3d6db;
+        font-family:inherit;
         font-size:12px;
         font-weight:800;
-        font-family:inherit;
         cursor:pointer;
       }
-
-      #${SW} button.active {
-        color:#ff8126;
+      #${SW} button.active,#${PSW} button.active{
         background:#251b15;
-        border-color:#ff8126;
+        color:#fff!important;
+        -webkit-text-fill-color:#fff!important;
+        border-color:#41454b!important;
       }
-
       #manaV83Content.m1002-coach-mode
-      >:not(#${SW}):not(#${PANEL}) {
+      >:not(#${SW}):not(#${PANEL}){
         display:none!important;
       }
-
-      #manaV83Content.m1002-coach-mode>#${SW} {
-        display:grid!important;
-      }
-
-      #${PANEL} {
-        display:none;
-        margin-bottom:16px;
-      }
-
-      #manaV83Content.m1002-coach-mode>#${PANEL} {
+      #${PANEL}{display:none;margin-bottom:16px}
+      #manaV83Content.m1002-coach-mode>#${PANEL}{
         display:block!important;
       }
-
-      #${PANEL} .m1002-shell {
-        background:#101113;
-        border:1px solid #34383e;
+      #${PANEL} .m1002-shell{
+        background:#101113!important;
+        border:1px solid #34383e!important;
         border-radius:17px;
         overflow:hidden;
         color:#fff;
       }
-
-      #${PANEL} .m1002-head {
-        background:#121315;
+      #${PANEL} .m1002-panel-head{
         padding:18px;
+        background:#121315;
         border-bottom:1px solid #292d32;
       }
-
-      #${PANEL} .m1002-head h3 {
-        color:#fff;
+      #${PANEL} .m1002-panel-head h3{
+        color:#fff!important;
+        -webkit-text-fill-color:#fff!important;
         font-size:20px;
         margin:5px 0;
       }
-
-      #${PANEL} .m1002-head p {
-        font-size:12px;
-        line-height:1.5;
-        color:#adb4bd;
-        margin:0;
-      }
-
-      #${PANEL} .m1002-body {
-        padding:14px;
-      }
-
-      .m1002-kicker {
+      .m1002-kicker{
         color:#ff8126!important;
         font-size:10px;
         font-weight:900;
-        letter-spacing:.09em;
+        letter-spacing:.1em;
       }
-
-      .m1002-program {
+      .m1002-muted{
+        color:#b1b8c1;
+        font-size:12px;
+        line-height:1.55;
+        margin:7px 0;
+      }
+      .m1002-program{
         display:flex;
         justify-content:space-between;
         align-items:center;
         gap:12px;
         width:100%;
         padding:16px;
-        margin:0 0 10px;
-        text-align:left;
-        color:#fff;
-        background:#17191c;
-        border:1px solid #3b4047;
+        margin-bottom:10px;
+        border:1px solid #3b4047!important;
         border-radius:14px;
+        background:#17191c!important;
+        color:#fff!important;
+        text-align:left;
         font-family:inherit;
-        cursor:pointer;
       }
-
-      .m1002-program strong {
-        color:#fff;
+      .m1002-program strong{
         display:block;
+        color:#fff!important;
+        -webkit-text-fill-color:#fff!important;
         font-size:15px;
       }
-
-      .m1002-program small {
+      .m1002-program small{
         display:block;
-        margin-top:5px;
         color:#b4bac2;
+        margin-top:5px;
         font-size:12px;
       }
-
-      .m1002-pill {
-        flex-shrink:0;
+      .m1002-pill{
+        color:#ff8126;
         border:1px solid #794521;
         border-radius:20px;
-        color:#ff8126;
         padding:6px 9px;
         font-size:10px;
         font-weight:900;
       }
-
-      .m1002-empty {
-        text-align:center;
-        background:#17191c;
-        padding:22px 15px;
+      .m1002-empty{
+        padding:22px;
         border:1px solid #353940;
         border-radius:15px;
-      }
-
-      .m1002-empty h4 {
+        background:#17191c;
         color:#fff;
-        margin:8px 0;
-        font-size:18px;
+        text-align:center;
       }
-
-      .m1002-empty p {
-        color:#b8bec6;
-        margin:0;
-        font-size:12px;
-        line-height:1.6;
-      }
-
-      .m1002-empty p:last-child {
-        color:#ff8126;
-        margin-top:12px;
-      }
-
-      .m1002-empty-icon {
-        display:grid;
-        place-items:center;
-        margin:auto;
-        width:48px;
-        height:48px;
-        border-radius:50%;
-        border:1px solid #704223;
-        background:#261c16;
-      }
-
-      #${LEGACY} {
-        margin:12px 0;
-      }
-
-      #${MODAL} {
+      #${LEGACY}{margin:12px 0}
+      #${MODAL}{
         position:fixed;
         inset:0;
         z-index:61000;
@@ -385,150 +286,102 @@
           12px
           calc(30px + env(safe-area-inset-bottom));
       }
-
-      #${MODAL}.open {
-        display:block;
-      }
-
-      #${MODAL} .m1002-inner {
-        width:min(680px,100%);
+      #${MODAL}.open{display:block}
+      #${MODAL} .m1002-inner{
+        max-width:680px;
         margin:auto;
       }
-
-      #${MODAL} button {
+      #${MODAL} button{
         font-family:inherit;
         cursor:pointer;
       }
-
-      #${MODAL} .m1002-top {
+      #${MODAL} .m1002-top{
         position:sticky;
         top:-12px;
         z-index:10;
         display:flex;
-        align-items:center;
         justify-content:space-between;
-        gap:8px;
+        align-items:center;
+        gap:10px;
         padding:11px 0;
         background:#050505;
       }
-
       #${MODAL} .m1002-back,
-      #${MODAL} .m1002-secondary {
-        min-height:38px;
-        padding:9px 12px;
-        background:#191b1e;
+      #${MODAL} .m1002-secondary{
+        min-height:40px;
+        padding:10px 12px;
         border:1px solid #42464d;
-        border-radius:10px;
+        border-radius:11px;
+        background:#191b1e;
         color:#fff;
-        font-weight:800;
         font-size:12px;
+        font-weight:800;
       }
-
-      #${MODAL} .m1002-hero {
-        background:#111214;
-        border:1px solid #34383e;
-        border-radius:17px;
+      #${MODAL} .m1002-hero,
+      #${MODAL} .mana-v85-day{
         padding:16px;
         margin-bottom:12px;
+        background:#121314!important;
+        border:1px solid #34383e!important;
+        border-radius:16px;
       }
-
-      #${MODAL} .m1002-hero h2 {
-        color:#fff;
-        margin:5px 0;
-        font-size:22px;
-      }
-
-      #${MODAL} .m1002-hero p,
-      #${MODAL} .m1002-muted {
-        color:#b1b8c1;
+      #${MODAL} .m1002-hero h2,
+      #${MODAL} .mana-v85-day h3{
+        color:#fff!important;
         margin:6px 0;
-        font-size:12px;
-        line-height:1.5;
       }
-
-      #${MODAL} .m1002-weeks {
+      #${MODAL} .m1002-weeks{
         display:flex;
         gap:8px;
         overflow-x:auto;
         margin-bottom:13px;
       }
-
-      #${MODAL} .m1002-weeks button {
-        flex:0 0 auto;
+      #${MODAL} .m1002-weeks button{
         padding:11px 13px;
+        background:#191b1e;
         border:1px solid #444;
         border-radius:10px;
-        background:#191b1e;
-        color:#ccc;
+        color:#fff;
         font-size:12px;
         font-weight:800;
       }
-
-      #${MODAL} .m1002-weeks button.active {
+      #${MODAL} .m1002-weeks button.active{
         border-color:#ff8126;
-        background:#261c16;
         color:#ff8126;
+        background:#261c16;
       }
-
-      #${MODAL} .mana-v85-day {
-        background:#121314;
-        border:1px solid #34383e;
-        border-radius:16px;
-        padding:16px;
-        margin-bottom:12px;
-        color:#fff;
-      }
-
-      #${MODAL} .mana-v85-day h3 {
-        color:#fff;
-        font-size:18px;
-        margin:7px 0;
-      }
-
-      #${MODAL} .m1002-primary {
+      #${MODAL} .m1002-primary,
+      #${MODAL} .m1002-finisher-save{
         display:block;
         width:100%;
-        min-height:45px;
-        background:#ff8126;
-        border:0;
-        border-radius:12px;
+        min-height:46px;
         padding:12px;
-        color:#141414;
-        font-weight:900;
+        margin-top:11px;
+        background:#ff8126!important;
+        border:0;
+        border-radius:11px;
+        color:#141414!important;
         font-size:13px;
-        margin-top:10px;
+        font-weight:900;
       }
-
-      #${MODAL} .m1002-primary:disabled {
-        opacity:.5;
-      }
-
-      #${MODAL} .m1002-position {
+      #${MODAL} button:disabled{opacity:.5}
+      #${MODAL} .m1002-position{
         display:flex;
         justify-content:space-between;
         gap:8px;
-        align-items:center;
-        margin:3px 0 7px;
+        margin:5px 0 8px;
         color:#fff;
         font-size:12px;
         font-weight:800;
       }
-
-      #${MODAL} .m1002-position small {
-        color:#aab0b8;
-        font-size:11px;
-        font-weight:500;
-      }
-
-      #${MODAL} .m1002-dots {
+      #${MODAL} .m1002-dots{
         display:flex;
         justify-content:center;
         flex-wrap:wrap;
         gap:8px;
-        margin:8px 0 10px;
+        margin:9px 0 12px;
       }
-
-      #${MODAL} .m1002-dot {
+      #${MODAL} .m1002-dot{
         width:9px;
         height:9px;
         padding:0;
@@ -536,25 +389,12 @@
         border-radius:50%;
         background:#545960;
       }
-
-      #${MODAL} .m1002-dot.active {
+      #${MODAL} .m1002-dot.active{
         width:24px;
         border-radius:8px;
         background:#ff8126;
       }
-
-      #${MODAL} .m1002-dot.done {
-        background:#ff8126;
-        opacity:.65;
-      }
-
-      /*
-       ACTIVE SLIDE HEIGHT FIX:
-       The carousel no longer inherits
-       the height of its tallest slide.
-      */
-
-      #${MODAL} .m1002-carousel {
+      #${MODAL} .m1002-carousel{
         display:flex;
         align-items:flex-start;
         overflow-x:auto;
@@ -562,29 +402,20 @@
         width:100%;
         scroll-snap-type:x mandatory;
         scroll-behavior:smooth;
-        overscroll-behavior-inline:contain;
         -webkit-overflow-scrolling:touch;
         scrollbar-width:none;
-        transition:height .15s ease;
       }
-
-      #${MODAL} .m1002-carousel::-webkit-scrollbar {
+      #${MODAL} .m1002-carousel::-webkit-scrollbar{
         display:none;
       }
-
-      #${MODAL} .m1002-slide {
+      #${MODAL} .m1002-slide{
         flex:0 0 100%;
         min-width:0;
         box-sizing:border-box;
         scroll-snap-align:start;
-        scroll-snap-stop:always;
       }
-
-      #${MODAL} .m1002-slide-inner {
-        padding:1px;
-      }
-
-      #${MODAL} .mana-v64-card {
+      #${MODAL} .m1002-slide-inner{padding:1px}
+      #${MODAL} .mana-v64-card{
         padding:16px;
         margin:0;
         background:#121314!important;
@@ -593,21 +424,17 @@
         color:#fff;
         box-shadow:none;
       }
-
-      #${MODAL} .mana-v64-name {
-        color:#fff;
+      #${MODAL} .mana-v64-name{
+        color:#fff!important;
         font-size:18px;
         font-weight:900;
         margin-bottom:6px;
       }
-
-      #${MODAL} .mana-v64-target {
-        color:#ff8126;
+      #${MODAL} .mana-v64-target{
+        color:#ff8126!important;
         font-size:12px;
-        line-height:1.5;
       }
-
-      #${MODAL} .m1002-muscle {
+      #${MODAL} .m1002-muscle{
         display:flex;
         align-items:center;
         gap:12px;
@@ -617,53 +444,32 @@
         border-radius:13px;
         background:#0b0c0d;
       }
-
-      #${MODAL} .m1002-muscle-frame {
-        display:grid;
-        place-items:center;
+      #${MODAL} .m1002-muscle-frame{
         flex:0 0 105px;
         width:105px;
         height:125px;
-        background:#151618;
-        border-radius:10px;
+        display:grid;
+        place-items:center;
         overflow:hidden;
+        border-radius:10px;
+        background:#151618;
       }
-
-      #${MODAL} .m1002-muscle-frame img {
+      #${MODAL} .m1002-muscle-frame img{
         width:100%;
         height:100%;
         object-fit:contain;
       }
-
-      #${MODAL} .m1002-muscle-fallback {
-        color:#ff8126;
-        font-size:11px;
-        font-weight:900;
-        text-align:center;
-        padding:8px;
-      }
-
-      #${MODAL} .m1002-muscle-copy {
+      #${MODAL} .m1002-muscle-copy{
         flex:1;
         min-width:0;
       }
-
-      #${MODAL} .m1002-muscle-copy small {
-        display:block;
-        color:#ff8126;
-        font-size:10px;
-        font-weight:900;
-        margin-bottom:5px;
-      }
-
-      #${MODAL} .m1002-muscle-copy strong {
+      #${MODAL} .m1002-muscle-copy strong{
         display:block;
         color:#fff;
         font-size:13px;
-        line-height:1.5;
       }
-
-      #${MODAL} .m1002-demo {
+      #${MODAL} .m1002-demo{
+        display:block;
         margin-top:10px;
         padding:9px 11px;
         background:#241b16;
@@ -673,16 +479,8 @@
         font-size:11px;
         font-weight:900;
       }
-
-      #${MODAL} .m1002-note {
-        color:#b9c0c9;
-        font-size:12px;
-        line-height:1.6;
-        margin:8px 0;
-      }
-
       #${MODAL} .mana-v64-table-head,
-      #${MODAL} .mana-v64-set {
+      #${MODAL} .mana-v64-set{
         display:grid;
         grid-template-columns:
           32px minmax(0,1fr)
@@ -691,64 +489,59 @@
         align-items:center;
         margin:8px 0;
       }
-
-      #${MODAL} .mana-v64-table-head {
+      #${MODAL} .mana-v64-table-head{
         color:#afb5bc;
-        text-align:center;
         font-size:11px;
-        font-weight:800;
-      }
-
-      #${MODAL} .mana-v64-set-number {
-        color:#fff;
-        font-size:12px;
         text-align:center;
       }
-
-      #${MODAL} .mana-v64-set input {
-        display:block;
-        min-width:0;
+      #${MODAL} .mana-v64-set input{
         width:100%;
+        min-width:0;
         min-height:42px;
         padding:7px;
         background:#1b1d20;
         border:1px solid #454a50;
         border-radius:9px;
         color:#fff;
-        text-align:center;
         font-size:16px;
+        text-align:center;
       }
-
-      #${MODAL} .mana-v64-check {
+      #${MODAL} .mana-v64-check{
         width:43px;
         height:42px;
-        background:#23252a;
         border:1px solid #545960;
         border-radius:9px;
+        background:#23252a;
         color:#aaa;
         font-weight:900;
       }
-
-      #${MODAL} .mana-v64-check.done {
+      #${MODAL} .mana-v64-check.done{
         background:#ff8126;
         border-color:#ff8126;
         color:#111;
       }
-
-      /*
-       NAVIGATION SITS DIRECTLY
-       UNDER THE ACTIVE EXERCISE.
-      */
-
-      #${MODAL} .m1002-nav {
+      #${MODAL} .m1002-tick-all{
+        width:100%;
+        padding:11px;
+        margin-top:13px;
+        background:#261d16;
+        border:1px solid #ff8126;
+        border-radius:11px;
+        color:#ff8126;
+        font-size:12px;
+        font-weight:900;
+      }
+      #${MODAL} .m1002-tick-all.done{
+        background:#ff8126;
+        color:#111;
+      }
+      #${MODAL} .m1002-nav{
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:8px;
-        margin:6px 0 0;
-        padding:0;
+        margin:6px 0;
       }
-
-      #${MODAL} .m1002-nav button {
+      #${MODAL} .m1002-nav button{
         min-height:43px;
         background:#191b1e;
         border:1px solid #444;
@@ -757,95 +550,70 @@
         font-size:12px;
         font-weight:900;
       }
-
-      #${MODAL} .m1002-nav button.next {
+      #${MODAL} .m1002-nav button.next{
         background:#241b15;
-        color:#ff8126;
         border-color:#ff8126;
+        color:#ff8126;
       }
-
-      #${MODAL} .m1002-nav button:disabled {
-        opacity:.38;
-      }
-
-      #${MODAL} .m1002-status {
+      #${MODAL} .m1002-status{
         color:#b3bac4;
         font-size:12px;
-        line-height:1.5;
-        margin:8px 0;
+        line-height:1.6;
       }
-
-      #${MODAL} .m1002-status:empty {
-        display:none;
-      }
-
-      #${MODAL} .m1002-finishers {
-        background:#121314;
+      #${MODAL} .m1002-status:empty{display:none}
+      #${MODAL} .m1002-finishers{
+        padding:16px;
         border:1px solid #34383e;
         border-radius:16px;
-        padding:16px;
+        background:#121314;
       }
-
       #${MODAL} .m1002-finishers h3,
-      #${MODAL} .m1002-feedback h3 {
-        color:#fff;
-        font-size:19px;
+      #${MODAL} .m1002-feedback h3{
+        color:#fff!important;
         margin:5px 0 8px;
+        font-size:19px;
       }
-
-      #${MODAL} .m1002-finisher-pair {
+      #${MODAL} .m1002-finisher-pair{
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:9px;
         margin:14px 0;
       }
-
-      #${MODAL} .m1002-finisher-option {
+      #${MODAL} .m1002-finisher-option{
         display:flex;
         flex-direction:column;
         justify-content:center;
         align-items:center;
         gap:5px;
-        min-height:70px;
-        background:#191b1f;
+        min-height:74px;
+        padding:12px;
         border:1px solid #4a4d53;
         border-radius:13px;
+        background:#191b1f;
         color:#fff;
         font-size:13px;
         font-weight:900;
       }
-
-      #${MODAL} .m1002-finisher-option small {
-        color:#aeb6bf;
-        font-size:11px;
-        font-weight:500;
+      #${MODAL} .m1002-finisher-option.done{
+        border-color:#ff8126!important;
+        color:#ff8126!important;
       }
-
       #${MODAL} .m1002-finisher-panel,
-      #${MODAL} .m1002-feedback {
+      #${MODAL} .m1002-feedback{
         padding:13px;
+        margin-top:12px;
         background:#17191c;
         border:1px solid #383d44;
         border-radius:13px;
-        margin-top:12px;
       }
-
-      #${MODAL} .m1002-finisher-panel h4 {
-        color:#fff;
-        margin:0 0 10px;
-        font-size:15px;
-      }
-
-      #${MODAL} .m1002-options,
-      #${MODAL} .m1002-rating {
+      #${MODAL} .m1002-options{
         display:flex;
         flex-wrap:wrap;
         gap:7px;
         margin:11px 0;
       }
-
       #${MODAL} .m1002-options button,
-      #${MODAL} .m1002-rating button {
+      #${MODAL} .m1002-rating button{
         padding:9px 11px;
         background:#25272a;
         border:1px solid #44484e;
@@ -854,29 +622,29 @@
         font-size:12px;
         font-weight:800;
       }
-
       #${MODAL} .m1002-options button.active,
-      #${MODAL} .m1002-rating button.active {
-        background:#2a201a;
+      #${MODAL} .m1002-rating button.active{
         border-color:#ff8126;
         color:#ff8126;
+        background:#2a201a;
       }
-
-      #${MODAL} .m1002-rating button {
+      #${MODAL} .m1002-rating{
+        display:flex;
+        gap:7px;
+        margin:11px 0;
+      }
+      #${MODAL} .m1002-rating button{
         flex:1;
-        min-width:38px;
-        font-size:16px;
+        min-width:34px;
       }
-
-      #${MODAL} .m1002-feedback label {
+      #${MODAL} .m1002-feedback label{
         display:block;
         color:#fff;
         font-size:12px;
-        font-weight:800;
         margin-top:12px;
       }
-
-      #${MODAL} .m1002-feedback textarea {
+      #${MODAL} .m1002-feedback textarea{
+        display:block;
         width:100%;
         min-height:85px;
         padding:12px;
@@ -885,12 +653,9 @@
         border:1px solid #4a4e54;
         border-radius:10px;
         color:#fff;
-        font-family:inherit;
         font-size:14px;
-        resize:vertical;
       }
-
-      #${MODAL} .m1002-core-item {
+      #${MODAL} .m1002-core-item{
         display:flex;
         align-items:center;
         gap:11px;
@@ -899,236 +664,107 @@
         color:#fff;
         font-size:12px;
       }
-
-      #${MODAL} .m1002-core-item input {
+      #${MODAL} .m1002-core-item input{
         width:20px;
         height:20px;
         accent-color:#ff8126;
       }
-
-      #${MODAL} .m1002-core-item strong,
-      #${MODAL} .m1002-core-item small {
-        display:block;
-      }
-
-      #${MODAL} .m1002-core-item small {
-        color:#b5bdc6;
-        margin-top:4px;
-      }
-
-      #${MODAL} .m1002-saved {
+      #${MODAL} .m1002-saved{
         color:#ff8126;
         font-size:12px;
         font-weight:800;
-        line-height:1.6;
         margin:10px 0;
       }
-
-      #${MODAL} .m1002-tick-all {
-        display:block;
-        width:100%;
-        margin:12px 0 0;
-        padding:11px;
-        background:#261d16;
-        border:1px solid #ff8126;
-        border-radius:11px;
-        color:#ff8126;
-        font-size:12px;
-        font-weight:900;
-      }
-
-      #${MODAL} .m1002-tick-all.done {
-        background:#ff8126;
-        color:#111;
-      }
-
-      #${MODAL} .m1002-final-complete {
-        margin-top:14px;
-      }
-
-      /*
-       ORIGINAL-STYLE WORKOUT SUMMARY
-      */
-
-      #${MODAL} .m1002-summary {
+      #${MODAL} .m1002-summary{
         text-align:center;
-        padding:10px 0;
+        padding:12px 0;
       }
-
-      #${MODAL} .m1002-summary-check {
+      #${MODAL} .m1002-summary-check{
         display:grid;
         place-items:center;
         width:68px;
         height:68px;
-        margin:3px auto 12px;
+        margin:4px auto 12px;
         border:2px solid #ff8126;
         border-radius:50%;
         background:#251b15;
         color:#ff8126;
         font-size:32px;
-        font-weight:900;
       }
-
-      #${MODAL} .m1002-summary h1 {
-        color:#fff;
-        font-size:26px;
-        margin:6px 0;
-      }
-
-      #${MODAL} .m1002-summary-name {
-        color:#bdc3cb;
-        font-size:13px;
-        margin:6px 0 18px;
-      }
-
-      #${MODAL} .m1002-summary-grid {
+      #${MODAL} .m1002-summary-grid{
         display:grid;
         grid-template-columns:1fr 1fr;
         gap:10px;
         margin:15px 0;
         text-align:left;
       }
-
-      #${MODAL} .m1002-summary-stat {
+      #${MODAL} .m1002-summary-stat{
+        padding:15px;
         background:#141517;
         border:1px solid #373c43;
         border-radius:14px;
-        padding:15px;
       }
-
-      #${MODAL} .m1002-summary-stat small {
+      #${MODAL} .m1002-summary-stat small{
         display:block;
         color:#a8b0ba;
         font-size:11px;
       }
-
-      #${MODAL} .m1002-summary-stat strong {
+      #${MODAL} .m1002-summary-stat strong{
         display:block;
         color:#fff;
         font-size:23px;
         margin:6px 0;
       }
-
-      #${MODAL} .m1002-summary-stat span {
-        color:#a8b0ba;
-        font-size:10px;
-      }
-
-      #${MODAL} .m1002-summary-note {
+      #${MODAL} .m1002-summary-note{
+        padding:14px;
+        margin:12px 0;
+        text-align:left;
         background:#111214;
         border:1px solid #34383e;
         border-radius:12px;
-        padding:14px;
-        text-align:left;
-        margin:12px 0;
         color:#c2c7ce;
         font-size:12px;
         line-height:1.7;
       }
-
-      /*
-       COACH TRAINING IN PROGRESS TAB
-      */
-
-      #${PROGRESS} {
-        margin:18px 0 14px;
-        padding:15px;
-        border:1px solid #353940;
-        border-radius:16px;
-        background:#111315;
-        color:#fff;
+      #${ROOT}.m1002-show-coach
+      >:not(#${PSW}):not(#${PROGRESS}){
+        display:none!important;
       }
-
-      #${PROGRESS} h3 {
-        margin:5px 0 7px;
-        color:#fff;
-        font-size:19px;
+      #${PROGRESS}{display:none}
+      #${ROOT}.m1002-show-coach>#${PROGRESS}{
+        display:block!important;
       }
-
-      #${PROGRESS} p {
-        color:#b0b7c0;
-        font-size:12px;
-        line-height:1.5;
+      #${PROGRESS} .mana-v993-head h2,
+      #${PROGRESS} .mana-v993-panel h3{
+        color:#fff!important;
       }
-
-      #${PROGRESS} .m1002-progress-stats {
-        display:grid;
-        grid-template-columns:repeat(2,minmax(0,1fr));
-        gap:8px;
-        margin:14px 0;
-      }
-
-      #${PROGRESS} .m1002-progress-stat {
+      #${PROGRESS} .m1002-history{
         padding:12px;
-        background:#1a1c1f;
-        border:1px solid #353940;
-        border-radius:12px;
-      }
-
-      #${PROGRESS} .m1002-progress-stat small {
-        display:block;
-        font-size:10px;
-        color:#aaa;
-        margin-bottom:5px;
-      }
-
-      #${PROGRESS} .m1002-progress-stat strong {
-        font-size:19px;
-        color:#fff;
-      }
-
-      #${PROGRESS} .m1002-history {
-        margin-top:10px;
-        padding:12px;
-        background:#191b1e;
+        margin:9px 0;
         border:1px solid #383c42;
-        border-radius:11px;
-      }
-
-      #${PROGRESS} .m1002-history summary {
+        border-radius:12px;
+        background:#17191c;
         color:#fff;
-        cursor:pointer;
+      }
+      #${PROGRESS} .m1002-history summary{
+        color:#fff;
         font-size:13px;
-        font-weight:800;
-        line-height:1.6;
+        font-weight:900;
+        cursor:pointer;
       }
-
-      #${PROGRESS} .m1002-history small {
-        display:block;
-        color:#aaa;
-        font-size:11px;
-        margin:3px 0;
-      }
-
-      #${PROGRESS} .m1002-history-exercise {
-        border-top:1px solid #383c42;
-        padding:8px 0;
-        color:#c2c8d0;
+      #${PROGRESS} .m1002-history-exercise{
+        padding:9px 0;
+        border-top:1px solid #34383e;
+        color:#ccc;
         font-size:12px;
       }
-
-      #${PROGRESS} .m1002-history-exercise strong {
-        color:#fff;
-      }
-
-      @media(max-width:420px) {
-        #${MODAL} .mana-v64-card {
-          padding:13px;
-        }
-
-        #${MODAL} .m1002-muscle {
-          gap:10px;
-          padding:9px;
-        }
-
-        #${MODAL} .m1002-muscle-frame {
-          width:95px;
+      @media(max-width:420px){
+        #${MODAL} .mana-v64-card{padding:13px}
+        #${MODAL} .m1002-muscle{gap:9px;padding:9px}
+        #${MODAL} .m1002-muscle-frame{
           flex-basis:95px;
+          width:95px;
           height:116px;
-        }
-
-        #${PANEL} .m1002-body {
-          padding:11px;
         }
       }
     `;
@@ -1136,73 +772,60 @@
     document.head.appendChild(style);
   }
 
-  function modal() {
-    let element = $(MODAL);
+  function ensureModal() {
+    if ($(MODAL)) return;
 
-    if (element) return element;
+    const m = document.createElement("div");
+    m.id = MODAL;
 
-    element = document.createElement("div");
-    element.id = MODAL;
-
-    element.setAttribute("role", "dialog");
-    element.setAttribute("aria-modal", "true");
-
-    element.innerHTML = `
+    m.innerHTML = `
       <div class="m1002-inner">
         <div class="m1002-top">
           <span class="m1002-kicker">
             MANA STRENGTH • COACH PROGRAM
           </span>
-
           <button type="button"
             class="m1002-back"
             data-m1002-back>
             ← BACK
           </button>
         </div>
-
         <div id="m1002Content"></div>
       </div>
     `;
 
-    document.body.appendChild(element);
-
-    return element;
+    document.body.appendChild(m);
   }
 
-  function show(html) {
-    modal().classList.add("open");
+  function showModal(html) {
+    ensureModal();
+    $(MODAL).classList.add("open");
     $("m1002Content").innerHTML = html;
+    $(MODAL).scrollTop = 0;
   }
 
   function ensureRoots() {
-    if (!workoutTab()) return null;
+    if (!workoutOpen()) return null;
 
     const holder = $("manaV83Content");
     if (!holder) return null;
 
-    let selector = $(SW);
+    let sw = $(SW);
 
-    if (!selector) {
-      selector = document.createElement("div");
-      selector.id = SW;
-
-      selector.innerHTML = `
-        <button type="button"
-          data-m1002-mode="generated">
+    if (!sw) {
+      sw = document.createElement("div");
+      sw.id = SW;
+      sw.innerHTML = `
+        <button type="button" data-m1002-mode="generated">
           My Workouts
         </button>
-
-        <button type="button"
-          data-m1002-mode="coach">
+        <button type="button" data-m1002-mode="coach">
           Coach Programs
         </button>
       `;
     }
 
-    if (selector.parentElement !== holder) {
-      holder.prepend(selector);
-    }
+    if (sw.parentElement !== holder) holder.prepend(sw);
 
     let panel = $(PANEL);
 
@@ -1211,9 +834,7 @@
       panel.id = PANEL;
     }
 
-    if (panel.parentElement !== holder) {
-      selector.insertAdjacentElement("afterend", panel);
-    }
+    if (panel.parentElement !== holder) sw.after(panel);
 
     return holder;
   }
@@ -1222,18 +843,15 @@
     const view = $("clientProgramsView");
     if (!view) return null;
 
-    let element = $(LEGACY);
+    let el = $(LEGACY);
 
-    if (!element) {
-      element = document.createElement("section");
-      element.id = LEGACY;
+    if (!el) {
+      el = document.createElement("section");
+      el.id = LEGACY;
     }
 
-    if (!view.contains(element)) {
-      view.prepend(element);
-    }
-
-    return element;
+    if (!view.contains(el)) view.prepend(el);
+    return el;
   }
 
   function applyMode() {
@@ -1245,19 +863,17 @@
       mode === "coach"
     );
 
-    $(SW)?.querySelectorAll(
-      "[data-m1002-mode]"
-    ).forEach(button => {
-      const active = button.dataset.m1002Mode === mode;
-
-      button.classList.toggle("active", active);
-      button.setAttribute("aria-pressed", String(active));
-    });
+    $(SW)?.querySelectorAll("[data-m1002-mode]")
+      .forEach(button => {
+        const active = button.dataset.m1002Mode === mode;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
 
     if (mode === "coach") renderPanel();
   }
 
-  function setMode(value) {
+  function changeMode(value) {
     if (!["generated", "coach"].includes(value)) return;
 
     mode = value;
@@ -1268,35 +884,27 @@
 
     applyMode();
 
-    if (mode === "coach") {
-      void loadAssignments(true);
-    }
+    if (mode === "coach") void loadAssignments(true);
   }
 
-  function programCard(assignment) {
-    const item = assignment.custom_programs;
+  function programCard(item) {
+    const p = item.custom_programs;
 
     return `
       <button type="button"
         class="m1002-program"
-        data-m1002-program="${esc(item.id)}">
-
+        data-m1002-program="${esc(p.id)}">
         <span>
-          <strong>${esc(item.name)}</strong>
-
+          <strong>${esc(p.name)}</strong>
           <small>
-            ${esc(
-              item.goal ||
-              item.description ||
-              "Personalised training program"
-            )}
+            ${esc(p.goal || p.description ||
+              "Personalised training program")}
           </small>
         </span>
-
         <span class="m1002-pill">
-          ${assignment.is_primary
+          ${item.is_primary
             ? "PRIMARY"
-            : esc(assignment.status.toUpperCase())}
+            : esc(item.status.toUpperCase())}
         </span>
       </button>
     `;
@@ -1307,48 +915,29 @@
     if (!holder) return;
 
     const rows = assignments.filter(
-      item =>
-        item.custom_programs &&
-        ["active", "paused", "completed"].includes(
-          item.status
-        )
+      a => a.custom_programs
     );
 
     holder.innerHTML = `
       <div class="m1002-shell">
-        <div class="m1002-head">
-          <small class="m1002-kicker">
-            MANA STRENGTH
-          </small>
-
+        <div class="m1002-panel-head">
+          <span class="m1002-kicker">MANA STRENGTH</span>
           <h3>Coach Programs</h3>
-
-          <p>
+          <p class="m1002-muted">
             Personalised training built and
             assigned by your coach.
           </p>
         </div>
-
-        <div class="m1002-body">
+        <div style="padding:14px">
           ${rows.length
             ? rows.map(programCard).join("")
             : `
               <div class="m1002-empty">
-                <div class="m1002-empty-icon">
-                  ${icon()}
-                </div>
-
                 <h4>No Coach Programs Yet</h4>
-
-                <p>
+                <p class="m1002-muted">
                   ${loading
                     ? "Checking assigned programs…"
                     : "Your coach-built programs will appear here once assigned."}
-                </p>
-
-                <p>
-                  Your regular workouts remain
-                  available under My Workouts.
                 </p>
               </div>
             `}
@@ -1358,20 +947,11 @@
   }
 
   function renderLegacy() {
-    const holder = ensureLegacy();
-    if (!holder) return;
+    const root = ensureLegacy();
+    if (!root) return;
 
-    const rows = assignments.filter(
-      item => item.custom_programs
-    );
-
-    holder.innerHTML = rows.length
-      ? `
-        <h3 style="color:#fff">
-          Coach Assigned
-        </h3>
-        ${rows.map(programCard).join("")}
-      `
+    root.innerHTML = assignments.length
+      ? assignments.map(programCard).join("")
       : "";
   }
 
@@ -1384,71 +964,49 @@
     loading = true;
     renderPanel();
 
-    const token = ++loadSeq;
+    const token = ++loadingSerial;
 
     try {
-      const client = await db();
-
-      const auth = await client.auth.getUser();
+      const c = await db();
+      const auth = await c.auth.getUser();
 
       if (auth.error) throw auth.error;
 
-      const userId = auth.data?.user?.id || "";
+      const id = auth.data?.user?.id || "";
 
-      if (account !== userId) {
-        account = userId;
+      if (account !== id) {
+        account = id;
         assignments = [];
-        progressUser = "";
-        progressLogs = [];
       }
 
-      if (!userId) return;
+      if (!id) return;
 
-      const result = await client
+      const result = await c
         .from("client_program_assignments")
         .select(`
-          id,
-          status,
-          is_primary,
-          assigned_at,
+          id,status,is_primary,assigned_at,
           custom_programs(
-            id,
-            name,
-            description,
-            goal,
-            duration_weeks,
-            status
+            id,name,description,goal,
+            duration_weeks,status
           )
         `)
-        .eq("client_id", userId)
-        .in("status", [
-          "active",
-          "paused",
-          "completed"
-        ])
+        .eq("client_id", id)
+        .in("status", ["active", "paused", "completed"])
         .order("is_primary", { ascending: false })
         .order("assigned_at", { ascending: false });
 
       if (result.error) throw result.error;
 
-      const current = await client.auth.getUser();
-
-      if (
-        token !== loadSeq ||
-        current.data?.user?.id !== userId
-      ) return;
+      if (token !== loadingSerial) return;
 
       assignments = (result.data || []).filter(
-        item => item.custom_programs
+        a => a.custom_programs
       );
 
       loadedAt = Date.now();
 
     } catch (error) {
-      console.warn(
-        "[Mana Coach Programs]",
-        error.message || error
-      );
+      console.warn("[Mana Coach Programs]", error);
     } finally {
       loading = false;
       renderPanel();
@@ -1457,155 +1015,123 @@
   }
 
   function closeModal() {
-    ++openSeq;
+    ++serial;
     stopClock();
 
     if (session) {
       backup();
-      queueSave();
+      void queueSave();
     }
 
     session = null;
-    assignment = null;
-    program = null;
+    selected = null;
+    programData = null;
 
     $(MODAL)?.classList.remove("open");
   }
 
   function programHeader() {
-    const item = program?.program;
+    const p = programData?.program;
 
     return `
-      <section class="m1002-hero">
+      <div class="m1002-hero">
         <span class="m1002-kicker">
           COACH-ASSIGNED PROGRAM
         </span>
-
-        <h2>
-          ${esc(item?.name || "Coach Program")}
-        </h2>
-
-        <p>
-          ${esc(
-            item?.description ||
-            item?.goal ||
-            "Your personalised training program"
-          )}
+        <h2>${esc(p?.name || "Coach Program")}</h2>
+        <p class="m1002-muted">
+          ${esc(p?.description || p?.goal || "")}
         </p>
-      </section>
+      </div>
     `;
   }
 
   async function openProgram(id) {
-    const selected = assignments.find(
-      item => item.custom_programs?.id === id
+    const row = assignments.find(
+      a => a.custom_programs?.id === id
     );
 
-    if (!selected) return;
+    if (!row) return;
 
-    const token = ++openSeq;
-
+    const token = ++serial;
     stopClock();
-    session = null;
-    assignment = selected;
 
-    show(`
+    session = null;
+    selected = row;
+
+    showModal(`
       <p class="m1002-status">
         Loading your coach program…
       </p>
     `);
 
     try {
-      const client = await db();
-      const auth = await client.auth.getUser();
+      const c = await db();
+      const auth = await c.auth.getUser();
 
       if (auth.data?.user?.id !== account) {
         throw Error("Sign in to view your program");
       }
 
-      const link = await client
+      const link = await c
         .from("client_program_assignments")
         .select("id")
         .eq("client_id", account)
         .eq("program_id", id)
-        .in("status", [
-          "active",
-          "paused",
-          "completed"
-        ])
+        .in("status", ["active", "paused", "completed"])
         .maybeSingle();
 
-      if (link.error) throw link.error;
-
-      if (!link.data) {
-        throw Error("Program is no longer assigned");
+      if (link.error || !link.data) {
+        throw link.error || Error("Program not assigned");
       }
 
-      const [programResult, dayResult] =
-        await Promise.all([
-          client
-            .from("custom_programs")
-            .select("*")
-            .eq("id", id)
-            .single(),
+      const [p, d] = await Promise.all([
+        c.from("custom_programs")
+          .select("*").eq("id", id).single(),
 
-          client
-            .from("custom_program_days")
-            .select("*")
-            .eq("program_id", id)
-            .order("week_number")
-            .order("day_number")
-        ]);
+        c.from("custom_program_days")
+          .select("*").eq("program_id", id)
+          .order("week_number")
+          .order("day_number")
+      ]);
 
-      if (programResult.error || dayResult.error) {
-        throw programResult.error || dayResult.error;
-      }
+      if (p.error || d.error) throw p.error || d.error;
 
-      const days = dayResult.data || [];
+      const days = d.data || [];
       let exercises = [];
 
       if (days.length) {
-        const result = await client
+        const e = await c
           .from("custom_program_exercises")
           .select("*")
-          .in(
-            "program_day_id",
-            days.map(day => day.id)
-          )
+          .in("program_day_id", days.map(x => x.id))
           .order("sort_order");
 
-        if (result.error) throw result.error;
-
-        exercises = result.data || [];
+        if (e.error) throw e.error;
+        exercises = e.data || [];
       }
 
-      if (
-        token !== openSeq ||
-        !$(MODAL)?.classList.contains("open")
-      ) return;
+      if (token !== serial) return;
 
-      program = {
-        program: programResult.data,
+      programData = {
+        program: p.data,
         days,
         exercises
       };
 
       week = days.length
-        ? Math.min(
-            ...days.map(
-              day => Number(day.week_number) || 1
-            )
-          )
+        ? Math.min(...days.map(
+            x => Number(x.week_number) || 1
+          ))
         : 1;
 
       renderProgram();
 
     } catch (error) {
-      if (token === openSeq) {
-        show(`
+      if (token === serial) {
+        showModal(`
           <p class="m1002-status">
-            Could not load program:
-            ${esc(error.message)}
+            Could not load program: ${esc(error.message)}
           </p>
         `);
       }
@@ -1613,135 +1139,91 @@
   }
 
   function renderProgram() {
-    if (!program) return;
+    if (!programData) return;
 
     session = null;
     stopClock();
 
-    const weeks = [
-      ...new Set(
-        program.days.map(
-          day => Number(day.week_number) || 1
-        )
+    const weeks = [...new Set(
+      programData.days.map(
+        d => Number(d.week_number) || 1
       )
-    ].sort((a, b) => a - b);
+    )].sort((a, b) => a - b);
 
-    const cards = program.days
-      .filter(
-        day => Number(day.week_number) === week
-      )
-      .map(day => {
-        const exerciseCount = program.exercises.filter(
-          exercise =>
-            exercise.program_day_id === day.id
+    const cards = programData.days
+      .filter(d => Number(d.week_number) === week)
+      .map(d => {
+        const n = programData.exercises.filter(
+          e => e.program_day_id === d.id
         ).length;
 
         return `
           <section class="mana-v85-day">
             <span class="m1002-kicker">
-              WEEK ${week}
-              • DAY ${esc(day.day_number)}
+              WEEK ${week} • DAY ${esc(d.day_number)}
             </span>
-
-            <h3>
-              ${esc(day.title || "Workout")}
-            </h3>
-
+            <h3>${esc(d.title || "Workout")}</h3>
             <p class="m1002-muted">
-              ${esc(day.workout_type || "Strength")}
-              • ${exerciseCount} exercises
-
-              ${day.estimated_minutes
-                ? " • " +
-                  esc(day.estimated_minutes) +
-                  " min"
+              ${n} exercises
+              ${d.estimated_minutes
+                ? " • " + esc(d.estimated_minutes) + " min"
                 : ""}
             </p>
-
-            ${day.notes
-              ? `
-                <p class="m1002-muted">
-                  ${esc(day.notes)}
-                </p>
-              `
-              : ""}
-
             <button type="button"
               class="m1002-primary"
-              data-m1002-start="${esc(day.id)}">
+              data-m1002-start="${esc(d.id)}">
               START WORKOUT
             </button>
           </section>
         `;
-      })
-      .join("");
+      }).join("");
 
-    show(
+    showModal(
       programHeader() +
-      `
-        <div class="m1002-weeks">
-          ${weeks.map(number => `
-            <button type="button"
-              data-m1002-week="${number}"
-              class="${number === week ? "active" : ""}">
-              WEEK ${number}
-            </button>
-          `).join("")}
-        </div>
-
-        ${cards || `
-          <p class="m1002-status">
-            No workouts in this week.
-          </p>
-        `}
-      `
+      `<div class="m1002-weeks">
+        ${weeks.map(n => `
+          <button type="button"
+            data-m1002-week="${n}"
+            class="${n === week ? "active" : ""}">
+            WEEK ${n}
+          </button>
+        `).join("")}
+      </div>` +
+      (cards || `<p>No workouts this week.</p>`)
     );
   }
 
-  function visual(name) {
+  function visualInfo(name) {
     const api = window.MANA_EXERCISE_VISUALS;
     const info = api?.resolve?.(name) || {};
 
     return {
       target: info.target || "Full Body",
-      image:
-        api?.muscleAssets?.[
-          info.muscle || "fullbody"
-        ] || ""
+      image: api?.muscleAssets?.[
+        info.muscle || "fullbody"
+      ] || ""
     };
   }
 
   function muscleHTML(name) {
-    const info = visual(name);
+    const v = visualInfo(name);
 
     return `
       <div class="m1002-muscle">
         <div class="m1002-muscle-frame">
-          ${info.image
-            ? `
-              <img
-                src="${esc(info.image)}"
+          ${v.image
+            ? `<img
+                src="${esc(v.image)}"
                 alt="Target muscles for ${esc(name)}"
-                loading="lazy">
-
-              <span class="m1002-muscle-fallback" hidden>
-                ${esc(info.target)}
-              </span>
-            `
-            : `
-              <span class="m1002-muscle-fallback">
-                ${esc(info.target)}
-              </span>
-            `}
+                loading="lazy">`
+            : `<span class="m1002-kicker">
+                ${esc(v.target)}
+              </span>`}
         </div>
 
         <div class="m1002-muscle-copy">
-          <small>PRIMARY TARGET</small>
-
-          <strong>
-            ${esc(info.target)}
-          </strong>
-
+          <small class="m1002-kicker">PRIMARY TARGET</small>
+          <strong>${esc(v.target)}</strong>
           <button type="button"
             class="m1002-demo"
             data-m1002-demo="${esc(name)}">
@@ -1754,51 +1236,34 @@
 
   function defaultReps(value) {
     const match = String(value || "").match(/\d+/);
-
     return match
-      ? Math.max(
-          1,
-          Math.min(100, Number(match[0]))
-        )
+      ? Math.max(1, Math.min(100, Number(match[0])))
       : 10;
   }
 
-  function setHTML(number, set) {
+  function setHTML(n, set) {
     return `
       <div class="mana-v64-set" data-m1002-set>
-        <span class="mana-v64-set-number">
-          ${number}
-        </span>
+        <span class="mana-v64-set-number">${n}</span>
 
-        <input
-          type="number"
-          min="0"
-          max="1000"
-          step="0.5"
+        <input type="number"
+          min="0" max="1000" step=".5"
           inputmode="decimal"
           placeholder="kg"
-          aria-label="Set ${number} weight"
+          aria-label="Set ${n} weight"
           data-m1002-weight
-          value="${set.weight == null
-            ? ""
-            : esc(set.weight)}">
+          value="${esc(set.weight ?? "")}">
 
-        <input
-          type="number"
-          min="0"
-          max="500"
-          step="1"
+        <input type="number"
+          min="0" max="500" step="1"
           inputmode="numeric"
-          aria-label="Set ${number} reps"
+          aria-label="Set ${n} reps"
           data-m1002-reps
-          value="${set.reps == null
-            ? ""
-            : esc(set.reps)}">
+          value="${esc(set.reps ?? "")}">
 
         <button type="button"
           class="mana-v64-check${set.done ? " done" : ""}"
-          data-m1002-tick
-          aria-pressed="${!!set.done}">
+          data-m1002-tick>
           ✓
         </button>
       </div>
@@ -1820,24 +1285,11 @@
     const sets = Array.from(
       { length: count },
       (_, index) => ({
-        weight:
-          previous?.sets?.[index]?.weight ?? "",
-
-        /*
-          BUILD 100213 REP FIX
-
-          Older saved workouts may contain 0 reps.
-          0 should not overwrite the prescribed reps.
-
-          Keep saved reps when they are positive.
-          Otherwise use the coach's prescribed
-          starting reps, e.g. 6 from "6-10".
-        */
+        weight: previous?.sets?.[index]?.weight ?? "",
         reps:
           Number(previous?.sets?.[index]?.reps) > 0
             ? Number(previous.sets[index].reps)
             : defaultReps(exercise.reps),
-
         done: completed
           ? false
           : !!previous?.sets?.[index]?.done
@@ -1855,32 +1307,17 @@
         <div class="mana-v64-target">
           ${count} sets
           • ${esc(exercise.reps || "8–12")} reps
-
-          ${exercise.rest_seconds != null
-            ? " • " +
-              esc(exercise.rest_seconds) +
-              "s rest"
-            : ""}
+          ${exercise.rest_seconds == null
+            ? ""
+            : " • " + esc(exercise.rest_seconds) + "s rest"}
         </div>
 
         ${muscleHTML(exercise.exercise_name)}
 
-        ${exercise.rpe_target
-          ? `
-            <p class="m1002-note">
-              Target RPE:
-              ${esc(exercise.rpe_target)}
-            </p>
-          `
-          : ""}
-
         ${exercise.notes
-          ? `
-            <p class="m1002-note">
-              Coach:
-              ${esc(exercise.notes)}
-            </p>
-          `
+          ? `<p class="m1002-muted">
+              Coach: ${esc(exercise.notes)}
+            </p>`
           : ""}
 
         <div class="mana-v64-table-head">
@@ -1890,17 +1327,13 @@
           <span>Done</span>
         </div>
 
-        <div data-m1002-sets>
-          ${sets.map(
-            (set, index) =>
-              setHTML(index + 1, set)
-          ).join("")}
-        </div>
+        ${sets.map((set, i) =>
+          setHTML(i + 1, set)
+        ).join("")}
 
         <p class="m1002-muted">
           Entering a weight repeats it across
-          this exercise. Reps can be changed
-          individually.
+          this exercise. Reps can be edited individually.
         </p>
 
         <button type="button"
@@ -1917,45 +1350,50 @@
       session?.day?.day_number
     ) || 1;
 
-    return CORE[
-      (day - 1) % CORE.length
-    ];
+    return CORE[(day - 1) % CORE.length];
   }
 
-  function finalHTML() {
+  function finisherHTML() {
     return `
       <div class="m1002-finishers">
         <span class="m1002-kicker">
           OPTIONAL FINISHERS
         </span>
-
         <h3>Cardio & Core</h3>
-
         <p class="m1002-muted">
-          Add Cardio, Core or both at the
-          end of your Strength workout.
+          Choose Cardio, Core or both.
+          Finish and save each separately.
         </p>
 
         <div class="m1002-finisher-pair">
           <button type="button"
-            class="m1002-finisher-option"
+            class="m1002-finisher-option
+              ${finishers.cardio?.completed ? "done" : ""}"
             data-m1002-finisher="cardio">
             ♥ CARDIO
-            <small>10–20 minutes</small>
+            <small>
+              ${finishers.cardio?.completed
+                ? "SAVED ✓"
+                : "10–20 minutes"}
+            </small>
           </button>
 
           <button type="button"
-            class="m1002-finisher-option"
+            class="m1002-finisher-option
+              ${finishers.core?.completed ? "done" : ""}"
             data-m1002-finisher="core">
             ◎ CORE
-            <small>3 rounds</small>
+            <small>
+              ${finishers.core?.completed
+                ? "SAVED ✓"
+                : "3 rounds"}
+            </small>
           </button>
         </div>
 
         <div id="m1002FinisherPanel"></div>
-
-        <div id="m1002FinisherSaved"
-          class="m1002-saved"></div>
+        <p id="m1002FinisherSaved"
+          class="m1002-saved"></p>
 
         <button type="button"
           class="m1002-tick-all"
@@ -1963,27 +1401,14 @@
           TICK ALL WORKOUT ✓
         </button>
 
-        <p class="m1002-muted">
-          Use Tick All if you followed
-          the prescribed sets and reps.
-          Cardio and Core are optional.
-        </p>
-
         <div class="m1002-feedback">
-          <span class="m1002-kicker">
-            SESSION FEEDBACK
-          </span>
-
           <h3>How was your workout?</h3>
-
-          <label>Workout rating (1–5)</label>
-
           <div class="m1002-rating">
-            ${[1, 2, 3, 4, 5].map(number => `
+            ${[1, 2, 3, 4, 5].map(n => `
               <button type="button"
-                data-m1002-rating="${number}"
-                aria-pressed="${rating === number}">
-                ${number}
+                data-m1002-rating="${n}"
+                class="${rating === n ? "active" : ""}">
+                ${n}
               </button>
             `).join("")}
           </div>
@@ -1995,49 +1420,31 @@
           <textarea
             id="m1002WorkoutComment"
             maxlength="500"
-            placeholder="How did you feel? Anything to remember for next time?">${esc(comment)}</textarea>
+            placeholder="How did you feel?">${esc(comment)}</textarea>
         </div>
 
         <button type="button"
-          class="m1002-primary m1002-final-complete"
+          class="m1002-primary"
           data-m1002-complete>
           COMPLETE WORKOUT ✓
         </button>
 
-        <p class="m1002-muted">
-          Your completed sets, finishers
-          and feedback will be saved together.
-        </p>
+        <p class="m1002-status"
+          id="m1002FinishStatus"></p>
       </div>
     `;
   }
 
-  function ratings() {
-    document.querySelectorAll(
-      `#${MODAL} [data-m1002-rating]`
-    ).forEach(button => {
-      const active =
-        Number(button.dataset.m1002Rating) === rating;
-
-      button.classList.toggle("active", active);
-
-      button.setAttribute(
-        "aria-pressed",
-        String(active)
-      );
-    });
-  }
-
-  function finisherStatus() {
+  function showFinisherStatus() {
     const messages = [];
 
     if (finishers.cardio?.completed) {
       messages.push(
         "Cardio: " +
         finishers.cardio.equipment +
-        ", " +
+        " • " +
         finishers.cardio.durationMinutes +
-        " min"
+        " minutes"
       );
     }
 
@@ -2045,119 +1452,116 @@
       messages.push("Core: 3 rounds");
     }
 
-    if ($("m1002FinisherSaved")) {
-      $("m1002FinisherSaved").textContent =
-        messages.length
-          ? "✓ Added: " + messages.join(" · ")
-          : "";
+    const status = $("m1002FinisherSaved");
+
+    if (status) {
+      status.textContent = messages.length
+        ? "✓ Saved: " + messages.join(" · ")
+        : "";
     }
 
-    ratings();
+    document.querySelectorAll(
+      `#${MODAL} [data-m1002-finisher]`
+    ).forEach(button => {
+      button.classList.toggle(
+        "done",
+        !!finishers[button.dataset.m1002Finisher]?.completed
+      );
+    });
+
+    refreshRatings();
     fitSlide();
   }
 
-  function openCardio() {
-    const panel = $("m1002FinisherPanel");
-    if (!panel) return;
+  function refreshRatings() {
+    document.querySelectorAll(
+      `#${MODAL} [data-m1002-rating]`
+    ).forEach(button => {
+      button.classList.toggle(
+        "active",
+        Number(button.dataset.m1002Rating) === rating
+      );
+    });
+  }
 
-    panel.innerHTML = `
+  function cardioHTML() {
+    return `
       <div class="m1002-finisher-panel">
         <h4>Cardio Finisher</h4>
-
         <p class="m1002-muted">
-          Choose equipment and a
-          10–20 minute session.
+          Select your equipment and duration.
         </p>
 
         <div class="m1002-options">
-          ${[
-            "Bike",
-            "Rower",
-            "Treadmill",
-            "Bodyweight"
-          ].map(name => `
+          ${["Bike", "Rower", "Treadmill", "Bodyweight"]
+            .map(name => `
+              <button type="button"
+                data-m1002-cardio-equipment="${esc(name)}"
+                class="${name === cardioEquipment
+                  ? "active" : ""}">
+                ${esc(name)}
+              </button>
+            `).join("")}
+        </div>
+
+        <div class="m1002-options">
+          ${[10, 15, 20].map(n => `
             <button type="button"
-              class="${name === cardioEquipment
-                ? "active"
-                : ""}"
-              data-m1002-cardio-equipment="${esc(name)}">
-              ${esc(name)}
+              data-m1002-cardio-minutes="${n}"
+              class="${n === cardioMinutes
+                ? "active" : ""}">
+              ${n} MIN
             </button>
           `).join("")}
         </div>
 
-        <div class="m1002-options">
-          ${[10, 15, 20].map(minutes => `
-            <button type="button"
-              class="${minutes === cardioMinutes
-                ? "active"
-                : ""}"
-              data-m1002-cardio-minutes="${minutes}">
-              ${minutes} MIN
-            </button>
-          `).join("")}
-        </div>
-
-        <p class="m1002-muted">
-          Warm up for 2–3 minutes,
-          complete the main effort
-          and cool down.
-        </p>
+        <button type="button"
+          class="m1002-finisher-save"
+          data-m1002-cardio-complete>
+          FINISH & SAVE CARDIO ✓
+        </button>
 
         <button type="button"
           class="m1002-secondary"
+          style="width:100%;margin-top:8px"
           data-m1002-finisher-close>
           CLOSE
         </button>
-
-        <button type="button"
-          class="m1002-secondary"
-          data-m1002-cardio-complete>
-          LOG COMPLETION ✓
-        </button>
       </div>
     `;
-
-    fitSlide();
   }
 
-  function openCore() {
-    const panel = $("m1002FinisherPanel");
-    if (!panel) return;
-
+  function coreHTML() {
     const routine = coreRoutine();
     const current = coreTicks[coreRound] || [];
+    const allDone = coreTicks.every(
+      row => row.length === routine.length
+    );
 
-    panel.innerHTML = `
+    return `
       <div class="m1002-finisher-panel">
         <h4>Core Finisher</h4>
-
         <p class="m1002-muted">
           Round ${coreRound + 1} of 3
         </p>
 
         <div class="m1002-options">
-          ${[0, 1, 2].map(number => `
+          ${[0, 1, 2].map(n => `
             <button type="button"
-              data-m1002-core-round="${number}"
-              class="${number === coreRound
-                ? "active"
-                : ""}">
-              ROUND ${number + 1}
-
-              ${coreTicks[number]?.length === routine.length
-                ? " ✓"
-                : ""}
+              data-m1002-core-round="${n}"
+              class="${coreRound === n ? "active" : ""}">
+              ROUND ${n + 1}
+              ${coreTicks[n].length === routine.length
+                ? " ✓" : ""}
             </button>
           `).join("")}
         </div>
 
-        ${routine.map(([name, reps], index) => `
+        ${routine.map(([name, reps], i) => `
           <label class="m1002-core-item">
             <input type="checkbox"
-              data-m1002-core-check="${index}"
-              ${current.includes(index) ? "checked" : ""}>
-
+              data-m1002-core-check="${i}"
+              ${current.includes(i) ? "checked" : ""}>
             <span>
               <strong>${esc(name)}</strong>
               <small>${esc(reps)}</small>
@@ -2170,31 +1574,108 @@
             data-m1002-core-tick-round>
             TICK ALL ROUND
           </button>
-
           <button type="button"
             data-m1002-core-tick-all>
             TICK ALL 3 ROUNDS
           </button>
         </div>
 
-        <div class="m1002-options">
-          <button type="button"
-            data-m1002-finisher-close>
-            CLOSE
-          </button>
+        ${!allDone && coreRound < 2
+          ? `<button type="button"
+              class="m1002-secondary"
+              style="width:100%"
+              data-m1002-core-next>
+              NEXT ROUND →
+            </button>`
+          : ""}
 
-          <button type="button"
-            data-m1002-core-next
-            ${current.length !== routine.length
-              ? "disabled"
-              : ""}>
-            ${coreRound === 2
-              ? "FINISH CORE"
-              : "NEXT ROUND"}
-          </button>
-        </div>
+        <button type="button"
+          class="m1002-finisher-save"
+          data-m1002-core-save
+          ${allDone ? "" : "disabled"}>
+          FINISH & SAVE CORE ✓
+        </button>
+
+        <button type="button"
+          class="m1002-secondary"
+          style="width:100%;margin-top:8px"
+          data-m1002-finisher-close>
+          CLOSE
+        </button>
       </div>
     `;
+  }
+
+  function showFinisher(kind) {
+    const panel = $("m1002FinisherPanel");
+    if (!panel) return;
+
+    panel.innerHTML =
+      kind === "cardio" ? cardioHTML() : coreHTML();
+
+    fitSlide();
+  }
+
+  async function persistFinisher(kind) {
+    if (!session) return;
+
+    if (kind === "cardio") {
+      finishers.cardio = {
+        completed: true,
+        equipment: cardioEquipment,
+        durationMinutes: cardioMinutes,
+        actualMinutes: cardioMinutes,
+        completedAt: new Date().toISOString()
+      };
+    } else {
+      const routine = coreRoutine();
+
+      if (!coreTicks.every(
+        row => row.length === routine.length
+      )) return;
+
+      finishers.core = {
+        completed: true,
+        rounds: 3,
+        exercises: routine.map(([name, target]) => ({
+          name,
+          target,
+          roundsCompleted: 3
+        })),
+        completedAt: new Date().toISOString()
+      };
+    }
+
+    backup();
+    clearTimeout(saveTimer);
+
+    const panel = $("m1002FinisherPanel");
+
+    if (panel) {
+      panel.innerHTML = `
+        <p class="m1002-status">
+          Saving ${esc(kind)} to Mana cloud…
+        </p>
+      `;
+    }
+
+    const saved = await queueSave(false);
+
+    if (saved) {
+      if (panel) panel.innerHTML = "";
+      showFinisherStatus();
+    } else if (panel) {
+      panel.innerHTML = `
+        <p class="m1002-status">
+          Save failed. Local backup retained.
+        </p>
+        <button type="button"
+          class="m1002-finisher-save"
+          data-m1002-retry="${kind}">
+          RETRY SAVE
+        </button>
+      `;
+    }
 
     fitSlide();
   }
@@ -2206,55 +1687,27 @@
     ];
   }
 
-  function count() {
-    return session?.exercises?.length || 0;
-  }
-
-  function completeCard(index) {
-    const ticks = [
-      ...(slides()[index]
-        ?.querySelectorAll("[data-m1002-tick]") || [])
-    ];
-
-    return !!ticks.length &&
-      ticks.every(
-        tick => tick.classList.contains("done")
-      );
-  }
-
-  /*
-   Active-card height.
-   Keeps Previous/Next directly beneath
-   the visible exercise.
-  */
-
   function fitSlide() {
     requestAnimationFrame(() => {
       const carousel = $("m1002Carousel");
-      const page = slides()[slide];
+      const active = slides()[slide];
 
-      if (!carousel || !page) return;
-
-      const height = Math.ceil(page.scrollHeight);
-
-      if (height > 0) {
-        carousel.style.height = height + "px";
+      if (carousel && active) {
+        const h = Math.ceil(active.scrollHeight);
+        if (h > 0) carousel.style.height = h + "px";
       }
     });
   }
 
   function navigate(index, smooth = true) {
     const carousel = $("m1002Carousel");
-    const allSlides = slides();
+    const pages = slides();
 
-    if (!carousel || !allSlides.length) return;
+    if (!carousel || !pages.length) return;
 
     slide = Math.max(
-      0,
-      Math.min(index, allSlides.length - 1)
+      0, Math.min(index, pages.length - 1)
     );
-
-    fitSlide();
 
     carousel.scrollTo({
       left: carousel.clientWidth * slide,
@@ -2262,62 +1715,10 @@
     });
 
     renderNavigation();
-  }
-
-  function renderNavigation() {
-    const total = count() + 1;
-
-    if ($("m1002Position")) {
-      $("m1002Position").textContent =
-        slide === count()
-          ? "Optional Finishers + Feedback"
-          : "Exercise " +
-            (slide + 1) +
-            " of " +
-            count();
-    }
-
-    if ($("m1002Dots")) {
-      $("m1002Dots").innerHTML =
-        Array.from(
-          { length: total },
-          (_, index) => `
-            <button type="button"
-              class="m1002-dot
-                ${index === slide ? "active" : ""}
-                ${index < count() &&
-                  completeCard(index)
-                    ? "done"
-                    : ""}"
-              data-m1002-slide="${index}"
-              aria-label="${index === count()
-                ? "Finishers and feedback"
-                : "Exercise " + (index + 1)}">
-            </button>
-          `
-        ).join("");
-    }
-
-    if ($("m1002Previous")) {
-      $("m1002Previous").disabled =
-        slide === 0;
-    }
-
-    if ($("m1002Next")) {
-      $("m1002Next").disabled =
-        slide === total - 1;
-
-      $("m1002Next").textContent =
-        slide === count() - 1
-          ? "FINISHERS ›"
-          : "NEXT ›";
-    }
-
-    syncTicks();
     fitSlide();
   }
 
-  function syncTicks() {
+  function syncTickAll() {
     slides().forEach(page => {
       const button = page.querySelector(
         "[data-m1002-tick-exercise]"
@@ -2325,50 +1726,83 @@
 
       if (!button) return;
 
-      const checks = [
-        ...page.querySelectorAll(
-          "[data-m1002-tick]"
-        )
+      const ticks = [
+        ...page.querySelectorAll("[data-m1002-tick]")
       ];
 
-      const done =
-        !!checks.length &&
-        checks.every(
-          check => check.classList.contains("done")
-        );
+      const done = ticks.length &&
+        ticks.every(t => t.classList.contains("done"));
 
-      button.classList.toggle("done", done);
-
+      button.classList.toggle("done", !!done);
       button.textContent = done
         ? "ALL SETS COMPLETE ✓"
         : "TICK ALL SETS ✓";
     });
 
-    const carousel = $("m1002Carousel");
-
-    const button = carousel?.querySelector(
+    const button = $("m1002Carousel")?.querySelector(
       "[data-m1002-tick-workout]"
     );
 
-    if (!button) return;
+    if (button) {
+      const ticks = [
+        ...$("m1002Carousel").querySelectorAll(
+          "[data-m1002-tick]"
+        )
+      ];
 
-    const checks = [
-      ...carousel.querySelectorAll(
-        "[data-m1002-tick]"
-      )
-    ];
+      const done = ticks.length &&
+        ticks.every(t => t.classList.contains("done"));
 
-    const done =
-      !!checks.length &&
-      checks.every(
-        check => check.classList.contains("done")
-      );
+      button.classList.toggle("done", !!done);
+      button.textContent = done
+        ? "ALL WORKOUT SETS COMPLETE ✓"
+        : "TICK ALL WORKOUT ✓";
+    }
+  }
 
-    button.classList.toggle("done", done);
+  function renderNavigation() {
+    const total = slides().length;
 
-    button.textContent = done
-      ? "ALL WORKOUT SETS COMPLETE ✓"
-      : "TICK ALL WORKOUT ✓";
+    if ($("m1002Position")) {
+      $("m1002Position").textContent =
+        slide === total - 1
+          ? "Cardio, Core & Feedback"
+          : `Exercise ${slide + 1} of ${total - 1}`;
+    }
+
+    if ($("m1002Dots")) {
+      $("m1002Dots").innerHTML = slides().map(
+        (page, i) => {
+          const ticks = [
+            ...page.querySelectorAll("[data-m1002-tick]")
+          ];
+          const done = ticks.length &&
+            ticks.every(t => t.classList.contains("done"));
+
+          return `
+            <button type="button"
+              data-m1002-slide="${i}"
+              class="m1002-dot
+                ${i === slide ? "active" : ""}
+                ${done ? "done" : ""}">
+            </button>
+          `;
+        }
+      ).join("");
+    }
+
+    if ($("m1002Previous")) {
+      $("m1002Previous").disabled = slide === 0;
+    }
+
+    if ($("m1002Next")) {
+      $("m1002Next").disabled = slide === total - 1;
+      $("m1002Next").textContent =
+        slide === total - 2 ? "FINISHERS ›" : "NEXT ›";
+    }
+
+    syncTickAll();
+    fitSlide();
   }
 
   function readSets() {
@@ -2379,31 +1813,22 @@
         ?.querySelectorAll("[data-m1002-ex]") || [])
     ].map(card => ({
       id: card.dataset.m1002Ex,
-
       name: session.exercises.find(
-        exercise =>
-          exercise.id === card.dataset.m1002Ex
+        e => e.id === card.dataset.m1002Ex
       )?.exercise_name || "",
-
       sets: [
-        ...card.querySelectorAll(
-          "[data-m1002-set]"
-        )
-      ].map((row, index) => ({
-        set: index + 1,
-
-        weight:
-          row.querySelector("[data-m1002-weight]")
-            ?.value || "",
-
-        reps: Number(
-          row.querySelector("[data-m1002-reps]")
-            ?.value || 0
-        ),
-
-        done: !!row
-          .querySelector("[data-m1002-tick]")
-          ?.classList.contains("done")
+        ...card.querySelectorAll("[data-m1002-set]")
+      ].map((row, i) => ({
+        set: i + 1,
+        weight: row.querySelector(
+          "[data-m1002-weight]"
+        )?.value || "",
+        reps: Number(row.querySelector(
+          "[data-m1002-reps]"
+        )?.value || 0),
+        done: !!row.querySelector(
+          "[data-m1002-tick]"
+        )?.classList.contains("done")
       }))
     }));
   }
@@ -2413,55 +1838,50 @@
     let done = 0;
     let volume = 0;
 
-    for (const exercise of data) {
-      for (const set of exercise.sets) {
+    data.forEach(exercise => {
+      (exercise.sets || []).forEach(set => {
         all++;
 
         if (set.done) {
           done++;
-
           volume +=
-            (Number(set.weight) || 0) *
-            (Number(set.reps) || 0);
+            Number(set.weight || 0) *
+            Number(set.reps || 0);
         }
-      }
-    }
+      });
+    });
 
     return {
       all,
       done,
       volume: Math.round(volume * 10) / 10,
-
-      percent: all
-        ? Math.round(done / all * 100)
-        : 0
+      percent: all ? Math.round(done / all * 100) : 0
     };
   }
 
   function backupKey() {
-    return session && account
-      ? "mana-coach-draft-v1:" +
-        account + ":" +
-        session.programId + ":" +
-        session.day.id
-      : "";
+    if (!session || !account) return "";
+
+    return [
+      "mana-coach-draft-v1",
+      account,
+      session.programId,
+      session.day.id
+    ].join(":");
   }
 
   function backup() {
     if (!session) return;
 
     try {
-      localStorage.setItem(
-        backupKey(),
-        JSON.stringify({
-          updatedAt: Date.now(),
-          elapsed: clock(),
-          exercises: readSets(),
-          finishers,
-          rating,
-          comment
-        })
-      );
+      localStorage.setItem(backupKey(), JSON.stringify({
+        updatedAt: Date.now(),
+        elapsed: clockSeconds(),
+        exercises: readSets(),
+        finishers,
+        rating,
+        comment
+      }));
     } catch (_) {}
   }
 
@@ -2489,17 +1909,17 @@
 
     clearTimeout(saveTimer);
 
-    saveTimer = setTimeout(
-      () => queueSave(),
-      1000
-    );
+    saveTimer = setTimeout(() => {
+      saveTimer = null;
+      void queueSave();
+    }, 1000);
   }
 
   function queueSave(completed = false) {
-    if (!session) return saveChain;
+    if (!session) return Promise.resolve(false);
 
-    const exercises = readSets();
-    const result = totals(exercises);
+    const data = readSets();
+    const result = totals(data);
 
     if (!session.logId) {
       session.logId = crypto.randomUUID();
@@ -2513,25 +1933,16 @@
       week_number: Number(session.day.week_number),
       day_number: Number(session.day.day_number),
       session_name: session.day.title || "Workout",
-
-      status: completed
-        ? "completed"
-        : "in_progress",
-
+      status: completed ? "completed" : "in_progress",
       started_at: new Date(
-        Date.now() - clock() * 1000
+        Date.now() - clockSeconds() * 1000
       ).toISOString(),
-
       completed_at: completed
         ? new Date().toISOString()
         : null,
-
-      duration_seconds: clock(),
-      exercises,
-
-      finishers:
-        JSON.parse(JSON.stringify(finishers)),
-
+      duration_seconds: clockSeconds(),
+      exercises: data,
+      finishers: JSON.parse(JSON.stringify(finishers)),
       workout_rating: rating || null,
       workout_comment: comment.trim() || null,
       completed_sets: result.done,
@@ -2540,23 +1951,16 @@
       updated_at: new Date().toISOString()
     };
 
-    if (completed && $("m1002SaveStatus")) {
-      $("m1002SaveStatus").textContent =
-        "Saving completed workout…";
-    }
-
-    saveChain = saveChain
+    const operation = saveChain
       .catch(() => false)
       .then(async () => {
-        const client = await db();
+        const c = await db();
 
-        const result = await client
+        const response = await c
           .from("coach_workout_logs")
-          .upsert(snapshot, {
-            onConflict: "id"
-          });
+          .upsert(snapshot, { onConflict: "id" });
 
-        if (result.error) throw result.error;
+        if (response.error) throw response.error;
 
         if (completed) clearBackup();
 
@@ -2565,38 +1969,41 @@
       .catch(error => {
         console.warn("[Mana Coach Save]", error);
 
-        if ($("m1002SaveStatus")) {
-          $("m1002SaveStatus").textContent =
-            "Cloud save failed — local backup kept. " +
+        const status =
+          $("m1002FinishStatus") ||
+          $("m1002SaveStatus");
+
+        if (status) {
+          status.textContent =
+            "Cloud save failed: " +
             (error.message || error);
         }
 
         return false;
       });
 
-    return saveChain;
+    saveChain = operation;
+    return operation;
   }
 
-  async function openDay(id) {
-    const day = program?.days.find(
-      item => item.id === id
+  async function openDay(dayId) {
+    const day = programData?.days.find(
+      d => d.id === dayId
     );
 
-    if (!day || !account || !assignment) return;
+    if (!day || !account || !selected) return;
 
-    const token = ++openSeq;
-
+    const token = ++serial;
     stopClock();
 
-    const exercises = program.exercises.filter(
-      exercise =>
-        exercise.program_day_id === id
+    const exercises = programData.exercises.filter(
+      e => e.program_day_id === dayId
     );
 
     session = {
       day,
       exercises,
-      programId: program.program.id,
+      programId: programData.program.id,
       logId: null
     };
 
@@ -2609,25 +2016,18 @@
     coreTicks = [[], [], []];
     coreRound = 0;
 
-    show(`
+    showModal(`
       <div class="m1002-position">
-        <span id="m1002Position">
-          Exercise 1
-        </span>
-
+        <span id="m1002Position">Exercise 1</span>
         <small>Swipe left / right</small>
       </div>
 
-      <div id="m1002Dots"
-        class="m1002-dots"></div>
+      <div id="m1002Dots" class="m1002-dots"></div>
 
       <div id="m1002Carousel"
         class="m1002-carousel">
-
         <div class="m1002-slide">
-          <p class="m1002-status">
-            Loading your previous sets…
-          </p>
+          Loading previous sets…
         </div>
       </div>
 
@@ -2637,7 +2037,6 @@
           data-m1002-previous>
           ‹ PREVIOUS
         </button>
-
         <button type="button"
           class="next"
           id="m1002Next"
@@ -2646,69 +2045,60 @@
         </button>
       </div>
 
-      <p class="m1002-status"
-        id="m1002SaveStatus"></p>
+      <p id="m1002SaveStatus"
+        class="m1002-status"></p>
     `);
 
     let prior = [];
     let fromCompleted = false;
 
     try {
-      const client = await db();
+      const c = await db();
 
-      const result = await client
+      const response = await c
         .from("coach_workout_logs")
         .select("*")
         .eq("user_id", account)
         .eq("program_id", session.programId)
-        .eq("program_day_id", id)
-        .order("updated_at", {
-          ascending: false
-        })
+        .eq("program_day_id", dayId)
+        .order("updated_at", { ascending: false })
         .limit(12);
 
-      if (result.error) throw result.error;
+      if (response.error) throw response.error;
+      if (token !== serial) return;
 
-      if (
-        token !== openSeq ||
-        session?.day.id !== id
-      ) return;
-
-      const active = (result.data || []).find(
-        item => item.status === "in_progress"
+      const active = (response.data || []).find(
+        r => r.status === "in_progress"
       );
 
-      const completed = (result.data || []).find(
-        item => item.status === "completed"
+      const completed = (response.data || []).find(
+        r => r.status === "completed"
       );
 
       const local = readBackup();
 
       if (active) {
         session.logId = active.id;
-
-        elapsedBase =
-          Number(active.duration_seconds) || 0;
+        elapsedBase = Number(
+          active.duration_seconds
+        ) || 0;
       }
-
-      fromCompleted = !active && !!completed;
 
       prior =
         active?.exercises ||
         completed?.exercises ||
         [];
 
+      fromCompleted = !active && !!completed;
       finishers = active?.finishers || {};
       rating = Number(active?.workout_rating) || 0;
       comment = active?.workout_comment || "";
 
       if (
         local?.exercises &&
-        (
-          !active ||
+        (!active ||
           Number(local.updatedAt) >
-            Date.parse(active.updated_at)
-        )
+          Date.parse(active.updated_at))
       ) {
         prior = local.exercises;
         finishers = local.finishers || {};
@@ -2718,20 +2108,21 @@
         fromCompleted = false;
       }
 
-    } catch (error) {
-      if (token !== openSeq) return;
+      if (finishers.core?.completed) {
+        const indices = coreRoutine().map((_, i) => i);
 
-      if ($("m1002SaveStatus")) {
-        $("m1002SaveStatus").textContent =
-          "Cloud restore unavailable: " +
-          (error.message || error);
+        coreTicks = [
+          [...indices],
+          [...indices],
+          [...indices]
+        ];
       }
+
+    } catch (error) {
+      console.warn("[Mana Coach Restore]", error);
     }
 
-    if (
-      token !== openSeq ||
-      session?.day.id !== id
-    ) return;
+    if (token !== serial || !session) return;
 
     $("m1002Carousel").innerHTML =
       exercises.map(exercise => `
@@ -2748,26 +2139,10 @@
       `
         <div class="m1002-slide">
           <div class="m1002-slide-inner">
-            ${finalHTML()}
+            ${finisherHTML()}
           </div>
         </div>
       `;
-
-    document.querySelectorAll(
-      `#${MODAL} .m1002-muscle-frame img`
-    ).forEach(image => {
-      image.addEventListener(
-        "error",
-        () => {
-          image.hidden = true;
-
-          if (image.nextElementSibling) {
-            image.nextElementSibling.hidden = false;
-          }
-        },
-        { once: true }
-      );
-    });
 
     $("m1002Carousel").addEventListener(
       "scroll",
@@ -2784,14 +2159,13 @@
             Math.min(
               slides().length - 1,
               Math.round(
-                carousel.scrollLeft /
-                carousel.clientWidth
+                carousel.scrollLeft / carousel.clientWidth
               )
             )
           );
 
           renderNavigation();
-        }, 75);
+        }, 70);
       },
       { passive: true }
     );
@@ -2799,118 +2173,92 @@
     resizeObserver?.disconnect();
 
     if (typeof ResizeObserver === "function") {
-      resizeObserver = new ResizeObserver(
-        () => fitSlide()
-      );
+      resizeObserver = new ResizeObserver(fitSlide);
 
-      slides().forEach(element => {
-        resizeObserver.observe(
-          element.firstElementChild || element
-        );
-      });
+      slides().forEach(page =>
+        resizeObserver.observe(page)
+      );
     }
 
-    finisherStatus();
+    showFinisherStatus();
     navigate(0, false);
-    startClock();
   }
 
-  /*
-   ORIGINAL-STYLE COMPLETION SUMMARY
-  */
+  function summaryHTML(record) {
+    const t = totals(record.exercises);
 
-  function summaryHTML(result, seconds) {
-    const stat = (label, value, description) => `
+    const stat = (label, value, sub) => `
       <div class="m1002-summary-stat">
-        <small>${label}</small>
-        <strong>${value}</strong>
-        <span>${description}</span>
+        <small>${esc(label)}</small>
+        <strong>${esc(value)}</strong>
+        <small>${esc(sub)}</small>
       </div>
     `;
 
     return `
       <div class="m1002-summary">
-        <div class="m1002-summary-check">
-          ✓
-        </div>
+        <div class="m1002-summary-check">✓</div>
 
         <span class="m1002-kicker">
           MANA STRENGTH • COACH PROGRAM
         </span>
 
         <h1>Workout Complete</h1>
-
-        <div class="m1002-summary-name">
-          ${esc(session?.day?.title || "Strength Session")}
-        </div>
+        <p class="m1002-muted">
+          ${esc(record.session_name)}
+        </p>
 
         <div class="m1002-summary-grid">
-          ${stat(
-            "Sets",
-            result.done + " / " + result.all,
-            "Completed"
-          )}
-
-          ${stat(
-            "Completion",
-            result.percent + "%",
-            "Session"
-          )}
-
-          ${stat(
-            "Volume",
-            result.volume + " kg",
-            "Total lifted"
-          )}
-
+          ${stat("Sets", `${t.done}/${t.all}`, "Completed")}
+          ${stat("Completion", `${t.percent}%`, "Session")}
+          ${stat("Volume", `${t.volume} kg`, "Total lifted")}
           ${stat(
             "Time",
-            time(seconds),
+            formatTime(record.duration_seconds),
             "Workout duration"
           )}
         </div>
 
         <div class="m1002-summary-note">
           <strong>Session complete.</strong>
-
           <div>
             Strong work. Recover well and keep building.
           </div>
 
-          ${rating
-            ? `<div>Rating: ${rating}/5</div>`
-            : ""}
-
-          ${comment
-            ? `
-              <div>
-                Comment: ${esc(comment)}
-              </div>
-            `
-            : ""}
-
-          ${finishers.cardio?.completed
-            ? `
-              <div>
+          ${record.finishers?.cardio?.completed
+            ? `<div>
                 ✓ Cardio:
-                ${esc(finishers.cardio.equipment)}
-                ${finishers.cardio.durationMinutes} min
-              </div>
-            `
+                ${esc(record.finishers.cardio.equipment)}
+                • ${Number(
+                  record.finishers.cardio.durationMinutes || 0
+                )} minutes
+              </div>`
             : ""}
 
-          ${finishers.core?.completed
-            ? `
-              <div>
-                ✓ Core: 3 rounds
-              </div>
-            `
+          ${record.finishers?.core?.completed
+            ? `<div>
+                ✓ Core:
+                ${Number(record.finishers.core.rounds || 3)}
+                rounds completed
+              </div>`
+            : ""}
+
+          ${record.workout_rating
+            ? `<div>
+                Rating ${record.workout_rating}/5
+              </div>`
+            : ""}
+
+          ${record.workout_comment
+            ? `<div>
+                Comments: ${esc(record.workout_comment)}
+              </div>`
             : ""}
         </div>
 
         <button type="button"
           class="m1002-primary"
-          data-m1002-summary-progress>
+          data-m1002-progress-go>
           VIEW PROGRESS →
         </button>
 
@@ -2927,12 +2275,14 @@
   async function completeWorkout() {
     if (!session) return;
 
-    const result = totals();
+    const t = totals();
 
-    if (!result.done) {
-      if ($("m1002SaveStatus")) {
-        $("m1002SaveStatus").textContent =
-          "Complete a set first, or use Tick All Workout.";
+    if (!t.done) {
+      const status = $("m1002FinishStatus");
+
+      if (status) {
+        status.textContent =
+          "Complete at least one set first.";
       }
 
       return;
@@ -2947,46 +2297,45 @@
 
     if (button) button.disabled = true;
 
-    const seconds = clock();
-    const workoutName = session.day.title;
+    const record = {
+      session_name: session.day.title || "Workout",
+      duration_seconds: clockSeconds(),
+      exercises: readSets(),
+      finishers: JSON.parse(JSON.stringify(finishers)),
+      workout_rating: rating,
+      workout_comment: comment
+    };
 
-    const success = await queueSave(true);
+    const saved = await queueSave(true);
 
-    if (!success) {
+    if (!saved) {
       if (button) button.disabled = false;
       return;
     }
 
     stopClock();
-
-    show(
-      summaryHTML(result, seconds).replace(
-        "Strength Session",
-        esc(workoutName || "Strength Session")
-      )
-    );
-
     session = null;
-    progressLoaded = 0;
+
+    showModal(summaryHTML(record));
+
+    progressLoadAt = 0;
 
     window.dispatchEvent(
       new CustomEvent("mana:coach-workout-saved", {
         detail: {
-          programId: program?.program?.id
+          programId: programData?.program?.id
         }
       })
     );
   }
 
   function backToProgram() {
-    ++openSeq;
+    ++serial;
     stopClock();
-
-    resizeObserver?.disconnect();
 
     if (session) {
       backup();
-      queueSave();
+      void queueSave();
     }
 
     session = null;
@@ -2994,412 +2343,533 @@
   }
 
   function tickAll(root) {
-    const ticks = [
-      ...(root?.querySelectorAll(
-        "[data-m1002-tick]"
-      ) || [])
+    const buttons = [
+      ...(root?.querySelectorAll("[data-m1002-tick]") || [])
     ];
 
-    ticks.forEach(button => {
+    buttons.forEach(button => {
       button.classList.add("done");
-
-      button.setAttribute(
-        "aria-pressed",
-        "true"
-      );
+      button.setAttribute("aria-pressed", "true");
     });
 
-    if (ticks.length) localEdit();
+    if (buttons.length) localEdit();
   }
 
-  /*
-   CLOUD DATA TO PROGRESS TAB
-   Completed coach workouts remain separate
-   from the generated-program history.
-  */
+  function progressRows(logs) {
+    return logs.map(r => `
+      <details class="m1002-history">
+        <summary>
+          ${esc(r.session_name || "Workout")}
+          • ${new Date(
+            r.completed_at || r.updated_at
+          ).toLocaleDateString("en-AU")}
+        </summary>
 
-  function progressHTML(logs) {
-    const completed = logs.filter(
-      item => item.status === "completed"
-    );
+        <p class="m1002-muted">
+          ${Number(r.completed_sets || 0)}
+          /${Number(r.total_sets || 0)} sets
+          • ${Number(r.total_volume || 0)} kg
+          • ${formatTime(r.duration_seconds)}
+        </p>
 
-    const allSets = completed.reduce(
-      (sum, item) =>
-        sum + (Number(item.completed_sets) || 0),
+        ${(r.exercises || []).map(e => `
+          <div class="m1002-history-exercise">
+            <strong>${esc(e.name)}</strong>
+            <div>
+              ${(e.sets || []).map(s => `
+                Set ${s.set}:
+                ${esc(s.weight || 0)} kg ×
+                ${esc(s.reps || 0)} reps
+                ${s.done ? "✓" : ""}
+              `).join(" • ")}
+            </div>
+          </div>
+        `).join("")}
+
+        ${r.finishers?.cardio?.completed
+          ? `<p class="m1002-muted">
+              ✓ Cardio:
+              ${esc(r.finishers.cardio.equipment)}
+              • ${r.finishers.cardio.durationMinutes} min
+            </p>`
+          : ""}
+
+        ${r.finishers?.core?.completed
+          ? `<p class="m1002-muted">
+              ✓ Core: 3 rounds
+            </p>`
+          : ""}
+
+        ${r.workout_rating
+          ? `<p class="m1002-muted">
+              Rating: ${r.workout_rating}/5
+            </p>`
+          : ""}
+
+        ${r.workout_comment
+          ? `<p class="m1002-muted">
+              ${esc(r.workout_comment)}
+            </p>`
+          : ""}
+      </details>
+    `).join("");
+  }
+
+  function renderProgress() {
+    const now = new Date();
+    const start = new Date(now);
+
+    if (progressPeriod === "daily") {
+      start.setHours(0, 0, 0, 0);
+    } else if (progressPeriod === "weekly") {
+      start.setDate(
+        now.getDate() - (now.getDay() + 6) % 7
+      );
+      start.setHours(0, 0, 0, 0);
+    } else if (progressPeriod === "monthly") {
+      start.setDate(1);
+      start.setHours(0, 0, 0, 0);
+    }
+
+    const logs = progressPeriod === "all"
+      ? progressLogs
+      : progressLogs.filter(r =>
+          new Date(r.completed_at || r.updated_at) >= start
+        );
+
+    const completedSets = logs.reduce(
+      (n, r) => n + Number(r.completed_sets || 0),
       0
     );
 
-    const volume = completed.reduce(
-      (sum, item) =>
-        sum + (Number(item.total_volume) || 0),
+    const totalSets = logs.reduce(
+      (n, r) => n + Number(r.total_sets || 0),
       0
     );
 
-    const seconds = completed.reduce(
-      (sum, item) =>
-        sum + (Number(item.duration_seconds) || 0),
-      0
-    );
-
-    const cardio = completed.reduce(
-      (sum, item) =>
-        sum + (
-          item.finishers?.cardio?.completed
-            ? Number(
-                item.finishers.cardio.actualMinutes ||
-                item.finishers.cardio.durationMinutes ||
-                0
-              )
-            : 0
-        ),
-      0
-    );
-
-    const core = completed.filter(
-      item => item.finishers?.core?.completed
+    const cardio = logs.filter(
+      r => r.finishers?.cardio?.completed
     ).length;
 
-    const ratings = completed.filter(
-      item => Number(item.workout_rating) > 0
-    );
+    const core = logs.filter(
+      r => r.finishers?.core?.completed
+    ).length;
 
-    const average = ratings.length
-      ? (
-          ratings.reduce(
-            (sum, item) =>
-              sum + Number(item.workout_rating),
-            0
-          ) / ratings.length
-        ).toFixed(1)
-      : "—";
+    const pct = (a, b) =>
+      b ? Math.round(a / b * 100) : 0;
 
-    const exerciseNames = new Set(
-      completed.flatMap(
-        item =>
-          (item.exercises || []).map(
-            exercise => exercise.name
-          )
-      )
-    );
-
-    const stat = (title, value) => `
-      <div class="m1002-progress-stat">
-        <small>${title}</small>
-        <strong>${value}</strong>
+    const metric = (label, value, sub) => `
+      <div class="mana-v993-metric">
+        <div class="mana-v993-metric-label">
+          ${esc(label)}
+        </div>
+        <div class="mana-v993-metric-value">
+          ${value}%
+        </div>
+        <div class="mana-v993-metric-sub">
+          ${esc(sub)}
+        </div>
+        <div class="mana-v993-track">
+          <div class="mana-v993-fill"
+            style="width:${Math.min(100, value)}%">
+          </div>
+        </div>
       </div>
     `;
 
-    return `
-      <span class="m1002-kicker">
-        MANA STRENGTH • COACH PROGRAMS
-      </span>
-
-      <h3>Coach Workout Progress</h3>
-
-      <p>
-        Completed coach-assigned sessions,
-        saved independently from My Workouts.
-      </p>
-
-      <div class="m1002-progress-stats">
-        ${stat("WORKOUTS", completed.length)}
-        ${stat("SETS COMPLETE", allSets)}
-        ${stat("TOTAL VOLUME", Math.round(volume) + " kg")}
-        ${stat("WORKOUT TIME", Math.round(seconds / 60) + " min")}
-        ${stat("CARDIO", cardio + " min")}
-        ${stat("CORE", core + " sessions")}
-        ${stat("AVERAGE RATING", average + "/5")}
-        ${stat("EXERCISES", exerciseNames.size)}
+    const panel = (kicker, title, body) => `
+      <div class="mana-v993-panel">
+        <div class="mana-v993-panel-head">
+          <div>
+            <div class="mana-v993-panel-kicker">
+              ${esc(kicker)}
+            </div>
+            <h3>${esc(title)}</h3>
+          </div>
+        </div>
+        ${body}
       </div>
+    `;
 
-      <h3>Coach Training History</h3>
+    const exerciseMap = new Map();
 
-      ${!completed.length
-        ? `
-          <p>
-            No completed Coach Programs workouts yet.
-          </p>
-        `
-        : completed.map(item => `
-          <details class="m1002-history">
-            <summary>
-              ${esc(item.session_name || "Workout")}
-              •
-              ${new Date(
-                item.completed_at || item.updated_at
-              ).toLocaleDateString("en-AU")}
-            </summary>
+    logs.slice().reverse().forEach(r => {
+      (r.exercises || []).forEach(e => {
+        if (!exerciseMap.has(e.name)) {
+          exerciseMap.set(e.name, []);
+        }
 
-            <small>
-              Week ${esc(item.week_number)}
-              • Day ${esc(item.day_number)}
-              • ${esc(item.completed_sets)}
-              / ${esc(item.total_sets)} sets
-              • ${Math.round(Number(item.total_volume) || 0)} kg
-              • ${time(Number(item.duration_seconds) || 0)}
-            </small>
+        const done = (e.sets || []).filter(
+          set => set.done
+        );
 
-            ${(item.exercises || []).map(exercise => `
-              <div class="m1002-history-exercise">
-                <strong>${esc(exercise.name)}</strong>
+        if (!done.length) return;
 
-                <div>
-                  ${(exercise.sets || []).map(set => `
-                    Set ${esc(set.set)}:
-                    ${esc(set.weight || 0)} kg
-                    × ${esc(set.reps || 0)} reps
-                    ${set.done ? "✓" : ""}
-                  `).join(" · ")}
+        const best = Math.max(
+          ...done.map(set => Number(set.weight) || 0)
+        );
+
+        exerciseMap.get(e.name).push({
+          date: r.completed_at || r.updated_at,
+          weight: best
+        });
+      });
+    });
+
+    let details = "";
+
+    if (progressDetail === "workouts") {
+      details = panel(
+        "TRAINING HISTORY",
+        "Workouts Complete",
+        progressRows(logs) ||
+          `<p class="m1002-muted">
+            No completed coach workouts in this period.
+          </p>`
+      );
+    } else {
+      const rows = [...exerciseMap].map(
+        ([name, values]) => {
+          const best = Math.max(
+            ...values.map(v => v.weight)
+          );
+
+          return `
+            <div class="mana-v993-row">
+              <div>
+                <div class="mana-v993-row-title">
+                  ${esc(name)}
                 </div>
               </div>
-            `).join("")}
+              <div class="mana-v993-row-value">
+                ${best} kg
+              </div>
+            </div>
+          `;
+        }
+      ).join("");
 
-            ${item.finishers?.cardio?.completed
-              ? `
-                <small>
-                  Cardio:
-                  ${esc(item.finishers.cardio.equipment)}
-                  • ${esc(item.finishers.cardio.durationMinutes)} min
-                </small>
-              `
-              : ""}
+      const titles = {
+        weight: "Weight Progression",
+        pbs: "Personal Bests",
+        exercise: "By Exercise"
+      };
 
-            ${item.finishers?.core?.completed
-              ? `
-                <small>
-                  Core: 3 rounds
-                </small>
-              `
-              : ""}
+      details = panel(
+        "STRENGTH",
+        titles[progressDetail] || "By Exercise",
+        rows || `<p class="m1002-muted">
+          Exercise history will appear here.
+        </p>`
+      );
+    }
 
-            ${item.workout_rating
-              ? `
-                <small>
-                  Rating ${esc(item.workout_rating)}/5
-                </small>
-              `
-              : ""}
+    const periods = [
+      ["daily", "DAILY"],
+      ["weekly", "WEEKLY"],
+      ["monthly", "MONTHLY"],
+      ["all", "ALL TIME"]
+    ];
 
-            ${item.workout_comment
-              ? `
-                <p>
-                  ${esc(item.workout_comment)}
-                </p>
-              `
-              : ""}
-          </details>
+    const detailTabs = [
+      ["weight", "WEIGHT PROGRESSION"],
+      ["pbs", "PERSONAL BESTS"],
+      ["exercise", "BY EXERCISE"],
+      ["workouts", "WORKOUTS COMPLETE"]
+    ];
+
+    return `
+      <div class="mana-v993-head">
+        <div class="mana-v993-kicker">
+          MANA STRENGTH • COACH PROGRAMS
+        </div>
+        <h2>Your Progress</h2>
+        <p>
+          Coach-assigned training results.
+        </p>
+      </div>
+
+      <div class="mana-v993-periods">
+        ${periods.map(([key, label]) => `
+          <button type="button"
+            data-m1002-period="${key}"
+            class="mana-v993-period
+              ${progressPeriod === key ? "active" : ""}">
+            ${label}
+          </button>
         `).join("")}
+      </div>
+
+      <div class="mana-v993-metrics">
+        ${metric(
+          "WORKOUTS",
+          pct(completedSets, totalSets),
+          `${logs.length} completed`
+        )}
+        ${metric(
+          "CARDIO",
+          pct(cardio, logs.length),
+          `${cardio} sessions`
+        )}
+        ${metric(
+          "CORE",
+          pct(core, logs.length),
+          `${core} sessions`
+        )}
+        ${metric(
+          "STRENGTH",
+          pct(completedSets, totalSets),
+          `${completedSets} sets complete`
+        )}
+      </div>
+
+      <div class="mana-v993-detail-nav">
+        ${detailTabs.map(([key, label]) => `
+          <button type="button"
+            data-m1002-detail="${key}"
+            class="mana-v993-detail-btn
+              ${progressDetail === key ? "active" : ""}">
+            ${label}
+          </button>
+        `).join("")}
+      </div>
+
+      ${details}
+
+      ${progressError
+        ? `<p class="m1002-muted">
+            ${esc(progressError)}
+          </p>`
+        : ""}
     `;
   }
 
-  function progressMount() {
-    if (!progressTab()) return;
+  function mountProgress() {
+    if (!progressOpen()) return;
 
     const root = $(ROOT);
     if (!root) return;
 
+    let switcher = $(PSW);
     let panel = $(PROGRESS);
+
+    if (!switcher) {
+      switcher = document.createElement("div");
+      switcher.id = PSW;
+      switcher.innerHTML = `
+        <button type="button"
+          data-m1002-progress-mode="generated">
+          My Workouts
+        </button>
+        <button type="button"
+          data-m1002-progress-mode="coach">
+          Coach Programs
+        </button>
+      `;
+    }
+
+    if (switcher.parentElement !== root) {
+      root.prepend(switcher);
+    }
 
     if (!panel) {
       panel = document.createElement("section");
       panel.id = PROGRESS;
-      root.appendChild(panel);
     }
 
-    if (
-      panel.dataset.m1002User !== progressUser ||
-      panel.dataset.m1002Count !==
-        String(progressLogs.length)
-    ) {
-      panel.innerHTML = progressLoading
-        ? `
-          <p>
-            Loading coach workout history…
-          </p>
-        `
-        : progressHTML(progressLogs);
+    if (panel.parentElement !== root) {
+      switcher.after(panel);
+    }
 
-      panel.dataset.m1002User = progressUser;
-      panel.dataset.m1002Count =
-        String(progressLogs.length);
+    root.classList.toggle(
+      "m1002-show-coach",
+      progressMode === "coach"
+    );
+
+    switcher.querySelectorAll("button").forEach(b => {
+      b.classList.toggle(
+        "active",
+        b.dataset.m1002ProgressMode === progressMode
+      );
+    });
+
+    if (progressMode === "coach") {
+      const signature = [
+        progressLoadAt,
+        progressPeriod,
+        progressDetail,
+        progressLogs.length,
+        progressError
+      ].join("|");
+
+      if (panel.dataset.render !== signature) {
+        panel.innerHTML = renderProgress();
+        panel.dataset.render = signature;
+      }
     }
   }
 
   async function loadProgress(force = false) {
-    if (!progressTab()) return;
-
-    progressMount();
+    if (!progressOpen() || progressLoading) return;
 
     if (
-      progressLoading ||
-      (!force && Date.now() - progressLoaded < 25000)
-    ) return;
+      !force &&
+      progressLoadAt &&
+      Date.now() - progressLoadAt < 15000
+    ) {
+      mountProgress();
+      return;
+    }
 
     progressLoading = true;
+    progressError = "";
 
-    const token = ++progressSequence;
+    const token = ++progressToken;
 
     try {
-      const client = await db();
-      const auth = await client.auth.getUser();
+      const c = await db();
+      const auth = await c.auth.getUser();
+      const id = auth.data?.user?.id;
 
-      const userId = auth.data?.user?.id;
-
-      if (!userId) {
-        progressUser = "";
+      if (!id) {
         progressLogs = [];
+        progressUser = "";
+        progressError = "Sign in to view coach workouts.";
         return;
       }
 
-      const result = await client
+      const response = await c
         .from("coach_workout_logs")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", id)
         .eq("status", "completed")
-        .order("completed_at", {
-          ascending: false
-        })
+        .order("completed_at", { ascending: false })
         .limit(500);
 
-      if (result.error) throw result.error;
+      if (response.error) throw response.error;
+      if (token !== progressToken) return;
 
-      if (token !== progressSequence) return;
-
-      progressUser = userId;
-      progressLogs = result.data || [];
-      progressLoaded = Date.now();
+      progressUser = id;
+      progressLogs = response.data || [];
+      progressLoadAt = Date.now();
 
     } catch (error) {
-      console.warn(
-        "[Mana Coach Progress]",
-        error.message || error
-      );
+      progressError = error.message || String(error);
+      console.warn("[Mana Coach Progress]", error);
     } finally {
       progressLoading = false;
 
       if ($(PROGRESS)) {
-        $(PROGRESS).dataset.m1002Count = "";
+        $(PROGRESS).dataset.render = "";
       }
 
-      progressMount();
+      mountProgress();
     }
   }
 
-  function viewProgress() {
-    ++openSeq;
+  function goProgress() {
+    ++serial;
     stopClock();
 
     session = null;
-    assignment = null;
-    program = null;
+    selected = null;
+    programData = null;
 
     $(MODAL)?.classList.remove("open");
 
-    const progressButton = document.querySelector(
+    progressMode = "coach";
+
+    document.querySelector(
       '#manaV83Tabs [data-v83-tab="progress"]'
-    );
+    )?.click();
 
-    if (progressButton) {
-      progressButton.click();
-
-      setTimeout(
-        () => void loadProgress(true),
-        350
-      );
-
-    } else {
-      if (
-        typeof window.openManaProgram === "function"
-      ) {
-        window.openManaProgram("strength");
-      }
-
-      setTimeout(() => {
-        document.querySelector(
-          '#manaV83Tabs [data-v83-tab="progress"]'
-        )?.click();
-      }, 300);
-
-      setTimeout(
-        () => void loadProgress(true),
-        650
-      );
-    }
+    setTimeout(() => {
+      mountProgress();
+      void loadProgress(true);
+    }, 300);
   }
 
-  function onClick(event) {
-    const element = event.target;
-
-    if (!(element instanceof Element)) return;
+  function handleClick(event) {
+    const el = event.target;
+    if (!(el instanceof Element)) return;
 
     let button;
 
-    if ((button = element.closest(
-      "[data-m1002-mode]"
+    if ((button = el.closest(
+      "[data-m1002-progress-mode]"
     ))) {
-      setMode(button.dataset.m1002Mode);
-      return;
-    }
+      progressMode = button.dataset.m1002ProgressMode;
+      mountProgress();
 
-    if (element.closest("[data-m1002-back]")) {
-      if (session) {
-        backToProgram();
-      } else {
-        closeModal();
+      if (progressMode === "coach") {
+        void loadProgress();
       }
-
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-summary-progress]"
-    )) {
-      viewProgress();
+    if ((button = el.closest(
+      "[data-m1002-period]"
+    ))) {
+      progressPeriod = button.dataset.m1002Period;
+      if ($(PROGRESS)) $(PROGRESS).dataset.render = "";
+      mountProgress();
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-program-back]"
-    )) {
+    if ((button = el.closest(
+      "[data-m1002-detail]"
+    ))) {
+      progressDetail = button.dataset.m1002Detail;
+      if ($(PROGRESS)) $(PROGRESS).dataset.render = "";
+      mountProgress();
+      return;
+    }
+
+    if (el.closest("[data-m1002-progress-go]")) {
+      goProgress();
+      return;
+    }
+
+    if ((button = el.closest("[data-m1002-mode]"))) {
+      changeMode(button.dataset.m1002Mode);
+      return;
+    }
+
+    if (el.closest("[data-m1002-back]")) {
+      if (session) backToProgram();
+      else closeModal();
+      return;
+    }
+
+    if (el.closest("[data-m1002-program-back]")) {
       backToProgram();
       return;
     }
 
-    if ((button = element.closest(
+    if ((button = el.closest(
       "[data-m1002-program]"
     ))) {
-      void openProgram(
-        button.dataset.m1002Program
-      );
-
+      void openProgram(button.dataset.m1002Program);
       return;
     }
 
-    if ((button = element.closest(
-      "[data-m1002-week]"
-    ))) {
+    if ((button = el.closest("[data-m1002-week]"))) {
       week = Number(button.dataset.m1002Week);
       renderProgram();
       return;
     }
 
-    if ((button = element.closest(
-      "[data-m1002-start]"
-    ))) {
+    if ((button = el.closest("[data-m1002-start]"))) {
       void openDay(button.dataset.m1002Start);
       return;
     }
 
-    if ((button = element.closest(
-      "[data-m1002-demo]"
-    ))) {
+    if ((button = el.closest("[data-m1002-demo]"))) {
       const name = button.dataset.m1002Demo;
+      const fn = window.MANA_EXERCISE_VISUALS?.openDemo;
 
-      const openDemo =
-        window.MANA_EXERCISE_VISUALS?.openDemo;
-
-      if (typeof openDemo === "function") {
-        void openDemo(name);
+      if (typeof fn === "function") {
+        void fn(name);
       } else {
         window.open(
           "https://www.youtube.com/results?search_query=" +
@@ -3408,259 +2878,158 @@
           "noopener,noreferrer"
         );
       }
-
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-previous]"
-    )) {
+    if (el.closest("[data-m1002-previous]")) {
       navigate(slide - 1);
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-next]"
-    )) {
+    if (el.closest("[data-m1002-next]")) {
       navigate(slide + 1);
       return;
     }
 
-    if ((button = element.closest(
-      "[data-m1002-slide]"
-    ))) {
-      navigate(
-        Number(button.dataset.m1002Slide)
-      );
+    if ((button = el.closest("[data-m1002-slide]"))) {
+      navigate(Number(button.dataset.m1002Slide));
       return;
     }
 
-    if ((button = element.closest(
-      "[data-m1002-tick]"
-    ))) {
+    if ((button = el.closest("[data-m1002-tick]"))) {
       button.classList.toggle("done");
-
-      button.setAttribute(
-        "aria-pressed",
-        String(
-          button.classList.contains("done")
-        )
-      );
-
       localEdit();
       return;
     }
 
-    if ((button = element.closest(
+    if ((button = el.closest(
       "[data-m1002-tick-exercise]"
     ))) {
-      tickAll(
-        button.closest("[data-m1002-ex]")
-      );
+      tickAll(button.closest("[data-m1002-ex]"));
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-tick-workout]"
-    )) {
+    if (el.closest("[data-m1002-tick-workout]")) {
       tickAll($("m1002Carousel"));
       return;
     }
 
-    if ((button = element.closest(
-      "[data-m1002-rating]"
-    ))) {
-      rating = Number(
-        button.dataset.m1002Rating
-      );
-
-      ratings();
+    if ((button = el.closest("[data-m1002-rating]"))) {
+      rating = Number(button.dataset.m1002Rating);
+      refreshRatings();
       localEdit();
       return;
     }
 
-    if ((button = element.closest(
+    if ((button = el.closest(
       "[data-m1002-finisher]"
     ))) {
-      if (
-        button.dataset.m1002Finisher === "cardio"
-      ) {
-        openCardio();
-      } else {
-        openCore();
-      }
-
+      showFinisher(button.dataset.m1002Finisher);
       return;
     }
 
-    if ((button = element.closest(
+    if ((button = el.closest(
       "[data-m1002-cardio-equipment]"
     ))) {
       cardioEquipment =
         button.dataset.m1002CardioEquipment;
-
-      openCardio();
+      showFinisher("cardio");
       return;
     }
 
-    if ((button = element.closest(
+    if ((button = el.closest(
       "[data-m1002-cardio-minutes]"
     ))) {
       cardioMinutes = Number(
         button.dataset.m1002CardioMinutes
       );
-
-      openCardio();
+      showFinisher("cardio");
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-cardio-complete]"
-    )) {
-      finishers.cardio = {
-        completed: true,
-        equipment: cardioEquipment,
-        durationMinutes: cardioMinutes,
-        actualMinutes: cardioMinutes,
-        completedAt: new Date().toISOString()
-      };
-
-      $("m1002FinisherPanel").innerHTML = "";
-
-      finisherStatus();
-      localEdit();
+    if (el.closest("[data-m1002-cardio-complete]")) {
+      void persistFinisher("cardio");
       return;
     }
 
-    if ((button = element.closest(
+    if ((button = el.closest(
+      "[data-m1002-retry]"
+    ))) {
+      void persistFinisher(button.dataset.m1002Retry);
+      return;
+    }
+
+    if ((button = el.closest(
       "[data-m1002-core-round]"
     ))) {
-      coreRound = Number(
-        button.dataset.m1002CoreRound
-      );
-
-      openCore();
+      coreRound = Number(button.dataset.m1002CoreRound);
+      showFinisher("core");
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-core-tick-round]"
-    )) {
+    if (el.closest("[data-m1002-core-tick-round]")) {
       coreTicks[coreRound] =
-        coreRoutine().map(
-          (_, index) => index
-        );
-
-      openCore();
+        coreRoutine().map((_, i) => i);
+      showFinisher("core");
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-core-tick-all]"
-    )) {
-      coreTicks = [0, 1, 2].map(
-        () => coreRoutine().map(
-          (_, index) => index
-        )
-      );
-
-      openCore();
+    if (el.closest("[data-m1002-core-tick-all]")) {
+      const indices = coreRoutine().map((_, i) => i);
+      coreTicks = [
+        [...indices],
+        [...indices],
+        [...indices]
+      ];
+      showFinisher("core");
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-core-next]"
-    )) {
-      const total = coreRoutine().length;
+    if (el.closest("[data-m1002-core-next]")) {
+      coreRound = Math.min(2, coreRound + 1);
+      showFinisher("core");
+      return;
+    }
 
-      if (
-        coreTicks[coreRound].length !== total
-      ) return;
+    if (el.closest("[data-m1002-core-save]")) {
+      void persistFinisher("core");
+      return;
+    }
 
-      if (coreRound < 2) {
-        coreRound++;
-        openCore();
-        return;
+    if (el.closest("[data-m1002-finisher-close]")) {
+      if ($("m1002FinisherPanel")) {
+        $("m1002FinisherPanel").innerHTML = "";
       }
-
-      if (!coreTicks.every(
-        items => items.length === total
-      )) {
-        coreRound = coreTicks.findIndex(
-          items => items.length !== total
-        );
-
-        openCore();
-        return;
-      }
-
-      finishers.core = {
-        completed: true,
-        rounds: 3,
-
-        exercises: coreRoutine().map(
-          ([name, target]) => ({
-            name,
-            target,
-            roundsCompleted: 3
-          })
-        ),
-
-        completedAt: new Date().toISOString()
-      };
-
-      $("m1002FinisherPanel").innerHTML = "";
-
-      finisherStatus();
-      localEdit();
-      return;
-    }
-
-    if (element.closest(
-      "[data-m1002-finisher-close]"
-    )) {
-      $("m1002FinisherPanel").innerHTML = "";
       fitSlide();
       return;
     }
 
-    if (element.closest(
-      "[data-m1002-complete]"
-    )) {
+    if (el.closest("[data-m1002-complete]")) {
       void completeWorkout();
     }
   }
 
-  function onInput(event) {
+  function handleInput(event) {
     const target = event.target;
 
-    if (
-      !(target instanceof Element) ||
-      !target.closest("#" + MODAL)
-    ) return;
+    if (!(target instanceof Element)) return;
 
-    if (target.matches(
-      "[data-m1002-weight]"
-    )) {
-      const card = target.closest(
-        "[data-m1002-ex]"
-      );
+    if (!target.closest("#" + MODAL)) return;
+
+    if (target.matches("[data-m1002-weight]")) {
+      const card = target.closest("[data-m1002-ex]");
 
       card?.querySelectorAll(
         "[data-m1002-weight]"
       ).forEach(input => {
-        if (input !== target) {
-          input.value = target.value;
-        }
+        if (input !== target) input.value = target.value;
       });
 
       localEdit();
       return;
     }
 
-    if (target.matches(
-      "[data-m1002-reps]"
-    )) {
+    if (target.matches("[data-m1002-reps]")) {
       localEdit();
       return;
     }
@@ -3671,28 +3040,21 @@
       return;
     }
 
-    if (target.matches(
-      "[data-m1002-core-check]"
-    )) {
-      const index = Number(
+    if (target.matches("[data-m1002-core-check]")) {
+      const n = Number(
         target.dataset.m1002CoreCheck
       );
 
-      const checked = new Set(
-        coreTicks[coreRound]
-      );
+      const values = new Set(coreTicks[coreRound]);
 
-      if (target.checked) {
-        checked.add(index);
-      } else {
-        checked.delete(index);
-      }
+      if (target.checked) values.add(n);
+      else values.delete(n);
 
       coreTicks[coreRound] = [
-        ...checked
+        ...values
       ].sort((a, b) => a - b);
 
-      openCore();
+      showFinisher("core");
     }
   }
 
@@ -3700,22 +3062,23 @@
     clearTimeout(refreshTimer);
 
     refreshTimer = setTimeout(() => {
-      if (workoutTab()) {
+      if (workoutOpen()) {
         applyMode();
 
         if (mode === "coach") {
           void loadAssignments();
         }
-      }
-
-      if (legacyTab()) {
+      } else if (legacyOpen()) {
         renderLegacy();
         void loadAssignments();
       }
 
-      if (progressTab()) {
-        progressMount();
-        void loadProgress();
+      if (progressOpen()) {
+        mountProgress();
+
+        if (progressMode === "coach") {
+          void loadProgress();
+        }
       }
     }, 160);
   }
@@ -3727,8 +3090,8 @@
         : "generated";
     } catch (_) {}
 
-    installStyles();
-    modal();
+    installStyle();
+    ensureModal();
     ensureLegacy();
 
     const holder = $("manaV83Content");
@@ -3736,15 +3099,15 @@
     if (holder) {
       new MutationObserver(() => {
         if (
-          workoutTab() &&
+          workoutOpen() &&
           (!$(SW) || !$(PANEL))
         ) {
           applyMode();
         }
 
         if (
-          progressTab() &&
-          !$(PROGRESS)
+          progressOpen() &&
+          (!$(PSW) || !$(PROGRESS))
         ) {
           scheduleRefresh();
         }
@@ -3753,76 +3116,68 @@
       });
     }
 
-    document.addEventListener(
-      "click",
-      onClick
-    );
+    document.addEventListener("click", handleClick);
+    document.addEventListener("input", handleInput);
 
-    document.addEventListener(
-      "input",
-      onInput
-    );
-
-    document.addEventListener(
-      "change",
-      onInput
-    );
-
-    [
-      "mana:program-tab-change",
-      "pageshow",
-      "mana:profile-synced",
-      "mana:coach-workout-saved"
-    ].forEach(eventName => {
-      window.addEventListener(
-        eventName,
-        scheduleRefresh
-      );
+    document.addEventListener("change", event => {
+      if (event.target?.matches?.(
+        "[data-m1002-core-check]"
+      )) {
+        handleInput(event);
+      }
     });
 
-    document.querySelector(
-      '#bottomNav [data-page="programs"]'
-    )?.addEventListener(
-      "click",
+    window.addEventListener(
+      "mana:program-tab-change",
       scheduleRefresh
     );
 
-    document.querySelector(
-      '#manaV83Tabs [data-v83-tab="progress"]'
-    )?.addEventListener(
+    window.addEventListener(
+      "pageshow",
+      scheduleRefresh
+    );
+
+    window.addEventListener(
+      "mana:profile-synced",
+      scheduleRefresh
+    );
+
+    window.addEventListener(
+      "mana:coach-workout-saved",
+      () => {
+        progressLoadAt = 0;
+        scheduleRefresh();
+      }
+    );
+
+    document.addEventListener(
       "click",
-      () => {
-        setTimeout(
-          () => void loadProgress(),
-          200
-        );
-      }
+      event => {
+        if (event.target.closest(
+          '#manaV83Tabs [data-v83-tab="progress"]'
+        )) {
+          setTimeout(scheduleRefresh, 150);
+        }
+      },
+      true
     );
 
-    window.addEventListener(
-      "resize",
-      fitSlide
-    );
+    window.addEventListener("resize", fitSlide);
 
-    window.addEventListener(
-      "mana:logout",
-      () => {
-        ++loadSeq;
-        ++progressSequence;
+    window.addEventListener("mana:logout", () => {
+      ++loadingSerial;
+      ++progressToken;
 
-        account = "";
-        assignments = [];
-        loadedAt = 0;
+      account = "";
+      assignments = [];
+      loadedAt = 0;
 
-        progressUser = "";
-        progressLogs = [];
-        progressLoaded = 0;
+      progressUser = "";
+      progressLogs = [];
+      progressLoadAt = 0;
 
-        closeModal();
-        renderPanel();
-        renderLegacy();
-      }
-    );
+      closeModal();
+    });
 
     window.refreshManaAssignedPrograms =
       () => loadAssignments(true);
@@ -3830,13 +3185,12 @@
     window.refreshManaCoachProgress =
       () => loadProgress(true);
 
-    window.MANA_CLIENT_CUSTOM_PROGRAM_BUILD =
-      BUILD;
+    window.MANA_CLIENT_CUSTOM_PROGRAM_BUILD = BUILD;
 
     scheduleRefresh();
 
     console.log(
-      "[Mana Movement] Coach workouts " + BUILD
+      "[Mana Movement] Coach Workouts " + BUILD
     );
   }
 
