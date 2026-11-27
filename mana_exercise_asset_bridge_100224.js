@@ -1,18 +1,24 @@
 
 /*
  MANA MOVEMENT — GITHUB EXERCISE ASSET BRIDGE
- COMPLETE BUILD 100224
+ COMPLETE BUILD 100227
 
- Load AFTER builds 100222 and 100223.
- - Inventory from the existing GitHub assets/exercises/ directory.
- - Matches canonical names and historical aliases to demo PNGs.
- - Preserves original Start/Finish demo player and workout UI.
- - Does not edit saved programs, Supabase, sets, reps or Progress.
- - Reports missing assets instead of inventing replacements.
+ FULL REPLACEMENT:
+ mana_exercise_asset_bridge_100224.js
+
+ Adds verified Band Chest Press artwork to the existing
+ approved exercise demo library.
+
+ Preserves:
+ - Master Exercise Registry
+ - Existing Start/Finish demo player
+ - Automated and Coach Program workouts
+ - Sets, reps, Progress and saved training history
 */
 (() => {
   "use strict";
-  const BUILD = "100224";
+
+  const BUILD = "100227";
   if (window.MANA_EXERCISE_ASSETS?.build === BUILD) return;
 
   const ROOT = "assets/exercises/";
@@ -21,6 +27,7 @@
 arnold-press
 assisted-pull-up
 back-squat
+band-chest-press
 barbell-row
 bench-press
 biceps-curl
@@ -137,7 +144,6 @@ wide-grip-seated-row`.trim().split(/\s+/));
     fullbody: "muscle-full body.png"
   });
 
-  // Only verified same-movement filename equivalents.
   const DEMO_ALIASES = Object.freeze({
     "conventional-deadlift": "deadlift",
     "cable-triceps-pressdown": "triceps-pressdown",
@@ -217,6 +223,7 @@ wide-grip-seated-row`.trim().split(/\s+/));
 
     for (const record of all) {
       const result = lookup(record.name);
+
       (result.path ? matched : missing).push(result);
     }
 
@@ -240,8 +247,6 @@ wide-grip-seated-row`.trim().split(/\s+/));
   function openDemo(name, ...args) {
     const info = lookup(name);
 
-    // Original player creates Start/Finish frames using
-    // the supplied exercise name and matching PNG filename.
     const chosen = info.path
       ? info.slug.replace(/-/g, " ")
       : name;
@@ -261,7 +266,6 @@ wide-grip-seated-row`.trim().split(/\s+/));
       return false;
     }
 
-    // Fix the exact filename mismatch confirmed in GitHub.
     if (
       api.muscleAssets?.fullbody ===
       ROOT + "muscle-full-body.png"
