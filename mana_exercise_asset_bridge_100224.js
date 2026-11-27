@@ -1,25 +1,33 @@
 
 /*
  MANA MOVEMENT — GITHUB EXERCISE ASSET BRIDGE
- COMPLETE BUILD 100227
+ COMPLETE BUILD 100229
 
  FULL REPLACEMENT:
  mana_exercise_asset_bridge_100224.js
 
- Adds verified Band Chest Press artwork to the existing
- approved exercise demo library.
+ Adds eight verified band exercise demo PNGs:
+ - Band Row
+ - Band Pulldown
+ - Band Shoulder Press
+ - Band Biceps Curl
+ - Band Triceps Pressdown
+ - Band Lateral Raise
+ - Band Pull Apart
+ - Band Romanian Deadlift
 
- Preserves:
- - Master Exercise Registry
- - Existing Start/Finish demo player
- - Automated and Coach Program workouts
- - Sets, reps, Progress and saved training history
+ Preserves all existing exercise demos,
+ muscle illustrations, automated/coach workouts,
+ sets, reps, saved programs and Progress.
 */
 (() => {
   "use strict";
 
-  const BUILD = "100227";
-  if (window.MANA_EXERCISE_ASSETS?.build === BUILD) return;
+  const BUILD = "100229";
+
+  if (window.MANA_EXERCISE_ASSETS?.build === BUILD) {
+    return;
+  }
 
   const ROOT = "assets/exercises/";
 
@@ -27,7 +35,15 @@
 arnold-press
 assisted-pull-up
 back-squat
+band-biceps-curl
 band-chest-press
+band-lateral-raise
+band-pull-apart
+band-pulldown
+band-romanian-deadlift
+band-row
+band-shoulder-press
+band-triceps-pressdown
 barbell-row
 bench-press
 biceps-curl
@@ -154,23 +170,34 @@ wide-grip-seated-row`.trim().split(/\s+/));
   });
 
   const clean = value =>
-    String(value ?? "").replace(/\s+/g, " ").trim();
+    String(value ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
 
-  const slug = value => clean(value)
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  const slug = value =>
+    clean(value)
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
-  const reg = () => window.MANA_EXERCISE_REGISTRY;
-  const visuals = () => window.MANA_EXERCISE_VISUALS;
-  const hasDemo = value => DEMOS.has(value);
+  const reg = () =>
+    window.MANA_EXERCISE_REGISTRY;
+
+  const visuals = () =>
+    window.MANA_EXERCISE_VISUALS;
+
+  const hasDemo = value =>
+    DEMOS.has(value);
 
   const pathForSlug = value =>
-    hasDemo(value) ? ROOT + value + "-demo.png" : null;
+    hasDemo(value)
+      ? ROOT + value + "-demo.png"
+      : null;
 
   function lookup(value) {
-    const record = reg()?.resolve?.(value) || null;
+    const record =
+      reg()?.resolve?.(value) || null;
 
     const candidates = [
       slug(value),
@@ -188,11 +215,13 @@ wide-grip-seated-row`.trim().split(/\s+/));
         return {
           requested: clean(value),
           id: record?.id ?? null,
-          canonicalName: record?.name || clean(value),
+          canonicalName:
+            record?.name || clean(value),
           slug: name,
           path: pathForSlug(name),
           exact: name === base,
-          muscleImage: record?.muscleAsset || null,
+          muscleImage:
+            record?.muscleAsset || null,
           target:
             record?.muscleLabel ||
             record?.primaryMuscle ||
@@ -204,11 +233,13 @@ wide-grip-seated-row`.trim().split(/\s+/));
     return {
       requested: clean(value),
       id: record?.id ?? null,
-      canonicalName: record?.name || clean(value),
+      canonicalName:
+        record?.name || clean(value),
       slug: null,
       path: null,
       exact: false,
-      muscleImage: record?.muscleAsset || null,
+      muscleImage:
+        record?.muscleAsset || null,
       target:
         record?.muscleLabel ||
         record?.primaryMuscle ||
@@ -217,17 +248,25 @@ wide-grip-seated-row`.trim().split(/\s+/));
   }
 
   function inventory() {
-    const all = reg()?.all?.() || [];
+    const all =
+      reg()?.all?.() || [];
+
     const matched = [];
     const missing = [];
 
     for (const record of all) {
       const result = lookup(record.name);
 
-      (result.path ? matched : missing).push(result);
+      if (result.path) {
+        matched.push(result);
+      } else {
+        missing.push(result);
+      }
     }
 
-    const used = new Set(matched.map(x => x.slug));
+    const used = new Set(
+      matched.map(x => x.slug)
+    );
 
     return {
       records: all.length,
@@ -236,8 +275,12 @@ wide-grip-seated-row`.trim().split(/\s+/));
       matched,
       availableDemos: DEMOS.size,
       unclaimedDemoSlugs:
-        [...DEMOS].filter(x => !used.has(x)),
-      muscleFiles: { ...MUSCLE_FILES }
+        [...DEMOS].filter(
+          x => !used.has(x)
+        ),
+      muscleFiles: {
+        ...MUSCLE_FILES
+      }
     };
   }
 
@@ -251,9 +294,16 @@ wide-grip-seated-row`.trim().split(/\s+/));
       ? info.slug.replace(/-/g, " ")
       : name;
 
-    return typeof delegatedOpen === "function"
-      ? delegatedOpen(chosen, ...args)
-      : undefined;
+    if (
+      typeof delegatedOpen === "function"
+    ) {
+      return delegatedOpen(
+        chosen,
+        ...args
+      );
+    }
+
+    return undefined;
   }
 
   function attach() {
@@ -274,13 +324,17 @@ wide-grip-seated-row`.trim().split(/\s+/));
         ROOT + MUSCLE_FILES.fullbody;
     }
 
-    if (api.openDemo === openDemo) return true;
+    if (api.openDemo === openDemo) {
+      return true;
+    }
 
     delegatedOpen = api.openDemo;
     attachedAPI = api;
 
     api.openDemo = openDemo;
-    window.openManaExerciseGuide = openDemo;
+
+    window.openManaExerciseGuide =
+      openDemo;
 
     return true;
   }
@@ -293,7 +347,8 @@ wide-grip-seated-row`.trim().split(/\s+/));
       registryCount: inv.records,
       demoFiles: DEMOS.size,
       matchedToFiles: inv.linked,
-      missingFileMatches: inv.missing.length,
+      missingFileMatches:
+        inv.missing.length,
       demoAdapter: !!(
         attachedAPI &&
         attachedAPI.openDemo === openDemo
@@ -303,25 +358,30 @@ wide-grip-seated-row`.trim().split(/\s+/));
         "muscle-core.png"
       ],
       unmatchedNames:
-        inv.missing.map(x => x.canonicalName)
+        inv.missing.map(
+          x => x.canonicalName
+        )
     };
   }
 
-  window.MANA_EXERCISE_ASSETS = Object.freeze({
-    build: BUILD,
-    lookup,
-    inventory,
-    stats,
-    openDemo,
-    attach,
-    demoSlugs: () => [...DEMOS],
-    muscleFiles: MUSCLE_FILES
-  });
+  window.MANA_EXERCISE_ASSETS =
+    Object.freeze({
+      build: BUILD,
+      lookup,
+      inventory,
+      stats,
+      openDemo,
+      attach,
+      demoSlugs: () => [...DEMOS],
+      muscleFiles: MUSCLE_FILES
+    });
 
   const start = () => {
     attach();
 
-    if (reg()?.all?.()?.length) {
+    if (
+      reg()?.all?.()?.length
+    ) {
       console.info(
         "[Mana Assets]",
         BUILD,
@@ -335,7 +395,9 @@ wide-grip-seated-row`.trim().split(/\s+/));
     start
   );
 
-  if (document.readyState === "loading") {
+  if (
+    document.readyState === "loading"
+  ) {
     document.addEventListener(
       "DOMContentLoaded",
       start,
@@ -345,5 +407,8 @@ wide-grip-seated-row`.trim().split(/\s+/));
     start();
   }
 
-  window.setTimeout(attach, 1000);
+  window.setTimeout(
+    attach,
+    1000
+  );
 })();
